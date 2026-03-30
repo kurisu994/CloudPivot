@@ -1,6 +1,6 @@
 # 云枢 (CloudPivot IMS) — 数据库设计
 
-> **版本**：v1.3 &nbsp;|&nbsp; **日期**：2026-03-27
+> **版本**：v1.4 &nbsp;|&nbsp; **日期**：2026-03-30
 
 ---
 
@@ -485,6 +485,8 @@ CREATE TABLE inbound_orders (
     inbound_type    TEXT    DEFAULT 'purchase' CHECK (inbound_type IN ('purchase', 'return', 'production', 'other')),
                                                        -- purchase=采购入库 return=退货入库 production=完工入库/退料入库 other=其他入库
                                                        -- 当 inbound_type = 'return' 时，表示销售退货入库，由 sales_returns 流程触发自动创建，不应由用户手动创建此类型的入库单
+    source_type     TEXT,                              -- 来源单据类型（如 'sales_return', 'work_order'），用于非采购场景的回溯
+    source_id       INTEGER,                           -- 来源单据 ID
     currency        TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
                                                        -- 币种（继承采购单币种）
     exchange_rate   REAL    DEFAULT 1,                  -- 对基准币种汇率（默认 USD）
@@ -507,6 +509,8 @@ CREATE TABLE inbound_orders (
 CREATE INDEX idx_inbound_purchase ON inbound_orders(purchase_id);
 CREATE INDEX idx_inbound_date ON inbound_orders(inbound_date);
 CREATE INDEX idx_inbound_orders_wh ON inbound_orders(warehouse_id);
+CREATE INDEX idx_io_source ON inbound_orders(source_type, source_id);
+CREATE INDEX idx_io_supplier ON inbound_orders(supplier_id);
 ```
 
 #### inbound_order_items — 入库单明细
@@ -677,6 +681,8 @@ CREATE TABLE outbound_orders (
     outbound_type   TEXT    DEFAULT 'sales' CHECK (outbound_type IN ('sales', 'return', 'production', 'other')),
                                                        -- sales=销售出库 return=退货出库 production=领料出库 other=其他出库
                                                        -- 当 outbound_type = 'return' 时，表示采购退货出库，由 purchase_returns 流程触发自动创建
+    source_type     TEXT,                              -- 来源单据类型（如 'purchase_return', 'work_order'），用于非销售场景的回溯
+    source_id       INTEGER,                           -- 来源单据 ID
     currency        TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
                                                        -- 币种（继承销售单币种）
     exchange_rate   REAL    DEFAULT 1,                  -- 对基准币种汇率（默认 USD）
@@ -699,6 +705,8 @@ CREATE TABLE outbound_orders (
 CREATE INDEX idx_oo_sales ON outbound_orders(sales_id);
 CREATE INDEX idx_oo_date ON outbound_orders(outbound_date);
 CREATE INDEX idx_outbound_orders_wh ON outbound_orders(warehouse_id);
+CREATE INDEX idx_oo_source ON outbound_orders(source_type, source_id);
+CREATE INDEX idx_oo_customer ON outbound_orders(customer_id);
 ```
 
 #### outbound_order_items — 出库单明细
@@ -960,6 +968,7 @@ CREATE TABLE stock_checks (
 );
 
 CREATE INDEX idx_sc_scope_category ON stock_checks(scope_category_id);
+CREATE INDEX idx_sc_wh ON stock_checks(warehouse_id);
 CREATE INDEX idx_sc_date ON stock_checks(check_date);
 CREATE INDEX idx_sc_status ON stock_checks(status);
 ```
@@ -1072,6 +1081,7 @@ CREATE TABLE payables (
 CREATE INDEX idx_pay_supplier ON payables(supplier_id);
 CREATE INDEX idx_pay_status ON payables(status);
 CREATE INDEX idx_pay_date ON payables(payable_date);
+CREATE INDEX idx_paydt_due ON payables(due_date);
 ```
 
 #### payment_records — 付款记录
@@ -1121,6 +1131,7 @@ CREATE TABLE receivables (
 CREATE INDEX idx_recv_customer ON receivables(customer_id);
 CREATE INDEX idx_recv_status ON receivables(status);
 CREATE INDEX idx_recv_date ON receivables(receivable_date);
+CREATE INDEX idx_recv_due ON receivables(due_date);
 ```
 
 #### receipt_records — 收款记录
@@ -1251,6 +1262,7 @@ CREATE TABLE work_order_materials (
     work_order_id       INTEGER NOT NULL,                   -- 关联 work_orders.id
     material_id         INTEGER NOT NULL,                   -- 领料物料（关联 materials.id，原材料）
     bom_item_id         INTEGER,                            -- 关联 bom_items.id（BOM 展算来源）
+    lot_id              INTEGER,                            -- 关联 lots.id（必须追踪到具体的出库批次才能有效核算）
     planned_qty         REAL    NOT NULL,                   -- 计划领料量（BOM 展算，含损耗）
     issued_qty          REAL    NOT NULL DEFAULT 0,         -- 实际已领料量
     returned_qty        REAL    NOT NULL DEFAULT 0,         -- 退料量
@@ -1261,6 +1273,7 @@ CREATE TABLE work_order_materials (
 
 CREATE INDEX idx_wom_wo ON work_order_materials(work_order_id);
 CREATE INDEX idx_wom_material ON work_order_materials(material_id);
+CREATE INDEX idx_wom_lot ON work_order_materials(lot_id);
 ```
 
 ### 2.8 智能补货模块
@@ -1407,7 +1420,9 @@ INSERT INTO system_config (key, value, remark) VALUES
     ('print_custom_height_mm', '297', '自定义纸张高度(mm)'),
     ('print_margin_mm', '10', '打印统一边距(mm)'),
     ('print_show_logo', '1', '是否打印 Logo'),
-    ('print_show_company_info', '1', '是否打印企业信息');
+    ('print_show_company_info', '1', '是否打印企业信息'),
+    ('backup_time', '02:00', '自动备份时间 (HH:MM)'),
+    ('setup_completed', '0', '是否完成向导配置');
 ```
 
 #### exchange_rates — 汇率管理
@@ -1417,7 +1432,7 @@ CREATE TABLE exchange_rates (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     currency        TEXT    NOT NULL CHECK (currency IN ('VND', 'CNY')),
                                                        -- 外币类型（USD 为基准，不需记录）
-    rate            REAL    NOT NULL CHECK(rate > 0),   -- 1 外币 = N USD
+    rate            REAL    NOT NULL CHECK(rate > 0),   -- 1 USD = N 外币
     effective_date  TEXT    NOT NULL,                   -- 生效日期
     updated_by_user_id INTEGER,                         -- 更新人（关联 users.id）
     updated_by_name TEXT,                               -- 更新人快照
@@ -1432,8 +1447,8 @@ CREATE INDEX idx_exr_date ON exchange_rates(effective_date);
 
 -- 预置初始汇率
 INSERT INTO exchange_rates (currency, rate, effective_date, remark) VALUES
-    ('VND', 0.000039, date('now'), '1 VND = 0.000039 USD'),
-    ('CNY', 0.14, date('now'), '1 CNY = 0.14 USD');
+    ('VND', 25300, date('now'), '1 USD = 25300 VND'),
+    ('CNY', 7.2, date('now'), '1 USD = 7.2 CNY');
 ```
 
 #### operation_logs — 操作日志
