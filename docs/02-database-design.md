@@ -320,8 +320,8 @@ CREATE TABLE units (
     decimal_places INTEGER DEFAULT 0,                 -- 数量小数位
     sort_order  INTEGER DEFAULT 0,
     is_enabled  INTEGER DEFAULT 1,
-    created_at  TEXT DEFAULT (datetime('now', 'localtime')),
-    updated_at  TEXT DEFAULT (datetime('now', 'localtime'))
+    created_at  TEXT DEFAULT (datetime('now')),
+    updated_at  TEXT DEFAULT (datetime('now'))
 );
 ```
 
@@ -338,9 +338,9 @@ CREATE TABLE supplier_materials (
     currency        TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),              -- 报价币种
     lead_days       INTEGER DEFAULT 7,                 -- 交货周期(天)
     min_order_qty   REAL,                              -- 最小起订量
-    is_preferred    INTEGER DEFAULT 0,
+    is_preferred    INTEGER DEFAULT 0,                 -- 是否首选供应商
     valid_from      TEXT,                               -- 报价有效期起始
-    valid_to        TEXT,                               -- 报价有效期截止                 -- 是否首选供应商
+    valid_to        TEXT,                               -- 报价有效期截止
     last_purchase_date TEXT,                           -- 最近采购日期
     remark          TEXT,
     created_at      TEXT    DEFAULT (datetime('now')),
@@ -484,6 +484,7 @@ CREATE TABLE inbound_orders (
     warehouse_id    INTEGER NOT NULL,                   -- 关联 warehouses.id
     inbound_type    TEXT    DEFAULT 'purchase' CHECK (inbound_type IN ('purchase', 'return', 'production', 'other')),
                                                        -- purchase=采购入库 return=退货入库 production=完工入库/退料入库 other=其他入库
+                                                       -- 当 inbound_type = 'return' 时，表示销售退货入库，由 sales_returns 流程触发自动创建，不应由用户手动创建此类型的入库单
     currency        TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
                                                        -- 币种（继承采购单币种）
     exchange_rate   REAL    DEFAULT 1,                  -- 对基准币种汇率（默认 USD）
@@ -674,6 +675,8 @@ CREATE TABLE outbound_orders (
     outbound_date   TEXT    NOT NULL,
     warehouse_id    INTEGER NOT NULL,                   -- 关联 warehouses.id
     outbound_type   TEXT    DEFAULT 'sales' CHECK (outbound_type IN ('sales', 'return', 'production', 'other')),
+                                                       -- sales=销售出库 return=退货出库 production=领料出库 other=其他出库
+                                                       -- 当 outbound_type = 'return' 时，表示采购退货出库，由 purchase_returns 流程触发自动创建
     currency        TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
                                                        -- 币种（继承销售单币种）
     exchange_rate   REAL    DEFAULT 1,                  -- 对基准币种汇率（默认 USD）
@@ -1052,7 +1055,8 @@ CREATE TABLE payables (
                                                        -- normal=正常入库应付 return_offset=退货冲减（负金额）
     order_no        TEXT,                               -- 关联单据号
     payable_date    TEXT    NOT NULL,                    -- 应付日期
-    currency        TEXT    DEFAULT 'USD',               -- 币种（继承采购单币种）
+    currency        TEXT    NOT NULL DEFAULT 'USD' CHECK(currency IN ('VND', 'CNY', 'USD')),
+                                                       -- 币种（继承采购单币种）
     exchange_rate   REAL    DEFAULT 1,                   -- 对基准币种汇率（默认 USD）
     payable_amount  INTEGER NOT NULL,                   -- 应付金额（原币，最小货币单位）
     payable_amount_base INTEGER DEFAULT 0,              -- 应付金额（基准币种折算，默认 USD）
@@ -1100,7 +1104,8 @@ CREATE TABLE receivables (
                                                        -- normal=正常出库应收 return_offset=退货冲减（负金额）
     order_no            TEXT,
     receivable_date     TEXT    NOT NULL,
-    currency            TEXT    DEFAULT 'USD',           -- 币种（继承销售单币种）
+    currency            TEXT    NOT NULL DEFAULT 'USD' CHECK(currency IN ('VND', 'CNY', 'USD')),
+                                                       -- 币种（继承销售单币种）
     exchange_rate       REAL    DEFAULT 1,               -- 对基准币种汇率（默认 USD）
     receivable_amount   INTEGER NOT NULL,                -- 应收金额（原币，最小货币单位）
     receivable_amount_base INTEGER DEFAULT 0,            -- 应收金额（基准币种折算，默认 USD）
@@ -1377,6 +1382,8 @@ INSERT INTO system_config (key, value, remark) VALUES
     ('tf_date_format', 'YYYYMMDD', '调拨单日期格式'),
     ('co_prefix', 'CO', '定制单前缀'),
     ('co_date_format', 'YYYYMMDD', '定制单日期格式'),
+    ('wo_prefix', 'WO', '工单编号前缀'),
+    ('wo_date_format', 'YYYYMMDD', '工单编号日期格式'),
     ('material_prefix', 'M', '物料编码前缀'),
     ('material_serial_start', '1', '物料编码起始值'),
     ('material_serial_digits', '4', '物料编码流水位数'),
@@ -1484,7 +1491,7 @@ migrations/
 CREATE TABLE IF NOT EXISTS schema_migrations (
   version  INTEGER PRIMARY KEY,                              -- 迁移版本号
   name     TEXT NOT NULL,                                    -- 迁移脚本名称
-  applied_at TEXT DEFAULT (datetime('now', 'localtime'))     -- 执行时间
+  applied_at TEXT DEFAULT (datetime('now'))     -- 执行时间
 );
 ```
 
