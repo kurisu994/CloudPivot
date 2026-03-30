@@ -105,6 +105,8 @@ erDiagram
 
 > **金额折算与舍入规约**：原币明细金额先按原币最小货币单位四舍五入后落库，单据头汇总金额以已舍入明细求和；折扣、运费、其他费用分别在原币口径舍入后参与应收/应付计算；所有 USD 基准金额统一由 Rust 服务层按相同公式计算并落库，前端只做格式化展示，不再独立重算。推荐公式：`base_amount = ROUND(original_amount / source_factor * exchange_rate * 100)`，其中 `source_factor` 为 `VND=1`、`CNY=100`、`USD=100`。
 
+> **毛利历史口径约定**：销售出库确认时必须同时固化标准成本快照和实际成本快照。标准成本快照来自出库当时命中的 BOM 版本及其标准成本结果；实际成本快照来自当时的库存移动平均成本。销售毛利报表统一基于出库明细上的快照字段计算，不回查当前 BOM 重算历史数据。
+
 > **数量精度规约**：数量字段继续使用 `REAL` 存储，但数量录入、导入、运算和展示必须遵循 `units.decimal_places` 约束；应用层在写入前按单位精度统一四舍五入，避免不同页面出现数量口径漂移。
 
 > **批次模型约定**：`v1.0` 对需要追溯的物料采用轻量批次模型。入库时生成 `inventory_lots` 记录；出库、退货、调拨、盘点和库存流水可回指到批次层，满足库龄分析和原单追溯要求。
@@ -115,7 +117,9 @@ erDiagram
 
 > **认证会话约定**：`users.session_version` 用于控制“记住我”本地会话失效；本地会话凭证仅允许存放于系统钥匙串/凭据管理器，不在数据库中保存明文密码或长期 token。
 
-> **关联约束策略**：核心业务链路（采购/销售/库存流水/财务来源单）建议在实际迁移脚本中启用 `FOREIGN KEY` 约束；本文档为便于阅读，DDL 主体仍以结构定义为主，字段注释中标注关联目标表，应用层仍需保留完整性校验。
+> **关联约束策略**：`v1.0` 全表**不启用数据库级 `FOREIGN KEY` 约束**。所有关联关系仅在字段注释和代码模型中表达，完整性统一由 Rust service 层校验，迁移脚本保持无外键 DDL。
+
+> **应用层完整性校验清单**：service 层至少校验关联对象存在性、单据状态合法性、删除/禁用前引用检查、业务链路来源单一致性、仓库/批次/库存可用性以及历史快照写入完整性。
 
 > **`is_enabled` 字段行为说明**：`is_enabled=0`（禁用）的基础数据记录在列表页默认隐藏，可通过筛选条件「显示全部/仅启用/仅禁用」切换查看。历史关联单据（如已有采购单引用了被禁用的供应商）中仍正常显示该记录的名称，不影响历史数据的展示和追溯。
 
@@ -687,6 +691,10 @@ CREATE TABLE outbound_order_items (
     quantity        REAL    NOT NULL,
     unit_price      INTEGER NOT NULL,                   -- 单价（最小货币单位）
     amount          INTEGER NOT NULL DEFAULT 0,         -- 金额（由应用层计算）
+    standard_cost_unit_price_snapshot INTEGER DEFAULT 0, -- 标准成本单价快照（USD，最小货币单位）
+    standard_cost_amount_snapshot INTEGER DEFAULT 0,     -- 标准成本金额快照（USD）
+    standard_cost_bom_id INTEGER,                       -- 标准成本来源 BOM（关联 bom.id，允许为空）
+    standard_cost_bom_version TEXT,                     -- 标准成本来源 BOM 版本快照
     cost_unit_price INTEGER DEFAULT 0,                  -- 实际成本单价快照（USD，最小货币单位）
     cost_amount     INTEGER DEFAULT 0,                  -- 实际成本金额快照（USD）
     remark          TEXT,
@@ -1238,7 +1246,7 @@ CREATE TABLE users (
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_enabled ON users(is_enabled);
 
--- 初始管理员账号由应用初始化逻辑写入（默认 admin，首次登录强制改密）
+-- 初始管理员账号由应用初始化逻辑写入（默认 admin / 初始密码 admin123，首次登录强制改密）
 ```
 
 #### system_config — 系统配置
@@ -1253,7 +1261,7 @@ CREATE TABLE system_config (
 
 -- 预置配置项
 INSERT INTO system_config (key, value, remark) VALUES
-    ('company_name', '', '企业名称'),
+    ('company_name', '', '企业名称（单值存储，原样打印）'),
     ('company_address', '', '企业地址'),
     ('company_phone', '', '企业电话'),
     ('company_logo', '', 'Logo路径'),
@@ -1294,8 +1302,12 @@ INSERT INTO system_config (key, value, remark) VALUES
     ('remember_session_days', '30', '记住我会话有效期(天)'),
     ('theme', 'light', '主题: light/dark'),
     ('print_language_mode', 'follow_system', '打印语言模式: follow_system/zh/vi/en/bilingual'),
+    ('print_bilingual_primary_locale', 'zh', '双语打印主语言: zh/vi/en'),
+    ('print_bilingual_secondary_locale', 'vi', '双语打印次语言: zh/vi/en'),
     ('print_paper_size', 'A4', '打印纸张: A4/A5/custom'),
-    ('print_margin_mm', '10', '打印边距(mm)'),
+    ('print_custom_width_mm', '210', '自定义纸张宽度(mm)'),
+    ('print_custom_height_mm', '297', '自定义纸张高度(mm)'),
+    ('print_margin_mm', '10', '打印统一边距(mm)'),
     ('print_show_logo', '1', '是否打印 Logo'),
     ('print_show_company_info', '1', '是否打印企业信息');
 ```
@@ -1354,7 +1366,7 @@ CREATE INDEX idx_oplog_operator ON operation_logs(operator_user_id);
 
 ### 3.1 索引策略
 
-- 所有外键字段建立索引
+- 所有关联字段建立索引
 - 常用查询条件字段建立索引（日期、状态、编码）
 - 复合查询使用覆盖索引
 
@@ -1394,7 +1406,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 ```sql
 PRAGMA journal_mode = WAL;           -- 启用 WAL 模式，提升读写并发
 PRAGMA busy_timeout = 5000;          -- 写锁等待超时 5 秒
-PRAGMA foreign_keys = OFF;           -- 不使用数据库级外键（应用层校验）
+PRAGMA foreign_keys = OFF;           -- 全表不使用数据库级外键，统一由应用层校验
 PRAGMA synchronous = NORMAL;         -- WAL 模式下 NORMAL 即可保证一致性
 PRAGMA cache_size = -8000;           -- 8MB 页面缓存
 PRAGMA temp_store = MEMORY;          -- 临时表存内存
