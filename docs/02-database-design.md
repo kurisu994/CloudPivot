@@ -431,6 +431,8 @@ CREATE TABLE purchase_order_items (
     spec            TEXT,                              -- 规格型号（可覆盖）
     unit_id         INTEGER NOT NULL,                  -- 关联 units.id
     unit_name_snapshot TEXT NOT NULL,                  -- 单位名称快照
+    conversion_rate_snapshot REAL NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
+    base_quantity   REAL    NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
     quantity        REAL    NOT NULL,                  -- 采购数量
     unit_price      INTEGER NOT NULL,                  -- 单价（最小货币单位）
     amount          INTEGER NOT NULL DEFAULT 0,         -- 金额（由应用层计算: 数量 × 单价）
@@ -459,7 +461,11 @@ CREATE TABLE inbound_orders (
     currency        TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
                                                        -- 币种（继承采购单币种）
     exchange_rate   REAL    DEFAULT 1,                  -- 对基准币种汇率（默认 USD）
-    total_amount    INTEGER DEFAULT 0,                  -- 合计金额（最小货币单位）
+    total_amount    INTEGER DEFAULT 0,                  -- 合计金额（最小货币单位，仅明细行合计）
+    allocated_discount    INTEGER DEFAULT 0,            -- 按比例分摊的采购单折扣金额（最小货币单位）
+    allocated_freight     INTEGER DEFAULT 0,            -- 按比例分摊的采购单运费（最小货币单位）
+    allocated_other       INTEGER DEFAULT 0,            -- 按比例分摊的采购单其他费用（最小货币单位）
+    payable_amount        INTEGER DEFAULT 0,            -- 应付金额 = total_amount - allocated_discount + allocated_freight + allocated_other
     status          TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'confirmed')),
     remark          TEXT,
     created_by_user_id  INTEGER,                        -- 创建人（关联 users.id）
@@ -484,6 +490,8 @@ CREATE TABLE inbound_order_items (
     material_id     INTEGER NOT NULL,                   -- 关联 materials.id
     unit_id         INTEGER NOT NULL,                  -- 关联 units.id
     unit_name_snapshot TEXT NOT NULL,                  -- 单位名称快照
+    conversion_rate_snapshot REAL NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
+    base_quantity   REAL    NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
     quantity        REAL    NOT NULL,                   -- 入库数量
     unit_price      INTEGER NOT NULL,                   -- 单价（最小货币单位）
     amount          INTEGER NOT NULL DEFAULT 0,         -- 金额（由应用层计算）
@@ -535,6 +543,8 @@ CREATE TABLE purchase_return_items (
     material_id     INTEGER NOT NULL,                   -- 关联 materials.id
     unit_id         INTEGER NOT NULL,                  -- 关联 units.id
     unit_name_snapshot TEXT NOT NULL,                  -- 单位名称快照
+    conversion_rate_snapshot REAL NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
+    base_quantity   REAL    NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
     quantity        REAL    NOT NULL,
     unit_price      INTEGER NOT NULL,                   -- 单价（最小货币单位）
     amount          INTEGER NOT NULL DEFAULT 0,         -- 金额（由应用层计算）
@@ -601,6 +611,8 @@ CREATE TABLE sales_order_items (
     spec            TEXT,
     unit_id         INTEGER NOT NULL,                  -- 关联 units.id
     unit_name_snapshot TEXT NOT NULL,                  -- 单位名称快照
+    conversion_rate_snapshot REAL NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
+    base_quantity   REAL    NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
     quantity        REAL    NOT NULL,
     unit_price      INTEGER NOT NULL,                  -- 单价（最小货币单位）
     discount_rate   REAL    DEFAULT 0,                 -- 行折扣率(%)，0=无折扣，10=打九折
@@ -629,7 +641,11 @@ CREATE TABLE outbound_orders (
     currency        TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
                                                        -- 币种（继承销售单币种）
     exchange_rate   REAL    DEFAULT 1,                  -- 对基准币种汇率（默认 USD）
-    total_amount    INTEGER DEFAULT 0,                  -- 合计金额（最小货币单位）
+    total_amount    INTEGER DEFAULT 0,                  -- 合计金额（最小货币单位，仅明细行合计）
+    allocated_discount    INTEGER DEFAULT 0,            -- 按比例分摊的销售单折扣金额（最小货币单位）
+    allocated_freight     INTEGER DEFAULT 0,            -- 按比例分摊的销售单运费（最小货币单位）
+    allocated_other       INTEGER DEFAULT 0,            -- 按比例分摊的销售单其他费用（最小货币单位）
+    receivable_amount     INTEGER DEFAULT 0,            -- 应收金额 = total_amount - allocated_discount + allocated_freight + allocated_other
     status          TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'confirmed')),
     remark          TEXT,
     created_by_user_id  INTEGER,                        -- 创建人（关联 users.id）
@@ -656,6 +672,8 @@ CREATE TABLE outbound_order_items (
     material_id     INTEGER NOT NULL,                   -- 关联 materials.id
     unit_id         INTEGER NOT NULL,                  -- 关联 units.id
     unit_name_snapshot TEXT NOT NULL,                  -- 单位名称快照
+    conversion_rate_snapshot REAL NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
+    base_quantity   REAL    NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
     quantity        REAL    NOT NULL,
     unit_price      INTEGER NOT NULL,                   -- 单价（最小货币单位）
     amount          INTEGER NOT NULL DEFAULT 0,         -- 金额（由应用层计算）
@@ -711,6 +729,8 @@ CREATE TABLE sales_return_items (
     material_id     INTEGER NOT NULL,                   -- 关联 materials.id
     unit_id         INTEGER NOT NULL,                  -- 关联 units.id
     unit_name_snapshot TEXT NOT NULL,                  -- 单位名称快照
+    conversion_rate_snapshot REAL NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
+    base_quantity   REAL    NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
     quantity        REAL    NOT NULL,
     unit_price      INTEGER NOT NULL,                   -- 单价（最小货币单位）
     amount          INTEGER NOT NULL DEFAULT 0,         -- 金额（由应用层计算）
@@ -949,6 +969,8 @@ CREATE TABLE transfer_items (
     material_id     INTEGER NOT NULL,                   -- 关联 materials.id
     unit_id         INTEGER NOT NULL,                  -- 关联 units.id
     unit_name_snapshot TEXT NOT NULL,                  -- 单位名称快照
+    conversion_rate_snapshot REAL NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
+    base_quantity   REAL    NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
     quantity        REAL    NOT NULL,
     remark          TEXT
 );
@@ -968,6 +990,9 @@ CREATE TABLE payables (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     supplier_id     INTEGER NOT NULL,                   -- 关联 suppliers.id
     inbound_id      INTEGER,                            -- 关联入库单（关联 inbound_orders.id）
+    return_id       INTEGER,                            -- 关联采购退货单（关联 purchase_returns.id，仅退货调整记录）
+    adjustment_type TEXT    DEFAULT 'normal' CHECK (adjustment_type IN ('normal', 'return_offset')),
+                                                       -- normal=正常入库应付 return_offset=退货冲减（负金额）
     order_no        TEXT,                               -- 关联单据号
     payable_date    TEXT    NOT NULL,                    -- 应付日期
     currency        TEXT    DEFAULT 'USD',               -- 币种（继承采购单币种）
@@ -1009,6 +1034,9 @@ CREATE TABLE receivables (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_id         INTEGER NOT NULL,                -- 关联 customers.id
     outbound_id         INTEGER,                        -- 关联 outbound_orders.id
+    return_id           INTEGER,                        -- 关联销售退货单（关联 sales_returns.id，仅退货调整记录）
+    adjustment_type     TEXT    DEFAULT 'normal' CHECK (adjustment_type IN ('normal', 'return_offset')),
+                                                       -- normal=正常出库应收 return_offset=退货冲减（负金额）
     order_no            TEXT,
     receivable_date     TEXT    NOT NULL,
     currency            TEXT    DEFAULT 'USD',           -- 币种（继承销售单币种）
