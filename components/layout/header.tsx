@@ -2,21 +2,64 @@
 
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
-import { Bell, Search, Sun, Moon, User } from "lucide-react";
+import { Bell, Sun, Moon, User, ChevronRight } from "lucide-react";
+import { usePathname, Link } from "@/i18n/navigation";
+import { navConfig, type NavItem } from "@/config/nav";
 import { LocaleSwitcher } from "./locale-switcher";
+import React from "react";
+
+/** 根据当前路径查找面包屑链 */
+function useBreadcrumbs(): { titleKey: string; href?: string }[] {
+  const pathname = usePathname();
+
+  // 首页
+  if (pathname === "/" || pathname === "") {
+    return [{ titleKey: "nav.dashboard" }];
+  }
+
+  // 在导航树中查找匹配项
+  for (const item of navConfig) {
+    // 无子菜单 — 直接匹配
+    if (!item.children) {
+      const href = item.href || "/";
+      if (pathname === href) {
+        return [
+          { titleKey: "nav.dashboard", href: "/" },
+          { titleKey: item.titleKey },
+        ];
+      }
+      continue;
+    }
+
+    // 有子菜单 — 在 children 中查找
+    for (const child of item.children) {
+      if (pathname === child.href) {
+        return [
+          { titleKey: "nav.dashboard", href: "/" },
+          { titleKey: item.titleKey },
+          { titleKey: child.titleKey },
+        ];
+      }
+    }
+  }
+
+  // 未匹配到导航项 — 仅显示首页
+  return [{ titleKey: "nav.dashboard", href: "/" }];
+}
 
 /**
  * 顶部工具栏组件
  *
- * 包含搜索框、语言切换、主题切换、通知和用户信息
+ * 包含动态面包屑、语言切换、主题切换、通知和用户信息
  */
 interface HeaderProps {
   onToggleSidebar?: () => void;
 }
 
 export function Header({ onToggleSidebar }: HeaderProps) {
-  const t = useTranslations("header");
+  const t = useTranslations();
   const { theme, setTheme } = useTheme();
+  const breadcrumbs = useBreadcrumbs();
 
   return (
     <header className="border-border bg-white supports-backdrop-filter:bg-white/95 sticky top-0 z-20 flex h-14 items-center justify-between border-b px-4 backdrop-blur dark:bg-slate-950">
@@ -32,13 +75,30 @@ export function Header({ onToggleSidebar }: HeaderProps) {
             <line x1="4" y1="18" x2="20" y2="18"></line>
           </svg>
         </button>
-        <div className="hidden items-center gap-2 text-sm text-slate-500 dark:text-slate-400 md:flex">
-          <span className="hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer">首页</span>
-          <span className="text-slate-300 dark:text-slate-600">/</span>
-          <span className="hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer">基础数据</span>
-          <span className="text-slate-300 dark:text-slate-600">/</span>
-          <span className="font-semibold text-slate-800 dark:text-slate-200">物料管理</span>
-        </div>
+        <nav className="hidden items-center gap-1.5 text-sm md:flex">
+          {breadcrumbs.map((crumb, idx) => {
+            const isLast = idx === breadcrumbs.length - 1;
+            return (
+              <React.Fragment key={crumb.titleKey}>
+                {idx > 0 && (
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600" />
+                )}
+                {isLast ? (
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {t(crumb.titleKey)}
+                  </span>
+                ) : (
+                  <Link
+                    href={crumb.href || "/"}
+                    className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                  >
+                    {t(crumb.titleKey)}
+                  </Link>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </nav>
       </div>
 
       {/* 右侧工具区 */}

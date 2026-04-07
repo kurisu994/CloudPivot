@@ -172,8 +172,8 @@ function NavMenuItem({
                     className={cn(
                       "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors",
                       childActive
-                        ? "font-bold text-[#43619f] dark:text-[#6b85c1]"
-                        : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+                        ? "bg-[#43619f]/10 font-bold text-[#43619f] dark:bg-[#6b85c1]/15 dark:text-[#6b85c1]"
+                        : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                     )}
                   >
                     <ChildIcon className="h-3.5 w-3.5 shrink-0" />
