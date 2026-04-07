@@ -13,10 +13,14 @@ export const SystemConfigKeys = {
   COMPANY_PHONE: "company_phone",
   COMPANY_LOGO: "company_logo",
   COMPANY_TAX_ID: "company_tax_id",
+  COMPANY_CONTACT_NAME: "company_contact_name",
+  COMPANY_EMAIL: "company_email",
+  COMPANY_BUSINESS_TYPE: "company_business_type",
 
   // 国际化
   BASE_CURRENCY: "base_currency",
   DEFAULT_LOCALE: "default_locale",
+  TIMEZONE: "timezone",
 
   // 单据编号前缀和格式
   PO_PREFIX: "po_prefix",

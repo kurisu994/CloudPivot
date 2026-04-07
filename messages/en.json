@@ -125,6 +125,42 @@
     "loginFailed": "Login failed",
     "hint": "Hint: Default account {username} / Default password {password}. Please change your password after first login."
   },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "companyInfo": "Company Info",
+      "encodingRules": "Encoding Rules",
+      "inventoryRules": "Inventory Rules",
+      "printSettings": "Print Settings",
+      "exchangeRate": "Exchange Rates",
+      "dataManagement": "Data Management",
+      "operationLogs": "Operation Logs",
+      "appearance": "Appearance"
+    },
+    "companyInfo": {
+      "basicInfo": "Basic Info",
+      "editProfile": "Edit Profile",
+      "companyName": "Company Name",
+      "taxId": "Tax ID / Credit Code",
+      "companyAddress": "Company Address",
+      "businessType": "Business Type",
+      "systemDefaults": "System Defaults",
+      "defaultLanguage": "Default Language",
+      "baseCurrency": "Base Currency",
+      "timezone": "Timezone",
+      "contactInfo": "Contact Info",
+      "contactName": "Contact Person",
+      "phone": "Phone Number",
+      "email": "Email Address",
+      "brandAssets": "Brand Assets",
+      "companyLogo": "Company Logo",
+      "logoHintSize": "Recommended size 512x512px",
+      "logoHintFormat": "Supports PNG, SVG or JPG formats",
+      "changeLogo": "Change Asset",
+      "saveChanges": "Save Changes",
+      "notSet": "Not Set"
+    }
+  },
   "changePassword": {
     "title": "Change Password",
     "subtitle": "For your account security, please reset your password on first login",

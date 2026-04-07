@@ -125,6 +125,42 @@
     "loginFailed": "Đăng nhập thất bại",
     "hint": "Gợi ý: Tài khoản mặc định {username} / Mật khẩu mặc định {password}. Vui lòng đổi mật khẩu sau lần đăng nhập đầu tiên."
   },
+  "settings": {
+    "title": "Cài đặt hệ thống",
+    "tabs": {
+      "companyInfo": "Thông tin công ty",
+      "encodingRules": "Quy tắc mã hóa",
+      "inventoryRules": "Quy tắc kho",
+      "printSettings": "Cài đặt in",
+      "exchangeRate": "Quản lý tỷ giá",
+      "dataManagement": "Quản lý dữ liệu",
+      "operationLogs": "Nhật ký thao tác",
+      "appearance": "Giao diện"
+    },
+    "companyInfo": {
+      "basicInfo": "Thông tin cơ bản",
+      "editProfile": "Chỉnh sửa",
+      "companyName": "Tên công ty",
+      "taxId": "Mã số thuế",
+      "companyAddress": "Địa chỉ công ty",
+      "businessType": "Loại hình kinh doanh",
+      "systemDefaults": "Giá trị mặc định",
+      "defaultLanguage": "Ngôn ngữ mặc định",
+      "baseCurrency": "Tiền tệ cơ sở",
+      "timezone": "Múi giờ",
+      "contactInfo": "Thông tin liên hệ",
+      "contactName": "Người liên hệ",
+      "phone": "Số điện thoại",
+      "email": "Địa chỉ email",
+      "brandAssets": "Tài sản thương hiệu",
+      "companyLogo": "Logo công ty",
+      "logoHintSize": "Kích thước đề xuất 512x512px",
+      "logoHintFormat": "Hỗ trợ định dạng PNG, SVG hoặc JPG",
+      "changeLogo": "Thay đổi tài sản",
+      "saveChanges": "Lưu thay đổi",
+      "notSet": "Chưa đặt"
+    }
+  },
   "changePassword": {
     "title": "Đổi mật khẩu",
     "subtitle": "Để bảo mật tài khoản, vui lòng đặt lại mật khẩu khi đăng nhập lần đầu",

@@ -125,6 +125,42 @@
     "loginFailed": "登录失败",
     "hint": "提示：初始账号 {username} / 初始密码 {password}，首次登录后需立即修改密码。"
   },
+  "settings": {
+    "title": "系统设置",
+    "tabs": {
+      "companyInfo": "企业信息",
+      "encodingRules": "编码规则",
+      "inventoryRules": "库存规则",
+      "printSettings": "打印设置",
+      "exchangeRate": "汇率管理",
+      "dataManagement": "数据管理",
+      "operationLogs": "操作日志",
+      "appearance": "外观设置"
+    },
+    "companyInfo": {
+      "basicInfo": "基本信息",
+      "editProfile": "编辑资料",
+      "companyName": "企业名称",
+      "taxId": "统一社会信用代码",
+      "companyAddress": "企业地址",
+      "businessType": "业务类型",
+      "systemDefaults": "系统默认值",
+      "defaultLanguage": "默认语言",
+      "baseCurrency": "基础币种",
+      "timezone": "时区设置",
+      "contactInfo": "联系人信息",
+      "contactName": "联系人",
+      "phone": "电话号码",
+      "email": "电子邮箱",
+      "brandAssets": "品牌资产",
+      "companyLogo": "企业 Logo",
+      "logoHintSize": "推荐尺寸 512x512px",
+      "logoHintFormat": "支持 PNG, SVG 或 JPG 格式",
+      "changeLogo": "更换资产",
+      "saveChanges": "保存修改",
+      "notSet": "未设置"
+    }
+  },
   "changePassword": {
     "title": "首次修改密码",
     "subtitle": "为了您的账户安全，初次登录请重新设置密码",
