@@ -1,26 +1,31 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pie, PieChart, Label } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
-const inventoryData = [
-  { name: "实木板材", value: 1200000, fill: "#294985" },
-  { name: "成品家具", value: 980000, fill: "#43619f" },
-  { name: "五金配件", value: 750000, fill: "#944a00" },
-  { name: "其他耗材", value: 520000, fill: "#cbd5e1" },
-];
-
-const inventoryConfig = {
-  value: { label: "资产预估 (USD)" },
-} satisfies ChartConfig;
-
+/** 库存分布环形图 */
 export function InventoryDonut({ className }: { className?: string }) {
+  const t = useTranslations("dashboard");
+
+  // mock 数据（将来由后端替换）
+  const inventoryData = [
+    { name: "实木板材", value: 1200000, fill: "#294985" },
+    { name: "成品家具", value: 980000, fill: "#43619f" },
+    { name: "五金配件", value: 750000, fill: "#944a00" },
+    { name: "其他耗材", value: 520000, fill: "#cbd5e1" },
+  ];
+
+  const inventoryConfig = {
+    value: { label: t("assetEstimate") },
+  } satisfies ChartConfig;
+
   return (
     <Card className={`rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 ${className || ""}`}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-100">
-          库存分布 (Inventory Distribution)
+          {t("stockDistribution")}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center justify-center p-0 pb-6">
@@ -48,7 +53,7 @@ export function InventoryDonut({ className }: { className?: string }) {
                           100%
                         </tspan>
                         <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 20} className="fill-slate-500 dark:fill-slate-400 text-xs font-medium">
-                          总库存
+                          {t("totalStock")}
                         </tspan>
                       </text>
                     );

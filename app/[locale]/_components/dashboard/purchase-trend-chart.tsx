@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -16,18 +17,21 @@ const purchaseData = [
   { date: "03-31", value: 2800000000 },
 ];
 
-const purchaseConfig = {
-  value: { label: "采购额 (VND ₫)", color: "#944a00" },
-} satisfies ChartConfig;
-
+/** 近30天采购趋势面积图 */
 export function PurchaseTrendChart({ className }: { className?: string }) {
+  const t = useTranslations("dashboard");
+
+  const purchaseConfig = {
+    value: { label: t("purchaseAmount"), color: "#944a00" },
+  } satisfies ChartConfig;
+
   return (
     <Card className={`rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 mt-6 ${className || ""}`}>
       <CardHeader className="flex flex-row items-center justify-between pb-6">
         <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-100">
-          近30天采购趋势 (Purchase Trend)
+          {t("purchaseTrend")}
         </CardTitle>
-        <span className="text-xs text-slate-400">单位: 越南盾 (₫)</span>
+        <span className="text-xs text-slate-400">{t("unitVND")}</span>
       </CardHeader>
       <CardContent>
         <ChartContainer config={purchaseConfig} className="h-[250px] min-h-[250px] w-full min-w-full">

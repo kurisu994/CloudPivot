@@ -21,7 +21,7 @@ dev-web:
 build:
     pnpm tauri build
 
-# 仅构建 Next.js 前端
+# 仅构建 Next.js 前端（SSG → out/）
 build-web:
     pnpm build
 
@@ -32,23 +32,28 @@ build-debug:
 # === 代码检查 ===
 
 # 运行全部代码检查（前端 + 后端）
-lint: lint-web lint-rust
+check: lint-web lint-rust
 
-# ESLint + TypeScript 类型检查
+# ESLint 检查
 lint-web:
     pnpm lint
-    pnpm exec tsc --noEmit
+
+# TypeScript 类型检查
+typecheck:
+    pnpm typecheck
 
 # cargo clippy
 lint-rust:
     cd src-tauri && cargo clippy --all-targets --all-features -- -D warnings
 
+# === 格式化 ===
+
 # 格式化全部代码（prettier + cargo fmt）
 fmt: fmt-web fmt-rust
 
-# prettier 格式化前端代码
+# prettier 格式化前端代码（使用项目 .prettierrc 配置）
 fmt-web:
-    pnpm exec prettier --write "src/**/*.{ts,tsx,css,json}"
+    pnpm format
 
 # cargo fmt 格式化 Rust 代码
 fmt-rust:
@@ -56,7 +61,7 @@ fmt-rust:
 
 # === 测试 ===
 
-# 运行全部测试（前端 + 后端）
+# 运行全部测试
 test: test-rust
 
 # cargo test
@@ -77,22 +82,49 @@ clean:
 
 # === 工具 ===
 
-# 检查翻译文件完整性（对比 en-US 和 zh-CN 的 key）
+# 安装 shadcn/ui 组件（示例：just ui button）
+ui component:
+    pnpm shadcn add {{component}}
+
+# 检查翻译文件完整性（对比 zh / en / vi 的 key 是否一致）
 i18n-check:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    EN_KEYS=$(cat src/i18n/locales/en-US.json | python3 -c "import sys,json; d=json.load(sys.stdin); keys=set(); [keys.update([f'{k}.{sk}' for sk in v]) for k,v in d.items()]; print('\n'.join(sorted(keys)))")
-    ZH_KEYS=$(cat src/i18n/locales/zh-CN.json | python3 -c "import sys,json; d=json.load(sys.stdin); keys=set(); [keys.update([f'{k}.{sk}' for sk in v]) for k,v in d.items()]; print('\n'.join(sorted(keys)))")
-    MISSING_IN_ZH=$(comm -23 <(echo "$EN_KEYS") <(echo "$ZH_KEYS"))
-    MISSING_IN_EN=$(comm -13 <(echo "$EN_KEYS") <(echo "$ZH_KEYS"))
-    if [ -n "$MISSING_IN_ZH" ]; then
-        echo "⚠️  Missing in zh-CN:"
-        echo "$MISSING_IN_ZH" | sed 's/^/  /'
-    fi
-    if [ -n "$MISSING_IN_EN" ]; then
-        echo "⚠️  Missing in en-US:"
-        echo "$MISSING_IN_EN" | sed 's/^/  /'
-    fi
-    if [ -z "$MISSING_IN_ZH" ] && [ -z "$MISSING_IN_EN" ]; then
-        echo "✅ All translation keys are in sync"
-    fi
+    #!/usr/bin/env node
+    const fs = require("fs");
+    const path = require("path");
+    const dir = path.join(process.cwd(), "messages");
+    const locales = ["zh", "en", "vi"];
+    // 递归提取所有叶子节点的 key 路径
+    function flatKeys(obj, prefix = "") {
+      return Object.entries(obj).flatMap(([k, v]) => {
+        const key = prefix ? `${prefix}.${k}` : k;
+        return typeof v === "object" && v !== null ? flatKeys(v, key) : [key];
+      });
+    }
+    const keyMap = {};
+    for (const loc of locales) {
+      const file = path.join(dir, `${loc}.json`);
+      const data = JSON.parse(fs.readFileSync(file, "utf-8"));
+      keyMap[loc] = new Set(flatKeys(data));
+    }
+    // 以 zh 为基准进行对比
+    const base = "zh";
+    const baseKeys = keyMap[base];
+    let hasIssue = false;
+    for (const loc of locales) {
+      if (loc === base) continue;
+      const missing = [...baseKeys].filter(k => !keyMap[loc].has(k));
+      const extra = [...keyMap[loc]].filter(k => !baseKeys.has(k));
+      if (missing.length) {
+        console.log(`⚠️  ${loc}.json 缺失（相对 ${base}）:`);
+        missing.forEach(k => console.log(`  - ${k}`));
+        hasIssue = true;
+      }
+      if (extra.length) {
+        console.log(`⚠️  ${loc}.json 多余（相对 ${base}）:`);
+        extra.forEach(k => console.log(`  + ${k}`));
+        hasIssue = true;
+      }
+    }
+    if (!hasIssue) {
+      console.log("✅ 所有翻译文件 key 保持一致");
+    }

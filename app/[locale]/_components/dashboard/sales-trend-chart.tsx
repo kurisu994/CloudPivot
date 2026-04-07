@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -11,19 +12,22 @@ const salesData = [
   { week: "Week 4", current: 680000, previous: 420000 },
 ];
 
-const salesConfig = {
-  current: { label: "当前周期", color: "#294985" },
-  previous: { label: "上一个周期", color: "#6b85c1" },
-} satisfies ChartConfig;
-
+/** 近30天销售趋势柱状图 */
 export function SalesTrendChart({ className }: { className?: string }) {
+  const t = useTranslations("dashboard");
+
+  const salesConfig = {
+    current: { label: t("currentPeriod"), color: "#294985" },
+    previous: { label: t("previousPeriod"), color: "#6b85c1" },
+  } satisfies ChartConfig;
+
   return (
     <Card className={`rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 ${className || ""}`}>
       <CardHeader className="flex flex-row items-center justify-between pb-6">
         <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-100">
-          近30天销售趋势 (Sales Trend)
+          {t("salesTrend")}
         </CardTitle>
-        <span className="text-xs text-slate-400">单位: USD</span>
+        <span className="text-xs text-slate-400">{t("unitUSD")}</span>
       </CardHeader>
       <CardContent>
         <ChartContainer config={salesConfig} className="h-[250px] min-h-[250px] w-full min-w-full">
