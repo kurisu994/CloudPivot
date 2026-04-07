@@ -263,6 +263,8 @@
       "lightThemeTag": "Classic Light",
       "darkTheme": "Dark Theme",
       "darkThemeTag": "Modern Industrial",
+      "systemTheme": "System Theme",
+      "systemThemeTag": "Auto Match",
       "displayPreferences": "Display Preferences",
       "compactListView": "Compact List View",
       "compactListViewDesc": "Reduce row height to display more data, ideal for high-density data management.",

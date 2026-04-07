@@ -264,6 +264,8 @@
       "lightThemeTag": "Classic Light",
       "darkTheme": "深色主题",
       "darkThemeTag": "Modern Industrial",
+      "systemTheme": "跟随系统",
+      "systemThemeTag": "Auto Match",
       "displayPreferences": "显示首选项",
       "compactListView": "紧凑列表视图",
       "compactListViewDesc": "减小行高以显示更多数据，适用于高密度数据管理。",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
+
 import { Switch } from "@/components/ui/switch";
 import { Moon, Eye, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,7 @@ import { useState } from "react";
  */
 function ThemeModeSection() {
   const t = useTranslations("settings.appearance");
-  const [selectedTheme, setSelectedTheme] = useState<"light" | "dark">("light");
+  const [selectedTheme, setSelectedTheme] = useState<"light" | "dark" | "system">("system");
 
   return (
     <section className="flex flex-col gap-8 rounded-xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-950">
@@ -112,6 +112,59 @@ function ThemeModeSection() {
             </div>
           </div>
         </div>
+
+        {/* 跟随系统主题卡片 */}
+        <div
+          className={cn(
+            "group cursor-pointer transition-opacity",
+            selectedTheme === "system"
+              ? "opacity-100"
+              : "opacity-60 hover:opacity-100"
+          )}
+          onClick={() => setSelectedTheme("system")}
+        >
+          <div
+            className={cn(
+              "relative overflow-hidden rounded-xl border-2 transition-all shadow-md bg-slate-50 dark:bg-slate-900",
+              selectedTheme === "system"
+                ? "border-primary"
+                : "border-transparent hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-600"
+            )}
+          >
+            {/* Background Gradient Layer */}
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,#f8fafc_50%,#0f172a_50%)] dark:bg-[linear-gradient(135deg,#0f172a_50%,#0f172a_50%)]" />
+
+            {/* 预览区域 */}
+            <div className="relative z-10 flex h-40 w-full flex-col gap-3 p-4">
+              <div className="h-5 w-2/3 rounded-md border border-slate-200/80 bg-white/80 shadow-sm backdrop-blur-sm" />
+              <div className="grid flex-1 grid-cols-3 gap-3">
+                <div className="rounded-md border border-slate-200/80 bg-white/80 shadow-sm backdrop-blur-sm" />
+                <div className="relative rounded-md border border-slate-400/30 bg-slate-400/10 shadow-sm backdrop-blur-sm overflow-hidden">
+                  <div className="absolute inset-0 bg-linear-to-br from-white/20 to-slate-900/20" />
+                </div>
+                <div className="rounded-md border border-slate-700/80 bg-slate-800/80 shadow-sm backdrop-blur-sm" />
+              </div>
+            </div>
+            {/* 标签区域 */}
+            <div className="relative z-10 flex items-center justify-between border-t border-slate-200/50 bg-white/90 p-4 backdrop-blur-md dark:border-slate-800/50 dark:bg-slate-900/90">
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  {selectedTheme === "system" 
+                    ? t("systemTheme") + " (" + t("lightThemeCurrent").split("(")[1] // mock translated "(当前)"
+                    : t("systemTheme")}
+                </span>
+                <span className="text-[11px] font-medium uppercase tracking-tighter text-slate-500">
+                  {t("systemThemeTag")}
+                </span>
+              </div>
+              {selectedTheme === "system" ? (
+                <CheckCircle2 className="size-6 fill-primary text-white" />
+              ) : (
+                <div className="h-6 w-6 rounded-full border-2 border-slate-300" />
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -185,18 +238,7 @@ function DisplayPreferencesSection() {
         </div>
       </div>
 
-      {/* 底部操作按钮 */}
-      <div className="flex justify-end gap-3 border-t border-slate-50 pt-6 dark:border-slate-800">
-        <Button
-          variant="outline"
-          className="px-6 font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
-        >
-          {t("cancelChanges")}
-        </Button>
-        <Button className="bg-primary px-8 font-bold text-white shadow-sm hover:opacity-90 transition-opacity">
-          {t("saveConfig")}
-        </Button>
-      </div>
+
     </section>
   );
 }
