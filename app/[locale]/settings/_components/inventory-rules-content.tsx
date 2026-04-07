@@ -50,7 +50,10 @@ function DefaultWarehouseMapping() {
                 {t("rawMaterials")}
               </td>
               <td className="px-6 py-4">
-                <Select defaultValue="raw">
+                <Select defaultValue="raw" items={[
+                  { value: "raw", label: "原材料仓" },
+                  { value: "outsource", label: "委外仓" }
+                ]}>
                   <SelectTrigger className="w-full max-w-[240px] h-10 bg-slate-50 dark:bg-slate-900/50">
                     <SelectValue />
                   </SelectTrigger>
@@ -70,7 +73,10 @@ function DefaultWarehouseMapping() {
                 {t("semiFinished")}
               </td>
               <td className="px-6 py-4">
-                <Select defaultValue="semi">
+                <Select defaultValue="semi" items={[
+                  { value: "semi", label: "半成品仓" },
+                  { value: "workshop", label: "车间仓" }
+                ]}>
                   <SelectTrigger className="w-full max-w-[240px] h-10 bg-slate-50 dark:bg-slate-900/50">
                     <SelectValue />
                   </SelectTrigger>
@@ -90,7 +96,10 @@ function DefaultWarehouseMapping() {
                 {t("finishedGoods")}
               </td>
               <td className="px-6 py-4">
-                <Select defaultValue="finished">
+                <Select defaultValue="finished" items={[
+                  { value: "finished", label: "成品仓" },
+                  { value: "inspect", label: "待检仓" }
+                ]}>
                   <SelectTrigger className="w-full max-w-[240px] h-10 bg-slate-50 dark:bg-slate-900/50">
                     <SelectValue />
                   </SelectTrigger>
@@ -144,7 +153,11 @@ function BatchStrategySection() {
             <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               {t("outboundStrategy")}
             </Label>
-            <Select defaultValue="fifo">
+            <Select defaultValue="fifo" items={[
+              { value: "fifo", label: t("fifo") },
+              { value: "lifo", label: t("lifo") },
+              { value: "fefo", label: t("fefo") }
+            ]}>
               <SelectTrigger className="bg-slate-50 dark:bg-slate-900/50 h-10">
                 <SelectValue />
               </SelectTrigger>
@@ -161,7 +174,10 @@ function BatchStrategySection() {
             <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               {t("reservedBatchStrategy")}
             </Label>
-            <Select defaultValue="fifo_reserve">
+            <Select defaultValue="fifo_reserve" items={[
+              { value: "fifo_reserve", label: t("fifoReserve") },
+              { value: "manual_reserve", label: t("manualReserve") }
+            ]}>
               <SelectTrigger className="bg-slate-50 dark:bg-slate-900/50 h-10">
                 <SelectValue />
               </SelectTrigger>

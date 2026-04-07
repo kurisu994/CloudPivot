@@ -47,7 +47,11 @@ function PrintLanguageCard() {
           <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             {t("languageMode")}
           </Label>
-          <Select defaultValue="system">
+          <Select defaultValue="system" items={[
+            { value: "system", label: t("systemDefault") },
+            { value: "single", label: t("singleLanguage") },
+            { value: "bilingual", label: t("bilingual") }
+          ]}>
             <SelectTrigger className="bg-slate-50 dark:bg-slate-900/50 h-10">
               <SelectValue />
             </SelectTrigger>
@@ -62,7 +66,11 @@ function PrintLanguageCard() {
           <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             {t("primaryLanguage")}
           </Label>
-          <Select defaultValue="zh">
+          <Select defaultValue="zh" items={[
+            { value: "zh", label: "简体中文" },
+            { value: "en", label: "English" },
+            { value: "vi", label: "Tiếng Việt" }
+          ]}>
             <SelectTrigger className="bg-slate-50 dark:bg-slate-900/50 h-10">
               <SelectValue />
             </SelectTrigger>
@@ -77,7 +85,11 @@ function PrintLanguageCard() {
           <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             {t("secondaryLanguage")}
           </Label>
-          <Select defaultValue="en">
+          <Select defaultValue="en" items={[
+            { value: "en", label: "English" },
+            { value: "vi", label: "Tiếng Việt" },
+            { value: "none", label: "无" }
+          ]}>
             <SelectTrigger className="bg-slate-50 dark:bg-slate-900/50 h-10">
               <SelectValue />
             </SelectTrigger>
@@ -325,7 +337,7 @@ function RealtimePreviewModule() {
         </div>
 
         {/* Stamp Overlay */}
-        <div className="absolute right-8 bottom-10 flex h-12 w-24 rotate-[15deg] items-center justify-center rounded-full border-2 border-dashed border-red-200 opacity-40">
+        <div className="absolute right-8 bottom-10 flex h-12 w-24 rotate-15 items-center justify-center rounded-full border-2 border-dashed border-red-200 opacity-40">
           <span className="text-[8px] font-bold tracking-widest text-red-500 uppercase">
             {t("stamped")}
           </span>

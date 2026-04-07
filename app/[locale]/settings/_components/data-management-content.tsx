@@ -114,7 +114,11 @@ function DataBackupSection() {
                 <Label className="mb-1 block text-[11px] font-bold uppercase text-slate-400">
                   {t("backupCycle")}
                 </Label>
-                <Select defaultValue="daily">
+                <Select defaultValue="daily" items={[
+                  { value: "daily", label: "每天 (04:00)" },
+                  { value: "weekly", label: "每周" },
+                  { value: "monthly", label: "每月" }
+                ]}>
                   <SelectTrigger className="bg-white dark:bg-slate-950">
                     <SelectValue />
                   </SelectTrigger>

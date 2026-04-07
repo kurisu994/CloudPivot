@@ -134,7 +134,11 @@ function MaterialBatchForm() {
           <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             {t("materialSeqLength")}
           </Label>
-          <Select defaultValue="5">
+          <Select defaultValue="5" items={[
+            { value: "5", label: `5 ${t("digits")}` },
+            { value: "6", label: `6 ${t("digits")}` },
+            { value: "8", label: `8 ${t("digits")}` }
+          ]}>
             <SelectTrigger className="bg-slate-50 dark:bg-slate-900/50">
               <SelectValue />
             </SelectTrigger>
