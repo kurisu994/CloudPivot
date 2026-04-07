@@ -57,7 +57,15 @@
     "purchaseReport": "Purchase Report",
     "salesReport": "Sales Report",
     "inventoryReport": "Inventory Report",
-    "settings": "Settings"
+    "settings": "Settings",
+    "companyInfo": "Company Info",
+    "encodingRules": "Encoding Rules",
+    "inventoryRules": "Inventory Rules",
+    "printSettings": "Print Settings",
+    "exchangeRate": "Exchange Rate",
+    "dataManagement": "Data Management",
+    "operationLogs": "Operation Logs",
+    "appearance": "Appearance"
   },
   "header": {
     "search": "Search features, pages...",
@@ -127,16 +135,6 @@
   },
   "settings": {
     "title": "Settings",
-    "tabs": {
-      "companyInfo": "Company Info",
-      "encodingRules": "Encoding Rules",
-      "inventoryRules": "Inventory Rules",
-      "printSettings": "Print Settings",
-      "exchangeRate": "Exchange Rates",
-      "dataManagement": "Data Management",
-      "operationLogs": "Operation Logs",
-      "appearance": "Appearance"
-    },
     "companyInfo": {
       "basicInfo": "Basic Info",
       "editProfile": "Edit Profile",

@@ -269,9 +269,9 @@ function BrandAssetsCard() {
 // ================================================================
 
 /**
- * 企业信息标签页 — 展示企业基本信息、系统默认值、联系人和品牌资产
+ * 企业信息页面 — 展示企业基本信息、系统默认值、联系人和品牌资产
  */
-export function CompanyInfoTab() {
+export function CompanyInfoContent() {
   const t = useTranslations("settings.companyInfo");
 
   return (

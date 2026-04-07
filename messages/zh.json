@@ -57,7 +57,15 @@
     "purchaseReport": "采购报表",
     "salesReport": "销售报表",
     "inventoryReport": "库存报表",
-    "settings": "系统设置"
+    "settings": "系统设置",
+    "companyInfo": "企业信息",
+    "encodingRules": "编码规则",
+    "inventoryRules": "库存规则",
+    "printSettings": "打印设置",
+    "exchangeRate": "汇率管理",
+    "dataManagement": "数据管理",
+    "operationLogs": "操作日志",
+    "appearance": "外观设置"
   },
   "header": {
     "search": "搜索功能、页面...",
@@ -127,16 +135,6 @@
   },
   "settings": {
     "title": "系统设置",
-    "tabs": {
-      "companyInfo": "企业信息",
-      "encodingRules": "编码规则",
-      "inventoryRules": "库存规则",
-      "printSettings": "打印设置",
-      "exchangeRate": "汇率管理",
-      "dataManagement": "数据管理",
-      "operationLogs": "操作日志",
-      "appearance": "外观设置"
-    },
     "companyInfo": {
       "basicInfo": "基本信息",
       "editProfile": "编辑资料",

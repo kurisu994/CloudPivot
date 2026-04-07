@@ -57,7 +57,15 @@
     "purchaseReport": "Báo cáo mua hàng",
     "salesReport": "Báo cáo bán hàng",
     "inventoryReport": "Báo cáo tồn kho",
-    "settings": "Cài đặt hệ thống"
+    "settings": "Cài đặt hệ thống",
+    "companyInfo": "Thông tin công ty",
+    "encodingRules": "Quy tắc mã hóa",
+    "inventoryRules": "Quy tắc tồn kho",
+    "printSettings": "Cài đặt in",
+    "exchangeRate": "Tỷ giá hối đoái",
+    "dataManagement": "Quản lý dữ liệu",
+    "operationLogs": "Nhật ký thao tác",
+    "appearance": "Giao diện"
   },
   "header": {
     "search": "Tìm kiếm chức năng, trang...",
@@ -127,16 +135,6 @@
   },
   "settings": {
     "title": "Cài đặt hệ thống",
-    "tabs": {
-      "companyInfo": "Thông tin công ty",
-      "encodingRules": "Quy tắc mã hóa",
-      "inventoryRules": "Quy tắc kho",
-      "printSettings": "Cài đặt in",
-      "exchangeRate": "Quản lý tỷ giá",
-      "dataManagement": "Quản lý dữ liệu",
-      "operationLogs": "Nhật ký thao tác",
-      "appearance": "Giao diện"
-    },
     "companyInfo": {
       "basicInfo": "Thông tin cơ bản",
       "editProfile": "Chỉnh sửa",

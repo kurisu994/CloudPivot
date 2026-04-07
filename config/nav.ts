@@ -25,6 +25,14 @@ import {
   TrendingUp,
   PieChart,
   Settings,
+  Building2,
+  Hash,
+  PackageSearch,
+  Printer,
+  DollarSign,
+  Database,
+  FileText,
+  Paintbrush,
   type LucideIcon,
 } from "lucide-react";
 
@@ -176,5 +184,43 @@ export const navConfig: NavItem[] = [
     titleKey: "nav.settings",
     href: "/settings",
     icon: Settings,
+    children: [
+      { titleKey: "nav.companyInfo", href: "/settings", icon: Building2 },
+      {
+        titleKey: "nav.encodingRules",
+        href: "/settings/encoding-rules",
+        icon: Hash,
+      },
+      {
+        titleKey: "nav.inventoryRules",
+        href: "/settings/inventory-rules",
+        icon: PackageSearch,
+      },
+      {
+        titleKey: "nav.printSettings",
+        href: "/settings/print-settings",
+        icon: Printer,
+      },
+      {
+        titleKey: "nav.exchangeRate",
+        href: "/settings/exchange-rate",
+        icon: DollarSign,
+      },
+      {
+        titleKey: "nav.dataManagement",
+        href: "/settings/data-management",
+        icon: Database,
+      },
+      {
+        titleKey: "nav.operationLogs",
+        href: "/settings/operation-logs",
+        icon: FileText,
+      },
+      {
+        titleKey: "nav.appearance",
+        href: "/settings/appearance",
+        icon: Paintbrush,
+      },
+    ],
   },
 ];

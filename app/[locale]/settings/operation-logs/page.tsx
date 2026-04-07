@@ -1,5 +1,5 @@
 import { setRequestLocale } from "next-intl/server";
-import { CompanyInfoContent } from "./_components/company-info-content";
+import { PagePlaceholder } from "@/components/common/page-placeholder";
 
 export default async function Page({
   params,
@@ -8,5 +8,5 @@ export default async function Page({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <CompanyInfoContent />;
+  return <PagePlaceholder titleKey="nav.operationLogs" />;
 }
