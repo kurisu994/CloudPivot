@@ -77,6 +77,7 @@ just fmt                   # 格式化全部代码（prettier + cargo fmt）
 just test                  # 运行全部测试
 just ui <组件名>            # 安装 shadcn/ui 组件到 components/ui/
 just i18n-check            # 检查翻译文件完整性
+just icon                  # 基于 app-icon.png 生成全平台图标 (macOS/iOS/Android)
 ```
 
 ## 核心约定
@@ -214,24 +215,29 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 | `docs/03-ui-prototype.md` | 页面布局、交互流程、组件规格 |
 | `docs/04-development-plan.md` | 任务分解、当前进度状态 |
 
-## 当前状态（阶段一，约 85%）
+## 当前状态（阶段一，约 95%）
 
 **已完成**：
 - 项目脚手架：Next.js 16 + Tailwind CSS 4 + shadcn/ui + ESLint/Prettier
-- i18n 框架：next-intl，三语翻译文件（113 行/语言），含 `login.*`、`changePassword.*` 域
+- i18n 框架：next-intl，多语言环境（中文/英文/越南语），已实现登录及看板等模块和基础组件多语言化
 - 布局组件：AppLayout（侧边栏 + 顶栏 + 主内容区 + 页脚）、Sidebar、Header、LocaleSwitcher、AppFooter
-- 深浅主题系统：CSS 变量 + next-themes
-- 首页看板 UI：7 个模块化子组件（指标卡片、图表、待办等），使用 Recharts + mock 数据
+- 深浅主题系统与显示偏好：CSS 变量 + next-themes + `DisplayPreferencesProvider` 全局状态联动
+- 首页看板 UI：基于国际化字典与 mock 数据重构了 7 个模块化子组件
+- **工程化及体验**：集成符合 Apple HIG 规范的系统图标生成流程、优化了 `justfile`
+- **页面级别开发**：已完成**系统设置**模块的两个重要子页（企业信息、显示偏好），并联调系统配置交互逻辑
 - **Rust 数据库层**：sqlx + SQLite 连接池、WAL PRAGMA、自管理迁移框架、45 张表 DDL + 种子数据
 - **用户认证（全栈）**：登录页 / 改密页 UI、AuthProvider 路由守卫、Rust 后端 bcrypt 认证 + 锁定 + session_version
 - **IPC 通信**：ping / get_db_version / login / change_password / get_user_info
 - **前端工具库**：Tauri IPC 封装、多币种格式化、系统配置类型定义
 - App Router 路由骨架：23 个业务路由目录
 
-**未开始**：
-- 全部 20+ 业务模块页面 UI 实现（当前为 `PagePlaceholder` 占位）
+**进行中**：
+- 业务模块页面 UI 及逻辑联调（准备推进供应商、库存和物料等具体业务）
 - Repository trait 抽象（业务数据 CRUD）
 - 业务 IPC 命令（物料、供应商、仓库、单据等）
-- 状态管理（zustand 已安装但未使用）
 - 多币种前端集成（逻辑已就绪，待业务页面对接）
+
+**未开始**：
+- 剩余 20 个常规业务模块页面 UI 实现
+- 状态管理（zustand 已安装但未使用）
 - CI/CD

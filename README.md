@@ -188,6 +188,7 @@ just fmt                    # 格式化全部代码（prettier + cargo fmt）
 just test                   # 运行全部测试
 just ui <组件名>             # 安装 shadcn/ui 组件
 just i18n-check             # 检查翻译文件完整性
+just icon                   # 基于 app-icon.png 生成全平台图标 (macOS/iOS/Android)
 ```
 
 ## 当前进度
@@ -195,13 +196,18 @@ just i18n-check             # 检查翻译文件完整性
 **阶段一**（基础框架）：✅ 已完成
 
 - [x] 项目脚手架 — Tauri 2 + Next.js 16 + shadcn/ui
-- [x] 国际化框架 — next-intl 三语切换
+- [x] 国际化框架 — next-intl 三语切换（看板及基础系统组件已全面本地化）
 - [x] 布局组件 — 侧边栏 + 顶栏 + 语言/主题切换
-- [x] 首页看板 — KPI 卡片 + 图表（mock 数据）
-- [x] 深浅主题 — CSS 变量 + next-themes
+- [x] 首页看板 — KPI 卡片 + 图表 + 业务拆分组件
+- [x] 深浅主题 — CSS 变量 + next-themes + 显示偏好联动
+- [x] 工程体验优化 — 完善 Justfile 及接入 Apple HIG 规范的系统图标生成
+- [x] 系统设置模块 — 「企业信息」及「显示偏好」页面 UI 及双向数据联调
 - [x] Rust 数据库层 — SQLite 连接池 + 迁移引擎 + 45 张表
 - [x] IPC 通信层 — ping / db_version / 认证命令
 - [x] 用户认证 — bcrypt + 锁定 + 改密 + AuthProvider + 路由守卫
 - [x] 前端工具库 — 多币种格式化 + 系统配置类型
 
-**阶段二**（核心业务）：⬜ 未开始
+**阶段二**（核心业务）：🏃‍♂️ 进行中
+- [ ] 20+ 业务模块页面 UI 骨架搭建与对接
+- [ ] Repository 抽象层与业务数据 CRUD
+- [ ] 物料、供应商等核心业务 IPC 命令实现
