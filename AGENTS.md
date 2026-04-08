@@ -90,12 +90,12 @@ just i18n-check            # 检查翻译文件完整性
 - **图标**：统一使用 `lucide-react`，不引入其他图标库
 - **路径别名**：`@/components/ui`、`@/lib/utils`、`@/hooks`
 
-已安装组件：`badge` `button` `card` `chart` `checkbox` `input` `label` `progress` `select`
+已安装组件：`badge` `button` `card` `chart` `checkbox` `input` `label` `progress` `radio-group` `select` `separator` `switch` `table` `tabs`
 
 常用但尚未安装的组件（按需 add）：
-- 布局类：`dialog` `drawer` `sheet` `tabs` `accordion` `collapsible` `separator`
-- 表单类：`form` `field` `textarea` `switch` `radio-group` `combobox` `input-otp`
-- 数据展示：`table` `pagination` `avatar` `tooltip` `hover-card` `skeleton` `empty`
+- 布局类：`dialog` `drawer` `sheet` `accordion` `collapsible`
+- 表单类：`form` `field` `textarea` `combobox` `input-otp`
+- 数据展示：`pagination` `avatar` `tooltip` `hover-card` `skeleton` `empty`
 - 交互类：`dropdown-menu` `context-menu` `popover` `alert-dialog` `command`
 - 导航类：`breadcrumb` `navigation-menu` `sidebar`
 - 反馈类：`sonner`（toast 通知）`spinner` `alert`
