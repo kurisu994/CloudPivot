@@ -39,6 +39,7 @@ export function SplashScreen() {
             width={64}
             height={56}
             className="h-14 w-auto object-contain dark:hidden"
+            style={{ width: "auto" }}
             priority
           />
           {/* 深色 logo */}
@@ -48,6 +49,7 @@ export function SplashScreen() {
             width={64}
             height={56}
             className="hidden h-14 w-auto object-contain dark:block"
+            style={{ width: "auto" }}
             priority
           />
         </div>
