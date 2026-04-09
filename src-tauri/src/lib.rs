@@ -55,6 +55,7 @@ pub fn run() {
             commands::get_system_configs,
             commands::set_system_config,
             commands::set_system_configs,
+            commands::setup_create_warehouses,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

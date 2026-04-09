@@ -11,6 +11,7 @@ import {
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { isTauriEnv, type UserInfo } from "@/lib/tauri";
 import * as tauriApi from "@/lib/tauri";
+import { SystemConfigKeys } from "@/lib/types/system-config";
 
 /** 认证状态 */
 interface AuthState {
@@ -20,6 +21,8 @@ interface AuthState {
   isLoading: boolean;
   /** 是否已认证 */
   isAuthenticated: boolean;
+  /** 是否需要完成向导 */
+  needsSetup: boolean;
 }
 
 /** 认证上下文接口 */
@@ -30,6 +33,8 @@ interface AuthContextValue extends AuthState {
   changePassword: (newPassword: string) => Promise<void>;
   /** 登出 */
   logout: () => void;
+  /** 完成向导 */
+  completeSetup: () => void;
 }
 
 /** 登录结果 */
@@ -61,9 +66,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [user, setUser] = useState<UserInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [needsSetup, setNeedsSetup] = useState(false);
 
   /** 认证相关页面，不需要鉴权 */
-  const authRoutes = ["/login", "/change-password"];
+  const authRoutes = ["/login", "/change-password", "/setup-wizard"];
   const isAuthRoute = authRoutes.includes(pathname);
 
   /** 保存认证信息到 localStorage */
@@ -89,6 +95,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  /**
+   * 检查系统是否已完成初始化配置
+   *
+   * 登录或恢复会话后调用，若 setup_completed !== '1' 则设 needsSetup=true
+   */
+  const checkSetupCompleted = useCallback(async () => {
+    try {
+      const configs = await tauriApi.getSystemConfigs([
+        SystemConfigKeys.SETUP_COMPLETED,
+      ]);
+      const setupConfig = configs.find(
+        (c) => c.key === SystemConfigKeys.SETUP_COMPLETED
+      );
+      if (!setupConfig || setupConfig.value !== "1") {
+        setNeedsSetup(true);
+      }
+    } catch {
+      // 查询失败时不阻塞用户
+      console.warn("[Auth] 检查 setup_completed 失败");
+    }
+  }, []);
+
   /** 登录 */
   const login = useCallback(
     async (username: string, password: string): Promise<LoginResult> => {
@@ -104,6 +132,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
         setUser(mockUser);
         saveAuth(mockUser);
+        // 模拟环境也要检查向导状态
+        await checkSetupCompleted();
         return { success: true, mustChangePassword: false };
       }
 
@@ -111,6 +141,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const response = await tauriApi.login(username, password);
         setUser(response.user);
         saveAuth(response.user);
+
+        // 不需要改密时检查向导状态
+        if (!response.must_change_password) {
+          await checkSetupCompleted();
+        }
 
         return {
           success: true,
@@ -124,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
     },
-    [saveAuth],
+    [saveAuth, checkSetupCompleted],
   );
 
   /** 修改密码 */
@@ -153,8 +188,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /** 登出 */
   const logout = useCallback(() => {
     clearAuth();
+    setNeedsSetup(false);
     router.push("/login");
   }, [clearAuth, router]);
+
+  /** 完成向导 — 由向导完成页调用 */
+  const completeSetup = useCallback(() => {
+    setNeedsSetup(false);
+  }, []);
 
   /** 启动时恢复认证状态 */
   useEffect(() => {
@@ -167,26 +208,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const data: AuthStorage = JSON.parse(stored);
+        let restoredUser: UserInfo | null = null;
 
         if (isTauriEnv()) {
           // 从后端验证会话是否有效
           const userInfo = await tauriApi.getUserInfo(data.userId);
           if (userInfo.session_version === data.sessionVersion) {
-            setUser(userInfo);
+            restoredUser = userInfo;
           } else {
             // session_version 不匹配（已改密），清除会话
             clearAuth();
           }
         } else {
           // 非 Tauri 开发环境：直接恢复 mock 用户
-          setUser({
+          restoredUser = {
             id: data.userId,
             username: "admin",
             display_name: "管理员",
             role: "admin",
             must_change_password: false,
             session_version: data.sessionVersion,
-          });
+          };
+        }
+
+        if (restoredUser) {
+          setUser(restoredUser);
+          // 已登录且不需要改密 → 检查是否需要向导
+          if (!restoredUser.must_change_password) {
+            await checkSetupCompleted();
+          }
         }
       } catch {
         clearAuth();
@@ -196,9 +246,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     restoreAuth();
-  }, [clearAuth]);
+  }, [clearAuth, checkSetupCompleted]);
 
-  /** 路由守卫 */
+  /** 路由守卫
+   *
+   * 优先级（从高到低）：
+   * 1. 未登录 → /login
+   * 2. 需要改密 → /change-password
+   * 3. 需要向导 → /setup-wizard
+   */
   useEffect(() => {
     if (isLoading) return;
 
@@ -208,16 +264,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else if (user && user.must_change_password && pathname !== "/change-password") {
       // 需要改密但不在改密页 → 强制跳转
       router.push("/change-password");
+    } else if (user && !user.must_change_password && needsSetup && pathname !== "/setup-wizard") {
+      // 需要向导但不在向导页 → 强制跳转
+      router.push("/setup-wizard");
     }
-  }, [user, isLoading, isAuthRoute, pathname, router]);
+  }, [user, isLoading, isAuthRoute, pathname, router, needsSetup]);
 
   const value: AuthContextValue = {
     user,
     isLoading,
     isAuthenticated: !!user,
+    needsSetup,
     login,
     changePassword,
     logout,
+    completeSetup,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

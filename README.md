@@ -49,30 +49,25 @@
 
 ## 技术架构
 
+```mermaid
+graph TD
+    subgraph Frontend [Next.js 16 + Tailwind CSS 4]
+        A[Pages: Login / ChangePassword / SetupWizard] --> B[AppLayout]
+        B --> C[Dashboard & Business Modules]
+        D[AuthProvider] --> A
+        D --> B
+    end
+
+    subgraph Backend [Tauri 2 + Rust]
+        E[IPC Commands] --> F[Auth Logic]
+        E --> G[Business Logic]
+        F --> H[SQLite + sqlx]
+        G --> H
+    end
+
+    Frontend -- Invoke IPC --> E
 ```
-┌─────────────────────────────────────────────┐
-│               Tauri 2 Shell                 │
-├──────────────────┬──────────────────────────┤
-│   Next.js 16     │     Rust Backend         │
-│   (SSG 前端)     │     (核心逻辑)            │
-│                  │                          │
-│  ┌────────────┐  │  ┌────────────────────┐  │
-│  │ shadcn/ui  │  │  │ IPC Commands       │  │
-│  │ + Tailwind │◄─┼──┤ (login, ping, ...) │  │
-│  └────────────┘  │  └────────┬───────────┘  │
-│  ┌────────────┐  │  ┌────────┴───────────┐  │
-│  │ AuthProvider│  │  │ Auth Module        │  │
-│  │ (路由守卫)  │  │  │ (bcrypt + session) │  │
-│  └────────────┘  │  └────────┬───────────┘  │
-│  ┌────────────┐  │  ┌────────┴───────────┐  │
-│  │ lib/tauri  │  │  │ DB Module          │  │
-│  │ (IPC 封装) │  │  │ (SQLite + 迁移)    │  │
-│  └────────────┘  │  └────────────────────┘  │
-├──────────────────┴──────────────────────────┤
-│              SQLite (WAL Mode)              │
-│         45 张表 · 轻量级迁移引擎            │
-└─────────────────────────────────────────────┘
-```
+
 
 ## 认证流程
 
@@ -202,6 +197,7 @@ just icon                   # 基于 app-icon.png 生成全平台图标 (macOS/i
 - [x] 深浅主题 — CSS 变量 + next-themes + 显示偏好联动
 - [x] 工程体验优化 — 完善 Justfile 及接入 Apple HIG 规范的系统图标生成
 - [x] 系统设置模块 — 「企业信息」及「显示偏好」页面 UI 及双向数据联调
+- [x] 首次使用向导 — 拦截新用户强制配置核心参数与基础仓库
 - [x] Rust 数据库层 — SQLite 连接池 + 迁移引擎 + 45 张表
 - [x] IPC 通信层 — ping / db_version / 认证命令
 - [x] 用户认证 — bcrypt + 锁定 + 改密 + AuthProvider + 路由守卫

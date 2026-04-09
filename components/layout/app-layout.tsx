@@ -45,8 +45,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("resize", handleResize);
   }, [sidebarAutoCollapse]);
 
-  /** 认证相关页面（登录、改密码等）无需主布局，直接渲染 */
-  const authRoutes = ["/login", "/change-password"];
+  /** 认证相关页面（登录、改密码、向导等）无需主布局，直接渲染 */
+  const authRoutes = ["/login", "/change-password", "/setup-wizard"];
   if (authRoutes.includes(pathname)) {
     return <>{children}</>;
   }

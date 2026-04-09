@@ -195,3 +195,95 @@ pub async fn set_system_configs(
 
     Ok(())
 }
+
+// ================================================================
+// 向导命令
+// ================================================================
+
+/// 向导仓库创建参数
+#[derive(Deserialize)]
+pub struct WarehouseSetupItem {
+    /// 仓库名称
+    pub name: String,
+    /// 仓库类型：raw / semi / finished
+    pub warehouse_type: String,
+    /// 负责人（可选）
+    pub manager: Option<String>,
+}
+
+/// 向导：批量创建仓库并生成默认仓映射
+///
+/// 在数据库事务中执行以下操作：
+/// 1. 为每个仓库自动生成编码（如 WH-RAW-001）
+/// 2. 插入 warehouses 表
+/// 3. 自动在 default_warehouses 表中创建对应的默认仓映射
+#[tauri::command]
+pub async fn setup_create_warehouses(
+    db: State<'_, DbState>,
+    warehouses: Vec<WarehouseSetupItem>,
+) -> Result<(), AppError> {
+    if warehouses.is_empty() {
+        return Ok(());
+    }
+
+    let mut tx = db
+        .pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Database(format!("开启数据库事务失败: {}", e)))?;
+
+    for item in &warehouses {
+        // 生成仓库编码：WH-{TYPE}-{SEQ}
+        let type_prefix = match item.warehouse_type.as_str() {
+            "raw" => "RAW",
+            "semi" => "SEMI",
+            "finished" => "FIN",
+            _ => "GEN",
+        };
+
+        // 查询当前仓库总数用于生成序号
+        let count: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM warehouses WHERE warehouse_type = ?",
+        )
+        .bind(&item.warehouse_type)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("查询仓库数量失败: {}", e)))?;
+
+        let code = format!("WH-{}-{:03}", type_prefix, count.0 + 1);
+
+        // 插入仓库
+        let warehouse_id: i64 = sqlx::query_scalar(
+            "INSERT INTO warehouses (code, name, warehouse_type, manager, is_enabled, created_at, updated_at)
+             VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+             RETURNING id",
+        )
+        .bind(&code)
+        .bind(&item.name)
+        .bind(&item.warehouse_type)
+        .bind(&item.manager)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("创建仓库 '{}' 失败: {}", item.name, e)))?;
+
+        // 插入默认仓映射（upsert — 若已存在则更新）
+        sqlx::query(
+            "INSERT INTO default_warehouses (material_type, warehouse_id, created_at, updated_at)
+             VALUES (?, ?, datetime('now'), datetime('now'))
+             ON CONFLICT(material_type) DO UPDATE SET warehouse_id = excluded.warehouse_id, updated_at = datetime('now')",
+        )
+        .bind(&item.warehouse_type)
+        .bind(warehouse_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| {
+            AppError::Database(format!("创建默认仓映射 '{}' 失败: {}", item.warehouse_type, e))
+        })?;
+    }
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    Ok(())
+}

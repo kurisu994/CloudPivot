@@ -154,3 +154,34 @@ export async function setSystemConfigs(configs: { key: string; value: string }[]
     localStorage.setItem(CONFIG_STORAGE_PREFIX + key, value);
   }
 }
+
+// ================================================================
+// 仓库命令（向导专用）
+// ================================================================
+
+/** 向导：仓库创建参数 */
+export interface WarehouseSetupItem {
+  name: string;
+  warehouse_type: "raw" | "semi" | "finished";
+  manager?: string;
+}
+
+/**
+ * 向导：批量创建仓库并生成默认仓映射
+ *
+ * Tauri 环境调用后端 IPC；web 调试模式写入 localStorage 模拟。
+ */
+export async function setupCreateWarehouses(warehouses: WarehouseSetupItem[]): Promise<void> {
+  if (isTauriEnv()) {
+    return invoke<void>("setup_create_warehouses", { warehouses });
+  }
+
+  // Web 调试模式：模拟仓库创建
+  const existing = localStorage.getItem("cloudpivot_warehouses");
+  const list = existing ? JSON.parse(existing) : [];
+  for (const wh of warehouses) {
+    list.push({ ...wh, id: Date.now() + Math.random() });
+  }
+  localStorage.setItem("cloudpivot_warehouses", JSON.stringify(list));
+}
+
