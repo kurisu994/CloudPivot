@@ -66,8 +66,14 @@ export function SetupWizardContent() {
     setIsLoading(true);
     try {
       await setSystemConfigs([
-        { key: SystemConfigKeys.COMPANY_NAME, value: step1Data.companyName.trim() },
-        { key: SystemConfigKeys.DEFAULT_LOCALE, value: step1Data.defaultLanguage },
+        {
+          key: SystemConfigKeys.COMPANY_NAME,
+          value: step1Data.companyName.trim(),
+        },
+        {
+          key: SystemConfigKeys.DEFAULT_LOCALE,
+          value: step1Data.defaultLanguage,
+        },
       ]);
       setCurrentStep(2);
     } catch (err) {
@@ -163,7 +169,7 @@ export function SetupWizardContent() {
       </div>
 
       {/* 主内容区域 */}
-      <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-12">
+      <main className="relative z-10 flex flex-1 items-center justify-center px-4">
         {currentStep === 1 && (
           <StepCompanyInfo
             data={step1Data}
