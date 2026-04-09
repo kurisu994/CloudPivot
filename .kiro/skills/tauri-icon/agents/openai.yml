@@ -1,0 +1,3 @@
+interface:
+  display_name: "Tauri Icon"
+  short_description: "为 Tauri 应用生成符合 Apple HIG 规范的全平台图标。处理 macOS squircle 圆角、iOS 多尺寸等。"
