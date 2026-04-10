@@ -43,10 +43,15 @@ export function isTauriEnv(): boolean {
  * @param args - 传递给命令的参数
  * @returns 命令返回值
  */
-export async function invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
+export async function invoke<T>(
+  command: string,
+  args?: Record<string, unknown>
+): Promise<T> {
   if (!isTauriEnv()) {
     console.warn(`[Tauri] 非 Tauri 环境，跳过命令: ${command}`);
-    throw new Error(`Command "${command}" is not available outside Tauri environment`);
+    throw new Error(
+      `Command "${command}" is not available outside Tauri environment`
+    );
   }
 
   const { invoke: tauriInvoke } = await import("@tauri-apps/api/core");
@@ -72,14 +77,20 @@ export async function getDbVersion(): Promise<number> {
 // ================================================================
 
 /** 用户登录 */
-export async function login(username: string, password: string): Promise<LoginResponse> {
+export async function login(
+  username: string,
+  password: string
+): Promise<LoginResponse> {
   return invoke<LoginResponse>("login", {
     request: { username, password },
   });
 }
 
 /** 修改密码 */
-export async function changePassword(userId: number, newPassword: string): Promise<void> {
+export async function changePassword(
+  userId: number,
+  newPassword: string
+): Promise<void> {
   return invoke<void>("change_password", {
     request: { user_id: userId, new_password: newPassword },
   });
@@ -109,7 +120,9 @@ const CONFIG_STORAGE_PREFIX = "cloudpivot_config_";
  *
  * Tauri 环境调用后端 IPC；web 调试模式从 localStorage 读取。
  */
-export async function getSystemConfigs(keys: string[]): Promise<SystemConfigRecord[]> {
+export async function getSystemConfigs(
+  keys: string[]
+): Promise<SystemConfigRecord[]> {
   if (isTauriEnv()) {
     return invoke<SystemConfigRecord[]>("get_system_configs", { keys });
   }
@@ -130,7 +143,10 @@ export async function getSystemConfigs(keys: string[]): Promise<SystemConfigReco
  *
  * Tauri 环境调用后端 IPC；web 调试模式写入 localStorage。
  */
-export async function setSystemConfig(key: string, value: string): Promise<void> {
+export async function setSystemConfig(
+  key: string,
+  value: string
+): Promise<void> {
   if (isTauriEnv()) {
     return invoke<void>("set_system_config", { key, value });
   }
@@ -144,7 +160,9 @@ export async function setSystemConfig(key: string, value: string): Promise<void>
  *
  * Tauri 环境调用后端 IPC；web 调试模式写入 localStorage。
  */
-export async function setSystemConfigs(configs: { key: string; value: string }[]): Promise<void> {
+export async function setSystemConfigs(
+  configs: { key: string; value: string }[]
+): Promise<void> {
   if (isTauriEnv()) {
     return invoke<void>("set_system_configs", { configs });
   }
@@ -171,7 +189,9 @@ export interface WarehouseSetupItem {
  *
  * Tauri 环境调用后端 IPC；web 调试模式写入 localStorage 模拟。
  */
-export async function setupCreateWarehouses(warehouses: WarehouseSetupItem[]): Promise<void> {
+export async function setupCreateWarehouses(
+  warehouses: WarehouseSetupItem[]
+): Promise<void> {
   if (isTauriEnv()) {
     return invoke<void>("setup_create_warehouses", { warehouses });
   }
@@ -184,4 +204,3 @@ export async function setupCreateWarehouses(warehouses: WarehouseSetupItem[]): P
   }
   localStorage.setItem("cloudpivot_warehouses", JSON.stringify(list));
 }
-

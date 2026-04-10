@@ -104,12 +104,15 @@ function FilterPanel() {
             <User className="mr-1 size-3.5" />
             {t("user")}
           </Label>
-          <Select defaultValue="all" items={[
-            { value: "all", label: t("allUsers") },
-            { value: "admin", label: "admin" },
-            { value: "zhangsan", label: "张三" },
-            { value: "lisi", label: "李四" }
-          ]}>
+          <Select
+            defaultValue="all"
+            items={[
+              { value: "all", label: t("allUsers") },
+              { value: "admin", label: "admin" },
+              { value: "zhangsan", label: "张三" },
+              { value: "lisi", label: "李四" },
+            ]}
+          >
             <SelectTrigger className="h-10 w-full bg-slate-50 dark:bg-slate-900/50">
               <SelectValue />
             </SelectTrigger>
@@ -127,12 +130,15 @@ function FilterPanel() {
             <Layers className="mr-1 size-3.5" />
             {t("module")}
           </Label>
-          <Select defaultValue="all" items={[
-            { value: "all", label: t("allModules") },
-            { value: "purchase", label: "采购单" },
-            { value: "stockCheck", label: "库存盘点" },
-            { value: "exchangeRate", label: "汇率设置" }
-          ]}>
+          <Select
+            defaultValue="all"
+            items={[
+              { value: "all", label: t("allModules") },
+              { value: "purchase", label: "采购单" },
+              { value: "stockCheck", label: "库存盘点" },
+              { value: "exchangeRate", label: "汇率设置" },
+            ]}
+          >
             <SelectTrigger className="h-10 w-full bg-slate-50 dark:bg-slate-900/50">
               <SelectValue />
             </SelectTrigger>
@@ -150,13 +156,16 @@ function FilterPanel() {
             <Zap className="mr-1 size-3.5" />
             {t("actionType")}
           </Label>
-          <Select defaultValue="all" items={[
-            { value: "all", label: t("allTypes") },
-            { value: "create", label: t("actionCreate") },
-            { value: "update", label: t("actionUpdate") },
-            { value: "audit", label: t("actionAudit") },
-            { value: "delete", label: t("actionDelete") }
-          ]}>
+          <Select
+            defaultValue="all"
+            items={[
+              { value: "all", label: t("allTypes") },
+              { value: "create", label: t("actionCreate") },
+              { value: "update", label: t("actionUpdate") },
+              { value: "audit", label: t("actionAudit") },
+              { value: "delete", label: t("actionDelete") },
+            ]}
+          >
             <SelectTrigger className="h-10 w-full bg-slate-50 dark:bg-slate-900/50">
               <SelectValue />
             </SelectTrigger>

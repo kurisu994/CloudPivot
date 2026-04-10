@@ -44,15 +44,18 @@ function PrintLanguageCard() {
       </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="space-y-1.5 md:col-span-2">
-          <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
             {t("languageMode")}
           </Label>
-          <Select defaultValue="system" items={[
-            { value: "system", label: t("systemDefault") },
-            { value: "single", label: t("singleLanguage") },
-            { value: "bilingual", label: t("bilingual") }
-          ]}>
-            <SelectTrigger className="bg-slate-50 dark:bg-slate-900/50 h-10">
+          <Select
+            defaultValue="system"
+            items={[
+              { value: "system", label: t("systemDefault") },
+              { value: "single", label: t("singleLanguage") },
+              { value: "bilingual", label: t("bilingual") },
+            ]}
+          >
+            <SelectTrigger className="h-10 bg-slate-50 dark:bg-slate-900/50">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -63,15 +66,18 @@ function PrintLanguageCard() {
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
             {t("primaryLanguage")}
           </Label>
-          <Select defaultValue="zh" items={[
-            { value: "zh", label: "简体中文" },
-            { value: "en", label: "English" },
-            { value: "vi", label: "Tiếng Việt" }
-          ]}>
-            <SelectTrigger className="bg-slate-50 dark:bg-slate-900/50 h-10">
+          <Select
+            defaultValue="zh"
+            items={[
+              { value: "zh", label: "简体中文" },
+              { value: "en", label: "English" },
+              { value: "vi", label: "Tiếng Việt" },
+            ]}
+          >
+            <SelectTrigger className="h-10 bg-slate-50 dark:bg-slate-900/50">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -82,15 +88,18 @@ function PrintLanguageCard() {
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
             {t("secondaryLanguage")}
           </Label>
-          <Select defaultValue="en" items={[
-            { value: "en", label: "English" },
-            { value: "vi", label: "Tiếng Việt" },
-            { value: "none", label: "无" }
-          ]}>
-            <SelectTrigger className="bg-slate-50 dark:bg-slate-900/50 h-10">
+          <Select
+            defaultValue="en"
+            items={[
+              { value: "en", label: "English" },
+              { value: "vi", label: "Tiếng Việt" },
+              { value: "none", label: "无" },
+            ]}
+          >
+            <SelectTrigger className="h-10 bg-slate-50 dark:bg-slate-900/50">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -128,7 +137,7 @@ function PaperAndMarginsCard() {
         <div className="flex rounded-lg bg-slate-100 p-1 dark:bg-slate-900">
           <Button
             variant="ghost"
-            className="h-7 px-4 text-xs font-bold bg-white text-primary shadow-sm hover:text-primary dark:bg-slate-800 dark:text-slate-100 dark:hover:text-slate-100"
+            className="text-primary hover:text-primary h-7 bg-white px-4 text-xs font-bold shadow-sm dark:bg-slate-800 dark:text-slate-100 dark:hover:text-slate-100"
           >
             {t("standardSize")}
           </Button>
@@ -142,81 +151,89 @@ function PaperAndMarginsCard() {
       </div>
       <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
         <div className="col-span-2 space-y-1.5">
-          <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
             {t("presetSpec")}
           </Label>
           <div className="grid grid-cols-2 gap-3">
             <Button
               variant="outline"
-              className="h-10 border-2 border-primary bg-primary/5 text-primary text-sm font-bold shadow-none"
+              className="border-primary bg-primary/5 text-primary h-10 border-2 text-sm font-bold shadow-none"
             >
               A4 (210x297mm)
             </Button>
             <Button
               variant="outline"
-              className="h-10 border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900/50"
+              className="h-10 border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900/50"
             >
               A5 (148x210mm)
             </Button>
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
             {t("widthMm")}
           </Label>
           <Input
             type="number"
             defaultValue={210}
-            className="bg-slate-50 h-10 dark:bg-slate-900/50"
+            className="h-10 bg-slate-50 dark:bg-slate-900/50"
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
             {t("heightMm")}
           </Label>
           <Input
             type="number"
             defaultValue={297}
-            className="bg-slate-50 h-10 dark:bg-slate-900/50"
+            className="h-10 bg-slate-50 dark:bg-slate-900/50"
           />
         </div>
       </div>
       <div className="mt-8 border-t border-slate-50 pt-6 dark:border-slate-800/50">
-        <h3 className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+        <h3 className="mb-4 flex items-center gap-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
           <Grid2X2 className="size-3.5" />
           {t("marginsTitle")}
         </h3>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="relative space-y-1">
-            <Label className="ml-1 text-[10px] text-slate-400">{t("top")}</Label>
+            <Label className="ml-1 text-[10px] text-slate-400">
+              {t("top")}
+            </Label>
             <Input
               type="number"
               defaultValue={10}
-              className="bg-slate-50 h-10 dark:bg-slate-900/50"
+              className="h-10 bg-slate-50 dark:bg-slate-900/50"
             />
           </div>
           <div className="relative space-y-1">
-            <Label className="ml-1 text-[10px] text-slate-400">{t("bottom")}</Label>
+            <Label className="ml-1 text-[10px] text-slate-400">
+              {t("bottom")}
+            </Label>
             <Input
               type="number"
               defaultValue={10}
-              className="bg-slate-50 h-10 dark:bg-slate-900/50"
+              className="h-10 bg-slate-50 dark:bg-slate-900/50"
             />
           </div>
           <div className="relative space-y-1">
-            <Label className="ml-1 text-[10px] text-slate-400">{t("left")}</Label>
+            <Label className="ml-1 text-[10px] text-slate-400">
+              {t("left")}
+            </Label>
             <Input
               type="number"
               defaultValue={15}
-              className="bg-slate-50 h-10 dark:bg-slate-900/50"
+              className="h-10 bg-slate-50 dark:bg-slate-900/50"
             />
           </div>
           <div className="relative space-y-1">
-            <Label className="ml-1 text-[10px] text-slate-400">{t("right")}</Label>
+            <Label className="ml-1 text-[10px] text-slate-400">
+              {t("right")}
+            </Label>
             <Input
               type="number"
               defaultValue={15}
-              className="bg-slate-50 h-10 dark:bg-slate-900/50"
+              className="h-10 bg-slate-50 dark:bg-slate-900/50"
             />
           </div>
         </div>
@@ -247,7 +264,10 @@ function DisplayItemsCard() {
       <div className="space-y-3">
         {/* Print Logo */}
         <label className="group flex cursor-pointer items-center rounded-xl border border-slate-100 p-4 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/50">
-          <Checkbox defaultChecked className="h-5 w-5 rounded border-slate-300" />
+          <Checkbox
+            defaultChecked
+            className="h-5 w-5 rounded border-slate-300"
+          />
           <div className="ml-4">
             <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
               {t("printLogo")}
@@ -257,7 +277,10 @@ function DisplayItemsCard() {
         </label>
         {/* Print Company Info */}
         <label className="group flex cursor-pointer items-center rounded-xl border border-slate-100 p-4 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/50">
-          <Checkbox defaultChecked className="h-5 w-5 rounded border-slate-300" />
+          <Checkbox
+            defaultChecked
+            className="h-5 w-5 rounded border-slate-300"
+          />
           <div className="ml-4">
             <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
               {t("printCompanyInfo")}
@@ -291,10 +314,10 @@ function RealtimePreviewModule() {
   const t = useTranslations("settings.printSettings");
 
   return (
-    <div className="flex min-h-full flex-col items-center rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-inner relative overflow-hidden">
+    <div className="relative flex min-h-full flex-col items-center overflow-hidden rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-inner">
       <div className="mb-8 flex w-full items-center justify-between">
-        <h3 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+        <h3 className="flex items-center gap-2 text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+          <span className="bg-primary h-2 w-2 animate-pulse rounded-full" />
           {t("realTimePreview")}
         </h3>
         <span className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-400">
@@ -307,7 +330,7 @@ function RealtimePreviewModule() {
         {/* Header content */}
         <div className="mb-4 flex items-start justify-between border-b-2 border-slate-900 pb-4">
           <div className="flex h-12 w-16 items-center justify-center bg-slate-100">
-            <ImageIcon className="text-slate-300 size-6" />
+            <ImageIcon className="size-6 text-slate-300" />
           </div>
           <div className="text-right">
             <h4 className="text-[10px] font-black text-slate-900">
@@ -330,10 +353,10 @@ function RealtimePreviewModule() {
             <div className="border-r border-slate-100" />
             <div />
           </div>
-          <div className="grid h-5 grid-cols-4 border-b border-slate-50 px-2 my-1" />
-          <div className="grid h-5 grid-cols-4 border-b border-slate-50 px-2 my-1" />
-          <div className="grid h-5 grid-cols-4 border-b border-slate-50 px-2 my-1" />
-          <div className="grid h-5 grid-cols-4 px-2 my-1" />
+          <div className="my-1 grid h-5 grid-cols-4 border-b border-slate-50 px-2" />
+          <div className="my-1 grid h-5 grid-cols-4 border-b border-slate-50 px-2" />
+          <div className="my-1 grid h-5 grid-cols-4 border-b border-slate-50 px-2" />
+          <div className="my-1 grid h-5 grid-cols-4 px-2" />
         </div>
 
         {/* Stamp Overlay */}
@@ -344,25 +367,23 @@ function RealtimePreviewModule() {
         </div>
 
         {/* Footer info */}
-        <div className="absolute bottom-4 left-6 right-6 flex items-center justify-between border-t border-slate-50 pt-2 text-[7px] text-slate-300">
-          <span>
-            {t("printTime")}: 2024-05-20 14:30
-          </span>
+        <div className="absolute right-6 bottom-4 left-6 flex items-center justify-between border-t border-slate-50 pt-2 text-[7px] text-slate-300">
+          <span>{t("printTime")}: 2024-05-20 14:30</span>
           <span>{t("pageCount")}</span>
         </div>
       </div>
 
-      <div className="flex w-full gap-3 mt-8 z-10 relative">
+      <div className="relative z-10 mt-8 flex w-full gap-3">
         <Button
           variant="outline"
-          className="flex-1 gap-2 border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-slate-100 text-xs font-bold"
+          className="flex-1 gap-2 border-slate-700 bg-transparent text-xs font-bold text-slate-300 hover:bg-slate-800 hover:text-slate-100"
         >
           <Printer className="size-4" />
           {t("printTestPage")}
         </Button>
         <Button
           variant="outline"
-          className="flex-1 gap-2 border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-slate-100 text-xs font-bold"
+          className="flex-1 gap-2 border-slate-700 bg-transparent text-xs font-bold text-slate-300 hover:bg-slate-800 hover:text-slate-100"
         >
           <RotateCcw className="size-4" />
           {t("resetDefaults")}
@@ -379,8 +400,8 @@ function ActionButtons() {
   const t = useTranslations("settings.printSettings");
 
   return (
-    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 dark:border-slate-800 mt-6">
-      <Button className="bg-primary px-10 font-bold text-white hover:opacity-90 transition-opacity flex items-center gap-2 h-10">
+    <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
+      <Button className="bg-primary flex h-10 items-center gap-2 px-10 font-bold text-white transition-opacity hover:opacity-90">
         <Save className="size-4" />
         {t("saveAllSettings")}
       </Button>

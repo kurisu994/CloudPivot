@@ -69,8 +69,7 @@ export function StepWarehouses({
               </div>
               <div>
                 <h1 className="text-xl font-extrabold tracking-tight text-[#294985] dark:text-blue-300">
-                  {t("title")} —{" "}
-                  {t("stepIndicator", { current: 2, total: 3 })}
+                  {t("title")} — {t("stepIndicator", { current: 2, total: 3 })}
                 </h1>
                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
                   {t("step2Header")}
@@ -115,14 +114,12 @@ export function StepWarehouses({
               </label>
               <Input
                 value={data.rawName}
-                onChange={(e) =>
-                  onChange({ ...data, rawName: e.target.value })
-                }
+                onChange={(e) => onChange({ ...data, rawName: e.target.value })}
                 placeholder={t("rawWarehouseDefault")}
                 className="bg-slate-50/50 dark:bg-slate-800/50"
               />
               {errors.raw && (
-                <p className="text-xs font-medium text-destructive">
+                <p className="text-destructive text-xs font-medium">
                   {errors.raw}
                 </p>
               )}
@@ -132,7 +129,7 @@ export function StepWarehouses({
                 {t("warehouseManager")}
               </label>
               <div className="relative">
-                <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <User className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   value={data.rawManager}
                   onChange={(e) =>
@@ -167,7 +164,7 @@ export function StepWarehouses({
                 className="bg-slate-50/50 dark:bg-slate-800/50"
               />
               {errors.finished && (
-                <p className="text-xs font-medium text-destructive">
+                <p className="text-destructive text-xs font-medium">
                   {errors.finished}
                 </p>
               )}
@@ -177,7 +174,7 @@ export function StepWarehouses({
                 {t("warehouseManager")}
               </label>
               <div className="relative">
-                <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <User className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   value={data.finishedManager}
                   onChange={(e) =>
@@ -216,7 +213,7 @@ export function StepWarehouses({
                 className="border-slate-300 bg-transparent italic dark:border-slate-600"
               />
               <div className="relative">
-                <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <User className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   value={data.semiManager}
                   onChange={(e) =>

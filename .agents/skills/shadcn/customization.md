@@ -27,21 +27,21 @@
 
 每个颜色都遵循 `name` / `name-foreground` 的命名约定。基础变量用于背景，`-foreground` 用于该背景上的文字或图标。
 
-| 变量                                     | 用途                          |
-| -------------------------------------------- | -------------------------------- |
-| `--background` / `--foreground`              | 页面背景和默认文本 |
-| `--card` / `--card-foreground`               | 卡片表面 |
-| `--primary` / `--primary-foreground`         | 主要按钮和主要操作 |
-| `--secondary` / `--secondary-foreground`     | 次要操作 |
-| `--muted` / `--muted-foreground`             | 弱化/禁用状态 |
+| 变量                                         | 用途                    |
+| -------------------------------------------- | ----------------------- |
+| `--background` / `--foreground`              | 页面背景和默认文本      |
+| `--card` / `--card-foreground`               | 卡片表面                |
+| `--primary` / `--primary-foreground`         | 主要按钮和主要操作      |
+| `--secondary` / `--secondary-foreground`     | 次要操作                |
+| `--muted` / `--muted-foreground`             | 弱化/禁用状态           |
 | `--accent` / `--accent-foreground`           | 悬停（Hover）和强调状态 |
-| `--destructive` / `--destructive-foreground` | 错误和破坏性操作 |
-| `--border`                                   | 默认边框颜色 |
-| `--input`                                    | 表单输入框边框 |
+| `--destructive` / `--destructive-foreground` | 错误和破坏性操作        |
+| `--border`                                   | 默认边框颜色            |
+| `--input`                                    | 表单输入框边框          |
 | `--ring`                                     | 焦点环颜色 (Focus ring) |
-| `--chart-1` 到 `--chart-5`              | 图表/数据可视化 |
-| `--sidebar-*`                                | 侧边栏专属颜色 |
-| `--surface` / `--surface-foreground`         | 次级表面层 |
+| `--chart-1` 到 `--chart-5`                   | 图表/数据可视化         |
+| `--sidebar-*`                                | 侧边栏专属颜色          |
+| `--surface` / `--surface-foreground`         | 次级表面层              |
 
 颜色使用 OKLCH 格式：`--primary: oklch(0.205 0 0)`，其中的值分别代表亮度（Lightness，0–1）、色度（Chroma，0 = 灰色）和色相（Hue，0–360）。
 
@@ -52,11 +52,11 @@
 通过根元素上的 `.dark` 类（基于 class 的切换）来实现。在 Next.js 中，使用 `next-themes`：
 
 ```tsx
-import { ThemeProvider } from "next-themes"
+import { ThemeProvider } from "next-themes";
 
 <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
   {children}
-</ThemeProvider>
+</ThemeProvider>;
 ```
 
 ---
@@ -117,7 +117,7 @@ module.exports = {
       },
     },
   },
-}
+};
 ```
 
 ```tsx
@@ -142,13 +142,15 @@ module.exports = {
 ### 1. 内置变体 (Built-in variants)
 
 ```tsx
-<Button variant="outline" size="sm">Click</Button>
+<Button variant="outline" size="sm">
+  Click
+</Button>
 ```
 
 ### 2. 通过 `className` 传递 Tailwind 类
 
 ```tsx
-<Card className="max-w-md mx-auto">...</Card>
+<Card className="mx-auto max-w-md">...</Card>
 ```
 
 ### 3. 添加新的变体
@@ -180,7 +182,7 @@ export function ConfirmDialog({ title, description, onConfirm, children }) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }
 ```
 

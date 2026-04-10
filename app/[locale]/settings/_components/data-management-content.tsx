@@ -4,7 +4,14 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Database, UploadCloud, Download, Info, FileText, Upload } from "lucide-react";
+import {
+  Database,
+  UploadCloud,
+  Download,
+  Info,
+  FileText,
+  Upload,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -31,13 +38,11 @@ function DataBackupSection() {
       <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-slate-100">
-            <Database className="size-5 text-primary" />
+            <Database className="text-primary size-5" />
             {t("dataBackup")}
           </h2>
           <div className="flex gap-2">
-            <Button
-              className="flex items-center gap-2 rounded-lg bg-[#4c69c1] px-4 py-2 text-sm font-bold shadow-sm hover:bg-[#4c69c1]/90"
-            >
+            <Button className="flex items-center gap-2 rounded-lg bg-[#4c69c1] px-4 py-2 text-sm font-bold shadow-sm hover:bg-[#4c69c1]/90">
               <UploadCloud className="size-4" />
               {t("backupNow")}
             </Button>
@@ -53,7 +58,7 @@ function DataBackupSection() {
         {/* Stats Grid */}
         <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-            <div className="mb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
               {t("dbLocation")}
             </div>
             <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
@@ -61,7 +66,7 @@ function DataBackupSection() {
             </div>
           </div>
           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-            <div className="mb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
               {t("dbSize")}
             </div>
             <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
@@ -69,7 +74,7 @@ function DataBackupSection() {
             </div>
           </div>
           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-            <div className="mb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
               {t("lastBackupTime")}
             </div>
             <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
@@ -111,14 +116,17 @@ function DataBackupSection() {
 
             <div className="flex items-center gap-4">
               <div className="flex-1">
-                <Label className="mb-1 block text-[11px] font-bold uppercase text-slate-400">
+                <Label className="mb-1 block text-[11px] font-bold text-slate-400 uppercase">
                   {t("backupCycle")}
                 </Label>
-                <Select defaultValue="daily" items={[
-                  { value: "daily", label: "每天 (04:00)" },
-                  { value: "weekly", label: "每周" },
-                  { value: "monthly", label: "每月" }
-                ]}>
+                <Select
+                  defaultValue="daily"
+                  items={[
+                    { value: "daily", label: "每天 (04:00)" },
+                    { value: "weekly", label: "每周" },
+                    { value: "monthly", label: "每月" },
+                  ]}
+                >
                   <SelectTrigger className="bg-white dark:bg-slate-950">
                     <SelectValue />
                   </SelectTrigger>
@@ -130,7 +138,7 @@ function DataBackupSection() {
                 </Select>
               </div>
               <div className="w-24">
-                <Label className="mb-1 block text-[11px] font-bold uppercase text-slate-400">
+                <Label className="mb-1 block text-[11px] font-bold text-slate-400 uppercase">
                   {t("retentionCount")}
                 </Label>
                 <Input type="number" defaultValue="30" />
@@ -146,7 +154,10 @@ function DataBackupSection() {
           <h3 className="font-bold text-slate-900 dark:text-slate-100">
             {t("backupHistory")}
           </h3>
-          <Button variant="link" className="h-auto p-0 text-xs font-bold text-primary">
+          <Button
+            variant="link"
+            className="text-primary h-auto p-0 text-xs font-bold"
+          >
             {t("viewAllLogs")}
           </Button>
         </div>
@@ -172,10 +183,10 @@ function DataBackupSection() {
                     {item.size}
                   </td>
                   <td className="space-x-6 px-6 py-4 text-right">
-                    <button className="font-bold text-primary hover:underline">
+                    <button className="text-primary font-bold hover:underline">
                       {t("restore")}
                     </button>
-                    <button className="font-bold text-error hover:underline">
+                    <button className="text-error font-bold hover:underline">
                       {commonT("delete")}
                     </button>
                   </td>
@@ -197,13 +208,13 @@ function DataImportExportSection() {
     <div className="lg:col-span-1">
       <section className="sticky top-24 h-fit rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
         <h2 className="mb-6 flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-slate-100">
-          <Upload className="size-5 text-primary" />
+          <Upload className="text-primary size-5" />
           {t("dataImportExport")}
         </h2>
 
         <div className="space-y-4">
-          <button className="group flex w-full items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-4 transition-all hover:border-primary hover:bg-white dark:border-slate-700 dark:bg-slate-900/50 dark:hover:bg-slate-900">
-            <UploadCloud className="size-5 text-slate-400 group-hover:text-primary" />
+          <button className="group hover:border-primary flex w-full items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-4 transition-all hover:bg-white dark:border-slate-700 dark:bg-slate-900/50 dark:hover:bg-slate-900">
+            <UploadCloud className="group-hover:text-primary size-5 text-slate-400" />
             <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
               📥 {t("openImportWizard")}
             </span>
@@ -211,16 +222,16 @@ function DataImportExportSection() {
 
           <div className="flex gap-3 rounded-lg border border-amber-100 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-900/10">
             <Info className="size-[18px] shrink-0 text-amber-600 dark:text-amber-500" />
-            <p className="text-[11px] font-bold leading-relaxed text-amber-700 dark:text-amber-500">
+            <p className="text-[11px] leading-relaxed font-bold text-amber-700 dark:text-amber-500">
               {t("importWarning")}
             </p>
           </div>
 
           <div className="border-t border-slate-50 pt-6 dark:border-slate-800">
-            <div className="mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+            <div className="mb-2 text-[11px] font-bold tracking-widest text-slate-400 uppercase">
               {t("templateDownload")}
             </div>
-            
+
             <div className="space-y-1">
               <a
                 href="#"
@@ -268,7 +279,7 @@ export function DataManagementContent() {
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       {/* 备份与还原区域 */}
       <DataBackupSection />
-      
+
       {/* 导入导出区域 */}
       <DataImportExportSection />
     </div>

@@ -160,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
     },
-    [saveAuth, checkSetupCompleted],
+    [saveAuth, checkSetupCompleted]
   );
 
   /** 修改密码 */
@@ -183,7 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         saveAuth(updated);
       }
     },
-    [user, saveAuth],
+    [user, saveAuth]
   );
 
   /** 登出 */
@@ -262,10 +262,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user && !isAuthRoute) {
       // 未登录访问受保护页面 → 跳转登录
       router.push("/login");
-    } else if (user && user.must_change_password && pathname !== "/change-password") {
+    } else if (
+      user &&
+      user.must_change_password &&
+      pathname !== "/change-password"
+    ) {
       // 需要改密但不在改密页 → 强制跳转
       router.push("/change-password");
-    } else if (user && !user.must_change_password && needsSetup && pathname !== "/setup-wizard") {
+    } else if (
+      user &&
+      !user.must_change_password &&
+      needsSetup &&
+      pathname !== "/setup-wizard"
+    ) {
       // 需要向导但不在向导页 → 强制跳转
       router.push("/setup-wizard");
     }
@@ -290,7 +299,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading ||
     (!user && !isAuthRoute) ||
     (!!user && user.must_change_password && pathname !== "/change-password") ||
-    (!!user && !user.must_change_password && needsSetup && pathname !== "/setup-wizard");
+    (!!user &&
+      !user.must_change_password &&
+      needsSetup &&
+      pathname !== "/setup-wizard");
 
   if (isPendingRedirect) {
     return (

@@ -19,7 +19,7 @@ async function loadMessages(locale: Locale) {
   // 将所有分片的顶层键展开合并为一个扁平对象
   return modules.reduce(
     (merged, mod) => ({ ...merged, ...mod.default }),
-    {} as Record<string, unknown>,
+    {} as Record<string, unknown>
   );
 }
 

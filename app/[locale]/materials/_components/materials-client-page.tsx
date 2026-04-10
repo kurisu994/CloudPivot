@@ -2,12 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  Search,
-  Plus,
-  Upload,
-  Download,
-} from "lucide-react";
+import { Search, Plus, Upload, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -80,10 +75,74 @@ const MOCK_UNITS: UnitOption[] = [
 ];
 
 const MOCK_MATERIALS: MaterialItem[] = [
-  { id: 1, code: "M-1002", name: "真皮三人沙发", material_type: "finished", category_id: 3, category_name: "客厅", spec: "2100×900", base_unit_id: 3, unit_name: "套", ref_cost_price: 0, sale_price: 175600, safety_stock: 10, max_stock: 50, is_enabled: true, created_at: "2024-01-15" },
-  { id: 2, code: "M-0001", name: "白橡实木板", material_type: "raw", category_id: 1, category_name: "木材", spec: "2440×1220", base_unit_id: 1, unit_name: "张", ref_cost_price: 3850, sale_price: 0, safety_stock: 50, max_stock: 500, is_enabled: true, created_at: "2024-01-10" },
-  { id: 3, code: "M-0002", name: "不锈钢铰链", material_type: "raw", category_id: 2, category_name: "五金", spec: "40mm", base_unit_id: 2, unit_name: "个", ref_cost_price: 48, sale_price: 0, safety_stock: 500, max_stock: 5000, is_enabled: true, created_at: "2024-01-12" },
-  { id: 4, code: "M-1001", name: "北欧实木餐桌", material_type: "finished", category_id: 4, category_name: "餐厅", spec: "1400×800", base_unit_id: 3, unit_name: "套", ref_cost_price: 0, sale_price: 49000, safety_stock: 5, max_stock: 30, is_enabled: true, created_at: "2024-01-08" },
+  {
+    id: 1,
+    code: "M-1002",
+    name: "真皮三人沙发",
+    material_type: "finished",
+    category_id: 3,
+    category_name: "客厅",
+    spec: "2100×900",
+    base_unit_id: 3,
+    unit_name: "套",
+    ref_cost_price: 0,
+    sale_price: 175600,
+    safety_stock: 10,
+    max_stock: 50,
+    is_enabled: true,
+    created_at: "2024-01-15",
+  },
+  {
+    id: 2,
+    code: "M-0001",
+    name: "白橡实木板",
+    material_type: "raw",
+    category_id: 1,
+    category_name: "木材",
+    spec: "2440×1220",
+    base_unit_id: 1,
+    unit_name: "张",
+    ref_cost_price: 3850,
+    sale_price: 0,
+    safety_stock: 50,
+    max_stock: 500,
+    is_enabled: true,
+    created_at: "2024-01-10",
+  },
+  {
+    id: 3,
+    code: "M-0002",
+    name: "不锈钢铰链",
+    material_type: "raw",
+    category_id: 2,
+    category_name: "五金",
+    spec: "40mm",
+    base_unit_id: 2,
+    unit_name: "个",
+    ref_cost_price: 48,
+    sale_price: 0,
+    safety_stock: 500,
+    max_stock: 5000,
+    is_enabled: true,
+    created_at: "2024-01-12",
+  },
+  {
+    id: 4,
+    code: "M-1001",
+    name: "北欧实木餐桌",
+    material_type: "finished",
+    category_id: 4,
+    category_name: "餐厅",
+    spec: "1400×800",
+    base_unit_id: 3,
+    unit_name: "套",
+    ref_cost_price: 0,
+    sale_price: 49000,
+    safety_stock: 5,
+    max_stock: 30,
+    is_enabled: true,
+    created_at: "2024-01-08",
+  },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -115,23 +174,32 @@ export function MaterialsClientPage() {
   const [units, setUnits] = useState<UnitOption[]>([]);
 
   /* 构建 Select items（base-ui 需要 items 以正确解析 SelectValue 显示文本） */
-  const categoryItems = useMemo(() => [
-    { value: "all", label: t("filters.categoryAll") },
-    ...categories.map((c) => ({ value: c.id.toString(), label: c.name })),
-  ], [categories, t]);
+  const categoryItems = useMemo(
+    () => [
+      { value: "all", label: t("filters.categoryAll") },
+      ...categories.map((c) => ({ value: c.id.toString(), label: c.name })),
+    ],
+    [categories, t]
+  );
 
-  const typeItems = useMemo(() => [
-    { value: "all", label: t("filters.typeAll") },
-    { value: "raw", label: t("filters.type.raw") },
-    { value: "semi", label: t("filters.type.semi") },
-    { value: "finished", label: t("filters.type.finished") },
-  ], [t]);
+  const typeItems = useMemo(
+    () => [
+      { value: "all", label: t("filters.typeAll") },
+      { value: "raw", label: t("filters.type.raw") },
+      { value: "semi", label: t("filters.type.semi") },
+      { value: "finished", label: t("filters.type.finished") },
+    ],
+    [t]
+  );
 
-  const statusItems = useMemo(() => [
-    { value: "all", label: t("filters.statusAll") },
-    { value: "active", label: t("filters.status.active") },
-    { value: "inactive", label: t("filters.status.inactive") },
-  ], [t]);
+  const statusItems = useMemo(
+    () => [
+      { value: "all", label: t("filters.statusAll") },
+      { value: "active", label: t("filters.status.active") },
+      { value: "inactive", label: t("filters.status.inactive") },
+    ],
+    [t]
+  );
 
   /** 加载分类/单位下拉选项 */
   const fetchOptions = useCallback(async () => {
@@ -162,17 +230,23 @@ export function MaterialsClientPage() {
       if (keyword.trim()) {
         const kw = keyword.trim().toLowerCase();
         filtered = filtered.filter(
-          (m) => m.code.toLowerCase().includes(kw) || m.name.toLowerCase().includes(kw),
+          (m) =>
+            m.code.toLowerCase().includes(kw) ||
+            m.name.toLowerCase().includes(kw)
         );
       }
       if (categoryId !== "all") {
-        filtered = filtered.filter((m) => m.category_id === parseInt(categoryId));
+        filtered = filtered.filter(
+          (m) => m.category_id === parseInt(categoryId)
+        );
       }
       if (materialType !== "all") {
         filtered = filtered.filter((m) => m.material_type === materialType);
       }
       if (status !== "all") {
-        filtered = filtered.filter((m) => (status === "active" ? m.is_enabled : !m.is_enabled));
+        filtered = filtered.filter((m) =>
+          status === "active" ? m.is_enabled : !m.is_enabled
+        );
       }
       setTotal(filtered.length);
       setData(filtered.slice((page - 1) * pageSize, page * pageSize));
@@ -180,16 +254,19 @@ export function MaterialsClientPage() {
       return;
     }
     try {
-      const res = await invoke<{ total: number; items: MaterialItem[] }>("get_materials", {
-        filter: {
-          keyword: keyword.trim() || null,
-          category_id: categoryId === "all" ? null : parseInt(categoryId, 10),
-          material_type: materialType === "all" ? null : materialType,
-          is_enabled: status === "all" ? null : status === "active",
-          page,
-          page_size: pageSize,
-        },
-      });
+      const res = await invoke<{ total: number; items: MaterialItem[] }>(
+        "get_materials",
+        {
+          filter: {
+            keyword: keyword.trim() || null,
+            category_id: categoryId === "all" ? null : parseInt(categoryId, 10),
+            material_type: materialType === "all" ? null : materialType,
+            is_enabled: status === "all" ? null : status === "active",
+            page,
+            page_size: pageSize,
+          },
+        }
+      );
       setData(res.items);
       setTotal(res.total);
     } catch (e) {
@@ -199,8 +276,12 @@ export function MaterialsClientPage() {
     }
   }, [keyword, categoryId, materialType, status, page, pageSize]);
 
-  useEffect(() => { fetchOptions(); }, [fetchOptions]);
-  useEffect(() => { fetchMaterials(); }, [fetchMaterials]);
+  useEffect(() => {
+    fetchOptions();
+  }, [fetchOptions]);
+  useEffect(() => {
+    fetchMaterials();
+  }, [fetchMaterials]);
 
   const handleReset = () => {
     setKeyword("");
@@ -221,7 +302,10 @@ export function MaterialsClientPage() {
       return;
     }
     try {
-      await invoke("toggle_material_status", { id, isEnabled: !currentEnabled });
+      await invoke("toggle_material_status", {
+        id,
+        isEnabled: !currentEnabled,
+      });
       toast.success(currentEnabled ? "已禁用" : "已启用");
       fetchMaterials();
     } catch (e) {
@@ -233,19 +317,21 @@ export function MaterialsClientPage() {
     <div className="flex flex-col gap-6">
       {/* 页面标题 */}
       <div>
-        <h2 className="text-2xl font-bold text-foreground">
+        <h2 className="text-foreground text-2xl font-bold">
           {t("title")}
-          <span className="ml-2 text-lg font-normal text-muted-foreground">{t("subtitle")}</span>
+          <span className="text-muted-foreground ml-2 text-lg font-normal">
+            {t("subtitle")}
+          </span>
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
+        <p className="text-muted-foreground mt-1 text-sm">{t("description")}</p>
       </div>
 
       {/* 搜索过滤条 */}
-      <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="border-border bg-card flex items-center justify-between gap-4 rounded-xl border p-4 shadow-sm">
         <div className="flex flex-1 items-center gap-4">
           {/* 搜索框 */}
           <div className="relative max-w-xs flex-1">
-            <Search className="absolute top-2.5 left-3 size-[18px] text-muted-foreground" />
+            <Search className="text-muted-foreground absolute top-2.5 left-3 size-[18px]" />
             <Input
               className="pl-10"
               placeholder={t("searchPlaceholder")}
@@ -255,24 +341,36 @@ export function MaterialsClientPage() {
             />
           </div>
           {/* 分类 */}
-          <Select value={categoryId} onValueChange={setCategoryId} items={categoryItems}>
+          <Select
+            value={categoryId}
+            onValueChange={setCategoryId}
+            items={categoryItems}
+          >
             <SelectTrigger className="w-[150px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {categoryItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
           {/* 类型 */}
-          <Select value={materialType} onValueChange={setMaterialType} items={typeItems}>
+          <Select
+            value={materialType}
+            onValueChange={setMaterialType}
+            items={typeItems}
+          >
             <SelectTrigger className="w-[150px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {typeItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -283,20 +381,29 @@ export function MaterialsClientPage() {
             </SelectTrigger>
             <SelectContent>
               {statusItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleReset}>{t("actions.reset")}</Button>
+          <Button variant="outline" onClick={handleReset}>
+            {t("actions.reset")}
+          </Button>
           <Button onClick={handleSearch}>{t("actions.search")}</Button>
         </div>
       </div>
 
       {/* 操作按钮行 */}
       <div className="flex gap-2">
-        <Button onClick={() => { setEditingId(null); setDialogOpen(true); }}>
+        <Button
+          onClick={() => {
+            setEditingId(null);
+            setDialogOpen(true);
+          }}
+        >
           <Plus data-icon="inline-start" />
           {t("actions.add")}
         </Button>
@@ -318,8 +425,14 @@ export function MaterialsClientPage() {
         page={page}
         pageSize={pageSize}
         onPageChange={setPage}
-        onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
-        onEdit={(id) => { setEditingId(id); setDialogOpen(true); }}
+        onPageSizeChange={(s) => {
+          setPageSize(s);
+          setPage(1);
+        }}
+        onEdit={(id) => {
+          setEditingId(id);
+          setDialogOpen(true);
+        }}
         onToggleStatus={handleToggleStatus}
       />
 
@@ -330,7 +443,10 @@ export function MaterialsClientPage() {
         materialId={editingId}
         categories={categories}
         units={units}
-        onSuccess={() => { setDialogOpen(false); fetchMaterials(); }}
+        onSuccess={() => {
+          setDialogOpen(false);
+          fetchMaterials();
+        }}
       />
     </div>
   );

@@ -35,7 +35,7 @@
 
 ## 不要企望而且绝对不允许内部包涵内部自带于这全套各式其组建内所使用调用之该内部标图里被人工添加这些带有 CSS 的各类设置关于配置图样这类的这些大小这系列标签命令。
 
-既然在咱们该其组建系统中运行它，那么自是有关于设定这些包括着大小尺缩在内各项问题其皆全统统都归由它内部之所包含之 CSS 把它给全总包代理及完全控制承揽的干活去把调控！ 所以在您使用时就没必要且断然不能在此里加上如同这一类叫：`size-4`, 还有这种老写类法叫带有如： `w-4 h-4` 甚至别的各种只要是干着意图以试图越权重定篡改这组件本来之这尺寸这档事之各种诸此类推操作命令，无论这些图标被放入于这里头那些这这那那比如： `Button`, `DropdownMenuItem`, `Alert`, 以及还有诸类这如： `Sidebar*` 之内或者这系统别的等等。除非那人（提出要求那端的人）指名道姓非要定制硬调不可，要除外开去算。 
+既然在咱们该其组建系统中运行它，那么自是有关于设定这些包括着大小尺缩在内各项问题其皆全统统都归由它内部之所包含之 CSS 把它给全总包代理及完全控制承揽的干活去把调控！ 所以在您使用时就没必要且断然不能在此里加上如同这一类叫：`size-4`, 还有这种老写类法叫带有如： `w-4 h-4` 甚至别的各种只要是干着意图以试图越权重定篡改这组件本来之这尺寸这档事之各种诸此类推操作命令，无论这些图标被放入于这里头那些这这那那比如： `Button`, `DropdownMenuItem`, `Alert`, 以及还有诸类这如： `Sidebar*` 之内或者这系统别的等等。除非那人（提出要求那端的人）指名道姓非要定制硬调不可，要除外开去算。
 
 **违禁与错得离大谱举止:**
 
@@ -77,25 +77,25 @@
 const iconMap = {
   check: CheckIcon,
   alert: AlertIcon,
-}
+};
 
 function StatusBadge({ icon }: { icon: string }) {
-  const Icon = iconMap[icon]
-  return <Icon />
+  const Icon = iconMap[icon];
+  return <Icon />;
 }
 
-<StatusBadge icon="check" />
+<StatusBadge icon="check" />;
 ```
 
 **合乎这套完美体制所要求的做大范文做表法:**
 
 ```tsx
 // 从在这个专案底下已按所配预配置装妥那个其这指专门定这个这被称名叫: iconLibrary 也就是配置给这这套系统图库的地方如比像: lucide-react 里面或者它这也可以叫从那个啥: @tabler/icons-react 之类那儿引入这你要找要那要用之组件图来。
-import { CheckIcon } from "lucide-react"
+import { CheckIcon } from "lucide-react";
 
 function StatusBadge({ icon: Icon }: { icon: React.ComponentType }) {
-  return <Icon />
+  return <Icon />;
 }
 
-<StatusBadge icon={CheckIcon} />
+<StatusBadge icon={CheckIcon} />;
 ```

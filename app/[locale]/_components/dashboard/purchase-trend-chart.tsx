@@ -3,7 +3,12 @@
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 const purchaseData = [
   { date: "03-01", value: 1200000000 },
@@ -26,7 +31,9 @@ export function PurchaseTrendChart({ className }: { className?: string }) {
   } satisfies ChartConfig;
 
   return (
-    <Card className={`rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 mt-6 ${className || ""}`}>
+    <Card
+      className={`mt-6 rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 ${className || ""}`}
+    >
       <CardHeader className="flex flex-row items-center justify-between pb-6">
         <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-100">
           {t("purchaseTrend")}
@@ -34,15 +41,34 @@ export function PurchaseTrendChart({ className }: { className?: string }) {
         <span className="text-xs text-slate-400">{t("unitVND")}</span>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={purchaseConfig} className="h-[250px] min-h-[250px] w-full min-w-full">
-          <AreaChart accessibilityLayer data={purchaseData} margin={{ top: 10, left: 0, right: 0, bottom: 0 }}>
+        <ChartContainer
+          config={purchaseConfig}
+          className="h-[250px] min-h-[250px] w-full min-w-full"
+        >
+          <AreaChart
+            accessibilityLayer
+            data={purchaseData}
+            margin={{ top: 10, left: 0, right: 0, bottom: 0 }}
+          >
             <defs>
               <linearGradient id="fillPurchase" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-value)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="var(--color-value)" stopOpacity={0} />
+                <stop
+                  offset="5%"
+                  stopColor="var(--color-value)"
+                  stopOpacity={0.3}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="var(--color-value)"
+                  stopOpacity={0}
+                />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
+            <CartesianGrid
+              vertical={false}
+              strokeDasharray="3 3"
+              opacity={0.3}
+            />
             <XAxis
               dataKey="date"
               tickLine={false}
@@ -51,7 +77,7 @@ export function PurchaseTrendChart({ className }: { className?: string }) {
               fontSize={11}
               className="font-bold text-slate-400"
             />
-            <YAxis 
+            <YAxis
               tickLine={false}
               axisLine={false}
               tickMargin={12}
@@ -59,7 +85,10 @@ export function PurchaseTrendChart({ className }: { className?: string }) {
               className="text-slate-400"
               tickFormatter={(val) => `${(val / 1000000000).toFixed(1)}B`}
             />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent className="min-w-[150px]" />} />
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent className="min-w-[150px]" />}
+            />
             <Area
               type="monotone"
               dataKey="value"

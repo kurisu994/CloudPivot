@@ -41,13 +41,13 @@
 
 这也同样推及与涵盖并适应了所有的那种类似下面这个列表当中所归属于其本身体系性质组合里所有对应的配套家族组件们：
 
-| 具体的条目项目 (Item) | 该找的该包裹着它的组器 (Group) |
-|------|-------|
-| `SelectItem`, `SelectLabel` | `SelectGroup` |
-| `DropdownMenuItem`, `DropdownMenuLabel`, `DropdownMenuSub` | `DropdownMenuGroup` |
-| `MenubarItem` | `MenubarGroup` |
-| `ContextMenuItem` | `ContextMenuGroup` |
-| `CommandItem` | `CommandGroup` |
+| 具体的条目项目 (Item)                                      | 该找的该包裹着它的组器 (Group) |
+| ---------------------------------------------------------- | ------------------------------ |
+| `SelectItem`, `SelectLabel`                                | `SelectGroup`                  |
+| `DropdownMenuItem`, `DropdownMenuLabel`, `DropdownMenuSub` | `DropdownMenuGroup`            |
+| `MenubarItem`                                              | `MenubarGroup`                 |
+| `ContextMenuItem`                                          | `ContextMenuGroup`             |
+| `CommandItem`                                              | `CommandGroup`                 |
 
 ---
 
@@ -56,7 +56,9 @@
 ```tsx
 <Alert>
   <AlertTitle>提醒您有一项危险报警（Warning）</AlertTitle>
-  <AlertDescription>请看下方这里有些麻烦需要您出面处理（Something needs attention.）</AlertDescription>
+  <AlertDescription>
+    请看下方这里有些麻烦需要您出面处理（Something needs attention.）
+  </AlertDescription>
 </Alert>
 ```
 
@@ -67,9 +69,16 @@
 ```tsx
 <Empty>
   <EmptyHeader>
-    <EmptyMedia variant="icon"><FolderIcon /></EmptyMedia>
-    <EmptyTitle>当前系统当中找不着这所谓的最新工程（No projects yet）</EmptyTitle>
-    <EmptyDescription>你可以选择通过点击下方的创建钮作为新的一天起点！（Get started by creating a new project.）</EmptyDescription>
+    <EmptyMedia variant="icon">
+      <FolderIcon />
+    </EmptyMedia>
+    <EmptyTitle>
+      当前系统当中找不着这所谓的最新工程（No projects yet）
+    </EmptyTitle>
+    <EmptyDescription>
+      你可以选择通过点击下方的创建钮作为新的一天起点！（Get started by creating
+      a new project.）
+    </EmptyDescription>
   </EmptyHeader>
   <EmptyContent>
     <Button>我要立刻新建这个超级无敌新工程！（Create Project）</Button>
@@ -82,27 +91,27 @@
 ## 小弹吐司通知采用 sonner 组件
 
 ```tsx
-import { toast } from "sonner"
+import { toast } from "sonner";
 
-toast.success("成功搞定存储了。(Changes saved.)")
-toast.error("出问题啦！这下全搞砸了！(Something went wrong.)")
+toast.success("成功搞定存储了。(Changes saved.)");
+toast.error("出问题啦！这下全搞砸了！(Something went wrong.)");
 toast("所选文件目前已被物理粉碎！处理完毕(File deleted.)", {
   action: { label: "给我后悔倒回去", onClick: () => undoDelete() },
-})
+});
 ```
 
 ---
 
 ## 当从各式花样重叠与覆盖式面板进行取舍与运用说明
 
-| 您碰到的应用情形 | 对应配给的专门组件类 |
-|----------|-----------|
-| 对于某专门性质的操作需全情投入，高度专注并且一定需人去填写并给回一个明确的答复或者数据反馈的时候。 | `Dialog` 弹框 |
-| 提供类似彻底核销数据之类能毁灭搞没重要资产类高危事项发出警号供做最郑重的明确裁定时。 | `AlertDialog` 危险强确认框 |
-| 想调出一个能承载装有些复杂点细致入微的数据选项调节面或带有条件设置面板类的边角浮框处理 | `Sheet` 抽屉推板 |
-| 一种特别注重提供适应那类专门为了针对手机之类小型屏设备的触滑手势做自底向上抬升操作体验的下置面板 | `Drawer` 底层收纳推滑板 |
-| 短暂停靠掠过触发式地去拿取得到有关于目标物件快读情报与缩微简介 | `HoverCard` 悬游指触板 |
-| 点触式的小范围、高精准依附点击物的弹现区域进行补充内容扩展 | `Popover` 上浮气泡板 |
+| 您碰到的应用情形                                                                                   | 对应配给的专门组件类       |
+| -------------------------------------------------------------------------------------------------- | -------------------------- |
+| 对于某专门性质的操作需全情投入，高度专注并且一定需人去填写并给回一个明确的答复或者数据反馈的时候。 | `Dialog` 弹框              |
+| 提供类似彻底核销数据之类能毁灭搞没重要资产类高危事项发出警号供做最郑重的明确裁定时。               | `AlertDialog` 危险强确认框 |
+| 想调出一个能承载装有些复杂点细致入微的数据选项调节面或带有条件设置面板类的边角浮框处理             | `Sheet` 抽屉推板           |
+| 一种特别注重提供适应那类专门为了针对手机之类小型屏设备的触滑手势做自底向上抬升操作体验的下置面板   | `Drawer` 底层收纳推滑板    |
+| 短暂停靠掠过触发式地去拿取得到有关于目标物件快读情报与缩微简介                                     | `HoverCard` 悬游指触板     |
+| 点触式的小范围、高精准依附点击物的弹现区域进行补充内容扩展                                         | `Popover` 上浮气泡板       |
 
 ---
 
@@ -130,7 +139,9 @@ toast("所选文件目前已被物理粉碎！处理完毕(File deleted.)", {
 <Card>
   <CardHeader>
     <CardTitle>这是俺们公司的精英队名册 (Team Members)</CardTitle>
-    <CardDescription>这下面这里是专门管教整治你这帮精英用的后台（Manage your team.）。</CardDescription>
+    <CardDescription>
+      这下面这里是专门管教整治你这帮精英用的后台（Manage your team.）。
+    </CardDescription>
   </CardHeader>
   <CardContent>...</CardContent>
   <CardFooter>
@@ -162,7 +173,9 @@ toast("所选文件目前已被物理粉碎！处理完毕(File deleted.)", {
 <Tabs defaultValue="account">
   <TabsList>
     <TabsTrigger value="account">关于自我的账号数据 (Account)</TabsTrigger>
-    <TabsTrigger value="password">那关于更改绝密门禁信息处 (Password)</TabsTrigger>
+    <TabsTrigger value="password">
+      那关于更改绝密门禁信息处 (Password)
+    </TabsTrigger>
   </TabsList>
   <TabsContent value="account">...</TabsContent>
 </Tabs>
@@ -185,8 +198,8 @@ toast("所选文件目前已被物理粉碎！处理完毕(File deleted.)", {
 
 ## 尽量采用已经搭建配好包装提供的这系统本身相关内置成型好的组件进行表达应用； 不要妄加制造添加原生态的标签然后套自己涂写那各种没规矩样式的行为！
 
-| 你这土气的坏习惯动作可能以前长这样 | 请从此将其取代成高贵体面的这东西 |
-|---|---|
-| `<hr>` 或者自己乱做个边缘粗粗带有 `<div className="border-t">` | `<Separator />` |
-| `<div className="animate-pulse">` 然后乱加上各式自己发明的土嗨包装代码标签的 | `<Skeleton className="h-4 w-3/4" />` |
+| 你这土气的坏习惯动作可能以前长这样                                             | 请从此将其取代成高贵体面的这东西            |
+| ------------------------------------------------------------------------------ | ------------------------------------------- |
+| `<hr>` 或者自己乱做个边缘粗粗带有 `<div className="border-t">`                 | `<Separator />`                             |
+| `<div className="animate-pulse">` 然后乱加上各式自己发明的土嗨包装代码标签的   | `<Skeleton className="h-4 w-3/4" />`        |
 | 这个是去专门写上类似 `<span className="rounded-full bg-green-100 ...">` 这样的 | 而它只要用这：`<Badge variant="secondary">` |

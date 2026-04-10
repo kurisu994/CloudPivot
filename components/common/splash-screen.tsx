@@ -14,9 +14,9 @@ export function SplashScreen() {
       {/* 背景装饰 — 与登录页风格统一 */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         {/* 右上光晕 */}
-        <div className="absolute -top-32 -right-32 h-64 w-64 rounded-full bg-[#294985]/8 blur-3xl dark:bg-[#294985]/15 animate-[splash-glow_3s_ease-in-out_infinite]" />
+        <div className="absolute -top-32 -right-32 h-64 w-64 animate-[splash-glow_3s_ease-in-out_infinite] rounded-full bg-[#294985]/8 blur-3xl dark:bg-[#294985]/15" />
         {/* 左下光晕 */}
-        <div className="absolute -bottom-32 -left-32 h-64 w-64 rounded-full bg-[#294985]/8 blur-3xl dark:bg-[#294985]/15 animate-[splash-glow_3s_ease-in-out_infinite_1.5s]" />
+        <div className="absolute -bottom-32 -left-32 h-64 w-64 animate-[splash-glow_3s_ease-in-out_infinite_1.5s] rounded-full bg-[#294985]/8 blur-3xl dark:bg-[#294985]/15" />
         {/* 点阵纹理 */}
         <div
           className="absolute inset-0 opacity-[0.03] dark:opacity-[0.02]"
@@ -29,7 +29,7 @@ export function SplashScreen() {
       </div>
 
       {/* 主内容 */}
-      <div className="relative flex flex-col items-center animate-[splash-fade-in_0.6s_ease-out]">
+      <div className="relative flex animate-[splash-fade-in_0.6s_ease-out] flex-col items-center">
         {/* Logo */}
         <div className="mb-5 animate-[splash-float_2.5s_ease-in-out_infinite]">
           {/* 浅色 logo */}
@@ -67,20 +67,20 @@ export function SplashScreen() {
             CloudPivot
           </span>
         </h1>
-        <p className="mt-1.5 text-xs tracking-widest text-muted-foreground uppercase">
+        <p className="text-muted-foreground mt-1.5 text-xs tracking-widest uppercase">
           Inventory Management System
         </p>
 
         {/* 加载指示器 — 三段式脉冲进度条 */}
         <div className="mt-8 flex items-center gap-1.5">
-          <div className="h-1 w-6 rounded-full bg-[#294985]/20 dark:bg-slate-700 overflow-hidden">
-            <div className="h-full w-full rounded-full bg-[#294985] dark:bg-[#d4956a] animate-[splash-bar_1.4s_ease-in-out_infinite]" />
+          <div className="h-1 w-6 overflow-hidden rounded-full bg-[#294985]/20 dark:bg-slate-700">
+            <div className="h-full w-full animate-[splash-bar_1.4s_ease-in-out_infinite] rounded-full bg-[#294985] dark:bg-[#d4956a]" />
           </div>
-          <div className="h-1 w-6 rounded-full bg-[#294985]/20 dark:bg-slate-700 overflow-hidden">
-            <div className="h-full w-full rounded-full bg-[#294985] dark:bg-[#d4956a] animate-[splash-bar_1.4s_ease-in-out_infinite_0.2s]" />
+          <div className="h-1 w-6 overflow-hidden rounded-full bg-[#294985]/20 dark:bg-slate-700">
+            <div className="h-full w-full animate-[splash-bar_1.4s_ease-in-out_infinite_0.2s] rounded-full bg-[#294985] dark:bg-[#d4956a]" />
           </div>
-          <div className="h-1 w-6 rounded-full bg-[#294985]/20 dark:bg-slate-700 overflow-hidden">
-            <div className="h-full w-full rounded-full bg-[#294985] dark:bg-[#d4956a] animate-[splash-bar_1.4s_ease-in-out_infinite_0.4s]" />
+          <div className="h-1 w-6 overflow-hidden rounded-full bg-[#294985]/20 dark:bg-slate-700">
+            <div className="h-full w-full animate-[splash-bar_1.4s_ease-in-out_infinite_0.4s] rounded-full bg-[#294985] dark:bg-[#d4956a]" />
           </div>
         </div>
       </div>

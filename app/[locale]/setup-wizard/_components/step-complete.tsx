@@ -100,7 +100,7 @@ export function StepComplete({
             <h2 className="mb-4 text-3xl font-extrabold text-slate-900 dark:text-slate-100">
               {t("step3Title")}
             </h2>
-            <p className="text-lg font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+            <p className="text-lg leading-relaxed font-medium text-slate-500 dark:text-slate-400">
               {t("step3Subtitle")}
             </p>
           </div>

@@ -79,7 +79,7 @@ export function DisplayPreferencesProvider({
         setCompactView(map.get(SystemConfigKeys.COMPACT_LIST_VIEW) === "1");
         setLargeFont(map.get(SystemConfigKeys.LARGE_FONT_MODE) === "1");
         setSidebarAutoCollapse(
-          map.get(SystemConfigKeys.SIDEBAR_AUTO_COLLAPSE) === "1",
+          map.get(SystemConfigKeys.SIDEBAR_AUTO_COLLAPSE) === "1"
         );
       } catch (err) {
         console.warn("[DisplayPreferences] 加载配置失败，使用默认值:", err);
@@ -99,30 +99,27 @@ export function DisplayPreferencesProvider({
   }, [compactView, largeFont]);
 
   // ---- 更新单项偏好 ----
-  const updatePreference = useCallback(
-    async (key: string, value: boolean) => {
-      // 即时更新 UI
-      switch (key) {
-        case SystemConfigKeys.COMPACT_LIST_VIEW:
-          setCompactView(value);
-          break;
-        case SystemConfigKeys.LARGE_FONT_MODE:
-          setLargeFont(value);
-          break;
-        case SystemConfigKeys.SIDEBAR_AUTO_COLLAPSE:
-          setSidebarAutoCollapse(value);
-          break;
-      }
+  const updatePreference = useCallback(async (key: string, value: boolean) => {
+    // 即时更新 UI
+    switch (key) {
+      case SystemConfigKeys.COMPACT_LIST_VIEW:
+        setCompactView(value);
+        break;
+      case SystemConfigKeys.LARGE_FONT_MODE:
+        setLargeFont(value);
+        break;
+      case SystemConfigKeys.SIDEBAR_AUTO_COLLAPSE:
+        setSidebarAutoCollapse(value);
+        break;
+    }
 
-      // 异步持久化
-      try {
-        await setSystemConfig(key, value ? "1" : "0");
-      } catch (err) {
-        console.error("[DisplayPreferences] 保存配置失败:", err);
-      }
-    },
-    [],
-  );
+    // 异步持久化
+    try {
+      await setSystemConfig(key, value ? "1" : "0");
+    } catch (err) {
+      console.error("[DisplayPreferences] 保存配置失败:", err);
+    }
+  }, []);
 
   return (
     <DisplayPreferencesContext.Provider
@@ -152,7 +149,7 @@ export function useDisplayPreferences(): DisplayPreferencesContextValue {
   const ctx = useContext(DisplayPreferencesContext);
   if (!ctx) {
     throw new Error(
-      "useDisplayPreferences 必须在 DisplayPreferencesProvider 内使用",
+      "useDisplayPreferences 必须在 DisplayPreferencesProvider 内使用"
     );
   }
   return ctx;

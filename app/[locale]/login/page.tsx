@@ -16,10 +16,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { AppFooter } from "@/components/layout/app-footer";
 import { useAuth } from "@/components/providers/auth-provider";
 
@@ -127,7 +124,7 @@ export default function LoginPage() {
                     (CloudPivot IMS)
                   </span>
                 </h1>
-                <p className="mt-1.5 text-sm text-muted-foreground">
+                <p className="text-muted-foreground mt-1.5 text-sm">
                   {t("welcome")}
                 </p>
               </div>
@@ -145,12 +142,12 @@ export default function LoginPage() {
                 <div className="space-y-1.5">
                   <Label htmlFor="login-username">
                     {t("username")}{" "}
-                    <span className="font-normal text-muted-foreground">
+                    <span className="text-muted-foreground font-normal">
                       (Username)
                     </span>
                   </Label>
                   <div className="relative">
-                    <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <User className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                     <Input
                       id="login-username"
                       type="text"
@@ -171,12 +168,12 @@ export default function LoginPage() {
                 <div className="space-y-1.5">
                   <Label htmlFor="login-password">
                     {t("password")}{" "}
-                    <span className="font-normal text-muted-foreground">
+                    <span className="text-muted-foreground font-normal">
                       (Password)
                     </span>
                   </Label>
                   <div className="relative">
-                    <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Lock className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                     <Input
                       id="login-password"
                       type={showPassword ? "text" : "password"}
@@ -186,14 +183,14 @@ export default function LoginPage() {
                         setErrorMessage("");
                       }}
                       placeholder={t("passwordPlaceholder")}
-                      className="h-11 pl-10 pr-11"
+                      className="h-11 pr-11 pl-10"
                       autoComplete="current-password"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                      className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 transition-colors"
                       tabIndex={-1}
                     >
                       {showPassword ? (
@@ -209,7 +206,7 @@ export default function LoginPage() {
                 <div className="space-y-1.5">
                   <Label htmlFor="login-language">
                     {t("language")}{" "}
-                    <span className="font-normal text-muted-foreground">
+                    <span className="text-muted-foreground font-normal">
                       (Language)
                     </span>
                   </Label>

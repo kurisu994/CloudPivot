@@ -229,7 +229,8 @@ html[data-compact="true"] {
 }
 
 @keyframes splash-float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -238,7 +239,8 @@ html[data-compact="true"] {
 }
 
 @keyframes splash-bar {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(-100%);
   }
   50% {
@@ -247,7 +249,8 @@ html[data-compact="true"] {
 }
 
 @keyframes splash-glow {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.4;
     transform: scale(1);
   }

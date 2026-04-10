@@ -94,6 +94,7 @@ just icon                  # 基于 app-icon.png 生成全平台图标 (macOS/iO
 已安装组件：`badge` `button` `card` `chart` `checkbox` `input` `label` `progress` `radio-group` `select` `separator` `switch` `table` `tabs`
 
 常用但尚未安装的组件（按需 add）：
+
 - 布局类：`dialog` `drawer` `sheet` `accordion` `collapsible`
 - 表单类：`form` `field` `textarea` `combobox` `input-otp`
 - 数据展示：`pagination` `avatar` `tooltip` `hover-card` `skeleton` `empty`
@@ -133,6 +134,7 @@ const items = [
 ```
 
 **要点**：
+
 - `items` 格式为 `{ value: string, label: string }[]`
 - 动态选项使用 `useMemo` 派生 items，随数据源更新
 - `placeholder` 仅在 `value` 为空字符串 `""` 或 `undefined` 时生效
@@ -151,9 +153,13 @@ const items = [
 ```tsx
 import { setRequestLocale } from "next-intl/server";
 
-export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
   const { locale } = await params;
-  setRequestLocale(locale);  // SSG 必需
+  setRequestLocale(locale); // SSG 必需
   return <实际内容组件 />;
 }
 ```
@@ -225,6 +231,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 ### 错误处理
 
 统一错误类型 `AppError`（`src-tauri/src/error.rs`），实现 `Serialize` 以便 Tauri IPC 返回前端：
+
 - `Database(String)` — 数据库错误
 - `Sqlx(sqlx::Error)` — SQL 执行错误
 - `Auth(String)` — 认证错误
@@ -241,16 +248,17 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 
 实现任何业务功能前，**务必先查阅对应设计文档**：
 
-| 文档 | 用途 |
-|------|------|
-| `docs/01-requirements.md` | 业务规则、字段规格、校验规则 |
-| `docs/02-database-design.md` | 表结构、关联关系、DDL |
-| `docs/03-ui-prototype.md` | 页面布局、交互流程、组件规格 |
-| `docs/04-development-plan.md` | 任务分解、当前进度状态 |
+| 文档                          | 用途                         |
+| ----------------------------- | ---------------------------- |
+| `docs/01-requirements.md`     | 业务规则、字段规格、校验规则 |
+| `docs/02-database-design.md`  | 表结构、关联关系、DDL        |
+| `docs/03-ui-prototype.md`     | 页面布局、交互流程、组件规格 |
+| `docs/04-development-plan.md` | 任务分解、当前进度状态       |
 
 ## 当前状态（阶段一，约 95%）
 
 **已完成**：
+
 - 项目脚手架：Next.js 16 + Tailwind CSS 4 + shadcn/ui + ESLint/Prettier
 - i18n 框架：next-intl，多语言环境（中文/英文/越南语），已实现登录及看板等模块和基础组件多语言化
 - 布局组件：AppLayout（侧边栏 + 顶栏 + 主内容区 + 页脚）、Sidebar、Header、LocaleSwitcher、AppFooter
@@ -265,12 +273,14 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 - App Router 路由骨架：23 个业务路由目录
 
 **进行中**：
+
 - 业务模块页面 UI 及逻辑联调（准备推进供应商、库存和物料等具体业务）
 - Repository trait 抽象（业务数据 CRUD）
 - 业务 IPC 命令（物料、供应商、仓库、单据等）
 - 多币种前端集成（逻辑已就绪，待业务页面对接）
 
 **未开始**：
+
 - 剩余 20 个常规业务模块页面 UI 实现
 - 状态管理（zustand 已安装但未使用）
 - CI/CD

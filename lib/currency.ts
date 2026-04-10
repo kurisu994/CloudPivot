@@ -75,7 +75,10 @@ export function toDisplayAmount(amount: number, currency: Currency): number {
  * @param currency - 币种
  * @returns 数据库整数金额（最小货币单位）
  */
-export function toStorageAmount(displayAmount: number, currency: Currency): number {
+export function toStorageAmount(
+  displayAmount: number,
+  currency: Currency
+): number {
   const config = CURRENCY_CONFIGS[currency];
   return Math.round(displayAmount * config.factor);
 }
@@ -96,7 +99,7 @@ export function formatAmount(
     showSymbol?: boolean;
     /** 是否显示千分位分隔符，默认 true */
     showThousands?: boolean;
-  },
+  }
 ): string {
   const config = CURRENCY_CONFIGS[currency];
   const showSymbol = options?.showSymbol ?? true;
@@ -115,7 +118,7 @@ export function formatAmount(
   if (showThousands) {
     formattedInt = intPart.replace(
       /\B(?=(\d{3})+(?!\d))/g,
-      config.thousandsSeparator,
+      config.thousandsSeparator
     );
   }
 

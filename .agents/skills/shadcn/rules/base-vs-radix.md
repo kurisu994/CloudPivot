@@ -90,7 +90,9 @@ Radix 使用 `asChild` 属性将默认的直接下级元素代替为此组件本
 
 ```tsx
 <Select>
-  <SelectTrigger><SelectValue placeholder="选择一种水果" /></SelectTrigger>
+  <SelectTrigger>
+    <SelectValue placeholder="选择一种水果" />
+  </SelectTrigger>
 </Select>
 ```
 
@@ -157,7 +159,9 @@ const items = [
 <Select items={items} multiple defaultValue={[]}>
   <SelectTrigger>
     <SelectValue>
-      {(value: string[]) => value.length === 0 ? "请选择水果" : `当前共选了 ${value.length} 个`}
+      {(value: string[]) =>
+        value.length === 0 ? "请选择水果" : `当前共选了 ${value.length} 个`
+      }
     </SelectValue>
   </SelectTrigger>
   ...

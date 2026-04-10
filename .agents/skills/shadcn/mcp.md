@@ -13,13 +13,13 @@ shadcn mcp init   # 为你的编辑器写入配置
 
 编辑器配置文件位置：
 
-| 编辑器 | 配置文件 |
-|--------|------------|
-| Claude Code | `.mcp.json` |
-| Cursor | `.cursor/mcp.json` |
-| VS Code | `.vscode/mcp.json` |
-| OpenCode | `opencode.json` |
-| Codex | `~/.codex/config.toml` (手动配置) |
+| 编辑器      | 配置文件                          |
+| ----------- | --------------------------------- |
+| Claude Code | `.mcp.json`                       |
+| Cursor      | `.cursor/mcp.json`                |
+| VS Code     | `.vscode/mcp.json`                |
+| OpenCode    | `opencode.json`                   |
+| Codex       | `~/.codex/config.toml` (手动配置) |
 
 ---
 

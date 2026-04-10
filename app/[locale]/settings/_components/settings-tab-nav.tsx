@@ -35,10 +35,10 @@ export function SettingsTabNav() {
             key={tab.href}
             href={tab.href}
             className={cn(
-              "whitespace-nowrap rounded-lg px-5 py-2.5 text-sm font-medium transition-colors",
+              "rounded-lg px-5 py-2.5 text-sm font-medium whitespace-nowrap transition-colors",
               isActive
-                ? "bg-primary text-white font-bold shadow-sm"
-                : "text-slate-500 hover:text-primary"
+                ? "bg-primary font-bold text-white shadow-sm"
+                : "hover:text-primary text-slate-500"
             )}
           >
             {t(tab.titleKey)}

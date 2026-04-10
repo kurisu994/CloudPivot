@@ -59,11 +59,11 @@
 **对的搭配方式这般:**
 
 ```tsx
-import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
+import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
 
 <InputGroup>
   <InputGroupInput placeholder="输入点你想查点啥..." />
-</InputGroup>
+</InputGroup>;
 ```
 
 ---
@@ -77,7 +77,7 @@ import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 ```tsx
 <div className="relative">
   <Input placeholder="输入点啥字找找看..." className="pr-10" />
-  <Button className="absolute right-0 top-0" size="icon">
+  <Button className="absolute top-0 right-0" size="icon">
     <SearchIcon />
   </Button>
 </div>
@@ -86,7 +86,11 @@ import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 **正规范的搭法范例是这样:**
 
 ```tsx
-import { InputGroup, InputGroupInput, InputGroupAddon } from "@/components/ui/input-group"
+import {
+  InputGroup,
+  InputGroupInput,
+  InputGroupAddon,
+} from "@/components/ui/input-group";
 
 <InputGroup>
   <InputGroupInput placeholder="输入点啥字找找看..." />
@@ -95,7 +99,7 @@ import { InputGroup, InputGroupInput, InputGroupAddon } from "@/components/ui/in
       <SearchIcon data-icon="inline-start" />
     </Button>
   </InputGroupAddon>
-</InputGroup>
+</InputGroup>;
 ```
 
 ---
@@ -125,13 +129,13 @@ const [selected, setSelected] = useState("daily")
 **正确的引用是借助这个:**
 
 ```tsx
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 <ToggleGroup spacing={2}>
   <ToggleGroupItem value="daily">每天(Daily)</ToggleGroupItem>
   <ToggleGroupItem value="weekly">去他的一周一报！(Weekly)</ToggleGroupItem>
   <ToggleGroupItem value="monthly">每月(Monthly)</ToggleGroupItem>
-</ToggleGroup>
+</ToggleGroup>;
 ```
 
 若要把这些 Toggle 置放进了被附上了说明注签类外皮结构中： `Field` :
@@ -157,12 +161,18 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 ```tsx
 <FieldSet>
-  <FieldLegend variant="label">各类您所需要的个人癖好！ (Preferences)</FieldLegend>
-  <FieldDescription>在此处统统能够把那些合你能对味的东西选给你的。 (Select all that apply.)</FieldDescription>
+  <FieldLegend variant="label">
+    各类您所需要的个人癖好！ (Preferences)
+  </FieldLegend>
+  <FieldDescription>
+    在此处统统能够把那些合你能对味的东西选给你的。 (Select all that apply.)
+  </FieldDescription>
   <FieldGroup className="gap-3">
     <Field orientation="horizontal">
       <Checkbox id="dark" />
-      <FieldLabel htmlFor="dark" className="font-normal">这就开启夜鬼专用暗间工作模式</FieldLabel>
+      <FieldLabel htmlFor="dark" className="font-normal">
+        这就开启夜鬼专用暗间工作模式
+      </FieldLabel>
     </Field>
   </FieldGroup>
 </FieldSet>
@@ -172,7 +182,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 ## 包含字段的状态检验情况判定和失效断能等各种状态相关说明管理运用
 
-无论是哪层哪一面他们俩这两兄弟等都是要同时这被带上一块出现——属于加用那叫：  `data-invalid`/ 或是叫 `data-disabled` 那属性都是只能和并且也只配上于套在其最那个大套在外圈控制壳结构上的这也就是指 (包括这个标壳它外带含有的文字和提示，例如该类下叫 `Field` 的这类), 于此相配对的则属于内部包含的真这真正这真正其下具体工作用的： `aria-invalid`/ 它以及包括 `disabled` 那这个它就是仅仅被用来配属其核心操作按板上的挂设属性用的。 
+无论是哪层哪一面他们俩这两兄弟等都是要同时这被带上一块出现——属于加用那叫： `data-invalid`/ 或是叫 `data-disabled` 那属性都是只能和并且也只配上于套在其最那个大套在外圈控制壳结构上的这也就是指 (包括这个标壳它外带含有的文字和提示，例如该类下叫 `Field` 的这类), 于此相配对的则属于内部包含的真这真正这真正其下具体工作用的： `aria-invalid`/ 它以及包括 `disabled` 那这个它就是仅仅被用来配属其核心操作按板上的挂设属性用的。
 
 ```tsx
 // 没经过校验并处于无效的判定情况 (Invalid).

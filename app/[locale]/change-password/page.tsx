@@ -3,7 +3,14 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { ArrowRight, Eye, EyeOff, Info, KeyRound, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Info,
+  KeyRound,
+  ShieldCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -107,7 +114,7 @@ export default function ChangePasswordPage() {
                 >
                   {t("title")}
                 </h1>
-                <p className="mt-1.5 text-center text-sm text-muted-foreground">
+                <p className="text-muted-foreground mt-1.5 text-center text-sm">
                   {t("subtitle")}
                 </p>
               </div>
@@ -117,10 +124,11 @@ export default function ChangePasswordPage() {
                 {/* 新密码 */}
                 <div className="space-y-1.5">
                   <Label htmlFor="new-password">
-                    {t("newPassword")} <span className="text-destructive">*</span>
+                    {t("newPassword")}{" "}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <div className="relative">
-                    <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <KeyRound className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                     <Input
                       id="new-password"
                       type={showNewPassword ? "text" : "password"}
@@ -130,14 +138,14 @@ export default function ChangePasswordPage() {
                         setError("");
                       }}
                       placeholder={t("newPasswordPlaceholder")}
-                      className="h-11 pl-10 pr-11"
+                      className="h-11 pr-11 pl-10"
                       autoComplete="new-password"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                      className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 transition-colors"
                       tabIndex={-1}
                     >
                       {showNewPassword ? (
@@ -152,10 +160,11 @@ export default function ChangePasswordPage() {
                 {/* 确认密码 */}
                 <div className="space-y-1.5">
                   <Label htmlFor="confirm-password">
-                    {t("confirmPassword")} <span className="text-destructive">*</span>
+                    {t("confirmPassword")}{" "}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <div className="relative">
-                    <ShieldCheck className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <ShieldCheck className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                     <Input
                       id="confirm-password"
                       type={showConfirmPassword ? "text" : "password"}
@@ -166,8 +175,9 @@ export default function ChangePasswordPage() {
                       }}
                       placeholder={t("confirmPasswordPlaceholder")}
                       className={cn(
-                        "h-11 pl-10 pr-11",
-                        error && "border-destructive focus-visible:ring-destructive/20"
+                        "h-11 pr-11 pl-10",
+                        error &&
+                          "border-destructive focus-visible:ring-destructive/20"
                       )}
                       autoComplete="new-password"
                       required
@@ -177,7 +187,7 @@ export default function ChangePasswordPage() {
                       onClick={() =>
                         setShowConfirmPassword(!showConfirmPassword)
                       }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                      className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 transition-colors"
                       tabIndex={-1}
                     >
                       {showConfirmPassword ? (
@@ -188,7 +198,7 @@ export default function ChangePasswordPage() {
                     </button>
                   </div>
                   {error && (
-                    <p className="text-xs font-medium text-destructive">
+                    <p className="text-destructive text-xs font-medium">
                       {error}
                     </p>
                   )}

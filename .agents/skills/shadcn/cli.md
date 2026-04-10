@@ -25,20 +25,20 @@ npx shadcn@latest init [components...] [options]
 
 在现有项目中初始化 shadcn/ui，或创建新项目（当提供 `--name` 参数时）。可以在此步骤中同时安装组件。
 
-| 参数选项 | 简写 | 描述 | 默认值 |
-| ----------------------- | ----- | --------------------------------------------------------- | ------- |
-| `--template <template>` | `-t` | 模板 (next, start, vite, next-monorepo, react-router) | — |
-| `--preset [name]` | `-p` | 预设配置（名称、代码或 URL） | — |
-| `--yes` | `-y` | 跳过确认提示 | `true` |
-| `--defaults` | `-d` | 使用默认选项 (`--template=next --preset=base-nova`) | `false` |
-| `--force` | `-f` | 强制覆盖现有配置 | `false` |
-| `--cwd <cwd>` | `-c` | 工作目录 | 当前 |
-| `--name <name>` | `-n` | 新项目的名称 | — |
-| `--silent` | `-s` | 静默输出 | `false` |
-| `--rtl` | | 启用 RTL（从右到左阅读）支持 | — |
-| `--reinstall` | | 重新安装已有的 UI 组件 | `false` |
-| `--monorepo` | | 搭建一个 monorepo 项目 | — |
-| `--no-monorepo` | | 跳过 monorepo 提示 | — |
+| 参数选项                | 简写 | 描述                                                  | 默认值  |
+| ----------------------- | ---- | ----------------------------------------------------- | ------- |
+| `--template <template>` | `-t` | 模板 (next, start, vite, next-monorepo, react-router) | —       |
+| `--preset [name]`       | `-p` | 预设配置（名称、代码或 URL）                          | —       |
+| `--yes`                 | `-y` | 跳过确认提示                                          | `true`  |
+| `--defaults`            | `-d` | 使用默认选项 (`--template=next --preset=base-nova`)   | `false` |
+| `--force`               | `-f` | 强制覆盖现有配置                                      | `false` |
+| `--cwd <cwd>`           | `-c` | 工作目录                                              | 当前    |
+| `--name <name>`         | `-n` | 新项目的名称                                          | —       |
+| `--silent`              | `-s` | 静默输出                                              | `false` |
+| `--rtl`                 |      | 启用 RTL（从右到左阅读）支持                          | —       |
+| `--reinstall`           |      | 重新安装已有的 UI 组件                                | `false` |
+| `--monorepo`            |      | 搭建一个 monorepo 项目                                | —       |
+| `--no-monorepo`         |      | 跳过 monorepo 提示                                    | —       |
 
 `npx shadcn@latest create` 是 `npx shadcn@latest init` 的别名。
 
@@ -52,17 +52,17 @@ npx shadcn@latest add [components...] [options]
 
 支持组件名称、带有源前缀的组件（如 `@magicui/shimmer-button`）、URL 或本地路径。
 
-| 参数选项 | 简写 | 描述 | 默认值 |
-| --------------- | ----- | -------------------------------------------------------------------------------------------------------------------- | ------- |
-| `--yes` | `-y` | 跳过确认提示 | `false` |
-| `--overwrite` | `-o` | 覆盖现有文件 | `false` |
-| `--cwd <cwd>` | `-c` | 工作目录 | 当前 |
-| `--all` | `-a` | 添加所有可用的组件 | `false` |
-| `--path <path>` | `-p` | 组件的目标安装路径 | — |
-| `--silent` | `-s` | 静默输出 | `false` |
-| `--dry-run` | | 预览所有更改（不实际写入文件） | `false` |
-| `--diff [path]` | | 显示差异。如果不指定路径，显示前 5 个文件。如果指定路径，仅显示该文件（隐含 `--dry-run`） | — |
-| `--view [path]` | | 显示文件内容。如果不指定路径，显示前 5 个文件。如果指定路径，仅显示该文件（隐含 `--dry-run`） | — |
+| 参数选项        | 简写 | 描述                                                                                          | 默认值  |
+| --------------- | ---- | --------------------------------------------------------------------------------------------- | ------- |
+| `--yes`         | `-y` | 跳过确认提示                                                                                  | `false` |
+| `--overwrite`   | `-o` | 覆盖现有文件                                                                                  | `false` |
+| `--cwd <cwd>`   | `-c` | 工作目录                                                                                      | 当前    |
+| `--all`         | `-a` | 添加所有可用的组件                                                                            | `false` |
+| `--path <path>` | `-p` | 组件的目标安装路径                                                                            | —       |
+| `--silent`      | `-s` | 静默输出                                                                                      | `false` |
+| `--dry-run`     |      | 预览所有更改（不实际写入文件）                                                                | `false` |
+| `--diff [path]` |      | 显示差异。如果不指定路径，显示前 5 个文件。如果指定路径，仅显示该文件（隐含 `--dry-run`）     | —       |
+| `--view [path]` |      | 显示文件内容。如果不指定路径，显示前 5 个文件。如果指定路径，仅显示该文件（隐含 `--dry-run`） | —       |
 
 #### Dry-Run 模式 (空跑模式)
 
@@ -99,9 +99,9 @@ npx shadcn@latest add button --diff globals.css
 - 当检查将会对 `globals.css` 做出哪些 CSS 更改时 —— 使用 `--diff globals.css`。
 - 当用户要求在安装前审查第三方源的代码时 —— 使用 `--view` 检查源码。
 
-> **`npx shadcn@latest add --dry-run` 对比 `npx shadcn@latest view`：** 
-当用户想要预览对其项目的更改时，优先使用 `npx shadcn@latest add --dry-run/--diff/--view` 而不是 `npx shadcn@latest view`。
-`npx shadcn@latest view` 仅显示原始的镜像元数据。`npx shadcn@latest add --dry-run` 则显示在用户项目中将实际发生的具体操作：解析后的文件路径、与现有文件的差异以及 CSS 更新。仅当用户想脱离项目上下文浏览源信息时，才使用 `npx shadcn@latest view`。
+> **`npx shadcn@latest add --dry-run` 对比 `npx shadcn@latest view`：**
+> 当用户想要预览对其项目的更改时，优先使用 `npx shadcn@latest add --dry-run/--diff/--view` 而不是 `npx shadcn@latest view`。
+> `npx shadcn@latest view` 仅显示原始的镜像元数据。`npx shadcn@latest add --dry-run` 则显示在用户项目中将实际发生的具体操作：解析后的文件路径、与现有文件的差异以及 CSS 更新。仅当用户想脱离项目上下文浏览源信息时，才使用 `npx shadcn@latest view`。
 
 #### 从上游智能合并 (Smart Merge)
 
@@ -115,12 +115,12 @@ npx shadcn@latest search <registries...> [options]
 
 跨镜像源模糊搜索。也可以使用别名 `npx shadcn@latest list`。如果不加 `-q`，则列出所有项目。
 
-| 参数选项 | 简写 | 描述 | 默认值 |
-| ------------------- | ----- | ---------------------- | ------- |
-| `--query <query>` | `-q` | 搜索关键词 | — |
-| `--limit <number>` | `-l` | 每个镜像源的最大显示数 | `100` |
-| `--offset <number>` | `-o` | 跳过的项数 | `0` |
-| `--cwd <cwd>` | `-c` | 工作目录 | 当前 |
+| 参数选项            | 简写 | 描述                   | 默认值 |
+| ------------------- | ---- | ---------------------- | ------ |
+| `--query <query>`   | `-q` | 搜索关键词             | —      |
+| `--limit <number>`  | `-l` | 每个镜像源的最大显示数 | `100`  |
+| `--offset <number>` | `-o` | 跳过的项数             | `0`    |
+| `--cwd <cwd>`       | `-c` | 工作目录               | 当前   |
 
 ### `view` — 查看项目详情
 
@@ -166,43 +166,43 @@ npx shadcn@latest info [options]
 
 显示项目信息和 `components.json` 配置。**你应该首先运行此命令**，以发现项目的框架、路径别名、Tailwind 版本和解析后的文件路径。
 
-| 参数选项 | 简写 | 描述 | 默认值 |
-| ------------- | ----- | ----------------- | ------- |
-| `--cwd <cwd>` | `-c` | 工作目录 | 当前 |
+| 参数选项      | 简写 | 描述     | 默认值 |
+| ------------- | ---- | -------- | ------ |
+| `--cwd <cwd>` | `-c` | 工作目录 | 当前   |
 
 **项目信息字段 (Project Info fields)：**
 
-| 字段 | 类型 | 含义 |
-| -------------------- | --------- | ------------------------------------------------------------------ |
-| `framework` | `string` | 检测到的框架 (`next`, `vite`, `react-router`, `start`, 等) |
-| `frameworkVersion` | `string` | 框架版本 (如 `15.2.4`) |
-| `isSrcDir` | `boolean` | 项目是否使用 `src/` 目录 |
-| `isRSC` | `boolean` | 是否启用了 React Server Components (RSC) |
-| `isTsx` | `boolean` | 项目是否使用 TypeScript |
-| `tailwindVersion` | `string` | `"v3"` 或 `"v4"` |
-| `tailwindConfigFile` | `string` | Tailwind 配置文件的路径 |
-| `tailwindCssFile` | `string` | 全局 CSS 文件的路径 |
-| `aliasPrefix` | `string` | 导入的路径别名前缀 (如 `@`, `~`, `@/`) |
-| `packageManager` | `string` | 检测到的包管理器 (`npm`, `pnpm`, `yarn`, `bun`) |
+| 字段                 | 类型      | 含义                                                       |
+| -------------------- | --------- | ---------------------------------------------------------- |
+| `framework`          | `string`  | 检测到的框架 (`next`, `vite`, `react-router`, `start`, 等) |
+| `frameworkVersion`   | `string`  | 框架版本 (如 `15.2.4`)                                     |
+| `isSrcDir`           | `boolean` | 项目是否使用 `src/` 目录                                   |
+| `isRSC`              | `boolean` | 是否启用了 React Server Components (RSC)                   |
+| `isTsx`              | `boolean` | 项目是否使用 TypeScript                                    |
+| `tailwindVersion`    | `string`  | `"v3"` 或 `"v4"`                                           |
+| `tailwindConfigFile` | `string`  | Tailwind 配置文件的路径                                    |
+| `tailwindCssFile`    | `string`  | 全局 CSS 文件的路径                                        |
+| `aliasPrefix`        | `string`  | 导入的路径别名前缀 (如 `@`, `~`, `@/`)                     |
+| `packageManager`     | `string`  | 检测到的包管理器 (`npm`, `pnpm`, `yarn`, `bun`)            |
 
 **Components.json 字段：**
 
-| 字段 | 类型 | 含义 |
-| -------------------- | --------- | ------------------------------------------------------------------------------------------ |
-| `base` | `string` | 基础元件库 (`radix` 或 `base`) — 决定了组件的 API 和可用的 Props |
-| `style` | `string` | 视觉风格 (如 `nova`, `vega`) |
-| `rsc` | `boolean` | 来自配置的 RSC 标志 |
-| `tsx` | `boolean` | TypeScript 标志 |
-| `tailwind.config` | `string` | Tailwind 配置路径 |
-| `tailwind.css` | `string` | 全局 CSS 路径 —— 这里是定义自定义 CSS 变量的地方 |
-| `iconLibrary` | `string` | 图标库 —— 决定引入哪种图标包 (如 `lucide-react`, `@tabler/icons-react`) |
-| `aliases.components` | `string` | 组件导入别名 (如 `@/components`) |
-| `aliases.utils` | `string` | 工具函数导入别名 (如 `@/lib/utils`) |
-| `aliases.ui` | `string` | UI 组件导入别名 (如 `@/components/ui`) |
-| `aliases.lib` | `string` | Lib 包导入别名 (如 `@/lib`) |
-| `aliases.hooks` | `string` | Hooks 导入别名 (如 `@/hooks`) |
-| `resolvedPaths` | `object` | 每个别名在文件系统中的绝对路径 |
-| `registries` | `object` | 预先配置好的自定义镜像源 (registries) |
+| 字段                 | 类型      | 含义                                                                    |
+| -------------------- | --------- | ----------------------------------------------------------------------- |
+| `base`               | `string`  | 基础元件库 (`radix` 或 `base`) — 决定了组件的 API 和可用的 Props        |
+| `style`              | `string`  | 视觉风格 (如 `nova`, `vega`)                                            |
+| `rsc`                | `boolean` | 来自配置的 RSC 标志                                                     |
+| `tsx`                | `boolean` | TypeScript 标志                                                         |
+| `tailwind.config`    | `string`  | Tailwind 配置路径                                                       |
+| `tailwind.css`       | `string`  | 全局 CSS 路径 —— 这里是定义自定义 CSS 变量的地方                        |
+| `iconLibrary`        | `string`  | 图标库 —— 决定引入哪种图标包 (如 `lucide-react`, `@tabler/icons-react`) |
+| `aliases.components` | `string`  | 组件导入别名 (如 `@/components`)                                        |
+| `aliases.utils`      | `string`  | 工具函数导入别名 (如 `@/lib/utils`)                                     |
+| `aliases.ui`         | `string`  | UI 组件导入别名 (如 `@/components/ui`)                                  |
+| `aliases.lib`        | `string`  | Lib 包导入别名 (如 `@/lib`)                                             |
+| `aliases.hooks`      | `string`  | Hooks 导入别名 (如 `@/hooks`)                                           |
+| `resolvedPaths`      | `object`  | 每个别名在文件系统中的绝对路径                                          |
+| `registries`         | `object`  | 预先配置好的自定义镜像源 (registries)                                   |
 
 **链接字段 (Links fields)：**
 
@@ -216,23 +216,23 @@ npx shadcn@latest build [registry] [options]
 
 将 `registry.json` 构建为分发用的各个 JSON 文件。默认输入：`./registry.json`，默认输出：`./public/r`。
 
-| 参数选项 | 简写 | 描述 | 默认值 |
-| ----------------- | ----- | ----------------- | ------------ |
+| 参数选项          | 简写 | 描述     | 默认值       |
+| ----------------- | ---- | -------- | ------------ |
 | `--output <path>` | `-o` | 输出目录 | `./public/r` |
-| `--cwd <cwd>` | `-c` | 工作目录 | 当前 |
+| `--cwd <cwd>`     | `-c` | 工作目录 | 当前         |
 
 ---
 
 ## 模板 (Templates)
 
-| 值 | 框架 | 支持 Monorepo 吗 |
+| 值             | 框架           | 支持 Monorepo 吗 |
 | -------------- | -------------- | ---------------- |
-| `next` | Next.js | 是 |
-| `vite` | Vite | 是 |
-| `start` | TanStack Start | 是 |
-| `react-router` | React Router | 是 |
-| `astro` | Astro | 是 |
-| `laravel` | Laravel | 否 |
+| `next`         | Next.js        | 是               |
+| `vite`         | Vite           | 是               |
+| `start`        | TanStack Start | 是               |
+| `react-router` | React Router   | 是               |
+| `astro`        | Astro          | 是               |
+| `laravel`      | Laravel        | 否               |
 
 所有模板均支持通过 `--monorepo` 选项生成 monorepo 仓库。传递此参数时，CLI 使用特定于 monorepo 的模板目录（例如 `next-monorepo`，`vite-monorepo`）。如果不传递 `--monorepo` 和 `--no-monorepo`，CLI 将会交互式提示。Laravel 目前不支持 monorepo 搭建。
 
