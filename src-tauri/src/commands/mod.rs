@@ -3,6 +3,8 @@
 //! 定义所有前端可调用的 Tauri 命令。
 //! 命令通过 `#[tauri::command]` 注解暴露给前端。
 
+pub mod material;
+
 use serde::Deserialize;
 use tauri::State;
 

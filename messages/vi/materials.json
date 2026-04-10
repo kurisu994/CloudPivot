@@ -1,0 +1,109 @@
+{
+  "materials": {
+    "title": "Quản lý vật tư",
+    "subtitle": "Material List",
+    "description": "Tạo hồ sơ vật tư cho mua hàng, sản xuất và quản lý kho",
+    "searchPlaceholder": "Tìm kiếm (Mã/Tên)...",
+    "filters": {
+      "categoryAll": "Tất cả danh mục",
+      "typeAll": "Tất cả loại",
+      "statusAll": "Tất cả trạng thái",
+      "type": {
+        "raw": "Nguyên liệu",
+        "semi": "Bán thành phẩm",
+        "finished": "Thành phẩm"
+      },
+      "status": {
+        "active": "Hoạt động",
+        "inactive": "Vô hiệu hóa"
+      }
+    },
+    "actions": {
+      "reset": "Đặt lại",
+      "search": "Tìm kiếm...",
+      "add": "Thêm vật tư",
+      "import": "Nhập",
+      "export": "Xuất",
+      "edit": "Sửa",
+      "disable": "Vô hiệu hóa",
+      "enable": "Kích hoạt",
+      "bom": "BOM",
+      "save": "Lưu",
+      "cancel": "Hủy",
+      "confirm": "Xác nhận lưu"
+    },
+    "table": {
+      "codeName": "Mã/Tên",
+      "type": "Loại",
+      "category": "Danh mục",
+      "spec": "Quy cách",
+      "unit": "Đơn vị",
+      "refCost": "Giá nhập",
+      "salePrice": "Giá bán",
+      "stock": "Tồn kho",
+      "status": "Trạng thái",
+      "operations": "Thao tác",
+      "totalRecords": "Tổng {total} bản ghi",
+      "perPage": "{count}/trang",
+      "lowStock": "Tồn kho thấp",
+      "active": "Hoạt động",
+      "inactive": "Vô hiệu hóa"
+    },
+    "form": {
+      "addTitle": "Thêm vật tư",
+      "editTitle": "Sửa vật tư",
+      "sectionBasic": "Thông tin cơ bản",
+      "sectionPrice": "Thông tin giá",
+      "sectionStock": "Cài đặt kho",
+      "sectionTracking": "Đo lường & Theo dõi",
+      "sectionFurniture": "Thuộc tính nội thất",
+      "sectionOther": "Thông tin khác",
+      "code": "Mã vật tư",
+      "codePlaceholder": "Tự động hoặc nhập tay",
+      "name": "Tên vật tư",
+      "namePlaceholder": "Nhập tên đầy đủ vật tư",
+      "type": "Loại vật tư",
+      "category": "Danh mục",
+      "categoryPlaceholder": "Chọn danh mục",
+      "spec": "Quy cách",
+      "specPlaceholder": "VD: 1220*2440",
+      "baseUnit": "Đơn vị cơ bản",
+      "baseUnitPlaceholder": "Chọn đơn vị",
+      "auxUnit": "Đơn vị phụ",
+      "auxUnitPlaceholder": "Chọn đơn vị",
+      "conversionRate": "Tỷ lệ quy đổi",
+      "conversionRatePlaceholder": "Số lượng",
+      "refCostPrice": "Giá nhập tham khảo",
+      "salePrice": "Giá bán",
+      "safetyStock": "Tồn kho an toàn",
+      "safetyStockPlaceholder": "Số lượng cảnh báo tối thiểu",
+      "maxStock": "Tồn kho tối đa",
+      "maxStockPlaceholder": "Dung lượng tối đa",
+      "lotTrackingMode": "Theo dõi lô",
+      "lotTrackingModes": {
+        "none": "Không",
+        "optional": "Tùy chọn",
+        "required": "Bắt buộc"
+      },
+      "texture": "Vật liệu",
+      "texturePlaceholder": "VD: Gỗ sồi, MDF",
+      "color": "Màu sắc",
+      "colorPlaceholder": "VD: Gỗ tự nhiên, Đen mờ",
+      "surfaceCraft": "Bề mặt",
+      "surfaceCraftPlaceholder": "VD: Sơn, Veneer",
+      "dimensions": "Kích thước (mm)",
+      "labelL": "D",
+      "labelW": "R",
+      "labelH": "C",
+      "barcode": "Mã vạch",
+      "remark": "Ghi chú",
+      "requiredHint": "Tất cả các trường đánh dấu * là bắt buộc"
+    },
+    "validation": {
+      "nameRequired": "Vui lòng nhập tên vật tư",
+      "typeRequired": "Vui lòng chọn loại vật tư",
+      "categoryRequired": "Vui lòng chọn danh mục",
+      "baseUnitRequired": "Vui lòng chọn đơn vị"
+    }
+  }
+}

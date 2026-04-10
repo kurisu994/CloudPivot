@@ -208,11 +208,9 @@ function DefaultRow({
         </span>
       </div>
       {isEditing && options && onValueChange ? (
-        <Select disabled={disabled} value={value} onValueChange={(val) => val && onValueChange(val)}>
+        <Select disabled={disabled} value={value} onValueChange={(val) => val && onValueChange(val)} items={options}>
           <SelectTrigger className="h-8 w-[280px] bg-white dark:bg-slate-950">
-            <SelectValue placeholder={<span className="text-muted-foreground">{value}</span>}>
-              {options.find((opt) => opt.value === value)?.label || value}
-            </SelectValue>
+            <SelectValue placeholder={<span className="text-muted-foreground">{value}</span>} />
           </SelectTrigger>
           <SelectContent>
             {options.map((opt) => (

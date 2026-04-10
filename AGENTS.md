@@ -105,6 +105,39 @@ just icon                  # 基于 app-icon.png 生成全平台图标 (macOS/iO
 > 需要侧边抽屉用 `pnpm shadcn add sheet`，需要 toast 通知用 `pnpm shadcn add sonner`。  
 > **不要**手写 Modal/Drawer/Toast 等基础 UI。
 
+### Select 组件用法（⚠️ 重要）
+
+base-nova 预设的 Select 底层是 `@base-ui/react/select`（**非 Radix**），使用 Portal 渲染下拉内容。**必须传 `items` prop**，否则 `SelectValue` 在 Portal 挂载前无法解析显示文本，会显示原始 value 值而非 label。
+
+```tsx
+// ✅ 正确写法：传 items prop
+const items = [
+  { value: "daily", label: "每天 (04:00)" },
+  { value: "weekly", label: "每周" },
+];
+
+<Select defaultValue="daily" items={items}>
+  <SelectTrigger>
+    <SelectValue />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="daily">每天 (04:00)</SelectItem>
+    <SelectItem value="weekly">每周</SelectItem>
+  </SelectContent>
+</Select>
+
+// ❌ 错误写法：不传 items → SelectValue 显示 "daily" 而非 "每天 (04:00)"
+<Select defaultValue="daily">
+  ...
+</Select>
+```
+
+**要点**：
+- `items` 格式为 `{ value: string, label: string }[]`
+- 动态选项使用 `useMemo` 派生 items，随数据源更新
+- `placeholder` 仅在 `value` 为空字符串 `""` 或 `undefined` 时生效
+- `onValueChange` 回调参数类型为 `string | null`（与 Radix 的 `string` 不同）
+
 ### 语言与注释
 
 - **所有面向用户的文案**必须通过 `t()` 获取（`next-intl`），**严禁硬编码任何语言的字符串**

@@ -56,6 +56,12 @@ pub fn run() {
             commands::set_system_config,
             commands::set_system_configs,
             commands::setup_create_warehouses,
+            commands::material::get_categories,
+            commands::material::get_units,
+            commands::material::get_materials,
+            commands::material::get_material_by_id,
+            commands::material::save_material,
+            commands::material::toggle_material_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,0 +1,109 @@
+{
+  "materials": {
+    "title": "物料管理",
+    "subtitle": "Material List",
+    "description": "创建新的物料档案以供采购、生产和库存管理使用",
+    "searchPlaceholder": "搜索 (编码/名称)...",
+    "filters": {
+      "categoryAll": "物料分类 (All)",
+      "typeAll": "物料类型 (All)",
+      "statusAll": "状态 (All)",
+      "type": {
+        "raw": "原材料",
+        "semi": "半成品",
+        "finished": "成品"
+      },
+      "status": {
+        "active": "启用",
+        "inactive": "禁用"
+      }
+    },
+    "actions": {
+      "reset": "重置",
+      "search": "搜索...",
+      "add": "新增物料",
+      "import": "导入",
+      "export": "导出",
+      "edit": "编辑",
+      "disable": "禁用",
+      "enable": "启用",
+      "bom": "BOM",
+      "save": "保存",
+      "cancel": "取消",
+      "confirm": "确定保存"
+    },
+    "table": {
+      "codeName": "编码/名称",
+      "type": "类型",
+      "category": "分类",
+      "spec": "规格",
+      "unit": "单位",
+      "refCost": "进价",
+      "salePrice": "售价",
+      "stock": "库存",
+      "status": "状态",
+      "operations": "操作",
+      "totalRecords": "共 {total} 条记录",
+      "perPage": "{count}条/页",
+      "lowStock": "低库存",
+      "active": "启用",
+      "inactive": "禁用"
+    },
+    "form": {
+      "addTitle": "新增物料",
+      "editTitle": "编辑物料",
+      "sectionBasic": "基本信息",
+      "sectionPrice": "价格信息",
+      "sectionStock": "库存设置",
+      "sectionTracking": "计量与追踪",
+      "sectionFurniture": "家具属性",
+      "sectionOther": "其他信息",
+      "code": "物料编码",
+      "codePlaceholder": "自动生成或手动输入",
+      "name": "物料名称",
+      "namePlaceholder": "请输入物料全称",
+      "type": "物料类型",
+      "category": "所属分类",
+      "categoryPlaceholder": "请选择分类",
+      "spec": "规格型号",
+      "specPlaceholder": "如: 1220*2440",
+      "baseUnit": "计量单位",
+      "baseUnitPlaceholder": "请选择单位",
+      "auxUnit": "辅助单位",
+      "auxUnitPlaceholder": "请选择单位",
+      "conversionRate": "换算比例",
+      "conversionRatePlaceholder": "数量",
+      "refCostPrice": "参考进价",
+      "salePrice": "销售价格",
+      "safetyStock": "安全库存",
+      "safetyStockPlaceholder": "最小预警量",
+      "maxStock": "最高库存",
+      "maxStockPlaceholder": "最大容量",
+      "lotTrackingMode": "批次追踪",
+      "lotTrackingModes": {
+        "none": "不追踪",
+        "optional": "可选",
+        "required": "必填"
+      },
+      "texture": "材质",
+      "texturePlaceholder": "如: 橡木, 高密度板",
+      "color": "颜色",
+      "colorPlaceholder": "如: 原木色, 雅黑",
+      "surfaceCraft": "表面工艺",
+      "surfaceCraftPlaceholder": "如: 喷漆, 贴皮",
+      "dimensions": "尺寸信息 (mm)",
+      "labelL": "长 L",
+      "labelW": "宽 W",
+      "labelH": "高 H",
+      "barcode": "条形码",
+      "remark": "备注",
+      "requiredHint": "所有标有 * 的字段均为必填项"
+    },
+    "validation": {
+      "nameRequired": "请输入物料名称",
+      "typeRequired": "请选择物料类型",
+      "categoryRequired": "请选择分类",
+      "baseUnitRequired": "请选择基本单位"
+    }
+  }
+}

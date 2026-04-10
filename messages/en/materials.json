@@ -1,0 +1,109 @@
+{
+  "materials": {
+    "title": "Materials",
+    "subtitle": "Material List",
+    "description": "Create material records for procurement, production, and inventory management",
+    "searchPlaceholder": "Search (Code/Name)...",
+    "filters": {
+      "categoryAll": "All Categories",
+      "typeAll": "All Types",
+      "statusAll": "All Status",
+      "type": {
+        "raw": "Raw Material",
+        "semi": "Semi-finished",
+        "finished": "Finished"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      }
+    },
+    "actions": {
+      "reset": "Reset",
+      "search": "Search...",
+      "add": "Add Material",
+      "import": "Import",
+      "export": "Export",
+      "edit": "Edit",
+      "disable": "Disable",
+      "enable": "Enable",
+      "bom": "BOM",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirm": "Save"
+    },
+    "table": {
+      "codeName": "Code/Name",
+      "type": "Type",
+      "category": "Category",
+      "spec": "Spec",
+      "unit": "Unit",
+      "refCost": "Cost",
+      "salePrice": "Price",
+      "stock": "Stock",
+      "status": "Status",
+      "operations": "Action",
+      "totalRecords": "{total} records",
+      "perPage": "{count}/page",
+      "lowStock": "Low Stock",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "form": {
+      "addTitle": "Add Material",
+      "editTitle": "Edit Material",
+      "sectionBasic": "Basic Information",
+      "sectionPrice": "Pricing",
+      "sectionStock": "Stock Settings",
+      "sectionTracking": "Measurement & Tracking",
+      "sectionFurniture": "Furniture Properties",
+      "sectionOther": "Other Information",
+      "code": "Material Code",
+      "codePlaceholder": "Auto generated or input manually",
+      "name": "Material Name",
+      "namePlaceholder": "Enter material full name",
+      "type": "Material Type",
+      "category": "Category",
+      "categoryPlaceholder": "Select category",
+      "spec": "Specification",
+      "specPlaceholder": "e.g. 1220*2440",
+      "baseUnit": "Base Unit",
+      "baseUnitPlaceholder": "Select unit",
+      "auxUnit": "Aux Unit",
+      "auxUnitPlaceholder": "Select unit",
+      "conversionRate": "Conversion Rate",
+      "conversionRatePlaceholder": "Quantity",
+      "refCostPrice": "Ref Cost",
+      "salePrice": "Sale Price",
+      "safetyStock": "Safety Stock",
+      "safetyStockPlaceholder": "Min alert qty",
+      "maxStock": "Max Stock",
+      "maxStockPlaceholder": "Max capacity",
+      "lotTrackingMode": "Lot Tracking",
+      "lotTrackingModes": {
+        "none": "None",
+        "optional": "Optional",
+        "required": "Required"
+      },
+      "texture": "Texture",
+      "texturePlaceholder": "e.g. Oak, MDF",
+      "color": "Color",
+      "colorPlaceholder": "e.g. Natural, Matte Black",
+      "surfaceCraft": "Surface Craft",
+      "surfaceCraftPlaceholder": "e.g. Lacquer, Veneer",
+      "dimensions": "Dimensions (mm)",
+      "labelL": "L",
+      "labelW": "W",
+      "labelH": "H",
+      "barcode": "Barcode",
+      "remark": "Remark",
+      "requiredHint": "All fields marked with * are required"
+    },
+    "validation": {
+      "nameRequired": "Name is required",
+      "typeRequired": "Type is required",
+      "categoryRequired": "Category is required",
+      "baseUnitRequired": "Base unit is required"
+    }
+  }
+}
