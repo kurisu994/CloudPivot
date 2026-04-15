@@ -1,63 +1,134 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname } from "@/i18n/navigation";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { AppFooter } from "./app-footer";
 import { cn } from "@/lib/utils";
 import { useDisplayPreferences } from "@/components/providers/display-preferences-provider";
+import { SplashScreen } from "@/components/common/splash-screen";
 
 /** 侧边栏自动收起的窗口宽度阈值（px），使用 1280px (Tailwind xl) */
 const AUTO_COLLAPSE_BREAKPOINT = 1280;
 
+interface SidebarCollapseStore {
+  getSnapshot: () => boolean;
+  getServerSnapshot: () => boolean;
+  subscribe: (listener: () => void) => () => void;
+  toggle: () => void;
+  setAutoCollapseEnabled: (enabled: boolean) => void;
+}
+
 /**
- * 应用全局布局组件
- *
- * 组合侧边栏 + 顶栏 + 主内容区
- * 支持侧边栏自动收起（当启用且窗口宽度 < 1024px 时自动折叠）
+ * 侧边栏折叠外部状态：
+ * 1. 允许手动切换；
+ * 2. 自动收起开启时，在跨越断点时覆盖为窗口对应状态；
+ * 3. 设置项切换时无需在 effect 中直接 setState。
  */
-export function AppLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const { sidebarAutoCollapse } = useDisplayPreferences();
+function createSidebarCollapseStore(
+  initialAutoCollapseEnabled: boolean
+): SidebarCollapseStore {
+  let autoCollapseEnabled = initialAutoCollapseEnabled;
+  let collapsed = false;
+  let lastIsSmall = false;
+  let initialized = false;
+  const listeners = new Set<() => void>();
 
-  // 监听窗口大小变化（使用高兼容性的 resize 监听 + 状态防抖对比）
-  useEffect(() => {
-    if (!sidebarAutoCollapse) return;
+  const getIsSmallViewport = () => window.innerWidth < AUTO_COLLAPSE_BREAKPOINT;
 
-    // 初始状态
-    let lastIsSmall = window.innerWidth < AUTO_COLLAPSE_BREAKPOINT;
-    setSidebarCollapsed(lastIsSmall);
+  const notify = () => {
+    listeners.forEach((listener) => listener());
+  };
 
-    /** 原生 Resize 监听：只有当窗口大小真正跨越 1024px 临界值时，才触发状态改变 */
-    const handleResize = () => {
-      const currentIsSmall = window.innerWidth < AUTO_COLLAPSE_BREAKPOINT;
+  const ensureInitialized = () => {
+    if (initialized || typeof window === "undefined") {
+      return;
+    }
 
-      // 只有状态发生翻转时（大屏 -> 小屏，或小屏 -> 大屏）才更新，避免连续覆盖手动折叠干预
-      if (currentIsSmall !== lastIsSmall) {
-        lastIsSmall = currentIsSmall;
-        setSidebarCollapsed(currentIsSmall);
+    lastIsSmall = getIsSmallViewport();
+    collapsed = autoCollapseEnabled ? lastIsSmall : false;
+    initialized = true;
+  };
+
+  const setCollapsed = (nextCollapsed: boolean) => {
+    ensureInitialized();
+    if (collapsed === nextCollapsed) {
+      return;
+    }
+
+    collapsed = nextCollapsed;
+    notify();
+  };
+
+  const handleResize = () => {
+    ensureInitialized();
+
+    const currentIsSmall = getIsSmallViewport();
+    if (currentIsSmall === lastIsSmall) {
+      return;
+    }
+
+    lastIsSmall = currentIsSmall;
+
+    if (autoCollapseEnabled) {
+      setCollapsed(currentIsSmall);
+    }
+  };
+
+  return {
+    getSnapshot: () => {
+      ensureInitialized();
+      return collapsed;
+    },
+    getServerSnapshot: () => false,
+    subscribe: (listener) => {
+      ensureInitialized();
+      listeners.add(listener);
+
+      if (typeof window !== "undefined" && listeners.size === 1) {
+        window.addEventListener("resize", handleResize);
       }
-    };
 
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [sidebarAutoCollapse]);
+      return () => {
+        listeners.delete(listener);
+        if (typeof window !== "undefined" && listeners.size === 0) {
+          window.removeEventListener("resize", handleResize);
+        }
+      };
+    },
+    toggle: () => {
+      setCollapsed(!collapsed);
+    },
+    setAutoCollapseEnabled: (enabled) => {
+      ensureInitialized();
 
-  /** 认证相关页面（登录、改密码、向导等）无需主布局，直接渲染 */
-  const authRoutes = ["/login", "/change-password", "/setup-wizard"];
-  if (authRoutes.includes(pathname)) {
-    return <>{children}</>;
-  }
+      if (autoCollapseEnabled === enabled) {
+        return;
+      }
 
+      autoCollapseEnabled = enabled;
+
+      if (autoCollapseEnabled) {
+        setCollapsed(lastIsSmall);
+      }
+    },
+  };
+}
+
+function AppLayoutShell({
+  children,
+  sidebarCollapsed,
+  onToggleSidebar,
+}: {
+  children: React.ReactNode;
+  sidebarCollapsed: boolean;
+  onToggleSidebar: () => void;
+}) {
   return (
     <div className="bg-background flex h-screen overflow-hidden">
       {/* 侧边栏 */}
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-      />
+      <Sidebar collapsed={sidebarCollapsed} onToggle={onToggleSidebar} />
 
       {/* 主内容区 */}
       <div
@@ -67,9 +138,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         )}
       >
         {/* 顶部工具栏 */}
-        <Header
-          onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
+        <Header onToggleSidebar={onToggleSidebar} />
 
         {/* 页面内容主体（单独滚动） */}
         <main className="flex-1 overflow-y-auto bg-slate-50/50 p-6 dark:bg-slate-950/50">
@@ -80,5 +149,62 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <AppFooter />
       </div>
     </div>
+  );
+}
+
+function ManagedAppLayout({
+  children,
+  sidebarAutoCollapse,
+}: {
+  children: React.ReactNode;
+  sidebarAutoCollapse: boolean;
+}) {
+  const [store] = useState(() =>
+    createSidebarCollapseStore(sidebarAutoCollapse)
+  );
+  const sidebarCollapsed = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    store.getServerSnapshot
+  );
+
+  useEffect(() => {
+    store.setAutoCollapseEnabled(sidebarAutoCollapse);
+  }, [sidebarAutoCollapse, store]);
+
+  return (
+    <AppLayoutShell
+      sidebarCollapsed={sidebarCollapsed}
+      onToggleSidebar={store.toggle}
+    >
+      {children}
+    </AppLayoutShell>
+  );
+}
+
+/**
+ * 应用全局布局组件
+ *
+ * 组合侧边栏 + 顶栏 + 主内容区
+ * 支持侧边栏自动收起（当启用且窗口宽度 < 1024px 时自动折叠）
+ */
+export function AppLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { sidebarAutoCollapse, isLoading } = useDisplayPreferences();
+
+  /** 认证相关页面（登录、改密码、向导等）无需主布局，直接渲染 */
+  const authRoutes = ["/login", "/change-password", "/setup-wizard"];
+  if (authRoutes.includes(pathname)) {
+    return <>{children}</>;
+  }
+
+  if (isLoading) {
+    return <SplashScreen />;
+  }
+
+  return (
+    <ManagedAppLayout sidebarAutoCollapse={sidebarAutoCollapse}>
+      {children}
+    </ManagedAppLayout>
   );
 }

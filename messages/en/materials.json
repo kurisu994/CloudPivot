@@ -105,6 +105,12 @@
       "typeRequired": "Type is required",
       "categoryRequired": "Category is required",
       "baseUnitRequired": "Base unit is required"
+    },
+    "notifications": {
+      "loadMaterialsFailed": "Failed to load materials",
+      "materialEnabled": "Enabled",
+      "materialDisabled": "Disabled",
+      "toggleFailed": "Operation failed"
     }
   }
 }

@@ -10,7 +10,6 @@ import {
   Download,
   Coins,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 /**
  * 实时汇率卡片 (VND & CNY)

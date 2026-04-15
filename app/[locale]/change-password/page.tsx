@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import {
   ArrowRight,
   Eye,
@@ -29,7 +28,6 @@ import { useAuth } from "@/components/providers/auth-provider";
  */
 export default function ChangePasswordPage() {
   const t = useTranslations("changePassword");
-  const router = useRouter();
   const { changePassword, logout } = useAuth();
 
   const [newPassword, setNewPassword] = useState("");

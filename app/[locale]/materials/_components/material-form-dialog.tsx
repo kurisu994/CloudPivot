@@ -27,7 +27,7 @@ import {
   FieldLabel,
   FieldError,
 } from "@/components/ui/field";
-import { Separator } from "@/components/ui/separator";
+
 import { invoke, isTauriEnv } from "@/lib/tauri";
 import { toast } from "sonner";
 import type { CategoryOption, UnitOption } from "./materials-client-page";
@@ -505,7 +505,7 @@ export function MaterialFormDialog({
                       onValueChange={(v) =>
                         setField(
                           "aux_unit_id",
-                          v === "none" ? null : parseInt(v)
+                          !v || v === "none" ? null : parseInt(v)
                         )
                       }
                       items={auxUnitItems}

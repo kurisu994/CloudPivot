@@ -34,6 +34,18 @@ const MAX_FAILED_ATTEMPTS: i64 = 5;
 /// 锁定时长（分钟）
 const LOCK_DURATION_MINUTES: i64 = 15;
 
+/// 审计日志上下文
+struct OperationLogEntry<'a> {
+    module: &'a str,
+    action: &'a str,
+    target_type: &'a str,
+    target_id: Option<i64>,
+    target_no: Option<&'a str>,
+    detail: &'a str,
+    operator_user_id: Option<i64>,
+    operator_name: Option<&'a str>,
+}
+
 /// 确保初始管理员账号存在
 ///
 /// 应用启动时调用。如果 users 表为空，创建默认管理员。
@@ -87,14 +99,40 @@ pub async fn login(pool: &SqlitePool, username: &str, password: &str) -> Result<
             Some(r) => r,
             None => {
                 // 用户不存在 — 记录日志但不暴露具体原因
-                write_log(pool, "auth", "login_failed", "user", None, None, &format!("用户名不存在: {}", username), None, None).await;
+                write_log(
+                    pool,
+                    OperationLogEntry {
+                        module: "auth",
+                        action: "login_failed",
+                        target_type: "user",
+                        target_id: None,
+                        target_no: None,
+                        detail: &format!("用户名不存在: {}", username),
+                        operator_user_id: None,
+                        operator_name: None,
+                    },
+                )
+                .await;
                 return Err(AppError::Auth("用户名或密码错误".into()));
             }
         };
 
     // 检查是否启用
     if is_enabled == 0 {
-        write_log(pool, "auth", "login_failed", "user", Some(id), None, &format!("账号已禁用: {}", uname), Some(id), Some(&display_name)).await;
+        write_log(
+            pool,
+            OperationLogEntry {
+                module: "auth",
+                action: "login_failed",
+                target_type: "user",
+                target_id: Some(id),
+                target_no: None,
+                detail: &format!("账号已禁用: {}", uname),
+                operator_user_id: Some(id),
+                operator_name: Some(&display_name),
+            },
+        )
+        .await;
         return Err(AppError::Auth("账号已被禁用".into()));
     }
 
@@ -102,7 +140,20 @@ pub async fn login(pool: &SqlitePool, username: &str, password: &str) -> Result<
     if let Some(ref locked) = locked_until {
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
         if locked > &now {
-            write_log(pool, "auth", "login_failed", "user", Some(id), None, &format!("账号锁定中，解锁时间: {}", locked), Some(id), Some(&display_name)).await;
+            write_log(
+                pool,
+                OperationLogEntry {
+                    module: "auth",
+                    action: "login_failed",
+                    target_type: "user",
+                    target_id: Some(id),
+                    target_no: None,
+                    detail: &format!("账号锁定中，解锁时间: {}", locked),
+                    operator_user_id: Some(id),
+                    operator_name: Some(&display_name),
+                },
+            )
+            .await;
             return Err(AppError::Auth(format!(
                 "账号已被锁定，请在 {} 后重试", locked
             )));
@@ -132,7 +183,23 @@ pub async fn login(pool: &SqlitePool, username: &str, password: &str) -> Result<
             .await
             .map_err(|e| AppError::Database(format!("更新锁定状态失败: {}", e)))?;
 
-            write_log(pool, "auth", "account_locked", "user", Some(id), None, &format!("连续失败 {} 次，锁定 {} 分钟", MAX_FAILED_ATTEMPTS, LOCK_DURATION_MINUTES), Some(id), Some(&display_name)).await;
+            write_log(
+                pool,
+                OperationLogEntry {
+                    module: "auth",
+                    action: "account_locked",
+                    target_type: "user",
+                    target_id: Some(id),
+                    target_no: None,
+                    detail: &format!(
+                        "连续失败 {} 次，锁定 {} 分钟",
+                        MAX_FAILED_ATTEMPTS, LOCK_DURATION_MINUTES
+                    ),
+                    operator_user_id: Some(id),
+                    operator_name: Some(&display_name),
+                },
+            )
+            .await;
 
             return Err(AppError::Auth(format!(
                 "连续登录失败 {} 次，账号已锁定 {} 分钟",
@@ -149,7 +216,20 @@ pub async fn login(pool: &SqlitePool, username: &str, password: &str) -> Result<
             .map_err(|e| AppError::Database(format!("更新失败次数失败: {}", e)))?;
         }
 
-        write_log(pool, "auth", "login_failed", "user", Some(id), None, &format!("密码错误，第 {} 次失败", new_count), Some(id), Some(&display_name)).await;
+        write_log(
+            pool,
+            OperationLogEntry {
+                module: "auth",
+                action: "login_failed",
+                target_type: "user",
+                target_id: Some(id),
+                target_no: None,
+                detail: &format!("密码错误，第 {} 次失败", new_count),
+                operator_user_id: Some(id),
+                operator_name: Some(&display_name),
+            },
+        )
+        .await;
 
         return Err(AppError::Auth("用户名或密码错误".into()));
     }
@@ -182,7 +262,20 @@ pub async fn login(pool: &SqlitePool, username: &str, password: &str) -> Result<
     };
 
     // 记录登录成功日志
-    write_log(pool, "auth", "login_success", "user", Some(user.id), None, &format!("用户 {} 登录成功", user.username), Some(user.id), Some(&user.display_name)).await;
+    write_log(
+        pool,
+        OperationLogEntry {
+            module: "auth",
+            action: "login_success",
+            target_type: "user",
+            target_id: Some(user.id),
+            target_no: None,
+            detail: &format!("用户 {} 登录成功", user.username),
+            operator_user_id: Some(user.id),
+            operator_name: Some(&user.display_name),
+        },
+    )
+    .await;
 
     Ok(LoginResponse {
         must_change_password: user.must_change_password,
@@ -252,7 +345,20 @@ pub async fn change_password(
     .await
     .map_err(|e| AppError::Database(format!("查询用户信息失败: {}", e)))?;
 
-    write_log(pool, "auth", "change_password", "user", Some(user_id), None, &format!("用户 {} 修改密码成功", username), Some(user_id), Some(&display_name)).await;
+    write_log(
+        pool,
+        OperationLogEntry {
+            module: "auth",
+            action: "change_password",
+            target_type: "user",
+            target_id: Some(user_id),
+            target_no: None,
+            detail: &format!("用户 {} 修改密码成功", username),
+            operator_user_id: Some(user_id),
+            operator_name: Some(&display_name),
+        },
+    )
+    .await;
 
     log::info!("用户 {} 修改密码成功", user_id);
     Ok(())
@@ -288,27 +394,20 @@ pub async fn get_user_info(pool: &SqlitePool, user_id: i64) -> Result<UserInfo, 
 /// 日志写入失败不影响业务流程（仅打印警告）。
 async fn write_log(
     pool: &SqlitePool,
-    module: &str,
-    action: &str,
-    target_type: &str,
-    target_id: Option<i64>,
-    target_no: Option<&str>,
-    detail: &str,
-    operator_user_id: Option<i64>,
-    operator_name: Option<&str>,
+    entry: OperationLogEntry<'_>,
 ) {
     let result = sqlx::query(
         "INSERT INTO operation_logs (module, action, target_type, target_id, target_no, detail, operator_user_id, operator_name_snapshot)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     )
-    .bind(module)
-    .bind(action)
-    .bind(target_type)
-    .bind(target_id)
-    .bind(target_no)
-    .bind(detail)
-    .bind(operator_user_id)
-    .bind(operator_name)
+    .bind(entry.module)
+    .bind(entry.action)
+    .bind(entry.target_type)
+    .bind(entry.target_id)
+    .bind(entry.target_no)
+    .bind(entry.detail)
+    .bind(entry.operator_user_id)
+    .bind(entry.operator_name)
     .execute(pool)
     .await;
 

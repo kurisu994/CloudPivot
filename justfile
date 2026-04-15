@@ -1,6 +1,7 @@
 # CloudPivot — 项目命令入口
 # 使用 `just <command>` 运行
 
+set dotenv-load
 # 默认命令：显示帮助
 default:
     @just --list

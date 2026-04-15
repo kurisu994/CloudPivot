@@ -105,6 +105,12 @@
       "typeRequired": "请选择物料类型",
       "categoryRequired": "请选择分类",
       "baseUnitRequired": "请选择基本单位"
+    },
+    "notifications": {
+      "loadMaterialsFailed": "加载物料失败",
+      "materialEnabled": "已启用",
+      "materialDisabled": "已禁用",
+      "toggleFailed": "操作失败"
     }
   }
 }

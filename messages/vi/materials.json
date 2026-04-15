@@ -105,6 +105,12 @@
       "typeRequired": "Vui lòng chọn loại vật tư",
       "categoryRequired": "Vui lòng chọn danh mục",
       "baseUnitRequired": "Vui lòng chọn đơn vị"
+    },
+    "notifications": {
+      "loadMaterialsFailed": "Tải danh sách vật tư thất bại",
+      "materialEnabled": "Đã bật",
+      "materialDisabled": "Đã tắt",
+      "toggleFailed": "Thao tác thất bại"
     }
   }
 }

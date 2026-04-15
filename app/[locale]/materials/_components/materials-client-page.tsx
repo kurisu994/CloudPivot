@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { buildToggleMaterialStatusArgs } from "./material-command-args";
 import { MaterialTable } from "./material-table";
 import { MaterialFormDialog } from "./material-form-dialog";
 import { invoke, isTauriEnv } from "@/lib/tauri";
@@ -270,11 +271,13 @@ export function MaterialsClientPage() {
       setData(res.items);
       setTotal(res.total);
     } catch (e) {
-      toast.error(typeof e === "string" ? e : "加载物料失败");
+      toast.error(
+        typeof e === "string" ? e : t("notifications.loadMaterialsFailed")
+      );
     } finally {
       setLoading(false);
     }
-  }, [keyword, categoryId, materialType, status, page, pageSize]);
+  }, [keyword, categoryId, materialType, status, page, pageSize, t]);
 
   useEffect(() => {
     fetchOptions();
@@ -298,18 +301,31 @@ export function MaterialsClientPage() {
 
   const handleToggleStatus = async (id: number, currentEnabled: boolean) => {
     if (!isTauriEnv()) {
-      toast.success(currentEnabled ? "已禁用" : "已启用");
+      setData((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, is_enabled: !currentEnabled } : item
+        )
+      );
+      toast.success(
+        currentEnabled
+          ? t("notifications.materialDisabled")
+          : t("notifications.materialEnabled")
+      );
       return;
     }
     try {
-      await invoke("toggle_material_status", {
-        id,
-        isEnabled: !currentEnabled,
-      });
-      toast.success(currentEnabled ? "已禁用" : "已启用");
+      await invoke(
+        "toggle_material_status",
+        buildToggleMaterialStatusArgs(id, currentEnabled)
+      );
+      toast.success(
+        currentEnabled
+          ? t("notifications.materialDisabled")
+          : t("notifications.materialEnabled")
+      );
       fetchMaterials();
     } catch (e) {
-      toast.error(typeof e === "string" ? e : "操作失败");
+      toast.error(typeof e === "string" ? e : t("notifications.toggleFailed"));
     }
   };
 
@@ -343,7 +359,7 @@ export function MaterialsClientPage() {
           {/* 分类 */}
           <Select
             value={categoryId}
-            onValueChange={setCategoryId}
+            onValueChange={(value) => setCategoryId(value ?? "all")}
             items={categoryItems}
           >
             <SelectTrigger className="w-[150px]">
@@ -360,7 +376,7 @@ export function MaterialsClientPage() {
           {/* 类型 */}
           <Select
             value={materialType}
-            onValueChange={setMaterialType}
+            onValueChange={(value) => setMaterialType(value ?? "all")}
             items={typeItems}
           >
             <SelectTrigger className="w-[150px]">
@@ -375,7 +391,11 @@ export function MaterialsClientPage() {
             </SelectContent>
           </Select>
           {/* 状态 */}
-          <Select value={status} onValueChange={setStatus} items={statusItems}>
+          <Select
+            value={status}
+            onValueChange={(value) => setStatus(value ?? "all")}
+            items={statusItems}
+          >
             <SelectTrigger className="w-[130px]">
               <SelectValue />
             </SelectTrigger>

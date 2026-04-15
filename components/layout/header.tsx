@@ -6,7 +6,13 @@ import { Bell, Sun, Moon, Monitor, User, ChevronRight } from "lucide-react";
 import { usePathname, Link } from "@/i18n/navigation";
 import { navConfig } from "@/config/nav";
 import { LocaleSwitcher } from "./locale-switcher";
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useSyncExternalStore,
+} from "react";
 import { SystemConfigKeys } from "@/lib/types/system-config";
 import { setSystemConfig } from "@/lib/tauri";
 
@@ -16,6 +22,20 @@ const themeOptions = [
   { value: "dark", icon: Moon, labelKey: "header.themeDark" },
   { value: "system", icon: Monitor, labelKey: "header.themeSystem" },
 ] as const;
+
+/** SSR/CSR 一致的挂载态订阅器 */
+function subscribeToMountedState() {
+  return () => {};
+}
+
+/** 用外部存储快照替代 effect 补 mounted，避免额外级联渲染 */
+function useMounted() {
+  return useSyncExternalStore(
+    subscribeToMountedState,
+    () => true,
+    () => false
+  );
+}
 
 /** 根据当前路径查找面包屑链 */
 function useBreadcrumbs(): { titleKey: string; href?: string }[] {
@@ -72,8 +92,7 @@ function ThemeSwitcher() {
   }, []);
 
   // 解决 next-themes hydration mismatch：SSR 时 theme 为 undefined
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   /** 切换主题并持久化 */
   const handleSwitch = useCallback(

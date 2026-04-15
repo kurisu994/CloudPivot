@@ -160,7 +160,6 @@ pub async fn get_materials(
         add_where_or_and!(&mut data_query);
         data_query.push("m.is_enabled = ");
         data_query.push_bind(val);
-        has_where = true;
     }
 
     let total: (i64,) = count_query
