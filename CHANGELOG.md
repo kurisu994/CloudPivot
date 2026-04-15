@@ -32,6 +32,8 @@
 - **首次使用向导**：完成系统首次使用向导前端集成与核心逻辑，为新用户引导基础配置
 - **加载体验升级**：添加品牌闪屏（Splash Screen）加载动画组件，优化了 logo 宽度显示，提升开箱视觉体验
 - **物料管理模块**：实现物料管理前端完整功能与逻辑，使用基础组件库对其表格等界面进行了全量重构对齐
+- **CI/CD 流水线**：GitHub Actions 自动化 CI（ESLint + TypeScript + clippy + fmt + cargo test + 四平台构建验证），PR/push 到 main 自动触发
+- **发布与安装包构建**：tag 触发的 Release 流水线，自动四平台（macOS arm64/x64、Linux x64、Windows x64）出包，含 Updater 签名与 CHANGELOG 提取；本地 `just release` 一键完成版本号同步、CHANGELOG 切版、打 tag 推送
 
 ### 优化
 
