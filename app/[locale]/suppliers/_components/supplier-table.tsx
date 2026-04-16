@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { Supplier } from './suppliers-content'
+import type { SupplierListItem } from '@/lib/tauri'
 import { COUNTRY_OPTIONS, GRADE_OPTIONS } from './suppliers-content'
 
 /** 等级对应的颜色样式 */
@@ -18,14 +18,24 @@ const GRADE_COLORS: Record<string, string> = {
 }
 
 interface SupplierTableProps {
-  suppliers: Supplier[]
-  onEdit: (supplier: Supplier) => void
+  suppliers: SupplierListItem[]
+  loading?: boolean
+  onEdit: (supplier: SupplierListItem) => void
+  onToggleStatus?: (supplier: SupplierListItem) => void
 }
 
 /** 供应商数据表格 */
-export function SupplierTable({ suppliers, onEdit }: SupplierTableProps) {
+export function SupplierTable({ suppliers, loading, onEdit, onToggleStatus }: SupplierTableProps) {
   const t = useTranslations('suppliers')
   const tc = useTranslations('common')
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 py-16 dark:border-slate-800">
+        <p className="text-muted-foreground text-sm">{tc('loading')}...</p>
+      </div>
+    )
+  }
 
   if (suppliers.length === 0) {
     return (
@@ -69,10 +79,10 @@ export function SupplierTable({ suppliers, onEdit }: SupplierTableProps) {
               </TableCell>
 
               {/* 联系人 */}
-              <TableCell className="text-sm">{supplier.contactPerson || '—'}</TableCell>
+              <TableCell className="text-sm">{supplier.contactPerson ?? '—'}</TableCell>
 
               {/* 联系电话 */}
-              <TableCell className="text-sm">{supplier.contactPhone || '—'}</TableCell>
+              <TableCell className="text-sm">{supplier.contactPhone ?? '—'}</TableCell>
 
               {/* 等级 */}
               <TableCell>

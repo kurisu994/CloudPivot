@@ -5,13 +5,23 @@
 
 pub mod category;
 pub mod material;
+pub mod supplier;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use crate::auth::{self, LoginResponse, UserInfo};
 use crate::db::DbState;
 use crate::error::AppError;
+
+/// 分页响应（通用泛型，供各业务模块共用）
+#[derive(Debug, Serialize)]
+pub struct PaginatedResponse<T> {
+    pub total: i64,
+    pub items: Vec<T>,
+    pub page: u32,
+    pub page_size: u32,
+}
 
 /// ping 测试命令 — 验证前后端通信链路
 #[tauri::command]

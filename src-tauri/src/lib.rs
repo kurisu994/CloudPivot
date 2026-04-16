@@ -67,6 +67,12 @@ pub fn run() {
             commands::category::update_category,
             commands::category::delete_category,
             commands::category::update_category_order,
+            commands::supplier::get_suppliers,
+            commands::supplier::get_supplier_by_id,
+            commands::supplier::save_supplier,
+            commands::supplier::toggle_supplier_status,
+            commands::supplier::generate_supplier_code,
+            commands::supplier::get_supplier_categories,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

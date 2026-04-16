@@ -366,3 +366,257 @@ export async function updateCategoryOrder(items: CategorySortItem[]): Promise<vo
   }
   console.log('[Mock] updateCategoryOrder', items)
 }
+
+// ================================================================
+// 供应商管理命令
+// ================================================================
+
+/** 分页响应（通用，对应 Rust PaginatedResponse<T>） */
+export interface PaginatedResponse<T> {
+  total: number
+  items: T[]
+  page: number
+  page_size: number
+}
+
+/** 供应商列表项（对应 Rust SupplierListItem） */
+export interface SupplierListItem {
+  id: number
+  code: string
+  name: string
+  shortName: string | null
+  country: string
+  contactPerson: string | null
+  contactPhone: string | null
+  businessCategory: string | null
+  grade: string
+  currency: string
+  isEnabled: boolean
+}
+
+/** 供应商保存参数（对应 Rust SaveSupplierParams） */
+export interface SaveSupplierParams {
+  id?: number | null
+  code: string
+  name: string
+  shortName?: string | null
+  country: string
+  contactPerson?: string | null
+  contactPhone?: string | null
+  email?: string | null
+  businessCategory?: string | null
+  province?: string | null
+  city?: string | null
+  address?: string | null
+  bankName?: string | null
+  bankAccount?: string | null
+  taxId?: string | null
+  currency: string
+  settlementType: string
+  creditDays: number
+  grade: string
+  remark?: string | null
+  isEnabled: boolean
+}
+
+/** 供应商筛选参数 */
+export interface SupplierFilter {
+  keyword?: string
+  country?: string
+  businessCategory?: string
+  grade?: string
+  page: number
+  pageSize: number
+}
+
+/** Mock 供应商数据（Web 调试模式） */
+const MOCK_SUPPLIERS: SupplierListItem[] = [
+  {
+    id: 1,
+    code: 'SUP-2024-001',
+    name: 'Công ty TNHH Gỗ Bình Dương',
+    shortName: 'Gỗ Bình Dương',
+    country: 'VN',
+    contactPerson: 'Nguyễn Văn A',
+    contactPhone: '+84 274-123-4567',
+    businessCategory: '木材',
+    grade: 'A',
+    currency: 'VND',
+    isEnabled: true,
+  },
+  {
+    id: 2,
+    code: 'SUP-2024-002',
+    name: '东莞市恒达五金有限公司',
+    shortName: '恒达五金',
+    country: 'CN',
+    contactPerson: '张明华',
+    contactPhone: '+86 769-8888-7777',
+    businessCategory: '五金配件',
+    grade: 'A',
+    currency: 'CNY',
+    isEnabled: true,
+  },
+  {
+    id: 3,
+    code: 'SUP-2024-003',
+    name: 'Saigon Timber Trading Co., Ltd',
+    shortName: 'Saigon Timber',
+    country: 'VN',
+    contactPerson: 'Trần Thị B',
+    contactPhone: '+84 28-3456-7890',
+    businessCategory: '木材',
+    grade: 'B',
+    currency: 'VND',
+    isEnabled: true,
+  },
+  {
+    id: 4,
+    code: 'SUP-2024-004',
+    name: '佛山市顺德区欧瑞油漆有限公司',
+    shortName: '欧瑞油漆',
+    country: 'CN',
+    contactPerson: '李强',
+    contactPhone: '+86 757-2222-3333',
+    businessCategory: '油漆涂料',
+    grade: 'B',
+    currency: 'CNY',
+    isEnabled: true,
+  },
+  {
+    id: 5,
+    code: 'SUP-2024-005',
+    name: 'Malaysian Rubber Industries Sdn Bhd',
+    shortName: 'MRI Rubber',
+    country: 'MY',
+    contactPerson: 'Ahmad bin Hassan',
+    contactPhone: '+60 3-7890-1234',
+    businessCategory: '橡胶制品',
+    grade: 'A',
+    currency: 'USD',
+    isEnabled: true,
+  },
+]
+
+/** Mock 供应商详情（Web 调试模式） */
+const MOCK_SUPPLIER_DETAIL: SaveSupplierParams = {
+  id: 1,
+  code: 'SUP-2024-001',
+  name: 'Công ty TNHH Gỗ Bình Dương',
+  shortName: 'Gỗ Bình Dương',
+  country: 'VN',
+  contactPerson: 'Nguyễn Văn A',
+  contactPhone: '+84 274-123-4567',
+  email: 'contact@gobinhduong.vn',
+  businessCategory: '木材',
+  province: 'Bình Dương',
+  city: 'Thủ Dầu Một',
+  address: '123 Đại lộ Bình Dương, KCN Sóng Thần',
+  bankName: 'Vietcombank',
+  bankAccount: '0071001234567',
+  taxId: '3702345678',
+  currency: 'VND',
+  settlementType: 'monthly',
+  creditDays: 30,
+  grade: 'A',
+  remark: '',
+  isEnabled: true,
+}
+
+/**
+ * 查询供应商列表（支持筛选 + 分页）
+ *
+ * Tauri 环境调用后端 IPC；web 调试模式返回 mock 数据。
+ */
+export async function getSuppliers(filter: SupplierFilter): Promise<PaginatedResponse<SupplierListItem>> {
+  if (isTauriEnv()) {
+    return invoke<PaginatedResponse<SupplierListItem>>('get_suppliers', { filter })
+  }
+
+  // Web mock：客户端模拟筛选 + 分页
+  let filtered = [...MOCK_SUPPLIERS]
+  if (filter.keyword) {
+    const kw = filter.keyword.toLowerCase()
+    filtered = filtered.filter(s => s.code.toLowerCase().includes(kw) || s.name.toLowerCase().includes(kw))
+  }
+  if (filter.country) {
+    filtered = filtered.filter(s => s.country === filter.country)
+  }
+  if (filter.grade) {
+    filtered = filtered.filter(s => s.grade === filter.grade)
+  }
+  if (filter.businessCategory) {
+    filtered = filtered.filter(s => s.businessCategory === filter.businessCategory)
+  }
+  const start = (filter.page - 1) * filter.pageSize
+  return {
+    total: filtered.length,
+    items: filtered.slice(start, start + filter.pageSize),
+    page: filter.page,
+    page_size: filter.pageSize,
+  }
+}
+
+/**
+ * 获取供应商详情（用于编辑表单）
+ */
+export async function getSupplierById(id: number): Promise<SaveSupplierParams> {
+  if (isTauriEnv()) {
+    return invoke<SaveSupplierParams>('get_supplier_by_id', { id })
+  }
+  // Web mock：找到匹配的或返回默认
+  const found = MOCK_SUPPLIERS.find(s => s.id === id)
+  if (found) {
+    return { ...MOCK_SUPPLIER_DETAIL, ...found }
+  }
+  return { ...MOCK_SUPPLIER_DETAIL }
+}
+
+/**
+ * 保存供应商（新增或更新）
+ *
+ * @returns 供应商 ID
+ */
+export async function saveSupplier(params: SaveSupplierParams): Promise<number> {
+  if (isTauriEnv()) {
+    return invoke<number>('save_supplier', { params })
+  }
+  // Web mock
+  const id = params.id ?? Date.now()
+  console.log('[Mock] saveSupplier', id, params)
+  return id
+}
+
+/**
+ * 切换供应商启用/禁用状态
+ */
+export async function toggleSupplierStatus(id: number, isEnabled: boolean): Promise<void> {
+  if (isTauriEnv()) {
+    return invoke<void>('toggle_supplier_status', { id, is_enabled: isEnabled })
+  }
+  console.log('[Mock] toggleSupplierStatus', id, isEnabled)
+}
+
+/**
+ * 生成下一个供应商编码
+ */
+export async function generateSupplierCode(): Promise<string> {
+  if (isTauriEnv()) {
+    return invoke<string>('generate_supplier_code')
+  }
+  // Web mock：随机编码
+  const year = new Date().getFullYear()
+  const seq = String(Math.floor(Math.random() * 900) + 100)
+  return `SUP-${year}-${seq}`
+}
+
+/**
+ * 获取经营类别去重列表（用于筛选下拉框）
+ */
+export async function getSupplierCategories(): Promise<string[]> {
+  if (isTauriEnv()) {
+    return invoke<string[]>('get_supplier_categories')
+  }
+  // Web mock
+  return [...new Set(MOCK_SUPPLIERS.map(s => s.businessCategory).filter(Boolean) as string[])]
+}

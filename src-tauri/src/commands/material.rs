@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, QueryBuilder, Sqlite};
 use tauri::State;
 
+use super::PaginatedResponse;
 use crate::db::DbState;
 use crate::error::AppError;
 
@@ -49,14 +50,6 @@ pub struct MaterialFilter {
     pub category_id: Option<i64>,
     pub material_type: Option<String>,
     pub is_enabled: Option<bool>,
-    pub page: u32,
-    pub page_size: u32,
-}
-
-#[derive(Debug, Serialize)]
-pub struct PaginatedResponse<T> {
-    pub total: i64,
-    pub items: Vec<T>,
     pub page: u32,
     pub page_size: u32,
 }

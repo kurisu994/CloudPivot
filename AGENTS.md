@@ -53,7 +53,7 @@ src-tauri/                 # Rust 后端
       mod.rs               # SQLite 连接池初始化 + PRAGMA 配置（WAL 模式）
       migration.rs         # 自管理迁移框架（include_str! 内嵌 SQL，版本化执行）
     commands/
-      mod.rs               # IPC 命令：ping、get_db_version、login、change_password、get_user_info
+      mod.rs               # IPC 命令：ping、get_db_version、login、change_password、get_user_info + 分类/物料/供应商 CRUD
   migrations/sqlite/
     001_init.sql           # 建表迁移（45 张表 DDL，44KB）
     002_seed_data.sql      # 种子数据（系统配置、默认分类等）
@@ -220,6 +220,7 @@ export default async function Page({
   - `login` — 用户登录（返回 `LoginResponse`）
   - `change_password` — 修改密码
   - `get_user_info` — 获取用户信息
+  - `get_suppliers` / `get_supplier_by_id` / `save_supplier` / `toggle_supplier_status` / `generate_supplier_code` / `get_supplier_categories` — 供应商 CRUD
 
 ### 数据库层
 
@@ -271,15 +272,16 @@ export default async function Page({
 - **页面级别开发**：已完成**系统设置**模块的两个重要子页（企业信息、显示偏好），并联调系统配置交互逻辑
 - **Rust 数据库层**：sqlx + SQLite 连接池、WAL PRAGMA、自管理迁移框架、45 张表 DDL + 种子数据
 - **用户认证（全栈）**：登录页 / 改密页 UI、AuthProvider 路由守卫、Rust 后端 bcrypt 认证 + 锁定 + session_version
-- **IPC 通信**：ping / get_db_version / login / change_password / get_user_info
+- **IPC 通信**：ping / get_db_version / login / change_password / get_user_info + 分类/物料/供应商 CRUD
+- **供应商管理（全栈）**：列表筛选分页 + Sheet 表单 + 后端 6 个 IPC 命令 + 编码自动生成
 - **前端工具库**：Tauri IPC 封装、多币种格式化、系统配置类型定义
 - App Router 路由骨架：23 个业务路由目录
 
 **进行中**：
 
-- 业务模块页面 UI 及逻辑联调（准备推进供应商、库存和物料等具体业务）
+- 业务模块页面 UI 及逻辑联调（准备推进库存和物料等具体业务）
 - Repository trait 抽象（业务数据 CRUD）
-- 业务 IPC 命令（物料、供应商、仓库、单据等）
+- 业务 IPC 命令（物料、仓库、单据等）
 - 多币种前端集成（逻辑已就绪，待业务页面对接）
 
 **未开始**：
