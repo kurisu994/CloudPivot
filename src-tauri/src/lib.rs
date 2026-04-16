@@ -69,10 +69,15 @@ pub fn run() {
             commands::category::update_category_order,
             commands::supplier::get_suppliers,
             commands::supplier::get_supplier_by_id,
+            commands::supplier::get_supplier_detail,
             commands::supplier::save_supplier,
+            commands::supplier::delete_supplier,
             commands::supplier::toggle_supplier_status,
             commands::supplier::generate_supplier_code,
             commands::supplier::get_supplier_categories,
+            commands::supplier::get_material_reference_options,
+            commands::supplier::save_supplier_material,
+            commands::supplier::delete_supplier_material,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
