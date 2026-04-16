@@ -16,7 +16,8 @@
       "!**/coverage/**",
       "!**/*.min.js",
       "!**/src-tauri/**",
-      "!**/*.js"
+      "!**/*.js",
+      "!next-env.d.ts"
     ]
   },
   "css": {

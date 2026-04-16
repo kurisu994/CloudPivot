@@ -159,9 +159,7 @@ pub async fn update_category(
             if let Some((Some(tp),)) = target_path {
                 // 如果目标父级的 path 以当前分类的 path 开头，说明是子节点
                 if tp.starts_with(&path) {
-                    return Err(AppError::Business(
-                        "不能将分类移动到其子分类下".to_string(),
-                    ));
+                    return Err(AppError::Business("不能将分类移动到其子分类下".to_string()));
                 }
             }
         }
@@ -232,12 +230,11 @@ pub async fn delete_category(db: State<'_, DbState>, id: i64) -> Result<(), AppE
     }
 
     // 检查是否有子分类
-    let child_count: (i64,) =
-        sqlx::query_as("SELECT COUNT(*) FROM categories WHERE parent_id = ?")
-            .bind(id)
-            .fetch_one(&db.pool)
-            .await
-            .map_err(|e| AppError::Database(format!("检查子分类失败: {}", e)))?;
+    let child_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM categories WHERE parent_id = ?")
+        .bind(id)
+        .fetch_one(&db.pool)
+        .await
+        .map_err(|e| AppError::Database(format!("检查子分类失败: {}", e)))?;
 
     if child_count.0 > 0 {
         return Err(AppError::Business(format!(
