@@ -11,7 +11,7 @@ import type { SupplierFilter, SupplierListItem } from '@/lib/tauri'
 import { deleteSupplier, getSupplierCategories, getSuppliers, toggleSupplierStatus } from '@/lib/tauri'
 import { SupplierDetailDialog } from './supplier-detail-dialog'
 import { buildToggleSupplierStatusArgs } from './supplier-helpers'
-import { SupplierSheet } from './supplier-sheet'
+import { SupplierDialog } from './supplier-dialog'
 import { SupplierTable } from './supplier-table'
 
 export const COUNTRY_OPTIONS = [
@@ -321,7 +321,7 @@ export function SuppliersContent() {
         </div>
       )}
 
-      <SupplierSheet open={dialogOpen} onOpenChange={setDialogOpen} supplierId={editingSupplierId} onSaved={handleSaved} />
+      <SupplierDialog open={dialogOpen} onOpenChange={setDialogOpen} supplierId={editingSupplierId} onSaved={handleSaved} />
       <SupplierDetailDialog open={detailOpen} onOpenChange={setDetailOpen} supplierId={detailSupplierId} />
     </div>
   )

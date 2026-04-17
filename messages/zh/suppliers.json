@@ -135,6 +135,18 @@
       "bankAccountInvalid": "请输入有效的银行账号"
     },
     "deleteConfirm": "确定要删除该供应商吗？",
-    "deleteSuccess": "供应商已删除"
+    "deleteSuccess": "供应商已删除",
+    "totalPurchased": "累计采购总额",
+    "totalPaid": "已付总额",
+    "cooperationNormal": "正常合作",
+    "cooperationStopped": "已停用",
+    "materialsList": "物料清单",
+    "purchaseRecords": "采购记录",
+    "financeReconciliation": "财务对账",
+    "specifications": "规格参数",
+    "latestQuote": "最新报价",
+    "yoyInc": "同比去年",
+    "yoyDec": "同比去年",
+    "status": "状态"
   }
 }

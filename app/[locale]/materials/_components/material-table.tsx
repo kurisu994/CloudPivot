@@ -2,12 +2,19 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import {
+  BUSINESS_LIST_STICKY_CELL_CLASS,
+  BUSINESS_LIST_STICKY_HEAD_CLASS,
+  BusinessListTableEmptyRow,
+  BusinessListTableFooter,
+  BusinessListTableLoadingRows,
+  BusinessListTableShell,
+} from '@/components/common/business-list-table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount } from '@/lib/currency'
 import type { MaterialItem } from './materials-client-page'
 
@@ -68,189 +75,171 @@ export function MaterialTable({ data, loading, total, page, pageSize, onPageChan
     { value: '100', label: t('table.perPage', { count: '100' }) },
   ]
 
-  /* sticky 第一列样式 */
-  const stickyHeadCls =
-    'sticky left-0 z-20 bg-muted/80 backdrop-blur-sm after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-border'
-  const stickyCellCls =
-    'sticky left-0 z-10 bg-card group-hover:bg-muted/50 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-border/50'
-
   return (
-    <div className="border-border bg-card rounded-xl border shadow-sm">
-      {/* ━━━ 表格区 — Table 组件内部自带 overflow-x-auto 容器 ━━━ */}
-      <Table className="table-fixed">
-        <TableHeader>
-          <TableRow className="bg-muted/50 hover:bg-muted/50">
-            <TableHead className={`w-[220px] min-w-[220px] ${stickyHeadCls}`}>
-              <div className="flex items-center gap-3 pl-2">
-                <Checkbox />
-                <span>{t('table.codeName')}</span>
-              </div>
-            </TableHead>
-            <TableHead className="min-w-[80px]">{t('table.type')}</TableHead>
-            <TableHead className="min-w-[80px]">{t('table.category')}</TableHead>
-            <TableHead className="min-w-[100px]">{t('table.spec')}</TableHead>
-            <TableHead className="min-w-[60px] text-center">{t('table.unit')}</TableHead>
-            <TableHead className="min-w-[100px] text-right">{t('table.refCost')}</TableHead>
-            <TableHead className="min-w-[100px] text-right">{t('table.salePrice')}</TableHead>
-            <TableHead className="min-w-[60px] text-center">{t('table.stock')}</TableHead>
-            <TableHead className="min-w-[80px] text-center">{t('table.status')}</TableHead>
-            <TableHead className="text-right">{t('table.operations')}</TableHead>
-          </TableRow>
-        </TableHeader>
+    <BusinessListTableShell
+      className="border-border bg-card rounded-xl border shadow-sm"
+      tableClassName="min-w-[1120px]"
+      footer={
+        <BusinessListTableFooter>
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <span className="font-medium">{t('table.totalRecords', { total: String(total) })}</span>
+            <Select value={pageSize.toString()} onValueChange={v => v && onPageSizeChange(parseInt(v))} items={pageSizeItems}>
+              <SelectTrigger className="h-7 w-[120px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {pageSizeItems.map(item => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="ml-auto flex items-center gap-1">
+            <Button variant="ghost" size="icon-sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+              <ChevronLeft className="size-4" />
+            </Button>
+            {renderPages().map((p, idx) =>
+              p === '...' ? (
+                <span key={`dots-${idx}`} className="text-muted-foreground/50 px-2">
+                  …
+                </span>
+              ) : (
+                <Button
+                  key={p}
+                  variant={page === p ? 'default' : 'ghost'}
+                  size="icon-sm"
+                  className="font-bold"
+                  onClick={() => onPageChange(p as number)}
+                >
+                  {p}
+                </Button>
+              ),
+            )}
+            <Button variant="ghost" size="icon-sm" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+        </BusinessListTableFooter>
+      }
+    >
+      <TableHeader>
+        <TableRow className="bg-muted/50 hover:bg-muted/50">
+          <TableHead className={`w-[240px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>
+            <div className="flex items-center gap-3 pl-2">
+              <Checkbox />
+              <span>{t('table.codeName')}</span>
+            </div>
+          </TableHead>
+          <TableHead className="w-[96px]">{t('table.type')}</TableHead>
+          <TableHead className="w-[120px]">{t('table.category')}</TableHead>
+          <TableHead className="w-[140px]">{t('table.spec')}</TableHead>
+          <TableHead className="w-[72px] text-center">{t('table.unit')}</TableHead>
+          <TableHead className="w-[120px] text-right">{t('table.refCost')}</TableHead>
+          <TableHead className="w-[120px] text-right">{t('table.salePrice')}</TableHead>
+          <TableHead className="w-[72px] text-center">{t('table.stock')}</TableHead>
+          <TableHead className="w-[96px] text-center">{t('table.status')}</TableHead>
+          <TableHead className="w-[144px] text-right">{t('table.operations')}</TableHead>
+        </TableRow>
+      </TableHeader>
 
-        <TableBody>
-          {loading ? (
-            /* 加载骨架屏 */
-            Array.from({ length: 4 }).map((_, i) => (
-              <TableRow key={i}>
-                <TableCell colSpan={10} className="px-4 py-4">
-                  <Skeleton className="h-6 w-full" />
-                </TableCell>
-              </TableRow>
-            ))
-          ) : data.length === 0 ? (
-            /* 空状态 */
-            <TableRow>
-              <TableCell colSpan={10} className="text-muted-foreground py-16 text-center">
-                {t('table.noResults')}
+      <TableBody>
+        {loading ? (
+          <BusinessListTableLoadingRows colSpan={10} rows={4} />
+        ) : data.length === 0 ? (
+          <BusinessListTableEmptyRow colSpan={10} message={t('table.noResults')} />
+        ) : (
+          /* 数据行 */
+          data.map(row => (
+            <TableRow key={row.id} className="group">
+              {/* 第一列 — sticky 编码/名称 */}
+              <TableCell className={BUSINESS_LIST_STICKY_CELL_CLASS}>
+                <div className="flex items-center gap-3 pl-2">
+                  <Checkbox />
+                  <div className="min-w-0">
+                    <div className="text-muted-foreground font-mono text-[10px]">{row.code}</div>
+                    <div className="text-foreground truncate font-bold">{row.name}</div>
+                  </div>
+                </div>
+              </TableCell>
+
+              {/* 类型 */}
+              <TableCell>
+                <Badge variant="outline" className={TYPE_COLORS[row.material_type] ?? ''}>
+                  {t(`filters.type.${row.material_type}` as 'filters.type.raw' | 'filters.type.semi' | 'filters.type.finished')}
+                </Badge>
+              </TableCell>
+
+              {/* 分类 */}
+              <TableCell>{row.category_name || '—'}</TableCell>
+
+              {/* 规格 */}
+              <TableCell className="text-muted-foreground">{row.spec || '—'}</TableCell>
+
+              {/* 单位 */}
+              <TableCell className="text-center">{row.unit_name || '—'}</TableCell>
+
+              {/* 进价 */}
+              <TableCell className="text-right">
+                {row.ref_cost_price > 0 ? (
+                  <span className="font-bold">{formatAmount(row.ref_cost_price, 'USD')}</span>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </TableCell>
+
+              {/* 售价 */}
+              <TableCell className="text-right">
+                {row.sale_price > 0 ? (
+                  <span className="font-bold">{formatAmount(row.sale_price, 'USD')}</span>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </TableCell>
+
+              {/* 库存 */}
+              <TableCell className="text-center">0</TableCell>
+
+              {/* 状态 */}
+              <TableCell className="text-center">
+                {row.is_enabled ? (
+                  <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                    <span className="size-2 rounded-full bg-emerald-500" />
+                    {t('table.active')}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground inline-flex items-center gap-1.5">
+                    <span className="bg-muted-foreground/40 size-2 rounded-full" />
+                    {t('table.inactive')}
+                  </span>
+                )}
+              </TableCell>
+
+              {/* 操作 */}
+              <TableCell className="pr-4 text-right">
+                <Button variant="link" size="sm" className="text-primary h-auto p-0 font-bold" onClick={() => onEdit(row.id)}>
+                  {t('actions.edit')}
+                </Button>
+                {row.material_type === 'finished' || row.material_type === 'semi' ? (
+                  <Button variant="link" size="sm" className="ml-3 h-auto p-0 font-bold text-amber-600 dark:text-amber-400">
+                    {t('actions.bom')}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive ml-3 h-auto p-0 font-bold"
+                    onClick={() => onToggleStatus(row.id, row.is_enabled)}
+                  >
+                    {row.is_enabled ? t('actions.disable') : t('actions.enable')}
+                  </Button>
+                )}
               </TableCell>
             </TableRow>
-          ) : (
-            /* 数据行 */
-            data.map(row => (
-              <TableRow key={row.id} className="group">
-                {/* 第一列 — sticky 编码/名称 */}
-                <TableCell className={`${stickyCellCls}`}>
-                  <div className="flex items-center gap-3 pl-2">
-                    <Checkbox />
-                    <div className="min-w-0">
-                      <div className="text-muted-foreground font-mono text-[10px]">{row.code}</div>
-                      <div className="text-foreground truncate font-bold">{row.name}</div>
-                    </div>
-                  </div>
-                </TableCell>
-
-                {/* 类型 */}
-                <TableCell>
-                  <Badge variant="outline" className={TYPE_COLORS[row.material_type] ?? ''}>
-                    {t(`filters.type.${row.material_type}` as 'filters.type.raw' | 'filters.type.semi' | 'filters.type.finished')}
-                  </Badge>
-                </TableCell>
-
-                {/* 分类 */}
-                <TableCell>{row.category_name || '—'}</TableCell>
-
-                {/* 规格 */}
-                <TableCell className="text-muted-foreground">{row.spec || '—'}</TableCell>
-
-                {/* 单位 */}
-                <TableCell className="text-center">{row.unit_name || '—'}</TableCell>
-
-                {/* 进价 */}
-                <TableCell className="text-right">
-                  {row.ref_cost_price > 0 ? (
-                    <span className="font-bold">{formatAmount(row.ref_cost_price, 'USD')}</span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-
-                {/* 售价 */}
-                <TableCell className="text-right">
-                  {row.sale_price > 0 ? (
-                    <span className="font-bold">{formatAmount(row.sale_price, 'USD')}</span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-
-                {/* 库存 */}
-                <TableCell className="text-center">0</TableCell>
-
-                {/* 状态 */}
-                <TableCell className="text-center">
-                  {row.is_enabled ? (
-                    <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                      <span className="size-2 rounded-full bg-emerald-500" />
-                      {t('table.active')}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground inline-flex items-center gap-1.5">
-                      <span className="bg-muted-foreground/40 size-2 rounded-full" />
-                      {t('table.inactive')}
-                    </span>
-                  )}
-                </TableCell>
-
-                {/* 操作 */}
-                <TableCell className="pr-4 text-right">
-                  <Button variant="link" size="sm" className="text-primary h-auto p-0 font-bold" onClick={() => onEdit(row.id)}>
-                    {t('actions.edit')}
-                  </Button>
-                  {row.material_type === 'finished' || row.material_type === 'semi' ? (
-                    <Button variant="link" size="sm" className="ml-3 h-auto p-0 font-bold text-amber-600 dark:text-amber-400">
-                      {t('actions.bom')}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="text-muted-foreground hover:text-destructive ml-3 h-auto p-0 font-bold"
-                      onClick={() => onToggleStatus(row.id, row.is_enabled)}
-                    >
-                      {row.is_enabled ? t('actions.disable') : t('actions.enable')}
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-
-      {/* ━━━ 分页栏 — 始终完整可见，不随表格滚动 ━━━ */}
-      <div className="border-border text-muted-foreground flex items-center justify-between border-t px-6 py-3 text-sm">
-        <div className="flex items-center gap-4">
-          <span className="font-medium">{t('table.totalRecords', { total: String(total) })}</span>
-          <Select value={pageSize.toString()} onValueChange={v => v && onPageSizeChange(parseInt(v))} items={pageSizeItems}>
-            <SelectTrigger className="h-7 w-[120px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {pageSizeItems.map(item => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon-sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
-            <ChevronLeft className="size-4" />
-          </Button>
-          {renderPages().map((p, idx) =>
-            p === '...' ? (
-              <span key={`dots-${idx}`} className="text-muted-foreground/50 px-2">
-                …
-              </span>
-            ) : (
-              <Button
-                key={p}
-                variant={page === p ? 'default' : 'ghost'}
-                size="icon-sm"
-                className="font-bold"
-                onClick={() => onPageChange(p as number)}
-              >
-                {p}
-              </Button>
-            ),
-          )}
-          <Button variant="ghost" size="icon-sm" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
-      </div>
-    </div>
+          ))
+        )}
+      </TableBody>
+    </BusinessListTableShell>
   )
 }

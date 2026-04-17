@@ -135,6 +135,18 @@
       "bankAccountInvalid": "Vui lòng nhập số tài khoản hợp lệ"
     },
     "deleteConfirm": "Bạn có chắc chắn muốn xóa nhà cung cấp này?",
-    "deleteSuccess": "Đã xóa nhà cung cấp"
+    "deleteSuccess": "Đã xóa nhà cung cấp",
+    "totalPurchased": "Tổng mua hàng",
+    "totalPaid": "Tổng đã trả",
+    "cooperationNormal": "Đang hợp tác",
+    "cooperationStopped": "Ngừng hợp tác",
+    "materialsList": "Danh sách vật tư",
+    "purchaseRecords": "Lịch sử mua hàng",
+    "financeReconciliation": "Đối soát tài chính",
+    "specifications": "Thông số",
+    "latestQuote": "Báo giá mới nhất",
+    "yoyInc": "So với năm trước",
+    "yoyDec": "So với năm trước",
+    "status": "Trạng thái"
   }
 }

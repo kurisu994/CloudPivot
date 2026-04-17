@@ -129,12 +129,12 @@ function AppLayoutShell({
       <Sidebar collapsed={sidebarCollapsed} onToggle={onToggleSidebar} />
 
       {/* 主内容区 */}
-      <div className={cn('flex flex-1 flex-col transition-all duration-200 ease-in-out', sidebarCollapsed ? 'ml-16' : 'ml-60')}>
+      <div className={cn('flex min-w-0 flex-1 flex-col transition-all duration-200 ease-in-out', sidebarCollapsed ? 'ml-16' : 'ml-60')}>
         {/* 顶部工具栏 */}
         <Header onToggleSidebar={onToggleSidebar} />
 
         {/* 页面内容主体（单独滚动） */}
-        <main className="flex-1 overflow-y-auto bg-slate-50/50 p-6 dark:bg-slate-950/50">{children}</main>
+        <main className="min-w-0 flex-1 overflow-y-auto bg-slate-50/50 p-6 dark:bg-slate-950/50">{children}</main>
 
         {/* 固定在底部的页脚（不参与滚动） */}
         <AppFooter />

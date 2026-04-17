@@ -201,7 +201,7 @@ interface SupplierSheetProps {
   onSaved: (options?: { close?: boolean }) => void | Promise<void>
 }
 
-export function SupplierSheet({ open, onOpenChange, supplierId, onSaved }: SupplierSheetProps) {
+export function SupplierDialog({ open, onOpenChange, supplierId, onSaved }: SupplierSheetProps) {
   const t = useTranslations('suppliers')
   const tc = useTranslations('common')
 

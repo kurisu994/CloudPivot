@@ -135,6 +135,18 @@
       "bankAccountInvalid": "Enter a valid bank account number"
     },
     "deleteConfirm": "Are you sure you want to delete this supplier?",
-    "deleteSuccess": "Supplier deleted"
+    "deleteSuccess": "Supplier deleted",
+    "totalPurchased": "Total Purchased",
+    "totalPaid": "Total Paid",
+    "cooperationNormal": "Active",
+    "cooperationStopped": "Inactive",
+    "materialsList": "Material List",
+    "purchaseRecords": "Purchase Records",
+    "financeReconciliation": "Financial Reconciliation",
+    "specifications": "Specifications",
+    "latestQuote": "Latest Quote",
+    "yoyInc": "YoY Inc",
+    "yoyDec": "YoY Dec",
+    "status": "Status"
   }
 }
