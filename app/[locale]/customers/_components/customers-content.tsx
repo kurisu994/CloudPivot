@@ -38,7 +38,7 @@ export const COUNTRY_OPTIONS = [
   { value: 'OTHER', labelKey: 'country.OTHER' },
 ] as const
 
-const PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 10
 
 export function CustomersContent() {
   const t = useTranslations('customers')
@@ -58,9 +58,10 @@ export function CustomersContent() {
   // 已提交的筛选条件
   const [filters, setFilters] = useState<CustomerFilter>({
     page: 1,
-    pageSize: PAGE_SIZE,
+    pageSize: DEFAULT_PAGE_SIZE,
   })
   const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
   // 弹窗状态
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -72,7 +73,7 @@ export function CustomersContent() {
   const loadCustomers = useCallback(async () => {
     setLoading(true)
     try {
-      const result = await getCustomers({ ...filters, page: currentPage, pageSize: PAGE_SIZE })
+      const result = await getCustomers({ ...filters, page: currentPage, pageSize })
       setItems(result.items)
       setTotal(result.total)
     } catch (error) {
@@ -81,13 +82,13 @@ export function CustomersContent() {
     } finally {
       setLoading(false)
     }
-  }, [filters, currentPage, t])
+  }, [filters, currentPage, pageSize, t])
 
   useEffect(() => {
     void loadCustomers()
   }, [loadCustomers])
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   // Select 组件的 items（含"全部"选项）
   const customerTypeItems = useMemo(
@@ -112,7 +113,7 @@ export function CustomersContent() {
       grade: draftGrade !== 'all' ? draftGrade : undefined,
       country: draftCountry !== 'all' ? draftCountry : undefined,
       page: 1,
-      pageSize: PAGE_SIZE,
+      pageSize,
     })
   }
 
@@ -123,7 +124,7 @@ export function CustomersContent() {
     setDraftGrade('all')
     setDraftCountry('all')
     setCurrentPage(1)
-    setFilters({ page: 1, pageSize: PAGE_SIZE })
+    setFilters({ page: 1, pageSize })
   }
 
   /** 新增客户 */
@@ -179,19 +180,6 @@ export function CustomersContent() {
     }
     await loadCustomers()
   }
-
-  /** 分页页码列表 */
-  const pageNumbers = useMemo(() => {
-    const pages: number[] = []
-    const maxVisible = 5
-    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2))
-    const end = Math.min(totalPages, start + maxVisible - 1)
-    start = Math.max(1, end - maxVisible + 1)
-    for (let index = start; index <= end; index += 1) {
-      pages.push(index)
-    }
-    return pages
-  }, [currentPage, totalPages])
 
   return (
     <div className="flex flex-col gap-6">
@@ -293,37 +281,20 @@ export function CustomersContent() {
       <CustomerTable
         customers={items}
         loading={loading}
+        total={total}
+        page={currentPage}
+        pageSize={pageSize}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={s => {
+          setPageSize(s)
+          setCurrentPage(1)
+        }}
         onEdit={handleEdit}
         onView={handleView}
         onDelete={handleDelete}
         onToggleStatus={handleToggleStatus}
       />
-
-      {/* 分页控件 */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground text-sm">{t('totalRecords', { count: total })}</span>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon-sm" disabled={currentPage <= 1} onClick={() => setCurrentPage(page => page - 1)}>
-              <span className="text-xs">‹</span>
-            </Button>
-            {pageNumbers.map(page => (
-              <Button
-                key={page}
-                variant={page === currentPage ? 'default' : 'outline'}
-                size="icon-sm"
-                onClick={() => setCurrentPage(page)}
-                className="min-w-8"
-              >
-                {page}
-              </Button>
-            ))}
-            <Button variant="outline" size="icon-sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(page => page + 1)}>
-              <span className="text-xs">›</span>
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* 客户编辑弹窗 */}
       <CustomerDialog open={dialogOpen} onOpenChange={setDialogOpen} customerId={editingCustomerId} onSaved={() => void handleSaved()} />

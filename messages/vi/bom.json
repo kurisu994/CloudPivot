@@ -37,7 +37,9 @@
       "itemCount": "Số vật tư",
       "createdAt": "Ngày tạo",
       "actions": "Thao tác",
-      "noResults": "Chưa có dữ liệu BOM. Nhấn \"Tạo BOM\" để bắt đầu"
+      "noResults": "Chưa có dữ liệu BOM. Nhấn \"Tạo BOM\" để bắt đầu",
+      "totalRecords": "Tổng {total} bản ghi",
+      "perPage": "{count}/trang"
     },
     "detail": {
       "bomCode": "Mã BOM",

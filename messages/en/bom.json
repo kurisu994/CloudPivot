@@ -37,7 +37,9 @@
       "itemCount": "Items",
       "createdAt": "Created",
       "actions": "Actions",
-      "noResults": "No BOM data yet. Click \"New BOM\" to create one"
+      "noResults": "No BOM data yet. Click \"New BOM\" to create one",
+      "totalRecords": "{total} records",
+      "perPage": "{count}/page"
     },
     "detail": {
       "bomCode": "BOM Code",

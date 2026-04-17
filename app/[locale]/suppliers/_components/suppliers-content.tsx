@@ -44,7 +44,7 @@ export const CURRENCY_OPTIONS = [
   { value: 'USD', label: 'USD ($)' },
 ] as const
 
-const PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 10
 
 export function SuppliersContent() {
   const t = useTranslations('suppliers')
@@ -61,9 +61,10 @@ export function SuppliersContent() {
 
   const [filters, setFilters] = useState<SupplierFilter>({
     page: 1,
-    pageSize: PAGE_SIZE,
+    pageSize: DEFAULT_PAGE_SIZE,
   })
   const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [categories, setCategories] = useState<string[]>([])
 
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -74,7 +75,7 @@ export function SuppliersContent() {
   const loadSuppliers = useCallback(async () => {
     setLoading(true)
     try {
-      const result = await getSuppliers({ ...filters, page: currentPage, pageSize: PAGE_SIZE })
+      const result = await getSuppliers({ ...filters, page: currentPage, pageSize })
       setItems(result.items)
       setTotal(result.total)
     } catch (error) {
@@ -83,7 +84,7 @@ export function SuppliersContent() {
     } finally {
       setLoading(false)
     }
-  }, [filters, currentPage, t])
+  }, [filters, currentPage, pageSize, t])
 
   const loadCategories = useCallback(async () => {
     try {
@@ -101,7 +102,7 @@ export function SuppliersContent() {
     void loadCategories()
   }, [loadCategories])
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   const countryItems = useMemo(
     () => [{ value: 'all', label: t('allCountries') }, ...COUNTRY_OPTIONS.map(option => ({ value: option.value, label: t(option.labelKey) }))],
@@ -124,7 +125,7 @@ export function SuppliersContent() {
       businessCategory: draftCategory !== 'all' ? draftCategory : undefined,
       grade: draftGrade !== 'all' ? draftGrade : undefined,
       page: 1,
-      pageSize: PAGE_SIZE,
+      pageSize,
     })
   }
 
@@ -134,7 +135,7 @@ export function SuppliersContent() {
     setDraftCategory('all')
     setDraftGrade('all')
     setCurrentPage(1)
-    setFilters({ page: 1, pageSize: PAGE_SIZE })
+    setFilters({ page: 1, pageSize })
   }
 
   const handleAdd = () => {
@@ -186,18 +187,6 @@ export function SuppliersContent() {
     await loadSuppliers()
     await loadCategories()
   }
-
-  const pageNumbers = useMemo(() => {
-    const pages: number[] = []
-    const maxVisible = 5
-    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2))
-    const end = Math.min(totalPages, start + maxVisible - 1)
-    start = Math.max(1, end - maxVisible + 1)
-    for (let index = start; index <= end; index += 1) {
-      pages.push(index)
-    }
-    return pages
-  }, [currentPage, totalPages])
 
   return (
     <div className="flex flex-col gap-6">
@@ -290,36 +279,20 @@ export function SuppliersContent() {
       <SupplierTable
         suppliers={items}
         loading={loading}
+        total={total}
+        page={currentPage}
+        pageSize={pageSize}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={s => {
+          setPageSize(s)
+          setCurrentPage(1)
+        }}
         onEdit={handleEdit}
         onView={handleView}
         onDelete={handleDelete}
         onToggleStatus={handleToggleStatus}
       />
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground text-sm">{t('totalRecords', { count: total })}</span>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon-sm" disabled={currentPage <= 1} onClick={() => setCurrentPage(page => page - 1)}>
-              <span className="text-xs">‹</span>
-            </Button>
-            {pageNumbers.map(page => (
-              <Button
-                key={page}
-                variant={page === currentPage ? 'default' : 'outline'}
-                size="icon-sm"
-                onClick={() => setCurrentPage(page)}
-                className="min-w-8"
-              >
-                {page}
-              </Button>
-            ))}
-            <Button variant="outline" size="icon-sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(page => page + 1)}>
-              <span className="text-xs">›</span>
-            </Button>
-          </div>
-        </div>
-      )}
 
       <SupplierDialog open={dialogOpen} onOpenChange={setDialogOpen} supplierId={editingSupplierId} onSaved={handleSaved} />
       <SupplierDetailDialog open={detailOpen} onOpenChange={setDetailOpen} supplierId={detailSupplierId} />

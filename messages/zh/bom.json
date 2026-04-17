@@ -37,7 +37,9 @@
       "itemCount": "物料数",
       "createdAt": "创建时间",
       "actions": "操作",
-      "noResults": "暂无 BOM 数据，点击「新建 BOM」开始创建"
+      "noResults": "暂无 BOM 数据，点击「新建 BOM」开始创建",
+      "totalRecords": "共 {total} 条记录",
+      "perPage": "{count}条/页"
     },
     "detail": {
       "bomCode": "BOM 编号",
