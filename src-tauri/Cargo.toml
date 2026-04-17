@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "0.1.1"
+version = "0.1.2"
 description = "CloudPivot IMS — 越南家具工厂桌面端进销存系统"
 authors = ["kurisu"]
 license = ""
