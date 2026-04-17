@@ -100,6 +100,17 @@ pub fn run() {
             commands::unit::save_unit,
             commands::unit::delete_unit,
             commands::unit::toggle_unit_status,
+            // BOM 管理
+            commands::bom::get_bom_list,
+            commands::bom::get_bom_detail,
+            commands::bom::save_bom,
+            commands::bom::delete_bom,
+            commands::bom::toggle_bom_status,
+            commands::bom::copy_bom,
+            commands::bom::reverse_lookup_material,
+            commands::bom::calculate_bom_demand,
+            commands::bom::get_bom_parent_materials,
+            commands::bom::get_bom_child_materials,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

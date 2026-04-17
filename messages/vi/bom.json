@@ -1,0 +1,134 @@
+{
+  "bom": {
+    "title": "Quản lý BOM",
+    "subtitle": "Danh mục vật tư",
+    "description": "Quản lý mối quan hệ giữa thành phẩm và nguyên vật liệu, duy trì định mức và tỷ lệ hao hụt",
+    "searchPlaceholder": "Tìm tên/mã sản phẩm...",
+    "filters": {
+      "statusAll": "Tất cả trạng thái",
+      "status": {
+        "draft": "Nháp",
+        "active": "Hiệu lực",
+        "inactive": "Ngừng"
+      }
+    },
+    "actions": {
+      "add": "Tạo BOM",
+      "edit": "Sửa",
+      "delete": "Xóa",
+      "copy": "Sao chép phiên bản mới",
+      "activate": "Kích hoạt",
+      "deactivate": "Ngừng",
+      "search": "Tìm kiếm",
+      "reset": "Đặt lại",
+      "addMaterial": "Thêm vật tư",
+      "calcDemand": "Tính nhu cầu vật tư",
+      "newVersion": "Phiên bản mới",
+      "save": "Lưu",
+      "cancel": "Hủy",
+      "backToList": "Quay lại danh sách"
+    },
+    "table": {
+      "materialCode": "Mã sản phẩm",
+      "materialName": "Tên sản phẩm",
+      "version": "Phiên bản",
+      "status": "Trạng thái",
+      "standardCost": "Chi phí chuẩn",
+      "itemCount": "Số vật tư",
+      "createdAt": "Ngày tạo",
+      "actions": "Thao tác",
+      "noResults": "Chưa có dữ liệu BOM. Nhấn \"Tạo BOM\" để bắt đầu"
+    },
+    "detail": {
+      "bomCode": "Mã BOM",
+      "parentMaterial": "Sản phẩm",
+      "version": "Phiên bản",
+      "status": "Trạng thái",
+      "effectiveDate": "Ngày hiệu lực",
+      "standardCost": "Tổng chi phí chuẩn",
+      "remark": "Ghi chú",
+      "spec": "Quy cách"
+    },
+    "items": {
+      "title": "Chi tiết BOM",
+      "materialCode": "Mã",
+      "materialName": "Vật tư",
+      "spec": "Quy cách",
+      "unit": "Đơn vị",
+      "standardQty": "Định mức",
+      "wastageRate": "Hao hụt(%)",
+      "actualQty": "Thực tế",
+      "unitPrice": "Đơn giá(USD)",
+      "cost": "Chi phí(USD)",
+      "processStep": "Công đoạn",
+      "isKeyPart": "Quan trọng",
+      "substitute": "Thay thế",
+      "remark": "Ghi chú",
+      "actions": "Thao tác",
+      "noItems": "Chưa có chi tiết. Nhấn \"Thêm vật tư\""
+    },
+    "demand": {
+      "title": "Tính nhu cầu",
+      "quantity": "Số lượng sản xuất",
+      "unit": "bộ",
+      "materialName": "Vật tư",
+      "singleQty": "Mỗi đơn vị",
+      "totalQty": "Tổng cần",
+      "currentStock": "Tồn kho",
+      "shortage": "Thiếu",
+      "noShortage": "—"
+    },
+    "reverseLookup": {
+      "title": "Tra cứu ngược vật tư",
+      "placeholder": "Nhập tên/mã vật tư để xem BOM nào sử dụng",
+      "bomCode": "BOM",
+      "materialName": "Sản phẩm",
+      "version": "Phiên bản",
+      "qty": "Số lượng"
+    },
+    "form": {
+      "title": "Thông tin BOM",
+      "titleNew": "Tạo BOM mới",
+      "titleEdit": "Sửa BOM",
+      "selectMaterial": "Chọn sản phẩm",
+      "selectMaterialPlaceholder": "Chọn thành phẩm/bán thành phẩm",
+      "version": "Phiên bản",
+      "versionPlaceholder": "VD: V1.0",
+      "effectiveDate": "Ngày hiệu lực",
+      "remark": "Ghi chú",
+      "remarkPlaceholder": "Ghi chú BOM",
+      "searchMaterial": "Tìm tên/mã vật tư...",
+      "processSteps": {
+        "cutting": "Cắt",
+        "assembly": "Lắp ráp",
+        "painting": "Sơn",
+        "packaging": "Đóng gói"
+      }
+    },
+    "copyDialog": {
+      "title": "Sao chép phiên bản BOM mới",
+      "newVersion": "Phiên bản mới",
+      "placeholder": "VD: V2.0"
+    },
+    "notifications": {
+      "saveBomSuccess": "Lưu BOM thành công",
+      "saveBomFailed": "Lưu BOM thất bại",
+      "deleteBomSuccess": "Xóa BOM thành công",
+      "deleteBomFailed": "Xóa BOM thất bại",
+      "copyBomSuccess": "Sao chép BOM thành công",
+      "copyBomFailed": "Sao chép BOM thất bại",
+      "statusChangeSuccess": "Cập nhật trạng thái thành công",
+      "statusChangeFailed": "Cập nhật trạng thái thất bại",
+      "loadFailed": "Tải dữ liệu BOM thất bại",
+      "confirmDelete": "Bạn có chắc muốn xóa BOM này? Thao tác không thể hoàn tác.",
+      "confirmActivate": "Kích hoạt phiên bản này sẽ ngừng các phiên bản hiệu lực khác của cùng sản phẩm. Tiếp tục?",
+      "noMaterialSelected": "Vui lòng chọn sản phẩm",
+      "noItemsAdded": "Vui lòng thêm ít nhất một chi tiết BOM"
+    },
+    "status": {
+      "draft": "Nháp",
+      "active": "Hiệu lực",
+      "inactive": "Ngừng"
+    }
+  }
+}

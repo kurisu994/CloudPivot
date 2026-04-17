@@ -53,7 +53,7 @@ src-tauri/                 # Rust 后端
       mod.rs               # SQLite 连接池初始化 + PRAGMA 配置（WAL 模式）
       migration.rs         # 自管理迁移框架（include_str! 内嵌 SQL，版本化执行）
     commands/
-      mod.rs               # IPC 命令：ping、get_db_version、login、change_password、get_user_info + 分类/物料/供应商/客户/仓库/单位 CRUD
+      mod.rs               # IPC 命令：ping、get_db_version、login、change_password、get_user_info + 分类/物料/供应商/客户/仓库/单位/BOM CRUD
   migrations/sqlite/
     001_init.sql           # 建表迁移（45 张表 DDL，44KB）
     002_seed_data.sql      # 种子数据（系统配置、默认分类等）
@@ -275,6 +275,7 @@ export default async function Page({
   - `customer.rs`：`get_customers` / `get_customer_by_id` / `get_customer_detail` / `save_customer` / `delete_customer` / `toggle_customer_status` / `generate_customer_code`
   - `warehouse.rs`：`get_warehouses` / `get_warehouse_by_id` / `save_warehouse` / `delete_warehouse` / `toggle_warehouse_status` / `get_default_warehouses` / `save_default_warehouses` / `generate_warehouse_code`
   - `unit.rs`：`get_all_units` / `get_unit_by_id` / `save_unit` / `delete_unit` / `toggle_unit_status`
+  - `bom.rs`：`get_bom_list` / `get_bom_detail` / `save_bom` / `delete_bom` / `toggle_bom_status` / `copy_bom` / `reverse_lookup_material` / `calculate_bom_demand` / `get_bom_parent_materials` / `get_bom_child_materials`
 
 ### 数据库层
 
@@ -313,12 +314,12 @@ export default async function Page({
 | `docs/03-ui-prototype.md`     | 页面布局、交互流程、组件规格 |
 | `docs/04-development-plan.md` | 任务分解、当前进度状态       |
 
-## 当前状态（阶段二，约 65%）
+## 当前状态（阶段二，约 75%）
 
 **已完成**：
 
 - 项目脚手架：Next.js 16 + Tailwind CSS 4 + shadcn/ui（21 个组件）+ ESLint/Prettier
-- i18n 框架：next-intl，按域拆分翻译文件（11 域/语言，约 960 行/语言），涵盖 auth/categories/common/customers/dashboard/materials/settings/setup-wizard/suppliers/warehouses/units
+- i18n 框架：next-intl，按域拆分翻译文件（12 域/语言，约 1100 行/语言），涵盖 auth/bom/categories/common/customers/dashboard/materials/settings/setup-wizard/suppliers/warehouses/units
 - 布局组件：AppLayout（侧边栏 + 顶栏 + 主内容区 + 页脚）、Sidebar、Header、LocaleSwitcher、AppFooter
 - 深浅主题系统与显示偏好：CSS 变量 + next-themes + `DisplayPreferencesProvider` 全局状态联动
 - 首页看板 UI：基于国际化字典与 mock 数据重构了 7 个模块化子组件
@@ -326,20 +327,21 @@ export default async function Page({
 - **Rust 数据库层**：sqlx + SQLite 连接池、WAL PRAGMA、自管理迁移框架、45 张表 DDL + 种子数据
 - **用户认证（全栈）**：登录页 / 改密页 UI、AuthProvider 路由守卫、Rust 后端 bcrypt 认证 + 锁定 + session_version
 - **首次使用向导**：多步骤引导页 + setup_create_warehouses IPC 命令
-- **IPC 通信**：51 个已注册命令（基础 9 + 物料 6 + 分类 5 + 供应商 11 + 客户 7 + 仓库 8 + 单位 5）
+- **IPC 通信**：61 个已注册命令（基础 9 + 物料 6 + 分类 5 + 供应商 11 + 客户 7 + 仓库 8 + 单位 5 + BOM 10）
 - **物料管理（全栈）**：列表筛选分页 + Dialog 编辑弹窗 + 后端 6 个 IPC 命令
 - **分类管理（全栈）**：react-arborist 树形列表 + 拖拽排序 + 编辑弹窗 + 后端 5 个 IPC 命令
 - **供应商管理（全栈）**：列表筛选分页 + Dialog 编辑弹窗 + 详情弹窗 + 物料关联 Tab + 后端 11 个 IPC 命令 + 编码自动生成
 - **客户管理（全栈）**：列表筛选分页（关键词/类型/等级/国家）+ Dialog 编辑弹窗（三分区表单）+ 详情弹窗（KPI 卡片 + 销售记录/应收对账 Tabs）+ 后端 7 个 IPC 命令 + 编码自动生成 + 删除保护（五表关联检查）
 - **仓库管理（全栈）**：轻量 Card + Table 列表 + Dialog 编辑弹窗 + 默认仓映射配置 + 后端 8 个 IPC 命令 + 编码自动生成（MAX(seq)+1）+ 删除保护（八表关联检查）+ 禁用事务一致性（自动清除默认仓映射）
 - **单位管理（全栈）**：轻量 Card + Table 列表 + Dialog 编辑弹窗 + 后端 5 个 IPC 命令 + 删除保护（materials 引用检查）
+- **BOM 管理（全栈）**：列表筛选分页 + 编辑页（头信息 + 明细表格 + 需求计算）+ 明细编辑弹窗 + 物料反查 + 复制新版本 + 后端 10 个 IPC 命令 + 标准成本自动核算 + 编号自动生成
 - **系统设置（全栈）**：8 个子页面（企业信息/外观/编码规则/库存规则/打印/汇率/数据管理/操作日志）+ get/set_system_configs IPC
 - **前端工具库**：Tauri IPC 封装、多币种格式化、系统配置类型定义
-- App Router 路由骨架：27 个路由目录（11 个已实现，12 个占位）
+- App Router 路由骨架：27 个路由目录（12 个已实现，11 个占位）
 
 **进行中**：
 
-- 阶段二剩余：BOM 管理、通用组件抽取、物料导入导出
+- 阶段二剩余：通用组件抽取、物料导入导出
 - Repository trait 抽象（当前 CRUD 逻辑直接写在 commands 中，待重构到 service 层）
 - 多币种前端集成（格式化工具已就绪，待业务页面对接）
 

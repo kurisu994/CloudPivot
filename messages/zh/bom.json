@@ -1,0 +1,134 @@
+{
+  "bom": {
+    "title": "BOM 管理",
+    "subtitle": "物料清单",
+    "description": "管理成品与原材料的对应关系，维护标准用量和损耗率",
+    "searchPlaceholder": "搜索成品名称/编码...",
+    "filters": {
+      "statusAll": "全部状态",
+      "status": {
+        "draft": "草稿",
+        "active": "生效",
+        "inactive": "停用"
+      }
+    },
+    "actions": {
+      "add": "新建 BOM",
+      "edit": "编辑",
+      "delete": "删除",
+      "copy": "复制新版本",
+      "activate": "启用",
+      "deactivate": "停用",
+      "search": "搜索",
+      "reset": "重置",
+      "addMaterial": "添加物料",
+      "calcDemand": "计算物料需求",
+      "newVersion": "新版本",
+      "save": "保存",
+      "cancel": "取消",
+      "backToList": "返回列表"
+    },
+    "table": {
+      "materialCode": "成品编码",
+      "materialName": "成品名称",
+      "version": "版本",
+      "status": "状态",
+      "standardCost": "标准成本",
+      "itemCount": "物料数",
+      "createdAt": "创建时间",
+      "actions": "操作",
+      "noResults": "暂无 BOM 数据，点击「新建 BOM」开始创建"
+    },
+    "detail": {
+      "bomCode": "BOM 编号",
+      "parentMaterial": "成品物料",
+      "version": "版本",
+      "status": "状态",
+      "effectiveDate": "生效日期",
+      "standardCost": "标准成本合计",
+      "remark": "备注",
+      "spec": "规格"
+    },
+    "items": {
+      "title": "BOM 明细",
+      "materialCode": "物料编码",
+      "materialName": "物料名称",
+      "spec": "规格",
+      "unit": "单位",
+      "standardQty": "标准用量",
+      "wastageRate": "损耗率(%)",
+      "actualQty": "实际用量",
+      "unitPrice": "单价(USD)",
+      "cost": "成本(USD)",
+      "processStep": "工序",
+      "isKeyPart": "关键件",
+      "substitute": "替代物料",
+      "remark": "备注",
+      "actions": "操作",
+      "noItems": "暂无明细，点击「添加物料」"
+    },
+    "demand": {
+      "title": "需求计算",
+      "quantity": "生产数量",
+      "unit": "套",
+      "materialName": "物料",
+      "singleQty": "单件用量",
+      "totalQty": "总需用量",
+      "currentStock": "当前库存",
+      "shortage": "缺口",
+      "noShortage": "—"
+    },
+    "reverseLookup": {
+      "title": "物料反查",
+      "placeholder": "输入物料名称/编码，查看该物料被哪些 BOM 使用",
+      "bomCode": "BOM",
+      "materialName": "成品名称",
+      "version": "版本",
+      "qty": "用量"
+    },
+    "form": {
+      "title": "BOM 信息",
+      "titleNew": "新建 BOM",
+      "titleEdit": "编辑 BOM",
+      "selectMaterial": "选择成品物料",
+      "selectMaterialPlaceholder": "请选择成品/半成品",
+      "version": "版本号",
+      "versionPlaceholder": "如 V1.0",
+      "effectiveDate": "生效日期",
+      "remark": "备注",
+      "remarkPlaceholder": "BOM 备注信息",
+      "searchMaterial": "搜索物料名称/编码...",
+      "processSteps": {
+        "cutting": "开料",
+        "assembly": "组装",
+        "painting": "涂装",
+        "packaging": "包装"
+      }
+    },
+    "copyDialog": {
+      "title": "复制 BOM 新版本",
+      "newVersion": "新版本号",
+      "placeholder": "如 V2.0"
+    },
+    "notifications": {
+      "saveBomSuccess": "BOM 保存成功",
+      "saveBomFailed": "BOM 保存失败",
+      "deleteBomSuccess": "BOM 删除成功",
+      "deleteBomFailed": "BOM 删除失败",
+      "copyBomSuccess": "BOM 复制成功",
+      "copyBomFailed": "BOM 复制失败",
+      "statusChangeSuccess": "状态更新成功",
+      "statusChangeFailed": "状态更新失败",
+      "loadFailed": "加载 BOM 数据失败",
+      "confirmDelete": "确定要删除此 BOM 吗？此操作不可撤销。",
+      "confirmActivate": "启用此版本将自动停用同一成品的其他生效版本，确定继续？",
+      "noMaterialSelected": "请选择成品物料",
+      "noItemsAdded": "请至少添加一个 BOM 明细"
+    },
+    "status": {
+      "draft": "草稿",
+      "active": "生效",
+      "inactive": "停用"
+    }
+  }
+}
