@@ -1,0 +1,51 @@
+{
+  "warehouses": {
+    "title": "Quản lý kho",
+    "addWarehouse": "Thêm kho",
+    "editWarehouse": "Sửa kho",
+    "code": "Mã kho",
+    "name": "Tên kho",
+    "type": "Loại kho",
+    "manager": "Người phụ trách",
+    "phone": "Số điện thoại",
+    "address": "Địa chỉ",
+    "remark": "Ghi chú",
+    "status": "Trạng thái",
+    "enabled": "Hoạt động",
+    "disabled": "Ngừng",
+    "actions": "Thao tác",
+    "edit": "Sửa",
+    "delete": "Xóa",
+    "typeOptions": {
+      "raw": "Kho nguyên liệu",
+      "semi": "Kho bán thành phẩm",
+      "finished": "Kho thành phẩm",
+      "return": "Kho trả hàng"
+    },
+    "defaultMapping": {
+      "title": "Ánh xạ kho mặc định",
+      "description": "Cấu hình kho mặc định theo loại vật tư",
+      "raw": "Kho mặc định nguyên liệu",
+      "semi": "Kho mặc định bán thành phẩm",
+      "finished": "Kho mặc định thành phẩm",
+      "save": "Lưu ánh xạ",
+      "saveSuccess": "Đã lưu ánh xạ kho mặc định",
+      "placeholder": "Chọn kho"
+    },
+    "deleteConfirm": "Bạn có chắc muốn xóa kho \"{name}\"?",
+    "deleteConfirmDesc": "Hành động này không thể hoàn tác. Vui lòng đảm bảo không có dữ liệu liên quan.",
+    "deleteProtected": "Kho này đang được sử dụng, không thể xóa",
+    "deleteSuccess": "Đã xóa kho",
+    "saveSuccess": "Đã lưu kho",
+    "disableDefaultWarning": "Kho này hiện là kho mặc định cho {type}. Vô hiệu hóa sẽ xóa ánh xạ tương ứng.",
+    "disableConfirm": "Xác nhận vô hiệu hóa?",
+    "emptyState": "Chưa có kho nào",
+    "emptyStateDesc": "Nhấn \"Thêm kho\" để tạo kho đầu tiên",
+    "typeNotEditable": "Loại kho không thể thay đổi sau khi tạo",
+    "validation": {
+      "nameRequired": "Vui lòng nhập tên kho",
+      "typeRequired": "Vui lòng chọn loại kho",
+      "codeRequired": "Vui lòng nhập mã kho"
+    }
+  }
+}

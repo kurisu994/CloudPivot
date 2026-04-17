@@ -1,0 +1,30 @@
+{
+  "units": {
+    "title": "Quản lý đơn vị",
+    "addUnit": "Thêm đơn vị",
+    "editUnit": "Sửa đơn vị",
+    "name": "Tên (Trung)",
+    "nameEn": "Tên tiếng Anh",
+    "nameVi": "Tên tiếng Việt",
+    "symbol": "Ký hiệu",
+    "decimalPlaces": "Số thập phân",
+    "sortOrder": "Thứ tự",
+    "status": "Trạng thái",
+    "enabled": "Hoạt động",
+    "disabled": "Ngừng",
+    "actions": "Thao tác",
+    "edit": "Sửa",
+    "delete": "Xóa",
+    "deleteConfirm": "Bạn có chắc muốn xóa đơn vị \"{name}\"?",
+    "deleteConfirmDesc": "Hành động này không thể hoàn tác. Vui lòng đảm bảo không có vật tư nào sử dụng đơn vị này.",
+    "deleteProtected": "Đơn vị này đang được vật tư sử dụng, không thể xóa",
+    "deleteSuccess": "Đã xóa đơn vị",
+    "saveSuccess": "Đã lưu đơn vị",
+    "emptyState": "Chưa có đơn vị nào",
+    "emptyStateDesc": "Nhấn \"Thêm đơn vị\" để tạo đơn vị đầu tiên",
+    "validation": {
+      "nameRequired": "Vui lòng nhập tên đơn vị",
+      "decimalPlacesRequired": "Vui lòng chọn số thập phân"
+    }
+  }
+}

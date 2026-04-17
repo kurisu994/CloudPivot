@@ -85,6 +85,21 @@ pub fn run() {
             commands::customer::save_customer,
             commands::customer::delete_customer,
             commands::customer::toggle_customer_status,
+            // 仓库管理
+            commands::warehouse::get_warehouses,
+            commands::warehouse::get_warehouse_by_id,
+            commands::warehouse::save_warehouse,
+            commands::warehouse::delete_warehouse,
+            commands::warehouse::toggle_warehouse_status,
+            commands::warehouse::get_default_warehouses,
+            commands::warehouse::save_default_warehouses,
+            commands::warehouse::generate_warehouse_code,
+            // 单位管理
+            commands::unit::get_all_units,
+            commands::unit::get_unit_by_id,
+            commands::unit::save_unit,
+            commands::unit::delete_unit,
+            commands::unit::toggle_unit_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

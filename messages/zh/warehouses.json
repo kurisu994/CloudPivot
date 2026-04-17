@@ -1,0 +1,51 @@
+{
+  "warehouses": {
+    "title": "仓库管理",
+    "addWarehouse": "新增仓库",
+    "editWarehouse": "编辑仓库",
+    "code": "仓库编码",
+    "name": "仓库名称",
+    "type": "仓库类型",
+    "manager": "负责人",
+    "phone": "联系电话",
+    "address": "地址",
+    "remark": "备注",
+    "status": "状态",
+    "enabled": "启用",
+    "disabled": "禁用",
+    "actions": "操作",
+    "edit": "编辑",
+    "delete": "删除",
+    "typeOptions": {
+      "raw": "原材料仓",
+      "semi": "半成品仓",
+      "finished": "成品仓",
+      "return": "退货仓"
+    },
+    "defaultMapping": {
+      "title": "默认仓映射",
+      "description": "按物料类型配置默认入库/出库仓库",
+      "raw": "原材料默认仓",
+      "semi": "半成品默认仓",
+      "finished": "成品默认仓",
+      "save": "保存映射",
+      "saveSuccess": "默认仓映射已保存",
+      "placeholder": "请选择仓库"
+    },
+    "deleteConfirm": "确定要删除仓库「{name}」吗？",
+    "deleteConfirmDesc": "删除后不可恢复，请确认该仓库没有关联业务数据。",
+    "deleteProtected": "该仓库已被使用，无法删除",
+    "deleteSuccess": "仓库删除成功",
+    "saveSuccess": "仓库保存成功",
+    "disableDefaultWarning": "该仓库当前是{type}默认仓，禁用后将自动清除对应的默认仓映射",
+    "disableConfirm": "确定要禁用吗？",
+    "emptyState": "暂无仓库数据",
+    "emptyStateDesc": "点击「新增仓库」创建第一个仓库",
+    "typeNotEditable": "仓库类型创建后不可修改",
+    "validation": {
+      "nameRequired": "请输入仓库名称",
+      "typeRequired": "请选择仓库类型",
+      "codeRequired": "请输入仓库编码"
+    }
+  }
+}

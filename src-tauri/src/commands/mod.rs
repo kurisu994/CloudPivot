@@ -7,6 +7,8 @@ pub mod category;
 pub mod customer;
 pub mod material;
 pub mod supplier;
+pub mod unit;
+pub mod warehouse;
 
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -223,7 +225,7 @@ pub struct WarehouseSetupItem {
 /// 向导：批量创建仓库并生成默认仓映射
 ///
 /// 在数据库事务中执行以下操作：
-/// 1. 为每个仓库自动生成编码（如 WH-RAW-001）
+/// 1. 为每个仓库自动生成编码（如 WH-RAW-001），使用共享函数
 /// 2. 插入 warehouses 表
 /// 3. 自动在 default_warehouses 表中创建对应的默认仓映射
 #[tauri::command]
@@ -242,23 +244,9 @@ pub async fn setup_create_warehouses(
         .map_err(|e| AppError::Database(format!("开启数据库事务失败: {}", e)))?;
 
     for item in &warehouses {
-        // 生成仓库编码：WH-{TYPE}-{SEQ}
-        let type_prefix = match item.warehouse_type.as_str() {
-            "raw" => "RAW",
-            "semi" => "SEMI",
-            "finished" => "FIN",
-            _ => "GEN",
-        };
-
-        // 查询当前仓库总数用于生成序号
-        let count: (i64,) =
-            sqlx::query_as("SELECT COUNT(*) FROM warehouses WHERE warehouse_type = ?")
-                .bind(&item.warehouse_type)
-                .fetch_one(&mut *tx)
-                .await
-                .map_err(|e| AppError::Database(format!("查询仓库数量失败: {}", e)))?;
-
-        let code = format!("WH-{}-{:03}", type_prefix, count.0 + 1);
+        // 使用共享函数生成仓库编码（MAX(seq)+1 策略）
+        let code =
+            warehouse::generate_warehouse_code_internal(&db.pool, &item.warehouse_type).await?;
 
         // 插入仓库
         let warehouse_id: i64 = sqlx::query_scalar(

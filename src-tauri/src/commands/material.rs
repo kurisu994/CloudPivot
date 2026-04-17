@@ -14,13 +14,15 @@ pub struct CategoryOption {
     pub code: String,
 }
 
-/// 单位记录
+/// 单位记录（物料表单下拉用，含小数位和符号供采购模块使用）
 #[derive(Debug, Serialize, FromRow)]
 pub struct UnitOption {
     pub id: i64,
     pub name: String,
     pub name_en: Option<String>,
     pub name_vi: Option<String>,
+    pub symbol: Option<String>,
+    pub decimal_places: i64,
 }
 
 #[tauri::command]
@@ -36,7 +38,7 @@ pub async fn get_categories(db: State<'_, DbState>) -> Result<Vec<CategoryOption
 #[tauri::command]
 pub async fn get_units(db: State<'_, DbState>) -> Result<Vec<UnitOption>, AppError> {
     sqlx::query_as::<_, UnitOption>(
-        "SELECT id, name, name_en, name_vi FROM units WHERE is_enabled = 1 ORDER BY sort_order ASC, id ASC"
+        "SELECT id, name, name_en, name_vi, symbol, decimal_places FROM units WHERE is_enabled = 1 ORDER BY sort_order ASC, id ASC"
     )
     .fetch_all(&db.pool)
     .await

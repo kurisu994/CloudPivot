@@ -15,9 +15,9 @@
 - [x] 物料管理 (`/materials`)
 - [x] 分类管理 (`/categories`)
 - [x] 供应商管理 (`/suppliers`)
-- [ ] 客户管理 (`/customers`)
-- [ ] 仓库管理 (`/warehouses`)
-- [ ] 单位管理 (`/units`)
+- [x] 客户管理 (`/customers`)
+- [x] 仓库管理 (`/warehouses`)
+- [x] 单位管理 (`/units`)
 
 ## 📋 BOM
 

@@ -17,6 +17,8 @@ async function loadMessages(locale: Locale) {
     import(`../messages/${locale}/categories.json`),
     import(`../messages/${locale}/suppliers.json`),
     import(`../messages/${locale}/customers.json`),
+    import(`../messages/${locale}/warehouses.json`),
+    import(`../messages/${locale}/units.json`),
   ])
 
   // 将所有分片的顶层键展开合并为一个扁平对象

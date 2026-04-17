@@ -1,0 +1,30 @@
+{
+  "units": {
+    "title": "Unit Management",
+    "addUnit": "Add Unit",
+    "editUnit": "Edit Unit",
+    "name": "Name (CN)",
+    "nameEn": "English Name",
+    "nameVi": "Vietnamese Name",
+    "symbol": "Symbol",
+    "decimalPlaces": "Decimal Places",
+    "sortOrder": "Sort Order",
+    "status": "Status",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure you want to delete unit \"{name}\"?",
+    "deleteConfirmDesc": "This action cannot be undone. Please ensure no materials reference this unit.",
+    "deleteProtected": "This unit is used by materials and cannot be deleted",
+    "deleteSuccess": "Unit deleted",
+    "saveSuccess": "Unit saved",
+    "emptyState": "No units yet",
+    "emptyStateDesc": "Click \"Add Unit\" to create your first unit",
+    "validation": {
+      "nameRequired": "Please enter unit name",
+      "decimalPlacesRequired": "Please select decimal places"
+    }
+  }
+}

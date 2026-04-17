@@ -1,0 +1,30 @@
+{
+  "units": {
+    "title": "单位管理",
+    "addUnit": "新增单位",
+    "editUnit": "编辑单位",
+    "name": "名称(中)",
+    "nameEn": "英文名称",
+    "nameVi": "越南语名称",
+    "symbol": "符号",
+    "decimalPlaces": "小数位",
+    "sortOrder": "排序",
+    "status": "状态",
+    "enabled": "启用",
+    "disabled": "禁用",
+    "actions": "操作",
+    "edit": "编辑",
+    "delete": "删除",
+    "deleteConfirm": "确定要删除单位「{name}」吗？",
+    "deleteConfirmDesc": "删除后不可恢复，请确认该单位没有被物料引用。",
+    "deleteProtected": "该单位已被物料使用，无法删除",
+    "deleteSuccess": "单位删除成功",
+    "saveSuccess": "单位保存成功",
+    "emptyState": "暂无单位数据",
+    "emptyStateDesc": "点击「新增单位」创建第一个单位",
+    "validation": {
+      "nameRequired": "请输入单位名称",
+      "decimalPlacesRequired": "请选择小数位"
+    }
+  }
+}

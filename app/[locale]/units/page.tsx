@@ -1,8 +1,8 @@
 import { setRequestLocale } from 'next-intl/server'
-import { PagePlaceholder } from '@/components/common/page-placeholder'
+import { UnitsContent } from './_components/units-content'
 
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   setRequestLocale(locale)
-  return <PagePlaceholder titleKey="nav.units" />
+  return <UnitsContent />
 }

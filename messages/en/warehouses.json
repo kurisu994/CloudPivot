@@ -1,0 +1,51 @@
+{
+  "warehouses": {
+    "title": "Warehouse Management",
+    "addWarehouse": "Add Warehouse",
+    "editWarehouse": "Edit Warehouse",
+    "code": "Code",
+    "name": "Name",
+    "type": "Type",
+    "manager": "Manager",
+    "phone": "Phone",
+    "address": "Address",
+    "remark": "Remark",
+    "status": "Status",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "typeOptions": {
+      "raw": "Raw Material",
+      "semi": "Semi-finished",
+      "finished": "Finished Goods",
+      "return": "Returns"
+    },
+    "defaultMapping": {
+      "title": "Default Warehouse Mapping",
+      "description": "Configure default warehouses by material type",
+      "raw": "Raw Material Default",
+      "semi": "Semi-finished Default",
+      "finished": "Finished Goods Default",
+      "save": "Save Mapping",
+      "saveSuccess": "Default warehouse mapping saved",
+      "placeholder": "Select warehouse"
+    },
+    "deleteConfirm": "Are you sure you want to delete warehouse \"{name}\"?",
+    "deleteConfirmDesc": "This action cannot be undone. Please ensure no business data is associated.",
+    "deleteProtected": "This warehouse is in use and cannot be deleted",
+    "deleteSuccess": "Warehouse deleted",
+    "saveSuccess": "Warehouse saved",
+    "disableDefaultWarning": "This warehouse is currently the default for {type}. Disabling it will clear the mapping.",
+    "disableConfirm": "Confirm disable?",
+    "emptyState": "No warehouses yet",
+    "emptyStateDesc": "Click \"Add Warehouse\" to create your first warehouse",
+    "typeNotEditable": "Warehouse type cannot be changed after creation",
+    "validation": {
+      "nameRequired": "Please enter warehouse name",
+      "typeRequired": "Please select warehouse type",
+      "codeRequired": "Please enter warehouse code"
+    }
+  }
+}
