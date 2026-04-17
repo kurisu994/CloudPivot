@@ -120,7 +120,11 @@ pub async fn save_unit(db: State<'_, DbState>, params: SaveUnitParams) -> Result
         .bind(&params.symbol)
         .bind(params.decimal_places)
         .bind(params.sort_order.unwrap_or(0))
-        .bind(if params.is_enabled.unwrap_or(true) { 1 } else { 0 })
+        .bind(if params.is_enabled.unwrap_or(true) {
+            1
+        } else {
+            0
+        })
         .bind(id)
         .execute(&db.pool)
         .await
@@ -187,12 +191,11 @@ pub async fn delete_unit(db: State<'_, DbState>, id: i64) -> Result<(), AppError
 pub async fn toggle_unit_status(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
     ensure_unit_exists(&db, id).await?;
 
-    let current_enabled: bool =
-        sqlx::query_scalar("SELECT is_enabled FROM units WHERE id = ?")
-            .bind(id)
-            .fetch_one(&db.pool)
-            .await
-            .map_err(|e| AppError::Database(format!("查询单位状态失败: {}", e)))?;
+    let current_enabled: bool = sqlx::query_scalar("SELECT is_enabled FROM units WHERE id = ?")
+        .bind(id)
+        .fetch_one(&db.pool)
+        .await
+        .map_err(|e| AppError::Database(format!("查询单位状态失败: {}", e)))?;
 
     let new_val = if current_enabled { 0 } else { 1 };
 

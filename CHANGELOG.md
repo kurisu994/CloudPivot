@@ -8,6 +8,29 @@
 
 ## [Unreleased]
 
+### 新增
+
+- **仓库管理模块**：实现完整的仓库 CRUD 管理功能
+  - 后端：新增 `warehouse.rs` IPC 命令模块（8 个命令），支持仓库增删改查、启用/禁用、默认仓映射管理、编码自动生成（WH-{TYPE}-{SEQ}，MAX(seq)+1 策略）
+  - 删除保护：检查 8 张关联表（inventory/purchase_orders/sales_orders/inbound_orders/outbound_orders/default_warehouses/transfers/stock_checks）
+  - 禁用事务一致性：禁用仓库时在同一事务中自动清除 default_warehouses 映射
+  - 默认仓映射保存校验：校验仓库启用状态，禁用仓库不可设为默认仓
+  - 前端页面：轻量 Card + Table 模式（数据量少不需要 BusinessListTableShell），仓库列表 + 默认仓映射两个区域
+  - 编辑弹窗：使用 Field/FieldGroup 表单组件，仓库类型创建后不可修改，编码编辑模式禁用
+  - 国际化：warehouses 命名空间，覆盖中/越/英三语
+- **单位管理模块**：实现完整的计量单位 CRUD 管理功能
+  - 后端：新增 `unit.rs` IPC 命令模块（5 个命令），支持单位增删改查、启用/禁用
+  - 删除保护：检查 materials 表的 base_unit_id 和 aux_unit_id 引用
+  - 前端页面：轻量 Card + Table 模式，单位列表 + 编辑弹窗
+  - 编辑弹窗：使用 Field/FieldGroup 表单组件，双列布局，含小数位 Select
+  - 国际化：units 命名空间，覆盖中/越/英三语
+- **仓库编码共享函数**：提取 `generate_warehouse_code_internal` 为共享函数，向导（setup_create_warehouses）和管理页面共用，消除 DRY 违反
+- **get_units 扩展**：物料表单下拉的 `get_units` 命令新增返回 `decimal_places` 和 `symbol` 字段，为采购模块做准备
+
+### 优化
+
+- **向导编码生成升级**：`setup_create_warehouses` 从 COUNT+1 改为 MAX(seq)+1 策略，避免删除后编码冲突
+
 ---
 
 ## [0.1.2] — 2026-04-17

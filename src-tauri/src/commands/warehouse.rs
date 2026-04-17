@@ -149,10 +149,7 @@ pub async fn get_warehouses(
 
 /// 获取单个仓库详情
 #[tauri::command]
-pub async fn get_warehouse_by_id(
-    db: State<'_, DbState>,
-    id: i64,
-) -> Result<Warehouse, AppError> {
+pub async fn get_warehouse_by_id(db: State<'_, DbState>, id: i64) -> Result<Warehouse, AppError> {
     sqlx::query_as::<_, Warehouse>(
         "SELECT id, code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at, updated_at FROM warehouses WHERE id = ?",
     )
@@ -195,7 +192,11 @@ pub async fn save_warehouse(
         .bind(&params.phone)
         .bind(&params.address)
         .bind(&params.remark)
-        .bind(if params.is_enabled.unwrap_or(true) { 1 } else { 0 })
+        .bind(if params.is_enabled.unwrap_or(true) {
+            1
+        } else {
+            0
+        })
         .bind(id)
         .execute(&db.pool)
         .await
@@ -257,9 +258,7 @@ pub async fn delete_warehouse(db: State<'_, DbState>, id: i64) -> Result<(), App
     .map_err(|e| AppError::Database(format!("检查仓库关联数据失败: {}", e)))?;
 
     if related_count > 0 {
-        return Err(AppError::Business(
-            "该仓库已被使用，无法删除".to_string(),
-        ));
+        return Err(AppError::Business("该仓库已被使用，无法删除".to_string()));
     }
 
     sqlx::query("DELETE FROM warehouses WHERE id = ?")
@@ -290,11 +289,13 @@ pub async fn toggle_warehouse_status(db: State<'_, DbState>, id: i64) -> Result<
 
     if new_enabled {
         // 启用：直接更新
-        sqlx::query("UPDATE warehouses SET is_enabled = 1, updated_at = datetime('now') WHERE id = ?")
-            .bind(id)
-            .execute(&db.pool)
-            .await
-            .map_err(|e| AppError::Database(format!("启用仓库失败: {}", e)))?;
+        sqlx::query(
+            "UPDATE warehouses SET is_enabled = 1, updated_at = datetime('now') WHERE id = ?",
+        )
+        .bind(id)
+        .execute(&db.pool)
+        .await
+        .map_err(|e| AppError::Database(format!("启用仓库失败: {}", e)))?;
     } else {
         // 禁用：事务中同时清除默认仓映射
         let mut tx = db
@@ -303,11 +304,13 @@ pub async fn toggle_warehouse_status(db: State<'_, DbState>, id: i64) -> Result<
             .await
             .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
-        sqlx::query("UPDATE warehouses SET is_enabled = 0, updated_at = datetime('now') WHERE id = ?")
-            .bind(id)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| AppError::Database(format!("禁用仓库失败: {}", e)))?;
+        sqlx::query(
+            "UPDATE warehouses SET is_enabled = 0, updated_at = datetime('now') WHERE id = ?",
+        )
+        .bind(id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("禁用仓库失败: {}", e)))?;
 
         // 清除该仓库的默认仓映射
         sqlx::query("DELETE FROM default_warehouses WHERE warehouse_id = ?")
