@@ -155,9 +155,7 @@ fn is_supported_grade(value: &str) -> bool {
 }
 
 /// 校验客户保存参数
-pub(crate) fn validate_save_customer_params(
-    params: &SaveCustomerParams,
-) -> Result<(), AppError> {
+pub(crate) fn validate_save_customer_params(params: &SaveCustomerParams) -> Result<(), AppError> {
     if params.code.trim().is_empty() {
         return Err(AppError::Business("客户编码不能为空".to_string()));
     }
@@ -185,9 +183,7 @@ pub(crate) fn validate_save_customer_params(
         return Err(AppError::Business("联系电话不能为空".to_string()));
     };
     if !validate_contact_phone(contact_phone) {
-        return Err(AppError::Business(
-            "请输入有效的国际电话号码".to_string(),
-        ));
+        return Err(AppError::Business("请输入有效的国际电话号码".to_string()));
     }
 
     if let Some(email) = params.email.as_deref() {
@@ -217,9 +213,7 @@ pub(crate) fn validate_save_customer_params(
     }
 
     if !(0.0..=100.0).contains(&params.default_discount) {
-        return Err(AppError::Business(
-            "折扣率必须在 0-100 之间".to_string(),
-        ));
+        return Err(AppError::Business("折扣率必须在 0-100 之间".to_string()));
     }
 
     Ok(())
