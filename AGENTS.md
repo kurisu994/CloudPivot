@@ -94,16 +94,16 @@ just icon                  # 基于 app-icon.png 生成全平台图标 (macOS/iO
 - **图标**：统一使用 `lucide-react`，不引入其他图标库
 - **路径别名**：`@/components/ui`、`@/lib/utils`、`@/hooks`
 
-已安装组件：`badge` `button` `card` `chart` `checkbox` `input` `label` `progress` `radio-group` `select` `separator` `switch` `table` `tabs`
+已安装组件：`badge` `button` `card` `chart` `checkbox` `dialog` `field` `input` `label` `pagination` `progress` `radio-group` `select` `separator` `sheet` `skeleton` `sonner` `switch` `table` `tabs`
 
 常用但尚未安装的组件（按需 add）：
 
-- 布局类：`dialog` `accordion` `collapsible`
-- 表单类：`form` `field` `textarea` `combobox` `input-otp`
-- 数据展示：`pagination` `avatar` `tooltip` `hover-card` `skeleton` `empty`
+- 布局类：`accordion` `collapsible`
+- 表单类：`form` `textarea` `combobox` `input-otp`
+- 数据展示：`avatar` `tooltip` `hover-card` `empty`
 - 交互类：`dropdown-menu` `context-menu` `popover` `alert-dialog` `command`
 - 导航类：`breadcrumb` `navigation-menu` `sidebar`
-- 反馈类：`sonner`（toast 通知）`spinner` `alert`
+- 反馈类：`spinner` `alert`
 
 > **示例**：需要表格时用 `pnpm shadcn add table`，需要弹窗用 `pnpm shadcn add dialog`，  
 > 需要 toast 通知用 `pnpm shadcn add sonner`。  
@@ -267,13 +267,11 @@ export default async function Page({
   - localStorage 会话持久化 + `session_version` 验证
   - 认证页面（`/login`、`/change-password`）使用独立布局（无侧边栏/顶栏）
 
-- **IPC 命令**（`src-tauri/src/commands/mod.rs`）：
-  - `ping` — 前后端通信 + 数据库健康检查
-  - `get_db_version` — 查询当前数据库迁移版本
-  - `login` — 用户登录（返回 `LoginResponse`）
-  - `change_password` — 修改密码
-  - `get_user_info` — 获取用户信息
-  - `get_suppliers` / `get_supplier_by_id` / `save_supplier` / `toggle_supplier_status` / `generate_supplier_code` / `get_supplier_categories` — 供应商 CRUD
+- **IPC 命令**（`src-tauri/src/commands/`）：
+  - `mod.rs`：`ping` / `get_db_version` / `login` / `change_password` / `get_user_info` / `get_system_configs` / `set_system_config` / `set_system_configs` / `setup_create_warehouses`
+  - `material.rs`：`get_categories` / `get_units` / `get_materials` / `get_material_by_id` / `save_material` / `toggle_material_status`
+  - `category.rs`：`get_category_tree` / `create_category` / `update_category` / `delete_category` / `update_category_order`
+  - `supplier.rs`：`get_suppliers` / `get_supplier_by_id` / `get_supplier_detail` / `save_supplier` / `delete_supplier` / `toggle_supplier_status` / `generate_supplier_code` / `get_supplier_categories` / `get_material_reference_options` / `save_supplier_material` / `delete_supplier_material`
 
 ### 数据库层
 
@@ -312,33 +310,35 @@ export default async function Page({
 | `docs/03-ui-prototype.md`     | 页面布局、交互流程、组件规格 |
 | `docs/04-development-plan.md` | 任务分解、当前进度状态       |
 
-## 当前状态（阶段一，约 95%）
+## 当前状态（阶段二，约 55%）
 
 **已完成**：
 
-- 项目脚手架：Next.js 16 + Tailwind CSS 4 + shadcn/ui + ESLint/Prettier
-- i18n 框架：next-intl，多语言环境（中文/英文/越南语），已实现登录及看板等模块和基础组件多语言化
+- 项目脚手架：Next.js 16 + Tailwind CSS 4 + shadcn/ui（21 个组件）+ ESLint/Prettier
+- i18n 框架：next-intl，按域拆分翻译文件（8 域/语言，720 行/语言），涵盖 auth/categories/common/dashboard/materials/settings/setup-wizard/suppliers
 - 布局组件：AppLayout（侧边栏 + 顶栏 + 主内容区 + 页脚）、Sidebar、Header、LocaleSwitcher、AppFooter
 - 深浅主题系统与显示偏好：CSS 变量 + next-themes + `DisplayPreferencesProvider` 全局状态联动
 - 首页看板 UI：基于国际化字典与 mock 数据重构了 7 个模块化子组件
 - **工程化及体验**：集成符合 Apple HIG 规范的系统图标生成流程、优化了 `justfile`
-- **页面级别开发**：已完成**系统设置**模块的两个重要子页（企业信息、显示偏好），并联调系统配置交互逻辑
 - **Rust 数据库层**：sqlx + SQLite 连接池、WAL PRAGMA、自管理迁移框架、45 张表 DDL + 种子数据
 - **用户认证（全栈）**：登录页 / 改密页 UI、AuthProvider 路由守卫、Rust 后端 bcrypt 认证 + 锁定 + session_version
-- **IPC 通信**：ping / get_db_version / login / change_password / get_user_info + 分类/物料/供应商 CRUD
-- **供应商管理（全栈）**：列表筛选分页 + Dialog 弹窗表单 + 后端 6 个 IPC 命令 + 编码自动生成
+- **首次使用向导**：多步骤引导页 + setup_create_warehouses IPC 命令
+- **IPC 通信**：31 个已注册命令（基础 9 + 物料 6 + 分类 5 + 供应商 11）
+- **物料管理（全栈）**：列表筛选分页 + Dialog 编辑弹窗 + 后端 6 个 IPC 命令
+- **分类管理（全栈）**：react-arborist 树形列表 + 拖拽排序 + 编辑弹窗 + 后端 5 个 IPC 命令
+- **供应商管理（全栈）**：列表筛选分页 + Dialog 编辑弹窗 + 详情弹窗 + 物料关联 Tab + 后端 11 个 IPC 命令 + 编码自动生成
+- **系统设置（全栈）**：8 个子页面（企业信息/外观/编码规则/库存规则/打印/汇率/数据管理/操作日志）+ get/set_system_configs IPC
 - **前端工具库**：Tauri IPC 封装、多币种格式化、系统配置类型定义
-- App Router 路由骨架：23 个业务路由目录
+- App Router 路由骨架：27 个路由目录（8 个已实现，15 个占位）
 
 **进行中**：
 
-- 业务模块页面 UI 及逻辑联调（准备推进库存和物料等具体业务）
-- Repository trait 抽象（业务数据 CRUD）
-- 业务 IPC 命令（物料、仓库、单据等）
-- 多币种前端集成（逻辑已就绪，待业务页面对接）
+- 阶段二剩余：客户管理、仓库管理、单位管理、BOM 管理、通用组件抽取、物料导入导出
+- Repository trait 抽象（当前 CRUD 逻辑直接写在 commands 中，待重构到 service 层）
+- 多币种前端集成（格式化工具已就绪，待业务页面对接）
 
 **未开始**：
 
-- 剩余 20 个常规业务模块页面 UI 实现
+- 剩余 15 个业务模块页面 UI 实现（采购/销售/库存/定制单/生产工单/财务/报表）
 - 状态管理（zustand 已安装但未使用）
 - CI/CD

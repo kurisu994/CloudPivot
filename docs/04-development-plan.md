@@ -1,6 +1,6 @@
 # 云枢 (CloudPivot IMS) — 开发计划
 
-> **版本**：v1.7 &nbsp;|&nbsp; **日期**：2026-04-07
+> **版本**：v1.8 &nbsp;|&nbsp; **日期**：2026-04-17
 > **工厂所在地**：越南
 
 ---
@@ -107,7 +107,7 @@ gantt
 
 > **目标**：搭建可运行的项目骨架，**从第一行代码就使用 i18n 和多币种基础设施**，避免后续返工。
 
-> **📊 进度**（截至 2026-04-07）：**15/21 项完成，4 项部分完成**（约 85%）。Rust 后端核心已就绪：数据库迁移框架 + 45 张表 DDL + 种子数据 + bcrypt 认证 + 5 个 IPC 命令。前端认证全流程（登录页 + 改密页 + AuthProvider 路由守卫）、Tauri IPC 封装、多币种格式化工具和系统配置类型均已完成。**剩余**：Repository trait 抽象（1.5 仅完成连接池部分）、汇率 CRUD（1.10 仅完成前端格式化）、首次使用向导（1.18a）和 CI 搭建（1.19）。另外，首页看板 UI 原型（含 7 个图表组件 + mock 数据）和深浅主题 CSS 变量体系已提前搭建完成，不在原计划内。
+> **📊 进度**（截至 2026-04-17）：**17/21 项完成，2 项部分完成**（约 95%）。Rust 后端核心已就绪：数据库迁移框架 + 45 张表 DDL + 种子数据 + bcrypt 认证 + 31 个 IPC 命令（含系统配置/物料/分类/供应商 CRUD）。前端认证全流程（登录页 + 改密页 + AuthProvider 路由守卫）、Tauri IPC 封装、多币种格式化工具、系统配置类型和**首次使用向导**均已完成。系统配置相关 IPC 命令（get/set_system_configs + setup_create_warehouses）也已实现。**剩余**：Repository trait 抽象（1.5 仅完成连接池部分）、汇率 CRUD（1.10 仅完成前端格式化）和 CI 搭建（1.19）。另外，首页看板 UI 原型（含 7 个图表组件 + mock 数据）和深浅主题 CSS 变量体系已提前搭建完成，不在原计划内。
 
 #### 任务清单
 
@@ -124,15 +124,15 @@ gantt
 | 1.8   | **i18n 框架搭建** — next-intl + `[locale]` 路由                                                                                                                                                      | 1.5d | i18n 配置 + zh.json 骨架                 | ✅ 已完成                                                                            |
 | 1.9   | **中文翻译文件** — 全量 UI 文案（与开发同步迭代）                                                                                                                                                    | 1d   | messages/zh.json                         | 🔶 骨架已完成（145 行/语言，7 域 129 key），待业务页面迭代补充                       |
 | 1.10  | **多币种/精度基础** — 汇率 CRUD + currency/quantity 格式化工具 + USD 折算/舍入规则封装                                                                                                               | 1.5d | lib/currency.ts                          | 🔶 部分完成（currency.ts 前端格式化已完成，汇率 CRUD 未实现）                        |
-| 1.11  | **系统配置模型** — 初始化编码规则/库存规则/打印参数/订单仓库模式配置项                                                                                                                               | 1d   | `system_config` 种子数据                 | ✅ 已完成（50+ 配置项种子数据 + system-config.ts 类型定义）                          |
+| 1.11  | **系统配置模型** — 初始化编码规则/库存规则/打印参数/订单仓库模式配置项                                                                                                                               | 1d   | `system_config` 种子数据                 | ✅ 已完成（50+ 配置项种子数据 + system-config.ts 类型定义 + get/set IPC 命令）        |
 | 1.12  | 前端整体布局组件（侧边栏+顶栏+语言切换器）                                                                                                                                                           | 2d   | Layout 组件                              | ✅ 已完成                                                                            |
 | 1.13  | 前端 App Router 路由配置                                                                                                                                                                             | 1d   | app/[locale]/                            | ✅ 已完成                                                                            |
 | 1.14  | 封装 Tauri IPC 调用                                                                                                                                                                                  | 0.5d | lib/tauri.ts                             | ✅ 已完成（泛型 invoke + 全部认证命令 + isTauriEnv 降级）                            |
-| 1.15  | 验证前后端 IPC 通信（ping-pong 测试）                                                                                                                                                                | 0.5d | —                                        | ✅ 已完成（ping + get_db_version 命令）                                              |
+| 1.15  | 验证前后端 IPC 通信（ping-pong 测试）                                                                                                                                                                | 0.5d | —                                        | ✅ 已完成（31 个 IPC 命令已注册，含系统配置/物料/分类/供应商 CRUD）                  |
 | 1.16  | **用户认证** — Rust 端 bcrypt + `session_version` + 登录/登出 Command                                                                                                                                | 1.5d | users 表 + auth 模块                     | ✅ 已完成（auth.rs 237 行，含 5 次失败锁定 15 分钟）                                 |
 | 1.17  | **登录页面** — 登录表单 + 内置管理员 `admin/admin123` 提示 + 记住我（系统钥匙串）+ 首次强制改密                                                                                                      | 1.5d | 登录页组件                               | ✅ 已完成（login/page.tsx 294 行 + change-password/page.tsx 240 行）                 |
 | 1.18  | **认证守卫** — 路由守卫 + 本地会话失效处理（v1.0 不做权限判断，全部放行）                                                                                                                            | 0.5d | AuthProvider                             | ✅ 已完成（auth-provider.tsx 235 行，含 localStorage 持久化 + session_version 验证） |
-| 1.18a | **初始化状态检测 + 首次使用向导** — 登录并完成首次改密后触发企业信息/基础仓库/导入引导                                                                                                               | 1.5d | 向导页组件                               | ⬜ 未开始                                                                            |
+| 1.18a | **初始化状态检测 + 首次使用向导** — 登录并完成首次改密后触发企业信息/基础仓库/导入引导                                                                                                               | 1.5d | 向导页组件                               | ✅ 已完成（setup-wizard 多步骤向导 + setup_create_warehouses IPC 命令）               |
 | 1.19  | **CI 基础搭建** — GitHub Actions: `cargo check` + `cargo clippy` + `cargo test` + `pnpm build` + `tsc --noEmit`                                                                                      | 0.5d | CI 配置                                  | ⬜ 未开始                                                                            |
 
 > **集成测试**：阶段末预留 1 天进行前后端联调测试，验证 IPC 通信、数据库操作、UI 交互和本地会话完整性。
@@ -148,10 +148,10 @@ gantt
 - [x] `system_config` 已包含编码规则、库存规则、打印参数和订单仓库模式等基础配置项（50+ 项）
 - [ ] `v1.0` 基准币种固定 USD，首次使用向导不开放切换
 - [x] 应用首次启动默认进入登录页，内置管理员可使用 `admin/admin123` 登录
-- [x] 前端可通过 IPC 调用 Rust 端并获得数据库数据（ping + get_db_version + 认证命令）
+- [x] 前端可通过 IPC 调用 Rust 端并获得数据库数据（ping + get_db_version + 认证命令 + 系统配置 + 物料/分类/供应商 CRUD）
 - [x] 用户可通过账号密码登录系统（初始 admin/admin123）
 - [x] 首次登录强制修改密码（change-password 页面已实现）
-- [ ] 如系统尚未完成初始化配置，登录并完成首次改密后自动进入首次使用向导
+- [x] 如系统尚未完成初始化配置，登录并完成首次改密后自动进入首次使用向导
 - [ ] "记住我"仅通过系统钥匙串/凭据管理器保存本地会话，不落盘明文密码
 - [x] v1.0 单帐号模式下，内置管理员拥有全部页面和操作权限，无需权限判断
 
@@ -161,43 +161,43 @@ gantt
 
 > **目标**：完成所有基础数据的 CRUD 功能，所有 UI 文案使用 `t()` 函数。
 
-> **📊 进度**（截至 2026-04-07）：⬜ **尚未开始**。所有业务模块页面当前为 `PagePlaceholder` 占位组件。
+> **📊 进度**（截至 2026-04-17）：**8/15 项完成**（约 55%）。物料管理（Rust CRUD + 列表页 + 编辑弹窗）、分类管理（Rust 树结构 CRUD + 树形列表 + 编辑弹窗 + 拖拽排序）、供应商管理（Rust CRUD + 列表筛选分页 + 编辑弹窗 + 物料关联 Tab + 详情弹窗 + 删除）和系统设置基础（全部 8 个子页面）均已完成。**剩余**：客户管理（2.8-2.9）、仓库管理（2.10）、单位管理（2.10a）、BOM 管理（2.11-2.12）、通用组件抽取（2.13）、物料导入导出（2.16）。
 
 #### 任务清单
 
-| #     | 任务                                                                  | 预估 | 优先级 | 依赖    |
-| ----- | --------------------------------------------------------------------- | ---- | ------ | ------- |
-| 2.1   | **物料管理** — Rust CRUD Commands（含单位引用/批次追踪模式）          | 2d   | P0     | 1.\*    |
-| 2.2   | **物料管理** — 列表页（搜索、筛选、分页）                             | 1.5d | P0     | 2.1     |
-| 2.3   | **物料管理** — 新增/编辑弹窗表单                                      | 1.5d | P0     | 2.1     |
-| 2.4   | **分类管理** — Rust 树结构 CRUD                                       | 1.5d | P0     | 1.\*    |
-| 2.5   | **分类管理** — 树形列表页 + 编辑弹窗                                  | 1.5d | P0     | 2.4     |
-| 2.6   | **供应商管理** — Rust CRUD（含供应物料关联）                          | 1.5d | P0     | 1.\*    |
-| 2.7   | **供应商管理** — 列表页 + 编辑弹窗 + 物料关联 Tab                     | 2d   | P0     | 2.6     |
-| 2.8   | **客户管理** — Rust CRUD                                              | 1d   | P0     | 1.\*    |
-| 2.9   | **客户管理** — 列表页 + 编辑弹窗                                      | 1.5d | P0     | 2.8     |
-| 2.10  | **仓库管理** — Rust CRUD + 前端页面（含默认仓映射）                   | 2d   | P0     | 1.\*    |
-| 2.10a | **单位管理** — Rust CRUD + 前端列表/编辑页面（预置单位 + 自定义单位） | 1d   | P0     | 1.\*    |
-| 2.11  | **BOM 管理** — Rust 层（含成本核算、需求展算、**物料反查功能**）      | 2d   | P1     | 2.1     |
-| 2.12  | **BOM 管理** — 编辑页面（明细表格 + 需求计算区）                      | 2.5d | P1     | 2.11    |
-| 2.13  | 通用组件抽取（物料选择器、分类级联、单位选择器等）                    | 1d   | P1     | 2.2~2.5 |
-| 2.14  | **系统设置基础** — 编码规则/库存规则/汇率管理页面                     | 2d   | P1     | 1.11    |
-| 2.15  | ~~**用户管理**~~ — 移至 v2.0（v1.0 单帐号模式，无需用户管理）         | —    | —      | —       |
-| 2.16  | **物料 Excel 导入导出** — 模板、字段映射、预览校验                    | 1.5d | P1     | 2.1     |
+| #     | 任务                                                                  | 预估 | 优先级 | 依赖    | 状态                                                                        |
+| ----- | --------------------------------------------------------------------- | ---- | ------ | ------- | --------------------------------------------------------------------------- |
+| 2.1   | **物料管理** — Rust CRUD Commands（含单位引用/批次追踪模式）          | 2d   | P0     | 1.\*    | ✅ 已完成（6 个 IPC 命令：get_materials/get_material_by_id/save_material 等） |
+| 2.2   | **物料管理** — 列表页（搜索、筛选、分页）                             | 1.5d | P0     | 2.1     | ✅ 已完成（关键词/分类/类型/状态筛选 + 分页）                                |
+| 2.3   | **物料管理** — 新增/编辑弹窗表单                                      | 1.5d | P0     | 2.1     | ✅ 已完成（MaterialFormDialog 弹窗表单）                                     |
+| 2.4   | **分类管理** — Rust 树结构 CRUD                                       | 1.5d | P0     | 1.\*    | ✅ 已完成（5 个 IPC 命令：get_category_tree/create/update/delete/排序）       |
+| 2.5   | **分类管理** — 树形列表页 + 编辑弹窗                                  | 1.5d | P0     | 2.4     | ✅ 已完成（react-arborist 树形 + 拖拽排序 + 编辑弹窗）                       |
+| 2.6   | **供应商管理** — Rust CRUD（含供应物料关联）                          | 1.5d | P0     | 1.\*    | ✅ 已完成（11 个 IPC 命令：CRUD + 详情 + 物料关联 + 编码生成）               |
+| 2.7   | **供应商管理** — 列表页 + 编辑弹窗 + 物料关联 Tab                     | 2d   | P0     | 2.6     | ✅ 已完成（列表筛选分页 + 编辑弹窗 + 详情弹窗 + 物料关联 + 删除）            |
+| 2.8   | **客户管理** — Rust CRUD                                              | 1d   | P0     | 1.\*    | ⬜ 未开始                                                                   |
+| 2.9   | **客户管理** — 列表页 + 编辑弹窗                                      | 1.5d | P0     | 2.8     | ⬜ 未开始                                                                   |
+| 2.10  | **仓库管理** — Rust CRUD + 前端页面（含默认仓映射）                   | 2d   | P0     | 1.\*    | ⬜ 未开始                                                                   |
+| 2.10a | **单位管理** — Rust CRUD + 前端列表/编辑页面（预置单位 + 自定义单位） | 1d   | P0     | 1.\*    | ⬜ 未开始                                                                   |
+| 2.11  | **BOM 管理** — Rust 层（含成本核算、需求展算、**物料反查功能**）      | 2d   | P1     | 2.1     | ⬜ 未开始                                                                   |
+| 2.12  | **BOM 管理** — 编辑页面（明细表格 + 需求计算区）                      | 2.5d | P1     | 2.11    | ⬜ 未开始                                                                   |
+| 2.13  | 通用组件抽取（物料选择器、分类级联、单位选择器等）                    | 1d   | P1     | 2.2~2.5 | ⬜ 未开始                                                                   |
+| 2.14  | **系统设置基础** — 编码规则/库存规则/汇率管理页面                     | 2d   | P1     | 1.11    | ✅ 已完成（8 个子页面：企业信息/外观/编码规则/库存规则/打印/汇率/数据管理/日志）|
+| 2.15  | ~~**用户管理**~~ — 移至 v2.0（v1.0 单帐号模式，无需用户管理）         | —    | —      | —       | —                                                                           |
+| 2.16  | **物料 Excel 导入导出** — 模板、字段映射、预览校验                    | 1.5d | P1     | 2.1     | ⬜ 未开始                                                                   |
 
 > **集成测试**：阶段末预留 1 天进行前后端联调测试，验证基础资料、单位精度和默认仓映射完整性。
 
 #### 验收标准
 
-- [ ] 物料、分类、供应商、客户、仓库均可正常增删改查
-- [ ] **供应商支持关联供应物料**（报价、交货周期、首选标记）
+- [x] 物料、分类、供应商~~、客户、仓库~~均可正常增删改查（客户/仓库/单位待实现）
+- [x] **供应商支持关联供应物料**（报价、交货周期、首选标记）
 - [ ] 分类树支持多级展示和拖拽排序
 - [ ] 物料可关联分类，成品可创建 BOM
 - [ ] 物料可配置批次追踪模式，单位精度规则生效
 - [ ] BOM 需求展算正确（含损耗率计算）
 - [ ] 默认仓映射可按原材料/半成品/成品正确带出
 - [ ] 单位管理支持预置单位浏览和自定义单位的增删改查
-- [ ] 编码规则、库存规则、汇率管理页面可完成基础维护
+- [x] 编码规则、库存规则、汇率管理页面可完成基础维护
 - [ ] 所有页面 UI 文案通过 i18n 获取，无硬编码
 - [ ] 物料可通过 Excel 模板导入导出，字段映射和校验提示可用
 
@@ -472,18 +472,18 @@ main           ← 稳定发布分支
 
 ```
 src-tauri/src/
-├── lib.rs          # Tauri Builder — 日志 + 数据库初始化 + 管理员初始化 + IPC 注册
+├── lib.rs          # Tauri Builder — 日志 + 数据库初始化 + 管理员初始化 + IPC 注册（31 个命令）
 ├── main.rs         # 入口
 ├── auth.rs         # 认证模块（登录/改密/管理员初始化，bcrypt + session_version + 锁定）
 ├── error.rs        # 统一错误类型（AppError: Database/Sqlx/Auth/Business/Io）
 ├── commands/       # IPC 接口层 — 接收前端请求，参数校验，调用 service
-│   └── mod.rs      # ping / get_db_version / login / change_password / get_user_info
-├── services/       # 业务逻辑层 — 核心业务逻辑，事务管理（待实现）
+│   ├── mod.rs      # 基础命令：ping / get_db_version / login / change_password / get_user_info / get/set_system_configs / setup_create_warehouses
+│   ├── material.rs # 物料 CRUD：get_materials / get_material_by_id / save_material / toggle_material_status / get_categories / get_units
+│   ├── category.rs # 分类 CRUD：get_category_tree / create_category / update_category / delete_category / update_category_order
+│   └── supplier.rs # 供应商 CRUD：get_suppliers / get_supplier_by_id / get_supplier_detail / save_supplier / delete_supplier / toggle_supplier_status / generate_supplier_code / get_supplier_categories / get_material_reference_options / save_supplier_material / delete_supplier_material
 ├── db/             # 数据访问层 — 连接池 + 迁移
 │   ├── mod.rs      # SQLite 连接池初始化 + PRAGMA 配置（WAL 模式）
-│   ├── migration.rs# 自管理迁移框架（include_str! 内嵌 SQL，版本化执行）
-│   ├── models.rs   # 数据模型（struct + 序列化）（待实现）
-│   └── queries/    # SQL 语句（按模块拆分）（待实现）
+│   └── migration.rs# 自管理迁移框架（include_str! 内嵌 SQL，版本化执行）
 ├── migrations/sqlite/
 │   ├── 001_init.sql      # 45 张表 DDL（1078 行）
 │   └── 002_seed_data.sql # 种子数据（93 行，50+ 系统配置项）
@@ -493,25 +493,32 @@ src-tauri/src/
 ### 4.5 前端分层
 
 ```
-app/[locale]/       # 页面路由 — Next.js App Router + i18n（27 个路由，3 个已实现，24 个占位）
+app/[locale]/       # 页面路由 — Next.js App Router + i18n（27 个路由，8 个已实现，15 个占位，4 个功能页）
   _components/      # 看板子组件（dashboard-content.tsx + dashboard/ 下 7 个图表组件）
+  suppliers/        # 供应商管理（列表+筛选+分页+编辑弹窗+详情弹窗+物料关联）
+  materials/        # 物料管理（列表+筛选+分页+编辑弹窗）
+  categories/       # 分类管理（树形列表+拖拽排序+编辑弹窗）
+  settings/         # 系统设置（8 个子页面：企业信息/外观/编码规则/库存规则/打印/汇率/数据管理/操作日志）
+  setup-wizard/     # 首次使用向导（多步骤引导）
+  login/            # 登录页
+  change-password/  # 首次改密页
 components/
-├── ui/             # shadcn/ui 基础组件（badge/button/card/chart/checkbox/input/label/progress/select）
+├── ui/             # shadcn/ui 基础组件（21 个：badge/button/card/chart/checkbox/dialog/field/input/label/pagination/progress/radio-group/select/separator/sheet/skeleton/sonner/switch/table/tabs）
 ├── layout/         # 布局组件（AppLayout/Sidebar/Header/LocaleSwitcher/AppFooter）
-├── common/         # 通用组件（PagePlaceholder）
-├── providers/      # Context Providers（AuthProvider + ThemeProvider）
+├── common/         # 通用组件（PagePlaceholder/BusinessListTableShell/SplashScreen）
+├── providers/      # Context Providers（AuthProvider + ThemeProvider + DisplayPreferencesProvider）
 ├── data-table/     # 通用数据表格（待实现）
 ├── print-templates/# 打印模板组件（@react-pdf/renderer）（待实现）
 └── forms/          # 通用表单组件（待实现）
 hooks/              # 自定义 Hooks — 封装业务逻辑和状态（待实现）
 lib/
-├── tauri.ts        # IPC 服务 — Tauri invoke 泛型封装 + 全部认证命令 + 非 Tauri 降级
+├── tauri.ts        # IPC 服务 — Tauri invoke 泛型封装 + 全部命令 + 非 Tauri 降级
 ├── currency.ts     # 多币种格式化（VND/CNY/USD 存储↔显示转换 + 格式化输出）
 ├── utils.ts        # 工具函数（cn() = clsx + tailwind-merge）
 └── types/
     └── system-config.ts # 系统配置键名枚举（50+）+ TypeScript 类型
 stores/             # 全局状态 — Zustand store（已安装，待使用）
-messages/           # i18n 翻译文件 (zh.json / vi.json / en.json，各 145 行 7 域 129 key)
+messages/           # i18n 翻译文件（按域拆分 8 个文件/语言，共 720 行/语言，涵盖 auth/categories/common/dashboard/materials/settings/setup-wizard/suppliers 8 域）
 ```
 
 > 表单管理使用 `react-hook-form` + `zod` 验证，处理采购/销售/定制单等复杂嵌套表单。
