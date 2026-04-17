@@ -10,6 +10,10 @@
 
 ### 新增
 
+- **业务列表表格骨架**：新增 `BusinessListTableShell` 等公共薄封装，统一物料、供应商等业务列表的横向滚动、固定首列、分页栏、加载态和空态
+  - 固定首列：统一 `BUSINESS_LIST_STICKY_HEAD_CLASS` / `BUSINESS_LIST_STICKY_CELL_CLASS`，避免各页面重复手写 sticky 样式
+  - 状态行：新增 `BusinessListTableLoadingRows` / `BusinessListTableEmptyRow`，让加载态和空态保持在同一张表格结构内
+  - 分页栏：新增 `BusinessListTableFooter`，统一小屏换行布局，避免分页控件独立溢出
 - **供应商管理模块**：实现完整的供应商 CRUD 管理功能
   - 前端：列表筛选（关键词/国家/类别/等级）、分页、Sheet 抽屉表单（基本信息/结算/地址/银行四分区）
   - 后端：新增 `supplier.rs` IPC 命令模块（6 个命令），支持动态筛选、分页查询、编码自动生成
@@ -23,6 +27,10 @@
 
 ### 优化
 
+- **业务列表小屏体验**：优化物料和供应商列表在小屏下的横向滚动与固定首列表现
+  - 表格本体使用明确最小总宽度和稳定列宽，避免小屏下列被压缩却不能滚动
+  - 修复主布局缺少 `min-w-0` 导致子级 `overflow-x-auto` 无法生效的问题
+  - 将 sticky 首列背景改为不透明实底色，避免横向滚动时透出后方文字影子
 - **代码格式化工具迁移**：从 Prettier 迁移至 Biome，统一 Rust 和 TypeScript 代码风格
   - 移除 `.prettierrc` 配置文件
   - 新增 `biome.json` 配置，统一单引号、导入排序、尾随逗号等规则
@@ -90,4 +98,3 @@
 - 完成界面原型文档（30 个页面 wireframe + 交互规范）
 - 完成开发计划文档（5 阶段任务清单）
 - 多轮设计文档评审与修正（v1.0 → v1.5）
-
