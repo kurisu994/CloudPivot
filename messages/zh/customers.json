@@ -1,0 +1,200 @@
+{
+  "customers": {
+    "title": "客户管理",
+    "description": "集中管理客户档案，支撑销售与应收业务",
+
+    "filter": {
+      "keyword": "关键词",
+      "customerType": "客户类型",
+      "grade": "客户等级",
+      "country": "国家/地区",
+      "reset": "重置筛选"
+    },
+    "searchPlaceholder": "搜索客户名称 / 编码 / 联系人...",
+    "allTypes": "全部类型",
+    "allGrades": "全部等级",
+    "allCountries": "全部国家",
+
+    "table": {
+      "code": "客户编码",
+      "name": "客户名称",
+      "customerType": "客户类型",
+      "country": "国家/地区",
+      "grade": "客户等级",
+      "contactPerson": "联系人",
+      "currency": "结算币种",
+      "receivableBalance": "应收余额",
+      "status": "状态",
+      "actions": "操作",
+      "noResults": "暂无客户数据",
+      "loading": "加载中..."
+    },
+
+    "form": {
+      "code": "客户编码",
+      "name": "客户名称",
+      "customerType": "客户类型",
+      "country": "国家/地区",
+      "contactPerson": "联系人",
+      "contactPhone": "联系电话",
+      "email": "电子邮箱",
+      "shippingAddress": "默认收货地址",
+      "currency": "结算币种",
+      "creditLimit": "信用额度",
+      "settlementType": "结算方式",
+      "creditDays": "账期(天)",
+      "grade": "客户等级",
+      "defaultDiscount": "默认折扣(%)",
+      "remark": "备注",
+      "isEnabled": "启用状态"
+    },
+
+    "section": {
+      "basicInfo": "基本信息",
+      "settlementInfo": "结算信息",
+      "otherInfo": "其他信息"
+    },
+
+    "validation": {
+      "nameRequired": "请输入客户名称",
+      "contactPersonRequired": "请输入联系人",
+      "contactPhoneRequired": "请输入联系电话",
+      "contactPhoneInvalid": "请输入有效的国际电话号码",
+      "emailInvalid": "请输入有效的邮箱地址"
+    },
+
+    "action": {
+      "addCustomer": "新增客户",
+      "export": "导出数据",
+      "edit": "编辑",
+      "delete": "删除",
+      "detail": "详情",
+      "enable": "启用",
+      "disable": "禁用",
+      "save": "确定保存",
+      "cancel": "取消",
+      "confirm": "确认"
+    },
+
+    "customerType": {
+      "dealer": "经销商",
+      "retail": "零售",
+      "project": "工程",
+      "export": "出口"
+    },
+
+    "grade": {
+      "vip": "VIP客户",
+      "normal": "普通客户",
+      "new": "新客户"
+    },
+
+    "country": {
+      "VN": "越南",
+      "CN": "中国",
+      "US": "美国",
+      "EU": "欧洲",
+      "OTHER": "其他"
+    },
+
+    "currency": {
+      "VND": "越南盾 (₫)",
+      "CNY": "人民币 (¥)",
+      "USD": "美元 ($)"
+    },
+
+    "settlementType": {
+      "cash": "现结",
+      "monthly": "月结",
+      "quarterly": "季结"
+    },
+
+    "status": {
+      "enabled": "已启用",
+      "disabled": "已禁用"
+    },
+
+    "detail": {
+      "title": "客户详情",
+      "salesOrders": "销售记录",
+      "receivables": "应收对账",
+      "totalSales": "销售总额",
+      "receivableBalance": "应收余额",
+      "receivedAmount": "已收金额",
+      "contactInfo": "联系信息",
+      "noSalesOrders": "暂无销售记录",
+      "noReceivables": "暂无应收记录",
+      "orderNo": "单号",
+      "orderDate": "日期",
+      "orderStatus": "状态",
+      "currency": "币种",
+      "amount": "金额",
+      "totalAmount": "总金额",
+      "receivableDate": "应收日期",
+      "dueDate": "到期日",
+      "receivableAmount": "应收金额",
+      "receivedAmountCol": "已收金额",
+      "unpaidAmount": "未付金额",
+      "receivableStatusCol": "状态",
+      "overdueCount": "逾期记录",
+      "openCount": "待收记录"
+    },
+
+    "delete": {
+      "confirmDelete": "确定要删除该客户吗？",
+      "deleteSuccess": "客户已删除",
+      "cannotDelete": "该客户已有销售或账款记录，不能删除",
+      "deleteError": "删除客户失败"
+    },
+
+    "toast": {
+      "saveSuccess": "客户保存成功",
+      "deleteSuccess": "客户已删除",
+      "toggleSuccess": "状态更新成功",
+      "saveError": "客户保存失败",
+      "loadError": "加载客户数据失败",
+      "toggleError": "状态更新失败",
+      "exportPlanned": "导出功能即将上线"
+    },
+
+    "dialog": {
+      "addTitle": "新增客户",
+      "editTitle": "编辑客户",
+      "detailTitle": "客户详情",
+      "addDescription": "录入新客户信息，建立客户档案",
+      "editDescription": "修改客户信息，更新客户档案",
+      "detailDescription": "查看客户完整信息、历史销售记录与应收账款"
+    },
+
+    "placeholder": {
+      "code": "自动生成",
+      "name": "请输入客户名称",
+      "contactPerson": "请输入联系人姓名",
+      "contactPhone": "请输入联系电话（含国际区号）",
+      "email": "请输入电子邮箱",
+      "shippingAddress": "请输入默认收货地址",
+      "creditLimit": "请输入信用额度",
+      "creditDays": "请输入账期天数",
+      "defaultDiscount": "请输入默认折扣率",
+      "remark": "请输入备注信息"
+    },
+
+    "requiredHint": "所有标有 * 的字段均为必填项",
+    "totalRecords": "共 {count} 条记录",
+    "perPage": "{count}条/页",
+
+    "salesStatus": {
+      "draft": "草稿",
+      "approved": "已审核",
+      "partial_out": "部分出库",
+      "completed": "已完成",
+      "cancelled": "已作废"
+    },
+
+    "receivableStatus": {
+      "unpaid": "未收",
+      "partial": "部分收款",
+      "paid": "已收清"
+    }
+  }
+}

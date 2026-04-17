@@ -78,6 +78,13 @@ pub fn run() {
             commands::supplier::get_material_reference_options,
             commands::supplier::save_supplier_material,
             commands::supplier::delete_supplier_material,
+            commands::customer::generate_customer_code,
+            commands::customer::get_customers,
+            commands::customer::get_customer_by_id,
+            commands::customer::get_customer_detail,
+            commands::customer::save_customer,
+            commands::customer::delete_customer,
+            commands::customer::toggle_customer_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

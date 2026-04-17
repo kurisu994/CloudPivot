@@ -1,0 +1,200 @@
+{
+  "customers": {
+    "title": "Quản lý khách hàng",
+    "description": "Quản lý tập trung hồ sơ khách hàng, hỗ trợ bán hàng và công nợ phải thu",
+
+    "filter": {
+      "keyword": "Từ khóa",
+      "customerType": "Loại khách hàng",
+      "grade": "Hạng khách hàng",
+      "country": "Quốc gia/Khu vực",
+      "reset": "Đặt lại bộ lọc"
+    },
+    "searchPlaceholder": "Tìm kiếm tên / mã / người liên hệ...",
+    "allTypes": "Tất cả loại",
+    "allGrades": "Tất cả hạng",
+    "allCountries": "Tất cả quốc gia",
+
+    "table": {
+      "code": "Mã khách hàng",
+      "name": "Tên khách hàng",
+      "customerType": "Loại khách hàng",
+      "country": "Quốc gia/Khu vực",
+      "grade": "Hạng khách hàng",
+      "contactPerson": "Người liên hệ",
+      "currency": "Tiền tệ thanh toán",
+      "receivableBalance": "Số dư phải thu",
+      "status": "Trạng thái",
+      "actions": "Thao tác",
+      "noResults": "Chưa có dữ liệu khách hàng",
+      "loading": "Đang tải..."
+    },
+
+    "form": {
+      "code": "Mã khách hàng",
+      "name": "Tên khách hàng",
+      "customerType": "Loại khách hàng",
+      "country": "Quốc gia/Khu vực",
+      "contactPerson": "Người liên hệ",
+      "contactPhone": "Số điện thoại",
+      "email": "Email",
+      "shippingAddress": "Địa chỉ giao hàng mặc định",
+      "currency": "Tiền tệ thanh toán",
+      "creditLimit": "Hạn mức tín dụng",
+      "settlementType": "Hình thức thanh toán",
+      "creditDays": "Số ngày tín dụng",
+      "grade": "Hạng khách hàng",
+      "defaultDiscount": "Chiết khấu mặc định (%)",
+      "remark": "Ghi chú",
+      "isEnabled": "Trạng thái kích hoạt"
+    },
+
+    "section": {
+      "basicInfo": "Thông tin cơ bản",
+      "settlementInfo": "Thông tin thanh toán",
+      "otherInfo": "Thông tin khác"
+    },
+
+    "validation": {
+      "nameRequired": "Vui lòng nhập tên khách hàng",
+      "contactPersonRequired": "Vui lòng nhập người liên hệ",
+      "contactPhoneRequired": "Vui lòng nhập số điện thoại",
+      "contactPhoneInvalid": "Vui lòng nhập số điện thoại quốc tế hợp lệ",
+      "emailInvalid": "Vui lòng nhập email hợp lệ"
+    },
+
+    "action": {
+      "addCustomer": "Thêm khách hàng",
+      "export": "Xuất dữ liệu",
+      "edit": "Sửa",
+      "delete": "Xóa",
+      "detail": "Chi tiết",
+      "enable": "Kích hoạt",
+      "disable": "Ngừng kích hoạt",
+      "save": "Xác nhận lưu",
+      "cancel": "Hủy",
+      "confirm": "Xác nhận"
+    },
+
+    "customerType": {
+      "dealer": "Đại lý",
+      "retail": "Bán lẻ",
+      "project": "Công trình",
+      "export": "Xuất khẩu"
+    },
+
+    "grade": {
+      "vip": "Khách VIP",
+      "normal": "Khách thường",
+      "new": "Khách mới"
+    },
+
+    "country": {
+      "VN": "Việt Nam",
+      "CN": "Trung Quốc",
+      "US": "Hoa Kỳ",
+      "EU": "Châu Âu",
+      "OTHER": "Khác"
+    },
+
+    "currency": {
+      "VND": "Đồng Việt Nam (₫)",
+      "CNY": "Nhân dân tệ (¥)",
+      "USD": "Đô la Mỹ ($)"
+    },
+
+    "settlementType": {
+      "cash": "Thanh toán ngay",
+      "monthly": "Thanh toán hàng tháng",
+      "quarterly": "Thanh toán hàng quý"
+    },
+
+    "status": {
+      "enabled": "Đang hoạt động",
+      "disabled": "Ngừng hoạt động"
+    },
+
+    "detail": {
+      "title": "Chi tiết khách hàng",
+      "salesOrders": "Lịch sử bán hàng",
+      "receivables": "Đối soát công nợ",
+      "totalSales": "Tổng doanh số",
+      "receivableBalance": "Số dư phải thu",
+      "receivedAmount": "Đã thu",
+      "contactInfo": "Thông tin liên hệ",
+      "noSalesOrders": "Chưa có lịch sử bán hàng",
+      "noReceivables": "Chưa có công nợ phải thu",
+      "orderNo": "Số đơn",
+      "orderDate": "Ngày",
+      "orderStatus": "Trạng thái",
+      "currency": "Tiền tệ",
+      "amount": "Số tiền",
+      "totalAmount": "Tổng tiền",
+      "receivableDate": "Ngày phải thu",
+      "dueDate": "Ngày đến hạn",
+      "receivableAmount": "Số tiền phải thu",
+      "receivedAmountCol": "Đã thu",
+      "unpaidAmount": "Chưa thu",
+      "receivableStatusCol": "Trạng thái",
+      "overdueCount": "Khoản quá hạn",
+      "openCount": "Khoản chờ thu"
+    },
+
+    "delete": {
+      "confirmDelete": "Bạn có chắc chắn muốn xóa khách hàng này?",
+      "deleteSuccess": "Đã xóa khách hàng",
+      "cannotDelete": "Khách hàng đã có đơn bán hàng hoặc công nợ, không thể xóa",
+      "deleteError": "Xóa khách hàng thất bại"
+    },
+
+    "toast": {
+      "saveSuccess": "Lưu khách hàng thành công",
+      "deleteSuccess": "Đã xóa khách hàng",
+      "toggleSuccess": "Cập nhật trạng thái thành công",
+      "saveError": "Lưu khách hàng thất bại",
+      "loadError": "Tải dữ liệu khách hàng thất bại",
+      "toggleError": "Cập nhật trạng thái thất bại",
+      "exportPlanned": "Chức năng xuất dữ liệu sẽ sớm ra mắt"
+    },
+
+    "dialog": {
+      "addTitle": "Thêm khách hàng",
+      "editTitle": "Sửa khách hàng",
+      "detailTitle": "Chi tiết khách hàng",
+      "addDescription": "Nhập thông tin khách hàng mới, tạo hồ sơ khách hàng",
+      "editDescription": "Chỉnh sửa thông tin khách hàng, cập nhật hồ sơ",
+      "detailDescription": "Xem đầy đủ thông tin khách hàng, lịch sử bán hàng và công nợ phải thu"
+    },
+
+    "placeholder": {
+      "code": "Tự động tạo",
+      "name": "Nhập tên khách hàng",
+      "contactPerson": "Nhập tên người liên hệ",
+      "contactPhone": "Nhập số điện thoại (kèm mã quốc gia)",
+      "email": "Nhập địa chỉ email",
+      "shippingAddress": "Nhập địa chỉ giao hàng mặc định",
+      "creditLimit": "Nhập hạn mức tín dụng",
+      "creditDays": "Nhập số ngày tín dụng",
+      "defaultDiscount": "Nhập tỷ lệ chiết khấu mặc định",
+      "remark": "Nhập ghi chú"
+    },
+
+    "requiredHint": "Tất cả các trường có dấu * là bắt buộc",
+    "totalRecords": "Tổng {count} bản ghi",
+    "perPage": "{count}/trang",
+
+    "salesStatus": {
+      "draft": "Bản nháp",
+      "approved": "Đã duyệt",
+      "partial_out": "Xuất một phần",
+      "completed": "Hoàn tất",
+      "cancelled": "Đã hủy"
+    },
+
+    "receivableStatus": {
+      "unpaid": "Chưa thu",
+      "partial": "Thu một phần",
+      "paid": "Đã thu đủ"
+    }
+  }
+}

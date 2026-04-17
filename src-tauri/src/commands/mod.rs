@@ -4,6 +4,7 @@
 //! 命令通过 `#[tauri::command]` 注解暴露给前端。
 
 pub mod category;
+pub mod customer;
 pub mod material;
 pub mod supplier;
 

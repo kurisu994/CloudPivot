@@ -1,0 +1,200 @@
+{
+  "customers": {
+    "title": "Customer Management",
+    "description": "Centralized customer profiles to support sales and receivables",
+
+    "filter": {
+      "keyword": "Keyword",
+      "customerType": "Customer Type",
+      "grade": "Grade",
+      "country": "Country/Region",
+      "reset": "Reset Filters"
+    },
+    "searchPlaceholder": "Search customer name / code / contact...",
+    "allTypes": "All Types",
+    "allGrades": "All Grades",
+    "allCountries": "All Countries",
+
+    "table": {
+      "code": "Customer Code",
+      "name": "Customer Name",
+      "customerType": "Customer Type",
+      "country": "Country/Region",
+      "grade": "Grade",
+      "contactPerson": "Contact Person",
+      "currency": "Currency",
+      "receivableBalance": "Receivable Balance",
+      "status": "Status",
+      "actions": "Actions",
+      "noResults": "No customers found",
+      "loading": "Loading..."
+    },
+
+    "form": {
+      "code": "Customer Code",
+      "name": "Customer Name",
+      "customerType": "Customer Type",
+      "country": "Country/Region",
+      "contactPerson": "Contact Person",
+      "contactPhone": "Phone",
+      "email": "Email",
+      "shippingAddress": "Default Shipping Address",
+      "currency": "Currency",
+      "creditLimit": "Credit Limit",
+      "settlementType": "Settlement Type",
+      "creditDays": "Credit Days",
+      "grade": "Grade",
+      "defaultDiscount": "Default Discount (%)",
+      "remark": "Remark",
+      "isEnabled": "Status"
+    },
+
+    "section": {
+      "basicInfo": "Basic Info",
+      "settlementInfo": "Settlement Info",
+      "otherInfo": "Other Info"
+    },
+
+    "validation": {
+      "nameRequired": "Enter customer name",
+      "contactPersonRequired": "Enter contact person",
+      "contactPhoneRequired": "Enter contact phone",
+      "contactPhoneInvalid": "Enter a valid international phone number",
+      "emailInvalid": "Enter a valid email address"
+    },
+
+    "action": {
+      "addCustomer": "Add Customer",
+      "export": "Export Data",
+      "edit": "Edit",
+      "delete": "Delete",
+      "detail": "Details",
+      "enable": "Enable",
+      "disable": "Disable",
+      "save": "Confirm Save",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+
+    "customerType": {
+      "dealer": "Dealer",
+      "retail": "Retail",
+      "project": "Project",
+      "export": "Export"
+    },
+
+    "grade": {
+      "vip": "VIP",
+      "normal": "Regular",
+      "new": "New"
+    },
+
+    "country": {
+      "VN": "Vietnam",
+      "CN": "China",
+      "US": "United States",
+      "EU": "Europe",
+      "OTHER": "Other"
+    },
+
+    "currency": {
+      "VND": "Vietnamese Dong (₫)",
+      "CNY": "Chinese Yuan (¥)",
+      "USD": "US Dollar ($)"
+    },
+
+    "settlementType": {
+      "cash": "Cash",
+      "monthly": "Monthly",
+      "quarterly": "Quarterly"
+    },
+
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+
+    "detail": {
+      "title": "Customer Details",
+      "salesOrders": "Sales Orders",
+      "receivables": "Receivables",
+      "totalSales": "Total Sales",
+      "receivableBalance": "Receivable Balance",
+      "receivedAmount": "Received Amount",
+      "contactInfo": "Contact Info",
+      "noSalesOrders": "No sales orders",
+      "noReceivables": "No receivables",
+      "orderNo": "Order No.",
+      "orderDate": "Date",
+      "orderStatus": "Status",
+      "currency": "Currency",
+      "amount": "Amount",
+      "totalAmount": "Total Amount",
+      "receivableDate": "Receivable Date",
+      "dueDate": "Due Date",
+      "receivableAmount": "Receivable Amount",
+      "receivedAmountCol": "Received",
+      "unpaidAmount": "Unpaid Amount",
+      "receivableStatusCol": "Status",
+      "overdueCount": "Overdue Items",
+      "openCount": "Open Items"
+    },
+
+    "delete": {
+      "confirmDelete": "Are you sure you want to delete this customer?",
+      "deleteSuccess": "Customer deleted",
+      "cannotDelete": "This customer has sales orders or receivables and cannot be deleted",
+      "deleteError": "Failed to delete customer"
+    },
+
+    "toast": {
+      "saveSuccess": "Customer saved successfully",
+      "deleteSuccess": "Customer deleted",
+      "toggleSuccess": "Status updated successfully",
+      "saveError": "Failed to save customer",
+      "loadError": "Failed to load customers",
+      "toggleError": "Failed to update status",
+      "exportPlanned": "Export is coming soon"
+    },
+
+    "dialog": {
+      "addTitle": "Add Customer",
+      "editTitle": "Edit Customer",
+      "detailTitle": "Customer Details",
+      "addDescription": "Enter new customer information to create a customer profile",
+      "editDescription": "Modify customer information and update the profile",
+      "detailDescription": "View full customer info, sales history, and receivables"
+    },
+
+    "placeholder": {
+      "code": "Auto-generated",
+      "name": "Enter customer name",
+      "contactPerson": "Enter contact person name",
+      "contactPhone": "Enter phone with country code",
+      "email": "Enter email address",
+      "shippingAddress": "Enter default shipping address",
+      "creditLimit": "Enter credit limit",
+      "creditDays": "Enter credit days",
+      "defaultDiscount": "Enter default discount rate",
+      "remark": "Enter remark"
+    },
+
+    "requiredHint": "All fields marked with * are required",
+    "totalRecords": "{count} records total",
+    "perPage": "{count}/page",
+
+    "salesStatus": {
+      "draft": "Draft",
+      "approved": "Approved",
+      "partial_out": "Partially Shipped",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+
+    "receivableStatus": {
+      "unpaid": "Unpaid",
+      "partial": "Partially Received",
+      "paid": "Paid"
+    }
+  }
+}
