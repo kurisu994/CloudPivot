@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { BomListPage } from './bom-list-page'
 import { BomEditPage } from './bom-edit-page'
+import { BomListPage } from './bom-list-page'
 
 /**
  * BOM 管理主内容组件

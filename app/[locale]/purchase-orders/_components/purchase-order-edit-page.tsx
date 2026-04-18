@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount } from '@/lib/currency'
 import type { PurchaseOrderDetail, SavePurchaseOrderParams, SupplierListItem, SupplierMaterialForPurchase, WarehouseItem } from '@/lib/tauri'
-import { getPurchaseOrderDetail, getSuppliers, getSupplierMaterialsForPurchase, getWarehouses, savePurchaseOrder } from '@/lib/tauri'
+import { getPurchaseOrderDetail, getSupplierMaterialsForPurchase, getSuppliers, getWarehouses, savePurchaseOrder } from '@/lib/tauri'
 
 // ================================================================
 // 类型定义

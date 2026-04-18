@@ -6,20 +6,20 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import {
+  BUSINESS_LIST_STICKY_CELL_CLASS,
+  BUSINESS_LIST_STICKY_HEAD_CLASS,
   BusinessListTableEmptyRow,
   BusinessListTableFooter,
   BusinessListTableLoadingRows,
   BusinessListTableShell,
-  BUSINESS_LIST_STICKY_CELL_CLASS,
-  BUSINESS_LIST_STICKY_HEAD_CLASS,
 } from '@/components/common/business-list-table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { invoke, isTauriEnv } from '@/lib/tauri'
 import { formatAmount } from '@/lib/currency'
+import { invoke, isTauriEnv } from '@/lib/tauri'
 
 import { BomCopyDialog } from './bom-copy-dialog'
 import { BomReverseLookup } from './bom-reverse-lookup'
