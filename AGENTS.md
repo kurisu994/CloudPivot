@@ -64,20 +64,35 @@ docs/                      # 设计文档（共约 6000 行，实现功能前必
   04-development-plan.md   # 开发计划：5 阶段任务清单 + 当前进度
 ```
 
-## 常用命令
+## 开发命令
 
-本项目使用 `just` 作为任务运行器，统合了 pnpm 和 cargo 的常用操作。你可以通过 `just --list` 查看所有可用命令。
+本项目使用 `just`（[Justfile](https://just.systems/)）作为任务运行器，统合了 pnpm 和 cargo 的常用操作。你可以通过 `just --list` 查看所有可用命令。
 
 ```bash
-just dev                   # 启动 Tauri 开发模式（前端 + 后端热重载）
-just dev-web               # 仅启动 Next.js 前端开发服务器
-just build                 # 构建生产版本（Tauri 桌面应用）
-just check                 # 运行全部代码检查（前端 + 后端）
-just fmt                   # 格式化全部代码（prettier + cargo fmt）
-just test                  # 运行全部测试
-just ui <组件名>            # 安装 shadcn/ui 组件到 components/ui/
-just i18n-check            # 检查翻译文件完整性
-just icon                  # 基于 app-icon.png 生成全平台图标 (macOS/iOS/Android)
+# === 开发 ===
+just dev                    # 启动 Tauri 开发模式（前端 + 后端热重载）
+just dev-web                # 仅启动 Next.js 前端开发服务器
+
+# === 构建 ===
+just build                  # 构建生产版本（Tauri 桌面应用）
+just build-web              # 仅构建 Next.js 前端
+just build-debug            # 构建 Debug 版本（含调试符号）
+
+# === 代码质量 ===
+just lint                   # 运行全部代码检查（前端 + 后端）
+just fmt                    # 格式化全部代码（prettier + cargo fmt）
+just test                   # 运行全部测试
+
+# === 版本与发布 ===
+just version <ver>          # 同步更新所有配置文件的版本号
+just release <tag>          # 一键发布：版本号 → CHANGELOG → commit → tag → push
+
+# === 工具 ===
+just ui <组件名>             # 安装 shadcn/ui 组件
+just i18n-check             # 检查翻译文件完整性
+just icon                   # 基于 app-icon.png 生成全平台图标
+just install                # 安装全部依赖（pnpm + cargo fetch）
+just clean                  # 清理构建产物
 ```
 
 ## 核心约定

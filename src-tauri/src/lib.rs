@@ -111,6 +111,22 @@ pub fn run() {
             commands::bom::calculate_bom_demand,
             commands::bom::get_bom_parent_materials,
             commands::bom::get_bom_child_materials,
+            // 采购管理
+            commands::purchase::get_purchase_orders,
+            commands::purchase::get_purchase_order_detail,
+            commands::purchase::save_purchase_order,
+            commands::purchase::approve_purchase_order,
+            commands::purchase::cancel_purchase_order,
+            commands::purchase::delete_purchase_order,
+            commands::purchase::get_supplier_materials_for_purchase,
+            // 采购入库
+            commands::purchase::get_pending_inbound_items,
+            commands::purchase::get_inbound_orders,
+            commands::purchase::save_and_confirm_inbound,
+            // 采购退货
+            commands::purchase::get_returnable_inbound_items,
+            commands::purchase::get_purchase_returns,
+            commands::purchase::save_and_confirm_purchase_return,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
