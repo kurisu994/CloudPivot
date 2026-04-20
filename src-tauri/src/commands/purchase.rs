@@ -3,6 +3,8 @@
 //! 包含采购单的 CRUD、状态流转（审核/作废）、编码自动生成。
 //! 采购入库和采购退货在后续任务中实现。
 
+#![allow(clippy::explicit_auto_deref)]
+
 use serde::{Deserialize, Serialize};
 use sqlx::{QueryBuilder, Sqlite};
 use tauri::State;
@@ -112,6 +114,7 @@ pub struct SavePurchaseOrderParams {
 /// 保存采购单明细参数
 #[derive(Debug, Deserialize)]
 pub struct SavePurchaseOrderItemParams {
+    #[allow(dead_code)]
     pub id: Option<i64>,
     pub material_id: i64,
     pub spec: Option<String>,
@@ -992,6 +995,7 @@ pub struct SaveInboundItemParams {
 /// 保存入库单参数
 #[derive(Debug, Deserialize)]
 pub struct SaveInboundOrderParams {
+    #[allow(dead_code)]
     pub id: Option<i64>,
     /// 关联采购单 ID（采购入库时必填）
     pub purchase_id: Option<i64>,
@@ -1286,7 +1290,7 @@ pub async fn save_and_confirm_inbound(
         }
 
         // v1.0 校验仓库一致
-        if po.7 != params.warehouse_id as i64 {
+        if po.7 != params.warehouse_id {
             return Err(AppError::Business("入库仓库必须与采购单一致".to_string()));
         }
 
@@ -1728,6 +1732,7 @@ pub struct SaveReturnItemParams {
 /// 保存退货单参数
 #[derive(Debug, Deserialize)]
 pub struct SavePurchaseReturnParams {
+    #[allow(dead_code)]
     pub id: Option<i64>,
     /// 原入库单 ID（必填）
     pub inbound_id: i64,

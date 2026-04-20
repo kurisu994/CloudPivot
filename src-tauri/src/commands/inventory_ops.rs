@@ -85,6 +85,7 @@ pub async fn increase_inventory(
 ///
 /// 对启用批次追踪的物料，入库时生成 `inventory_lots` 记录。
 /// 返回新创建的 lot_id。
+#[allow(clippy::too_many_arguments)]
 pub async fn create_inventory_lot(
     tx: &mut SqliteConnection,
     lot_no: &str,

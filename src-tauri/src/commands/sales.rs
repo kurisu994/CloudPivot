@@ -3,6 +3,8 @@
 //! 包含销售单 CRUD、状态流转（审核/作废）、销售出库、销售退货。
 //! 与采购模块（purchase.rs）完全对称。
 
+#![allow(clippy::explicit_auto_deref)]
+
 use serde::{Deserialize, Serialize};
 use sqlx::{QueryBuilder, Sqlite};
 use tauri::State;
@@ -116,6 +118,7 @@ pub struct SaveSalesOrderParams {
 /// 保存销售单明细参数
 #[derive(Debug, Deserialize)]
 pub struct SaveSalesOrderItemParams {
+    #[allow(dead_code)]
     pub id: Option<i64>,
     pub material_id: i64,
     pub spec: Option<String>,
@@ -1030,6 +1033,7 @@ pub struct SaveOutboundItemParams {
 /// 保存出库单参数
 #[derive(Debug, Deserialize)]
 pub struct SaveOutboundOrderParams {
+    #[allow(dead_code)]
     pub id: Option<i64>,
     /// 关联销售单 ID（销售出库时必填）
     pub sales_id: Option<i64>,
@@ -1315,7 +1319,7 @@ pub async fn save_and_confirm_outbound(
             ));
         }
 
-        if so.8 != params.warehouse_id as i64 {
+        if so.8 != params.warehouse_id {
             return Err(AppError::Business("出库仓库必须与销售单一致".to_string()));
         }
 
@@ -1791,6 +1795,7 @@ pub struct SaveSalesReturnItemParams {
 /// 保存销售退货单参数
 #[derive(Debug, Deserialize)]
 pub struct SaveSalesReturnParams {
+    #[allow(dead_code)]
     pub id: Option<i64>,
     pub outbound_id: i64,
     pub return_date: String,

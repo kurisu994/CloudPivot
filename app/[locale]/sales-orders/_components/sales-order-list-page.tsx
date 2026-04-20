@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { CustomerListItem, WarehouseItem } from '@/lib/tauri'
 import { getCustomers, getWarehouses, invoke } from '@/lib/tauri'
-import { SalesOrderTable, type SalesOrderListItem } from './sales-order-table'
+import { type SalesOrderListItem, SalesOrderTable } from './sales-order-table'
 
 /** 销售单状态选项 */
 const STATUS_OPTIONS = [

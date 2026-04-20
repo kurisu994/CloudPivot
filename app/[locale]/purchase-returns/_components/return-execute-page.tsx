@@ -59,7 +59,7 @@ export function ReturnExecutePage({ inboundId, onBack }: ReturnExecutePageProps)
     setLoading(true)
     try {
       // 加载入库单信息
-      const inboundResult = await getInboundOrders({ page: 1, pageSize: 1 })
+      const _inboundResult = await getInboundOrders({ page: 1, pageSize: 1 })
       // 用列表接口查找指定入库单（简化处理）
       const allInbounds = await getInboundOrders({ page: 1, pageSize: 999 })
       const found = allInbounds.items.find(io => io.id === inboundId)
