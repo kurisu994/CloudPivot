@@ -32,7 +32,10 @@
     "allAlerts": "全部状态",
     "searchPlaceholder": "搜索物料编码/名称",
     "totalItems": "共 {total} 条",
-    "noInventory": "暂无库存数据"
+    "noInventory": "暂无库存数据",
+    "loadDetailFailed": "加载详情失败",
+    "beforeQty": "前",
+    "afterQty": "后"
   },
   "stockMovements": {
     "title": "出入库流水",
@@ -92,7 +95,10 @@
     "confirmCheckTip": "审核后将自动调整库存并生成盘盈/盘亏流水，此操作不可撤销",
     "noItems": "暂无盘点明细",
     "gain": "盘盈",
-    "loss": "盘亏"
+    "loss": "盘亏",
+    "createSuccess": "盘点单创建成功",
+    "createFailed": "创建失败",
+    "warehouse": "仓库"
   },
   "stockTransfers": {
     "title": "库存调拨",
@@ -112,6 +118,23 @@
     "deleteTransfer": "删除调拨单",
     "deleteConfirm": "确定删除该草稿调拨单？",
     "sameWarehouseError": "调出仓库和调入仓库不能相同",
-    "noItems": "暂无调拨明细"
+    "noItems": "暂无调拨明细",
+    "loadDetailFailed": "加载详情失败",
+    "saveSuccess": "保存成功",
+    "saveFailed": "保存失败",
+    "confirmSuccess": "确认成功",
+    "confirmFailed": "确认失败",
+    "deleteSuccess": "删除成功",
+    "deleteFailed": "删除失败",
+    "remark": "备注",
+    "optional": "可选",
+    "transferItems": "调拨明细",
+    "material": "物料",
+    "spec": "规格",
+    "unit": "单位",
+    "quantity": "数量",
+    "selectMaterial": "选择物料",
+    "createdBy": "创建人",
+    "createdAt": "创建时间"
   }
 }

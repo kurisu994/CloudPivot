@@ -123,7 +123,7 @@ export function CategoryEditModal({ open, onOpenChange, editingCategory, onSucce
       toast.success(t('saveSuccess'))
       onSuccess()
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : tc('save') + '失败')
+      toast.error(typeof e === 'string' ? e : t('saveFailed'))
     } finally {
       setSaving(false)
     }

@@ -32,7 +32,10 @@
     "allAlerts": "All Status",
     "searchPlaceholder": "Search material code/name",
     "totalItems": "{total} items",
-    "noInventory": "No inventory data"
+    "noInventory": "No inventory data",
+    "loadDetailFailed": "Failed to load details",
+    "beforeQty": "Before",
+    "afterQty": "After"
   },
   "stockMovements": {
     "title": "Stock Movements",
@@ -92,7 +95,10 @@
     "confirmCheckTip": "Once confirmed, inventory will be adjusted and gain/loss records will be generated. This cannot be undone.",
     "noItems": "No check items",
     "gain": "Gain",
-    "loss": "Loss"
+    "loss": "Loss",
+    "createSuccess": "Stock check created successfully",
+    "createFailed": "Failed to create",
+    "warehouse": "Warehouse"
   },
   "stockTransfers": {
     "title": "Stock Transfer",
@@ -112,6 +118,23 @@
     "deleteTransfer": "Delete Transfer",
     "deleteConfirm": "Delete this draft transfer?",
     "sameWarehouseError": "Source and destination warehouse cannot be the same",
-    "noItems": "No transfer items"
+    "noItems": "No transfer items",
+    "loadDetailFailed": "Failed to load details",
+    "saveSuccess": "Saved successfully",
+    "saveFailed": "Failed to save",
+    "confirmSuccess": "Confirmed successfully",
+    "confirmFailed": "Failed to confirm",
+    "deleteSuccess": "Deleted successfully",
+    "deleteFailed": "Failed to delete",
+    "remark": "Remark",
+    "optional": "Optional",
+    "transferItems": "Transfer Items",
+    "material": "Material",
+    "spec": "Spec",
+    "unit": "Unit",
+    "quantity": "Quantity",
+    "selectMaterial": "Select material",
+    "createdBy": "Created By",
+    "createdAt": "Created At"
   }
 }

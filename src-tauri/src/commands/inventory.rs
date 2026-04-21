@@ -981,7 +981,9 @@ pub async fn create_stock_check(
     .map_err(|e| AppError::Database(format!("创建盘点单失败: {}", e)))?;
 
     // 根据范围查询物料并快照库存
-    let inventory_query = if params.scope_type == "category" && let Some(cat_id) = params.scope_category_id {
+    let inventory_query = if params.scope_type == "category"
+        && let Some(cat_id) = params.scope_category_id
+    {
         // 按分类范围
         format!(
             r#"
@@ -990,8 +992,7 @@ pub async fn create_stock_check(
             JOIN materials m ON m.id = inv.material_id
             WHERE inv.warehouse_id = {} AND m.category_id = {}
             "#,
-            params.warehouse_id,
-            cat_id
+            params.warehouse_id, cat_id
         )
     } else {
         // 整仓
@@ -1024,7 +1025,9 @@ pub async fn create_stock_check(
     }
 
     // 同时为批次物料生成批次级明细行
-    let lot_query = if params.scope_type == "category" && let Some(cat_id) = params.scope_category_id {
+    let lot_query = if params.scope_type == "category"
+        && let Some(cat_id) = params.scope_category_id
+    {
         format!(
             r#"
             SELECT il.material_id, il.id AS lot_id, il.lot_no, il.qty_on_hand, il.receipt_unit_cost
@@ -1032,8 +1035,7 @@ pub async fn create_stock_check(
             JOIN materials m ON m.id = il.material_id
             WHERE il.warehouse_id = {} AND m.category_id = {} AND il.qty_on_hand > 0
             "#,
-            params.warehouse_id,
-            cat_id
+            params.warehouse_id, cat_id
         )
     } else {
         format!(

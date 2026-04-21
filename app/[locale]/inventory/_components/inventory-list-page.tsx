@@ -133,7 +133,7 @@ export function InventoryListPage() {
       const d = await getInventoryDetail(materialId)
       setDetail(d)
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : '加载详情失败')
+      toast.error(typeof error === 'string' ? error : t('loadDetailFailed'))
     } finally {
       setDetailLoading(false)
     }
@@ -364,8 +364,8 @@ export function InventoryListPage() {
                       <TableHead>{t('recentTransactions')}</TableHead>
                       <TableHead>{t('warehouse')}</TableHead>
                       <TableHead className="text-right">{t('quantity')}</TableHead>
-                      <TableHead className="text-right">前</TableHead>
-                      <TableHead className="text-right">后</TableHead>
+                      <TableHead className="text-right">{t('beforeQty')}</TableHead>
+                      <TableHead className="text-right">{t('afterQty')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

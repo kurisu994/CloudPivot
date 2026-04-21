@@ -22,7 +22,11 @@
       "logoHintFormat": "Hỗ trợ định dạng PNG, SVG hoặc JPG",
       "changeLogo": "Thay đổi tài sản",
       "saveChanges": "Lưu thay đổi",
-      "notSet": "Chưa đặt"
+      "notSet": "Chưa đặt",
+      "uploadComingSoon": "Chức năng tải ảnh sắp ra mắt",
+      "loadFailed": "Tải dữ liệu thất bại",
+      "saveSuccess": "Lưu cấu hình thành công",
+      "saveFailed": "Lưu thất bại, vui lòng thử lại"
     },
     "userManagement": {
       "title": "Quản lý người dùng",

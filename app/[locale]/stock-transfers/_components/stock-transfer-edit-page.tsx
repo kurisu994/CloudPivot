@@ -80,7 +80,7 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
         })),
       )
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : '加载详情失败')
+      toast.error(typeof error === 'string' ? error : t('loadDetailFailed'))
     } finally {
       setLoading(false)
     }
@@ -187,10 +187,10 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
         remark: remark || undefined,
         items,
       })
-      toast.success('保存成功')
+      toast.success(t('saveSuccess'))
       onBack()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : '保存失败')
+      toast.error(typeof error === 'string' ? error : t('saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -202,10 +202,10 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
     if (!window.confirm(t('confirmTransferTip'))) return
     try {
       await confirmTransfer(transferId)
-      toast.success('确认成功')
+      toast.success(t('confirmSuccess'))
       onBack()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : '确认失败')
+      toast.error(typeof error === 'string' ? error : t('confirmFailed'))
     }
   }
 
@@ -298,9 +298,9 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
                 )}
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">备注</label>
+                <label className="text-sm font-medium mb-1 block">{t('remark')}</label>
                 {isEditable ? (
-                  <Input value={remark} onChange={e => setRemark(e.target.value)} placeholder="可选" />
+                  <Input value={remark} onChange={e => setRemark(e.target.value)} placeholder={t('optional')} />
                 ) : (
                   <span className="text-sm text-muted-foreground">{detail?.remark || '-'}</span>
                 )}
@@ -311,7 +311,7 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
           {/* 物料明细 */}
           <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 overflow-x-auto">
             <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="font-medium">调拨明细</h3>
+              <h3 className="font-medium">{t('transferItems')}</h3>
               {isEditable && (
                 <Button variant="outline" size="sm" onClick={handleAddLine}>
                   <Plus data-icon="inline-start" />
@@ -322,11 +322,11 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[240px]">物料</TableHead>
-                  <TableHead className="w-[100px]">规格</TableHead>
-                  <TableHead className="w-[80px]">单位</TableHead>
-                  <TableHead className="w-[120px] text-right">数量</TableHead>
-                  <TableHead className="w-[160px]">备注</TableHead>
+                  <TableHead className="w-[240px]">{t('material')}</TableHead>
+                  <TableHead className="w-[100px]">{t('spec')}</TableHead>
+                  <TableHead className="w-[80px]">{t('unit')}</TableHead>
+                  <TableHead className="w-[120px] text-right">{t('quantity')}</TableHead>
+                  <TableHead className="w-[160px]">{t('remark')}</TableHead>
                   {isEditable && <TableHead className="w-[60px]" />}
                 </TableRow>
               </TableHeader>
@@ -348,7 +348,7 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
                             items={materialItems}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="选择物料" />
+                              <SelectValue placeholder={t('selectMaterial')} />
                             </SelectTrigger>
                             <SelectContent>
                               {materialItems.map(i => (
@@ -385,7 +385,7 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
                           <Input
                             value={line.remark}
                             onChange={e => setLines(prev => prev.map((l, i) => (i === index ? { ...l, remark: e.target.value } : l)))}
-                            placeholder="可选"
+                            placeholder={t('optional')}
                           />
                         ) : (
                           <span className="text-muted-foreground text-sm">{line.remark || '-'}</span>

@@ -22,7 +22,11 @@
       "logoHintFormat": "支持 PNG, SVG 或 JPG 格式",
       "changeLogo": "更换资产",
       "saveChanges": "保存修改",
-      "notSet": "未设置"
+      "notSet": "未设置",
+      "uploadComingSoon": "图片上传功能即将上线",
+      "loadFailed": "加载数据失败",
+      "saveSuccess": "配置保存成功",
+      "saveFailed": "保存失败，请稍后重试"
     },
     "userManagement": {
       "title": "用户管理",

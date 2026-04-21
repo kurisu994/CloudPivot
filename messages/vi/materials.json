@@ -72,6 +72,7 @@
       "baseUnitPlaceholder": "Chọn đơn vị",
       "auxUnit": "Đơn vị phụ",
       "auxUnitPlaceholder": "Chọn đơn vị",
+      "noAuxUnit": "Không",
       "conversionRate": "Tỷ lệ quy đổi",
       "conversionRatePlaceholder": "Số lượng",
       "refCostPrice": "Giá nhập tham khảo",
@@ -108,6 +109,10 @@
     },
     "notifications": {
       "loadMaterialsFailed": "Tải danh sách vật tư thất bại",
+      "loadDetailFailed": "Tải chi tiết vật tư thất bại",
+      "updateSuccess": "Cập nhật thành công",
+      "createSuccess": "Tạo thành công",
+      "saveFailed": "Lưu thất bại",
       "materialEnabled": "Đã bật",
       "materialDisabled": "Đã tắt",
       "toggleFailed": "Thao tác thất bại"

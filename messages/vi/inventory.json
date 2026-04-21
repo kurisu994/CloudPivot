@@ -32,7 +32,10 @@
     "allAlerts": "Tất cả trạng thái",
     "searchPlaceholder": "Tìm mã/tên vật tư",
     "totalItems": "Tổng {total} mục",
-    "noInventory": "Không có dữ liệu tồn kho"
+    "noInventory": "Không có dữ liệu tồn kho",
+    "loadDetailFailed": "Tải chi tiết thất bại",
+    "beforeQty": "Trước",
+    "afterQty": "Sau"
   },
   "stockMovements": {
     "title": "Lịch sử xuất nhập",
@@ -92,7 +95,10 @@
     "confirmCheckTip": "Sau khi xác nhận, tồn kho sẽ được điều chỉnh tự động. Thao tác không thể hoàn tác.",
     "noItems": "Không có mục kiểm kê",
     "gain": "Thừa",
-    "loss": "Thiếu"
+    "loss": "Thiếu",
+    "createSuccess": "Tạo phiếu kiểm kê thành công",
+    "createFailed": "Tạo thất bại",
+    "warehouse": "Kho"
   },
   "stockTransfers": {
     "title": "Chuyển kho",
@@ -112,6 +118,23 @@
     "deleteTransfer": "Xóa phiếu chuyển",
     "deleteConfirm": "Xóa phiếu chuyển nháp này?",
     "sameWarehouseError": "Kho xuất và kho nhận không được trùng",
-    "noItems": "Không có mục chuyển kho"
+    "noItems": "Không có mục chuyển kho",
+    "loadDetailFailed": "Tải chi tiết thất bại",
+    "saveSuccess": "Lưu thành công",
+    "saveFailed": "Lưu thất bại",
+    "confirmSuccess": "Xác nhận thành công",
+    "confirmFailed": "Xác nhận thất bại",
+    "deleteSuccess": "Xóa thành công",
+    "deleteFailed": "Xóa thất bại",
+    "remark": "Ghi chú",
+    "optional": "Tùy chọn",
+    "transferItems": "Chi tiết chuyển kho",
+    "material": "Vật tư",
+    "spec": "Quy cách",
+    "unit": "Đơn vị",
+    "quantity": "Số lượng",
+    "selectMaterial": "Chọn vật tư",
+    "createdBy": "Người tạo",
+    "createdAt": "Thời gian tạo"
   }
 }

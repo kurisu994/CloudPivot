@@ -96,7 +96,10 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
 
   const unitItems = useMemo(() => units.map(u => ({ value: u.id.toString(), label: u.name })), [units])
 
-  const auxUnitItems = useMemo(() => [{ value: 'none', label: '无' }, ...units.map(u => ({ value: u.id.toString(), label: u.name }))], [units])
+  const auxUnitItems = useMemo(
+    () => [{ value: 'none', label: t('form.noAuxUnit') }, ...units.map(u => ({ value: u.id.toString(), label: u.name }))],
+    [units, t],
+  )
 
   /** 更新单个字段 */
   const setField = useCallback(<K extends keyof MaterialFormData>(key: K, value: MaterialFormData[K]) => {
@@ -141,7 +144,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
           })
         })
         .catch(e => {
-          toast.error('加载物料详情失败')
+          toast.error(t('notifications.loadDetailFailed'))
           console.error(e)
           onOpenChange(false)
         })
@@ -170,7 +173,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
 
     if (!isTauriEnv()) {
       await new Promise(r => setTimeout(r, 500))
-      toast.success(materialId ? '更新成功' : '创建成功')
+      toast.success(materialId ? t('notifications.updateSuccess') : t('notifications.createSuccess'))
       onSuccess()
       setLoading(false)
       return
@@ -178,10 +181,10 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
 
     try {
       await invoke('save_material', { params: form })
-      toast.success(materialId ? '更新成功' : '创建成功')
+      toast.success(materialId ? t('notifications.updateSuccess') : t('notifications.createSuccess'))
       onSuccess()
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : '保存失败')
+      toast.error(typeof e === 'string' ? e : t('notifications.saveFailed'))
     } finally {
       setLoading(false)
     }
@@ -397,7 +400,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">无</SelectItem>
+                        <SelectItem value="none">{t('form.noAuxUnit')}</SelectItem>
                         {units.map(u => (
                           <SelectItem key={u.id} value={u.id.toString()}>
                             {u.name}

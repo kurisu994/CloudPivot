@@ -22,7 +22,11 @@
       "logoHintFormat": "Supports PNG, SVG or JPG formats",
       "changeLogo": "Change Asset",
       "saveChanges": "Save Changes",
-      "notSet": "Not Set"
+      "notSet": "Not Set",
+      "uploadComingSoon": "Image upload coming soon",
+      "loadFailed": "Failed to load data",
+      "saveSuccess": "Settings saved successfully",
+      "saveFailed": "Failed to save, please try again"
     },
     "userManagement": {
       "title": "User Management",

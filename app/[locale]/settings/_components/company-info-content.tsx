@@ -332,7 +332,7 @@ function BrandAssetsCard() {
           variant="outline"
           className="w-full text-xs font-bold"
           onClick={() => {
-            toast.info('图片上传功能即将上线')
+            toast.info(t('uploadComingSoon'))
           }}
         >
           {t('changeLogo')}
@@ -348,6 +348,7 @@ function BrandAssetsCard() {
 
 export function CompanyInfoContent() {
   const t = useTranslations('settings.companyInfo')
+  const tc = useTranslations('common')
 
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -388,7 +389,7 @@ export function CompanyInfoContent() {
         setData(mergedData)
       } catch (err) {
         console.error('加载企业配置失败:', err)
-        toast.error('加载数据失败')
+        toast.error(t('loadFailed'))
       } finally {
         setIsLoading(false)
       }
@@ -419,18 +420,18 @@ export function CompanyInfoContent() {
         { key: SystemConfigKeys.TIMEZONE, value: data.timezone },
       ]
       await setSystemConfigs(updates)
-      toast.success('配置保存成功')
+      toast.success(t('saveSuccess'))
       setIsEditing(false)
     } catch (err) {
       console.error('保存失败:', err)
-      toast.error('保存失败，请稍后重试')
+      toast.error(t('saveFailed'))
     } finally {
       setIsLoading(false)
     }
   }
 
   if (isLoading && !isEditing && data.companyName === '') {
-    return <div className="p-8 text-center text-slate-500">加载中...</div>
+    return <div className="p-8 text-center text-slate-500">{tc('loading')}</div>
   }
 
   return (
@@ -463,7 +464,7 @@ export function CompanyInfoContent() {
             disabled={isLoading}
           >
             <X className="size-4" />
-            取消
+            {tc('cancel')}
           </Button>
           <Button size="lg" className="gap-2 px-10 font-bold shadow-lg" onClick={handleSave} disabled={isLoading}>
             <Save className="size-4" />

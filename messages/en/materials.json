@@ -72,6 +72,7 @@
       "baseUnitPlaceholder": "Select unit",
       "auxUnit": "Aux Unit",
       "auxUnitPlaceholder": "Select unit",
+      "noAuxUnit": "None",
       "conversionRate": "Conversion Rate",
       "conversionRatePlaceholder": "Quantity",
       "refCostPrice": "Ref Cost",
@@ -108,6 +109,10 @@
     },
     "notifications": {
       "loadMaterialsFailed": "Failed to load materials",
+      "loadDetailFailed": "Failed to load material details",
+      "updateSuccess": "Updated successfully",
+      "createSuccess": "Created successfully",
+      "saveFailed": "Failed to save",
       "materialEnabled": "Enabled",
       "materialDisabled": "Disabled",
       "toggleFailed": "Operation failed"

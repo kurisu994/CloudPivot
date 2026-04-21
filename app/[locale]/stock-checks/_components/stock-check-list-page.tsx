@@ -138,11 +138,11 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
         scopeType: newScope,
         scopeCategoryId: newScope === 'category' && newCategoryId ? Number(newCategoryId) : undefined,
       })
-      toast.success('盘点单创建成功')
+      toast.success(t('createSuccess'))
       setCreateOpen(false)
       onCreated(id)
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : '创建失败')
+      toast.error(typeof error === 'string' ? error : t('createFailed'))
     } finally {
       setCreating(false)
     }
@@ -222,7 +222,7 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
         tableClassName="min-w-[900px]"
         footer={
           <BusinessListTableFooter>
-            <span>共 {total} 条</span>
+            <span>{t('totalItems', { total })}</span>
             <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </BusinessListTableFooter>
         }
@@ -230,7 +230,7 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
         <TableHeader>
           <TableRow>
             <TableHead className="w-[160px]">{t('checkNo')}</TableHead>
-            <TableHead className="w-[120px]">仓库</TableHead>
+            <TableHead className="w-[120px]">{t('warehouse')}</TableHead>
             <TableHead className="w-[100px]">{t('checkDate')}</TableHead>
             <TableHead className="w-[80px]">{tc('status')}</TableHead>
             <TableHead className="w-[80px]">{t('scopeType')}</TableHead>

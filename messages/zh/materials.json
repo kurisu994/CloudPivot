@@ -72,6 +72,7 @@
       "baseUnitPlaceholder": "请选择单位",
       "auxUnit": "辅助单位",
       "auxUnitPlaceholder": "请选择单位",
+      "noAuxUnit": "无",
       "conversionRate": "换算比例",
       "conversionRatePlaceholder": "数量",
       "refCostPrice": "参考进价",
@@ -108,6 +109,10 @@
     },
     "notifications": {
       "loadMaterialsFailed": "加载物料失败",
+      "loadDetailFailed": "加载物料详情失败",
+      "updateSuccess": "更新成功",
+      "createSuccess": "创建成功",
+      "saveFailed": "保存失败",
       "materialEnabled": "已启用",
       "materialDisabled": "已禁用",
       "toggleFailed": "操作失败"

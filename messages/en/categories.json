@@ -22,6 +22,8 @@
     "expand": "Expand",
     "collapse": "Collapse",
     "expandAll": "Expand All",
-    "collapseAll": "Collapse All"
+    "collapseAll": "Collapse All",
+    "saveFailed": "Failed to save",
+    "sortUpdateFailed": "Failed to update sort order"
   }
 }

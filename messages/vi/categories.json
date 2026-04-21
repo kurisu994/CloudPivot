@@ -22,6 +22,8 @@
     "expand": "Mở rộng",
     "collapse": "Thu gọn",
     "expandAll": "Mở rộng tất cả",
-    "collapseAll": "Thu gọn tất cả"
+    "collapseAll": "Thu gọn tất cả",
+    "saveFailed": "Lưu thất bại",
+    "sortUpdateFailed": "Cập nhật thứ tự thất bại"
   }
 }

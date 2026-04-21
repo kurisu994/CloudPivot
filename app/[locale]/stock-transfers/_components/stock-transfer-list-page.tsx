@@ -105,10 +105,10 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
     if (!window.confirm(t('deleteConfirm'))) return
     try {
       await deleteTransfer(item.id)
-      toast.success('删除成功')
+      toast.success(t('deleteSuccess'))
       await loadData()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : '删除失败')
+      toast.error(typeof error === 'string' ? error : t('deleteFailed'))
     }
   }
 
@@ -116,10 +116,10 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
     if (!window.confirm(t('confirmTransferTip'))) return
     try {
       await confirmTransfer(item.id)
-      toast.success('确认成功')
+      toast.success(t('confirmSuccess'))
       await loadData()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : '确认失败')
+      toast.error(typeof error === 'string' ? error : t('confirmFailed'))
     }
   }
 
@@ -184,7 +184,7 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
         tableClassName="min-w-[900px]"
         footer={
           <BusinessListTableFooter>
-            <span>共 {total} 条</span>
+            <span>{t('totalItems', { total })}</span>
             <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </BusinessListTableFooter>
         }
@@ -197,8 +197,8 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
             <TableHead className="w-[100px]">{t('transferDate')}</TableHead>
             <TableHead className="w-[80px]">{tc('status')}</TableHead>
             <TableHead className="w-[80px] text-right">{t('itemCount')}</TableHead>
-            <TableHead className="w-[100px]">创建人</TableHead>
-            <TableHead className="w-[100px]">创建时间</TableHead>
+            <TableHead className="w-[100px]">{t('createdBy')}</TableHead>
+            <TableHead className="w-[100px]">{t('createdAt')}</TableHead>
             <TableHead className="w-[120px]">{tc('actions')}</TableHead>
           </TableRow>
         </TableHeader>

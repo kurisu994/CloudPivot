@@ -287,12 +287,12 @@ export function CategoryTree({ onEdit, refreshKey }: CategoryTreeProps) {
           const sortItems = flattenTreeForOrder(current)
           // fire-and-forget 持久化
           updateCategoryOrder(sortItems).catch(e => {
-            toast.error(typeof e === 'string' ? e : '排序更新失败')
+            toast.error(typeof e === 'string' ? e : t('sortUpdateFailed'))
           })
           return current // 不修改状态
         })
       } catch (e) {
-        toast.error(typeof e === 'string' ? e : '排序更新失败')
+        toast.error(typeof e === 'string' ? e : t('sortUpdateFailed'))
         fetchCategories() // 回滚到服务端状态
       }
     },
