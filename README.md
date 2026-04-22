@@ -4,9 +4,9 @@
 
 > **工厂所在地**：🇻🇳 越南
 
-> **文档版本**：v1.9
+> **文档版本**：v2.0
 
-> **更新日期**：2026-04-21
+> **更新日期**：2026-04-22
 
 ## 文档索引
 
@@ -214,7 +214,7 @@ components/
 config/nav.ts               # 侧边栏导航树 — 路由的唯一真实来源
 i18n/                       # next-intl 配置（config / routing / request / navigation）
 messages/                   # 三语翻译文件（按模块拆分）
-  zh/                       # 中文（auth / bom / common / customers / dashboard / inventory / materials / purchase / sales / settings / setup-wizard / suppliers / warehouses / units）
+  zh/                       # 中文（auth / bom / common / customers / custom-orders / dashboard / inventory / materials / purchase / sales / settings / setup-wizard / suppliers / warehouses / units）
   en/                       # 英文
   vi/                       # 越南语
 lib/
@@ -246,6 +246,7 @@ src-tauri/                  # Rust 后端
       sales.rs              # 销售管理命令：销售单/出库/退货
       inventory.rs          # 库存管理命令：查询/流水/盘点/调拨（14 个命令）
       inventory_ops.rs      # 库存操作基础模块：增减库存/批次/流水/成本折算（9 个内部函数）
+      custom_order.rs       # 定制单管理命令：CRUD/确认预留/取消/定制BOM/成本核算/转销售单（9 个命令）
   migrations/sqlite/
     001_init.sql            # 建表迁移（45 张表 DDL，44KB）
     002_seed_data.sql       # 种子数据（系统配置、默认分类等）
@@ -322,7 +323,7 @@ just clean                  # 清理构建产物
 - [x] 采购管理 — 采购单 + 采购入库 + 采购退货全流程（13 个 IPC 命令）
 - [x] 销售管理 — 销售单 + 销售出库 + 销售退货全流程（12 个 IPC 命令）
 - [x] 库存管理 — 库存查询 + 出入库流水 + 库存盘点 + 库存调拨（14 个 IPC 命令）
-- [ ] 定制单管理
+- [x] 定制单管理 — 定制单 CRUD + 确认预留 + 取消释放 + 定制 BOM + 成本核算 + 转销售单（9 个 IPC 命令）
 - [ ] 生产工单
 
 **阶段五**（工程化）：🏃‍♂️ 部分完成
@@ -348,7 +349,7 @@ just clean                  # 清理构建产物
 - [x] 采购管理（采购单、入库、退货）
 - [x] 销售管理（销售单、出库、退货）
 - [x] 库存管理（查询、流水、盘点、调拨）
-- [ ] 定制单管理
+- [x] 定制单管理
 - [ ] 生产工单
 
 ### 阶段四：报表与系统

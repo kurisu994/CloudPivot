@@ -158,6 +158,16 @@ pub fn run() {
             commands::inventory::save_transfer,
             commands::inventory::confirm_transfer,
             commands::inventory::delete_transfer,
+            // 定制单管理
+            commands::custom_order::get_custom_orders,
+            commands::custom_order::get_custom_order_detail,
+            commands::custom_order::save_custom_order,
+            commands::custom_order::delete_custom_order,
+            commands::custom_order::confirm_custom_order,
+            commands::custom_order::cancel_custom_order,
+            commands::custom_order::create_custom_bom,
+            commands::custom_order::calculate_custom_cost,
+            commands::custom_order::convert_to_sales_order,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
