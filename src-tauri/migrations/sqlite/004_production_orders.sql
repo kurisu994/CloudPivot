@@ -2,7 +2,7 @@
 -- 版本 004: 新增 production_orders / production_order_materials / production_completions
 
 -- 生产工单
-CREATE TABLE production_orders (
+CREATE TABLE IF NOT EXISTS production_orders (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
     order_no            TEXT    NOT NULL UNIQUE,
     bom_id              INTEGER NOT NULL,
@@ -22,13 +22,13 @@ CREATE TABLE production_orders (
     updated_at          TEXT    DEFAULT (datetime('now'))
 );
 
-CREATE INDEX idx_po_status ON production_orders(status);
-CREATE INDEX idx_po_bom ON production_orders(bom_id);
-CREATE INDEX idx_po_custom ON production_orders(custom_order_id);
-CREATE INDEX idx_po_output ON production_orders(output_material_id);
+CREATE INDEX IF NOT EXISTS idx_po_status ON production_orders(status);
+CREATE INDEX IF NOT EXISTS idx_po_bom ON production_orders(bom_id);
+CREATE INDEX IF NOT EXISTS idx_po_custom ON production_orders(custom_order_id);
+CREATE INDEX IF NOT EXISTS idx_po_output ON production_orders(output_material_id);
 
 -- 工单领料/退料物料明细（BOM 展算后写入）
-CREATE TABLE production_order_materials (
+CREATE TABLE IF NOT EXISTS production_order_materials (
     id                    INTEGER PRIMARY KEY AUTOINCREMENT,
     production_order_id   INTEGER NOT NULL,
     material_id           INTEGER NOT NULL,
@@ -41,10 +41,10 @@ CREATE TABLE production_order_materials (
     warehouse_id          INTEGER
 );
 
-CREATE INDEX idx_pom_order ON production_order_materials(production_order_id);
+CREATE INDEX IF NOT EXISTS idx_pom_order ON production_order_materials(production_order_id);
 
 -- 完工入库记录（支持分批完工）
-CREATE TABLE production_completions (
+CREATE TABLE IF NOT EXISTS production_completions (
     id                    INTEGER PRIMARY KEY AUTOINCREMENT,
     production_order_id   INTEGER NOT NULL,
     completion_no         TEXT    NOT NULL,
@@ -56,4 +56,4 @@ CREATE TABLE production_completions (
     created_at            TEXT    DEFAULT (datetime('now'))
 );
 
-CREATE INDEX idx_pc_order ON production_completions(production_order_id);
+CREATE INDEX IF NOT EXISTS idx_pc_order ON production_completions(production_order_id);
