@@ -1,115 +1,117 @@
 {
-  "title": "Lệnh sản xuất",
-  "createOrder": "Tạo lệnh",
-  "editOrder": "Sửa lệnh",
-  "orderNo": "Số lệnh",
-  "outputMaterial": "Sản phẩm đầu ra",
-  "plannedQty": "SL kế hoạch",
-  "completedQty": "Đã hoàn thành",
-  "status": "Trạng thái",
-  "relatedBom": "BOM liên quan",
-  "relatedCustomOrder": "Đơn đặt hàng liên quan",
-  "plannedStartDate": "Ngày bắt đầu KH",
-  "plannedEndDate": "Ngày hoàn thành KH",
-  "actualStartDate": "Ngày bắt đầu thực tế",
-  "actualEndDate": "Ngày hoàn thành thực tế",
-  "remark": "Ghi chú",
-  "actions": "Thao tác",
-  "detail": "Chi tiết",
-  "edit": "Sửa",
-  "delete": "Xóa",
-  "save": "Lưu",
-  "cancel": "Hủy",
-
-  "statusOptions": {
-    "all": "Tất cả",
-    "draft": "Nháp",
-    "picking": "Đang lấy NVL",
-    "producing": "Đang sản xuất",
-    "completed": "Hoàn thành",
-    "cancelled": "Đã hủy"
-  },
-
-  "filter": {
-    "keyword": "Tìm số lệnh/sản phẩm",
+  "productionOrders": {
+    "title": "Lệnh sản xuất",
+    "createOrder": "Tạo lệnh",
+    "editOrder": "Sửa lệnh",
+    "orderNo": "Số lệnh",
+    "outputMaterial": "Sản phẩm đầu ra",
+    "plannedQty": "SL kế hoạch",
+    "completedQty": "Đã hoàn thành",
     "status": "Trạng thái",
-    "dateRange": "Khoảng thời gian",
-    "startDate": "Từ ngày",
-    "endDate": "Đến ngày"
-  },
+    "relatedBom": "BOM liên quan",
+    "relatedCustomOrder": "Đơn đặt hàng liên quan",
+    "plannedStartDate": "Ngày bắt đầu KH",
+    "plannedEndDate": "Ngày hoàn thành KH",
+    "actualStartDate": "Ngày bắt đầu thực tế",
+    "actualEndDate": "Ngày hoàn thành thực tế",
+    "remark": "Ghi chú",
+    "actions": "Thao tác",
+    "detail": "Chi tiết",
+    "edit": "Sửa",
+    "delete": "Xóa",
+    "save": "Lưu",
+    "cancel": "Hủy",
 
-  "basicInfo": "Thông tin cơ bản",
+    "statusOptions": {
+      "all": "Tất cả",
+      "draft": "Nháp",
+      "picking": "Đang lấy NVL",
+      "producing": "Đang sản xuất",
+      "completed": "Hoàn thành",
+      "cancelled": "Đã hủy"
+    },
 
-  "picking": {
-    "title": "Danh sách lấy NVL",
-    "pickMaterial": "Xuất NVL",
-    "returnMaterial": "Trả NVL",
-    "materialName": "Vật liệu",
-    "materialCode": "Mã",
-    "requiredQty": "SL yêu cầu",
-    "pickedQty": "Đã lấy",
-    "returnedQty": "Đã trả",
-    "netPicked": "Lấy ròng",
-    "unit": "ĐVT",
-    "warehouse": "Kho",
-    "quantity": "Số lượng",
-    "pickStatus": "Trạng thái",
-    "statusNone": "Chưa lấy",
-    "statusPartial": "Một phần",
-    "statusFull": "Hoàn tất",
-    "selectMaterial": "Chọn vật liệu",
-    "pickQuantity": "SL xuất",
-    "returnQuantity": "SL trả",
-    "selectWarehouse": "Chọn kho",
-    "confirm": "Xác nhận",
-    "overPickWarning": "Tổng lấy không vượt quá 120% yêu cầu"
-  },
+    "filter": {
+      "keyword": "Tìm số lệnh/sản phẩm",
+      "status": "Trạng thái",
+      "dateRange": "Khoảng thời gian",
+      "startDate": "Từ ngày",
+      "endDate": "Đến ngày"
+    },
 
-  "production": {
-    "startProduction": "Bắt đầu SX",
-    "finishOrder": "Hoàn thành lệnh",
-    "cancelOrder": "Hủy lệnh"
-  },
+    "basicInfo": "Thông tin cơ bản",
 
-  "completion": {
-    "title": "Lịch sử hoàn thành",
-    "completeProduction": "Nhập kho TP",
-    "batchNo": "Đợt",
-    "quantity": "SL hoàn thành",
-    "warehouse": "Kho nhập",
-    "unitCost": "Đơn giá",
-    "date": "Ngày",
-    "total": "Tổng",
-    "selectWarehouse": "Chọn kho nhập",
-    "inputQuantity": "Nhập SL hoàn thành"
-  },
+    "picking": {
+      "title": "Danh sách lấy NVL",
+      "pickMaterial": "Xuất NVL",
+      "returnMaterial": "Trả NVL",
+      "materialName": "Vật liệu",
+      "materialCode": "Mã",
+      "requiredQty": "SL yêu cầu",
+      "pickedQty": "Đã lấy",
+      "returnedQty": "Đã trả",
+      "netPicked": "Lấy ròng",
+      "unit": "ĐVT",
+      "warehouse": "Kho",
+      "quantity": "Số lượng",
+      "pickStatus": "Trạng thái",
+      "statusNone": "Chưa lấy",
+      "statusPartial": "Một phần",
+      "statusFull": "Hoàn tất",
+      "selectMaterial": "Chọn vật liệu",
+      "pickQuantity": "SL xuất",
+      "returnQuantity": "SL trả",
+      "selectWarehouse": "Chọn kho",
+      "confirm": "Xác nhận",
+      "overPickWarning": "Tổng lấy không vượt quá 120% yêu cầu"
+    },
 
-  "dialog": {
-    "selectBom": "Chọn BOM",
-    "selectCustomOrder": "Chọn đơn đặt hàng (tuỳ chọn)",
-    "inputPlannedQty": "SL sản xuất kế hoạch",
-    "confirmDelete": "Xác nhận xóa lệnh này?",
-    "confirmCancel": "Xác nhận hủy lệnh? Không thể khôi phục.",
-    "confirmStart": "Xác nhận bắt đầu sản xuất?",
-    "confirmFinish": "Xác nhận hoàn thành lệnh?"
-  },
+    "production": {
+      "startProduction": "Bắt đầu SX",
+      "finishOrder": "Hoàn thành lệnh",
+      "cancelOrder": "Hủy lệnh"
+    },
 
-  "toast": {
-    "createSuccess": "Tạo lệnh thành công",
-    "updateSuccess": "Cập nhật thành công",
-    "deleteSuccess": "Đã xóa lệnh",
-    "pickSuccess": "Xuất NVL thành công",
-    "returnSuccess": "Trả NVL thành công",
-    "startSuccess": "Đã bắt đầu sản xuất",
-    "completeSuccess": "Nhập kho thành công",
-    "finishSuccess": "Lệnh đã hoàn thành",
-    "cancelSuccess": "Lệnh đã hủy"
-  },
+    "completion": {
+      "title": "Lịch sử hoàn thành",
+      "completeProduction": "Nhập kho TP",
+      "batchNo": "Đợt",
+      "quantity": "SL hoàn thành",
+      "warehouse": "Kho nhập",
+      "unitCost": "Đơn giá",
+      "date": "Ngày",
+      "total": "Tổng",
+      "selectWarehouse": "Chọn kho nhập",
+      "inputQuantity": "Nhập SL hoàn thành"
+    },
 
-  "empty": "Chưa có lệnh sản xuất",
-  "noMaterials": "Chưa có yêu cầu NVL",
-  "noCompletions": "Chưa có lịch sử hoàn thành",
-  "backToList": "Quay lại",
-  "pickingProgress": "Tiến độ lấy NVL",
-  "completionProgress": "Tiến độ hoàn thành"
+    "dialog": {
+      "selectBom": "Chọn BOM",
+      "selectCustomOrder": "Chọn đơn đặt hàng (tuỳ chọn)",
+      "inputPlannedQty": "SL sản xuất kế hoạch",
+      "confirmDelete": "Xác nhận xóa lệnh này?",
+      "confirmCancel": "Xác nhận hủy lệnh? Không thể khôi phục.",
+      "confirmStart": "Xác nhận bắt đầu sản xuất?",
+      "confirmFinish": "Xác nhận hoàn thành lệnh?"
+    },
+
+    "toast": {
+      "createSuccess": "Tạo lệnh thành công",
+      "updateSuccess": "Cập nhật thành công",
+      "deleteSuccess": "Đã xóa lệnh",
+      "pickSuccess": "Xuất NVL thành công",
+      "returnSuccess": "Trả NVL thành công",
+      "startSuccess": "Đã bắt đầu sản xuất",
+      "completeSuccess": "Nhập kho thành công",
+      "finishSuccess": "Lệnh đã hoàn thành",
+      "cancelSuccess": "Lệnh đã hủy"
+    },
+
+    "empty": "Chưa có lệnh sản xuất",
+    "noMaterials": "Chưa có yêu cầu NVL",
+    "noCompletions": "Chưa có lịch sử hoàn thành",
+    "backToList": "Quay lại",
+    "pickingProgress": "Tiến độ lấy NVL",
+    "completionProgress": "Tiến độ hoàn thành"
+  }
 }

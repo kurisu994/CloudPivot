@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
  * 包含版权信息和链接
  */
 export function AppFooter({ className }: { className?: string }) {
-  const t = useTranslations('common.footer')
+  const t = useTranslations('footer')
   return (
     <footer
       className={cn(

@@ -1,115 +1,117 @@
 {
-  "title": "生产工单",
-  "createOrder": "新建工单",
-  "editOrder": "编辑工单",
-  "orderNo": "工单编号",
-  "outputMaterial": "产出物料",
-  "plannedQty": "计划数量",
-  "completedQty": "已完工",
-  "status": "状态",
-  "relatedBom": "关联BOM",
-  "relatedCustomOrder": "关联定制单",
-  "plannedStartDate": "计划开始日期",
-  "plannedEndDate": "计划完成日期",
-  "actualStartDate": "实际开始日期",
-  "actualEndDate": "实际完成日期",
-  "remark": "备注",
-  "actions": "操作",
-  "detail": "详情",
-  "edit": "编辑",
-  "delete": "删除",
-  "save": "保存",
-  "cancel": "取消",
-
-  "statusOptions": {
-    "all": "全部状态",
-    "draft": "草稿",
-    "picking": "领料中",
-    "producing": "生产中",
-    "completed": "已完工",
-    "cancelled": "已取消"
-  },
-
-  "filter": {
-    "keyword": "搜索工单编号/产出物料",
+  "productionOrders": {
+    "title": "生产工单",
+    "createOrder": "新建工单",
+    "editOrder": "编辑工单",
+    "orderNo": "工单编号",
+    "outputMaterial": "产出物料",
+    "plannedQty": "计划数量",
+    "completedQty": "已完工",
     "status": "状态",
-    "dateRange": "日期范围",
-    "startDate": "开始日期",
-    "endDate": "结束日期"
-  },
+    "relatedBom": "关联BOM",
+    "relatedCustomOrder": "关联定制单",
+    "plannedStartDate": "计划开始日期",
+    "plannedEndDate": "计划完成日期",
+    "actualStartDate": "实际开始日期",
+    "actualEndDate": "实际完成日期",
+    "remark": "备注",
+    "actions": "操作",
+    "detail": "详情",
+    "edit": "编辑",
+    "delete": "删除",
+    "save": "保存",
+    "cancel": "取消",
 
-  "basicInfo": "基本信息",
+    "statusOptions": {
+      "all": "全部状态",
+      "draft": "草稿",
+      "picking": "领料中",
+      "producing": "生产中",
+      "completed": "已完工",
+      "cancelled": "已取消"
+    },
 
-  "picking": {
-    "title": "领料清单",
-    "pickMaterial": "领料出库",
-    "returnMaterial": "退料入库",
-    "materialName": "物料",
-    "materialCode": "编码",
-    "requiredQty": "需求量",
-    "pickedQty": "已领料",
-    "returnedQty": "已退料",
-    "netPicked": "净领料",
-    "unit": "单位",
-    "warehouse": "仓库",
-    "quantity": "数量",
-    "pickStatus": "状态",
-    "statusNone": "未领",
-    "statusPartial": "部分",
-    "statusFull": "完成",
-    "selectMaterial": "选择物料",
-    "pickQuantity": "领料数量",
-    "returnQuantity": "退料数量",
-    "selectWarehouse": "选择仓库",
-    "confirm": "确认",
-    "overPickWarning": "累计领料量不能超过需求量的120%"
-  },
+    "filter": {
+      "keyword": "搜索工单编号/产出物料",
+      "status": "状态",
+      "dateRange": "日期范围",
+      "startDate": "开始日期",
+      "endDate": "结束日期"
+    },
 
-  "production": {
-    "startProduction": "开始生产",
-    "finishOrder": "完成工单",
-    "cancelOrder": "取消工单"
-  },
+    "basicInfo": "基本信息",
 
-  "completion": {
-    "title": "完工记录",
-    "completeProduction": "完工入库",
-    "batchNo": "批次",
-    "quantity": "完工数量",
-    "warehouse": "入库仓库",
-    "unitCost": "单位成本",
-    "date": "日期",
-    "total": "合计",
-    "selectWarehouse": "选择入库仓库",
-    "inputQuantity": "输入完工数量"
-  },
+    "picking": {
+      "title": "领料清单",
+      "pickMaterial": "领料出库",
+      "returnMaterial": "退料入库",
+      "materialName": "物料",
+      "materialCode": "编码",
+      "requiredQty": "需求量",
+      "pickedQty": "已领料",
+      "returnedQty": "已退料",
+      "netPicked": "净领料",
+      "unit": "单位",
+      "warehouse": "仓库",
+      "quantity": "数量",
+      "pickStatus": "状态",
+      "statusNone": "未领",
+      "statusPartial": "部分",
+      "statusFull": "完成",
+      "selectMaterial": "选择物料",
+      "pickQuantity": "领料数量",
+      "returnQuantity": "退料数量",
+      "selectWarehouse": "选择仓库",
+      "confirm": "确认",
+      "overPickWarning": "累计领料量不能超过需求量的120%"
+    },
 
-  "dialog": {
-    "selectBom": "选择BOM",
-    "selectCustomOrder": "选择定制单（可选）",
-    "inputPlannedQty": "计划生产数量",
-    "confirmDelete": "确认删除此工单？",
-    "confirmCancel": "确认取消此工单？取消后不可恢复。",
-    "confirmStart": "确认开始生产？",
-    "confirmFinish": "确认完成工单？"
-  },
+    "production": {
+      "startProduction": "开始生产",
+      "finishOrder": "完成工单",
+      "cancelOrder": "取消工单"
+    },
 
-  "toast": {
-    "createSuccess": "工单创建成功",
-    "updateSuccess": "工单更新成功",
-    "deleteSuccess": "工单已删除",
-    "pickSuccess": "领料出库成功",
-    "returnSuccess": "退料入库成功",
-    "startSuccess": "已开始生产",
-    "completeSuccess": "完工入库成功",
-    "finishSuccess": "工单已完成",
-    "cancelSuccess": "工单已取消"
-  },
+    "completion": {
+      "title": "完工记录",
+      "completeProduction": "完工入库",
+      "batchNo": "批次",
+      "quantity": "完工数量",
+      "warehouse": "入库仓库",
+      "unitCost": "单位成本",
+      "date": "日期",
+      "total": "合计",
+      "selectWarehouse": "选择入库仓库",
+      "inputQuantity": "输入完工数量"
+    },
 
-  "empty": "暂无工单数据",
-  "noMaterials": "暂无领料需求",
-  "noCompletions": "暂无完工记录",
-  "backToList": "返回列表",
-  "pickingProgress": "领料进度",
-  "completionProgress": "完工进度"
+    "dialog": {
+      "selectBom": "选择BOM",
+      "selectCustomOrder": "选择定制单（可选）",
+      "inputPlannedQty": "计划生产数量",
+      "confirmDelete": "确认删除此工单？",
+      "confirmCancel": "确认取消此工单？取消后不可恢复。",
+      "confirmStart": "确认开始生产？",
+      "confirmFinish": "确认完成工单？"
+    },
+
+    "toast": {
+      "createSuccess": "工单创建成功",
+      "updateSuccess": "工单更新成功",
+      "deleteSuccess": "工单已删除",
+      "pickSuccess": "领料出库成功",
+      "returnSuccess": "退料入库成功",
+      "startSuccess": "已开始生产",
+      "completeSuccess": "完工入库成功",
+      "finishSuccess": "工单已完成",
+      "cancelSuccess": "工单已取消"
+    },
+
+    "empty": "暂无工单数据",
+    "noMaterials": "暂无领料需求",
+    "noCompletions": "暂无完工记录",
+    "backToList": "返回列表",
+    "pickingProgress": "领料进度",
+    "completionProgress": "完工进度"
+  }
 }

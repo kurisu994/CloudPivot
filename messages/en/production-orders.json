@@ -1,115 +1,117 @@
 {
-  "title": "Production Orders",
-  "createOrder": "Create Order",
-  "editOrder": "Edit Order",
-  "orderNo": "Order No.",
-  "outputMaterial": "Output Material",
-  "plannedQty": "Planned Qty",
-  "completedQty": "Completed",
-  "status": "Status",
-  "relatedBom": "Related BOM",
-  "relatedCustomOrder": "Related Custom Order",
-  "plannedStartDate": "Planned Start",
-  "plannedEndDate": "Planned End",
-  "actualStartDate": "Actual Start",
-  "actualEndDate": "Actual End",
-  "remark": "Remark",
-  "actions": "Actions",
-  "detail": "Detail",
-  "edit": "Edit",
-  "delete": "Delete",
-  "save": "Save",
-  "cancel": "Cancel",
-
-  "statusOptions": {
-    "all": "All",
-    "draft": "Draft",
-    "picking": "Picking",
-    "producing": "Producing",
-    "completed": "Completed",
-    "cancelled": "Cancelled"
-  },
-
-  "filter": {
-    "keyword": "Search order no./material",
+  "productionOrders": {
+    "title": "Production Orders",
+    "createOrder": "Create Order",
+    "editOrder": "Edit Order",
+    "orderNo": "Order No.",
+    "outputMaterial": "Output Material",
+    "plannedQty": "Planned Qty",
+    "completedQty": "Completed",
     "status": "Status",
-    "dateRange": "Date Range",
-    "startDate": "Start Date",
-    "endDate": "End Date"
-  },
+    "relatedBom": "Related BOM",
+    "relatedCustomOrder": "Related Custom Order",
+    "plannedStartDate": "Planned Start",
+    "plannedEndDate": "Planned End",
+    "actualStartDate": "Actual Start",
+    "actualEndDate": "Actual End",
+    "remark": "Remark",
+    "actions": "Actions",
+    "detail": "Detail",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
 
-  "basicInfo": "Basic Info",
+    "statusOptions": {
+      "all": "All",
+      "draft": "Draft",
+      "picking": "Picking",
+      "producing": "Producing",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
 
-  "picking": {
-    "title": "Material Picking List",
-    "pickMaterial": "Pick Material",
-    "returnMaterial": "Return Material",
-    "materialName": "Material",
-    "materialCode": "Code",
-    "requiredQty": "Required",
-    "pickedQty": "Picked",
-    "returnedQty": "Returned",
-    "netPicked": "Net Picked",
-    "unit": "Unit",
-    "warehouse": "Warehouse",
-    "quantity": "Quantity",
-    "pickStatus": "Status",
-    "statusNone": "Pending",
-    "statusPartial": "Partial",
-    "statusFull": "Complete",
-    "selectMaterial": "Select Material",
-    "pickQuantity": "Pick Quantity",
-    "returnQuantity": "Return Quantity",
-    "selectWarehouse": "Select Warehouse",
-    "confirm": "Confirm",
-    "overPickWarning": "Total picked cannot exceed 120% of required"
-  },
+    "filter": {
+      "keyword": "Search order no./material",
+      "status": "Status",
+      "dateRange": "Date Range",
+      "startDate": "Start Date",
+      "endDate": "End Date"
+    },
 
-  "production": {
-    "startProduction": "Start Production",
-    "finishOrder": "Finish Order",
-    "cancelOrder": "Cancel Order"
-  },
+    "basicInfo": "Basic Info",
 
-  "completion": {
-    "title": "Completion Records",
-    "completeProduction": "Complete Production",
-    "batchNo": "Batch",
-    "quantity": "Completed Qty",
-    "warehouse": "Warehouse",
-    "unitCost": "Unit Cost",
-    "date": "Date",
-    "total": "Total",
-    "selectWarehouse": "Select Warehouse",
-    "inputQuantity": "Enter completed quantity"
-  },
+    "picking": {
+      "title": "Material Picking List",
+      "pickMaterial": "Pick Material",
+      "returnMaterial": "Return Material",
+      "materialName": "Material",
+      "materialCode": "Code",
+      "requiredQty": "Required",
+      "pickedQty": "Picked",
+      "returnedQty": "Returned",
+      "netPicked": "Net Picked",
+      "unit": "Unit",
+      "warehouse": "Warehouse",
+      "quantity": "Quantity",
+      "pickStatus": "Status",
+      "statusNone": "Pending",
+      "statusPartial": "Partial",
+      "statusFull": "Complete",
+      "selectMaterial": "Select Material",
+      "pickQuantity": "Pick Quantity",
+      "returnQuantity": "Return Quantity",
+      "selectWarehouse": "Select Warehouse",
+      "confirm": "Confirm",
+      "overPickWarning": "Total picked cannot exceed 120% of required"
+    },
 
-  "dialog": {
-    "selectBom": "Select BOM",
-    "selectCustomOrder": "Select Custom Order (optional)",
-    "inputPlannedQty": "Planned production quantity",
-    "confirmDelete": "Confirm delete this order?",
-    "confirmCancel": "Confirm cancel this order? This cannot be undone.",
-    "confirmStart": "Confirm start production?",
-    "confirmFinish": "Confirm finish this order?"
-  },
+    "production": {
+      "startProduction": "Start Production",
+      "finishOrder": "Finish Order",
+      "cancelOrder": "Cancel Order"
+    },
 
-  "toast": {
-    "createSuccess": "Order created",
-    "updateSuccess": "Order updated",
-    "deleteSuccess": "Order deleted",
-    "pickSuccess": "Material picked",
-    "returnSuccess": "Material returned",
-    "startSuccess": "Production started",
-    "completeSuccess": "Completion recorded",
-    "finishSuccess": "Order finished",
-    "cancelSuccess": "Order cancelled"
-  },
+    "completion": {
+      "title": "Completion Records",
+      "completeProduction": "Complete Production",
+      "batchNo": "Batch",
+      "quantity": "Completed Qty",
+      "warehouse": "Warehouse",
+      "unitCost": "Unit Cost",
+      "date": "Date",
+      "total": "Total",
+      "selectWarehouse": "Select Warehouse",
+      "inputQuantity": "Enter completed quantity"
+    },
 
-  "empty": "No production orders",
-  "noMaterials": "No material requirements",
-  "noCompletions": "No completion records",
-  "backToList": "Back to List",
-  "pickingProgress": "Picking Progress",
-  "completionProgress": "Completion Progress"
+    "dialog": {
+      "selectBom": "Select BOM",
+      "selectCustomOrder": "Select Custom Order (optional)",
+      "inputPlannedQty": "Planned production quantity",
+      "confirmDelete": "Confirm delete this order?",
+      "confirmCancel": "Confirm cancel this order? This cannot be undone.",
+      "confirmStart": "Confirm start production?",
+      "confirmFinish": "Confirm finish this order?"
+    },
+
+    "toast": {
+      "createSuccess": "Order created",
+      "updateSuccess": "Order updated",
+      "deleteSuccess": "Order deleted",
+      "pickSuccess": "Material picked",
+      "returnSuccess": "Material returned",
+      "startSuccess": "Production started",
+      "completeSuccess": "Completion recorded",
+      "finishSuccess": "Order finished",
+      "cancelSuccess": "Order cancelled"
+    },
+
+    "empty": "No production orders",
+    "noMaterials": "No material requirements",
+    "noCompletions": "No completion records",
+    "backToList": "Back to List",
+    "pickingProgress": "Picking Progress",
+    "completionProgress": "Completion Progress"
+  }
 }
