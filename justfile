@@ -147,7 +147,7 @@ release tag:
 
 # 安装 shadcn/ui 组件（示例：just ui button）
 ui component:
-    pnpm shadcn add {{component}}
+    pnpm dlx shadcn@latest add {{component}}
 
 # 检查翻译文件完整性（对比 zh / en / vi 的 key 是否一致）
 i18n-check:
