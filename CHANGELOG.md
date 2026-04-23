@@ -46,6 +46,12 @@
   - **前端补货看板**：建议列表（紧急度行高亮 + Badge）+ 筛选区（关键词/紧急度/分类）+ 多选批量下单（确认弹窗）+ 消耗趋势图弹窗 + 策略配置弹窗（查看/编辑/启用禁用）
   - **首页 KPI 联动**：首页看板“待补货”指标从 mock 改为实时查询补货建议数量
   - 国际化：replenishment 命名空间（含 trend/rule 子空间），覆盖中/越/英三语
+- **财务管理模块（全栈）**：实现应付账款和应收账款全流程
+  - **后端核心修正**：修正 `sales.rs` 中 receivables INSERT 语句字段名对齐 DDL 定义；在 `purchase.rs` 入库确认和退货确认中补充 payables 记录生成逻辑
+  - **应付账款**：后端 3 个 IPC 命令（`get_payables` 含 KPI 概览 + `get_payment_records` + `record_payment`），前端列表页（KPI 卡片 + 关键字/状态筛选 + 类型/退货冲减行高亮 + 登记付款弹窗 + 付款记录查看）
+  - **应收账款**：后端 3 个 IPC 命令（`get_receivables` 含 KPI 概览 + `get_receipt_records` + `record_receipt`），前端与应付对称设计
+  - 金额存储使用 INTEGER 最小货币单位，避免浮点精度问题；付款/收款金额在 Rust 事务中严格校验不超过未付/未收余额
+  - 国际化：finance 命名空间，覆盖中/越/英三语
 
 ---
 
