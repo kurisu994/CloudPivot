@@ -45,8 +45,49 @@ export function isTauriEnv(): boolean {
  */
 export async function invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
   if (!isTauriEnv()) {
-    console.warn(`[Tauri] 非 Tauri 环境，跳过命令: ${command}`)
-    throw new Error(`Command "${command}" is not available outside Tauri environment`)
+    console.warn(`[Tauri] 非 Tauri 环境，跳过命令: ${command}`, args)
+    // 智能 mock 常见的数据结构，避免 dev-web 下页面崩溃
+
+    // 1. 明确返回数组的命令
+    const arrayCommands = [
+      'get_bom_child_materials',
+      'get_bom_parent_materials',
+      'calculate_bom_demand',
+      'reverse_lookup_material',
+      'get_category_tree',
+    ]
+    if (arrayCommands.includes(command)) {
+      return [] as unknown as T
+    }
+
+    // 2. 明确返回带有 items 的对象的命令（非分页）
+    if (command === 'get_boms') {
+      return { items: [] } as unknown as T
+    }
+
+    // 3. 分页列表命令，返回 { total: 0, items: [], page: 1, pageSize: 10 }
+    if (
+      command.includes('_orders') ||
+      command.includes('_list') ||
+      command.includes('_materials') ||
+      command === 'get_inventory_transactions' ||
+      command === 'get_inventory_counts' ||
+      command === 'get_inventory_transfers' ||
+      command === 'get_materials'
+    ) {
+      if (args && ('filter' in args || 'page' in args)) {
+        return { total: 0, items: [], page: 1, pageSize: 10 } as unknown as T
+      }
+      return { total: 0, items: [] } as unknown as T
+    }
+
+    // 4. 详情查询命令，返回空对象
+    if (command.includes('get_') || command.includes('calculate_')) {
+      return {} as unknown as T
+    }
+
+    // 5. 其余写操作命令默认返回 null
+    return null as unknown as T
   }
 
   const { invoke: tauriInvoke } = await import('@tauri-apps/api/core')

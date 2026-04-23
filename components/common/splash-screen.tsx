@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 
 /**
  * 品牌级全屏闪屏组件
@@ -9,6 +10,7 @@ import Image from 'next/image'
  * 避免未授权页面闪烁，同时传递品牌形象。
  */
 export function SplashScreen() {
+  const t = useTranslations('common')
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
       {/* 背景装饰 — 与登录页风格统一 */}
@@ -58,12 +60,12 @@ export function SplashScreen() {
           className="text-xl font-extrabold tracking-tight text-[#294985] dark:text-slate-100"
           style={{ fontFamily: 'var(--font-noto-sans-sc), system-ui' }}
         >
-          云枢{' '}
+          {t('systemName').split(' ')[0]}{' '}
           <span className="font-bold" style={{ fontFamily: 'var(--font-brand), system-ui' }}>
-            CloudPivot
+            {t('systemName').substring(t('systemName').indexOf(' ') + 1)}
           </span>
         </h1>
-        <p className="text-muted-foreground mt-1.5 text-xs tracking-widest uppercase">Inventory Management System</p>
+        <p className="text-muted-foreground mt-1.5 text-xs tracking-widest uppercase">{t('subtitle')}</p>
 
         {/* 加载指示器 — 三段式脉冲进度条 */}
         <div className="mt-8 flex items-center gap-1.5">

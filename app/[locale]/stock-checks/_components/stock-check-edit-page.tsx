@@ -23,6 +23,7 @@ interface StockCheckEditPageProps {
 export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps) {
   const t = useTranslations('stockChecks')
   const tc = useTranslations('common')
+  const ti = useTranslations('inventory')
 
   const [detail, setDetail] = useState<StockCheckDetail | null>(null)
   const [loading, setLoading] = useState(false)
@@ -45,7 +46,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
       }
       setEditValues(vals)
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : '加载详情失败')
+      toast.error(typeof error === 'string' ? error : tc('loadDetailFailed'))
     } finally {
       setLoading(false)
     }
@@ -68,10 +69,10 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
         remark: item.remark,
       }))
       await updateStockCheckItems(detail.id, items)
-      toast.success('保存成功')
+      toast.success(tc('saveSuccess'))
       await loadDetail()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : '保存失败')
+      toast.error(typeof error === 'string' ? error : tc('saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -84,10 +85,10 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
     setConfirming(true)
     try {
       await confirmStockCheck(detail.id)
-      toast.success('审核成功')
+      toast.success(tc('confirmSuccess'))
       await loadDetail()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : '审核失败')
+      toast.error(typeof error === 'string' ? error : tc('confirmFailed'))
     } finally {
       setConfirming(false)
     }
@@ -118,9 +119,17 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
           {detail && (
             <div className="flex items-center gap-3 mt-1 text-muted-foreground text-sm">
               {statusBadge(detail.status)}
-              <span>仓库: {detail.warehouse_name}</span>
-              <span>日期: {detail.check_date}</span>
-              {detail.created_by_name && <span>创建人: {detail.created_by_name}</span>}
+              <span>
+                {t('warehouse')}: {detail.warehouse_name}
+              </span>
+              <span>
+                {t('checkDate')}: {detail.check_date}
+              </span>
+              {detail.created_by_name && (
+                <span>
+                  {t('createdBy')}: {detail.created_by_name}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -146,10 +155,10 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[120px]">物料编码</TableHead>
-                <TableHead className="w-[160px]">物料名称</TableHead>
-                <TableHead className="w-[80px]">规格</TableHead>
-                <TableHead className="w-[60px]">单位</TableHead>
+                <TableHead className="w-[120px]">{ti('materialCode')}</TableHead>
+                <TableHead className="w-[160px]">{ti('materialName')}</TableHead>
+                <TableHead className="w-[80px]">{ti('spec')}</TableHead>
+                <TableHead className="w-[60px]">{ti('unit')}</TableHead>
                 <TableHead className="w-[90px] text-right">{t('systemQty')}</TableHead>
                 <TableHead className="w-[120px] text-right">{t('actualQty')}</TableHead>
                 <TableHead className="w-[90px] text-right">{t('diffQty')}</TableHead>

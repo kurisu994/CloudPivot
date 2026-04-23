@@ -64,7 +64,8 @@
     "dateFrom": "From",
     "dateTo": "To",
     "searchPlaceholder": "Search material/transaction/order no.",
-    "noRecords": "No movement records"
+    "noRecords": "No movement records",
+    "totalItems": "{total} items"
   },
   "stockChecks": {
     "title": "Stock Check",
@@ -98,7 +99,8 @@
     "loss": "Loss",
     "createSuccess": "Stock check created successfully",
     "createFailed": "Failed to create",
-    "warehouse": "Warehouse"
+    "warehouse": "Warehouse",
+    "totalItems": "{total} items"
   },
   "stockTransfers": {
     "title": "Stock Transfer",
@@ -135,6 +137,7 @@
     "quantity": "Quantity",
     "selectMaterial": "Select material",
     "createdBy": "Created By",
-    "createdAt": "Created At"
+    "createdAt": "Created At",
+    "totalItems": "{total} items"
   }
 }

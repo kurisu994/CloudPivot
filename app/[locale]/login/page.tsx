@@ -27,6 +27,7 @@ import { useRouter } from '@/i18n/navigation'
  */
 export default function LoginPage() {
   const t = useTranslations('login')
+  const tc = useTranslations('common')
   const router = useRouter()
   const { login } = useAuth()
 
@@ -110,9 +111,9 @@ export default function LoginPage() {
                   className="text-xl font-extrabold tracking-tight text-[#294985] dark:text-slate-100"
                   style={{ fontFamily: 'var(--font-noto-sans-sc), system-ui' }}
                 >
-                  云枢{' '}
+                  {tc('systemName').split(' ')[0]}{' '}
                   <span className="font-bold" style={{ fontFamily: 'var(--font-brand), system-ui' }}>
-                    (CloudPivot IMS)
+                    ({tc('systemName').substring(tc('systemName').indexOf(' ') + 1)})
                   </span>
                 </h1>
                 <p className="text-muted-foreground mt-1.5 text-sm">{t('welcome')}</p>

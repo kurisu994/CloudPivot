@@ -23,6 +23,7 @@ interface SidebarProps {
  */
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const t = useTranslations()
+  const tc = useTranslations('common')
   const pathname = usePathname()
 
   return (
@@ -46,13 +47,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 className="text-[15px] font-extrabold tracking-tight text-[#294985] dark:text-slate-100"
                 style={{ fontFamily: 'var(--font-noto-sans-sc), system-ui' }}
               >
-                云枢
+                {tc('systemName').split(' ')[0]}
               </span>
               <span
                 className="text-[10px] font-semibold tracking-[0.2em] text-slate-400/80 uppercase dark:text-slate-500"
                 style={{ fontFamily: 'var(--font-brand), system-ui' }}
               >
-                CloudPivot
+                {tc('systemName').substring(tc('systemName').indexOf(' ') + 1)}
               </span>
             </div>
           )}

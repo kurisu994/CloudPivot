@@ -110,6 +110,7 @@ function getPickStatus(mat: ProductionMaterialItem, t: (key: string) => string) 
  */
 export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
   const t = useTranslations('productionOrders')
+  const tc = useTranslations('common')
 
   const [detail, setDetail] = useState<ProductionOrderDetail | null>(null)
   const [loading, setLoading] = useState(false)
@@ -188,7 +189,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
   // ================================================================
   const handleSave = async () => {
     if (!formBomId || !formPlannedQty) {
-      toast.error('请填写 BOM 和计划数量')
+      toast.error(tc('fillRequiredBlock'))
       return
     }
     setSaving(true)

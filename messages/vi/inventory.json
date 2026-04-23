@@ -64,7 +64,8 @@
     "dateFrom": "Từ ngày",
     "dateTo": "Đến ngày",
     "searchPlaceholder": "Tìm vật tư/mã giao dịch/số đơn",
-    "noRecords": "Không có bản ghi"
+    "noRecords": "Không có bản ghi",
+    "totalItems": "Tổng {total} mục"
   },
   "stockChecks": {
     "title": "Kiểm kê kho",
@@ -98,7 +99,8 @@
     "loss": "Thiếu",
     "createSuccess": "Tạo phiếu kiểm kê thành công",
     "createFailed": "Tạo thất bại",
-    "warehouse": "Kho"
+    "warehouse": "Kho",
+    "totalItems": "Tổng {total} mục"
   },
   "stockTransfers": {
     "title": "Chuyển kho",
@@ -135,6 +137,7 @@
     "quantity": "Số lượng",
     "selectMaterial": "Chọn vật tư",
     "createdBy": "Người tạo",
-    "createdAt": "Thời gian tạo"
+    "createdAt": "Thời gian tạo",
+    "totalItems": "Tổng {total} mục"
   }
 }

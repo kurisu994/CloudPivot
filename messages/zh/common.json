@@ -23,7 +23,20 @@
     "enabled": "启用",
     "disabled": "停用",
     "developing": "开发中",
-    "developingDesc": "该功能正在开发中，敬请期待"
+    "developingDesc": "该功能正在开发中，敬请期待",
+    "subtitle": "越南家具工厂进销存管理系统",
+    "systemName": "云枢 CloudPivot IMS",
+    "saveSuccess": "保存成功",
+    "saveFailed": "保存失败",
+    "confirmSuccess": "审核成功",
+    "confirmFailed": "审核失败",
+    "deleteSuccess": "删除成功",
+    "deleteFailed": "删除失败",
+    "loadDetailFailed": "加载详情失败",
+    "createSuccess": "创建成功",
+    "createFailed": "创建失败",
+    "itemExists": "{name} 已添加",
+    "fillRequiredBlock": "请填写必填项"
   },
   "nav": {
     "dashboard": "首页看板",
@@ -82,5 +95,11 @@
   "sidebar": {
     "collapse": "折叠菜单",
     "expand": "展开菜单"
+  },
+  "footer": {
+    "rights": "© 2026 云枢 (CLOUDPIVOT IMS) V1.0.0. 保留所有权利。",
+    "terms": "服务条例",
+    "privacy": "隐私政策",
+    "support": "技术支持"
   }
 }

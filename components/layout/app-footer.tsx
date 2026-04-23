@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 
 /**
@@ -7,6 +8,7 @@ import { cn } from '@/lib/utils'
  * 包含版权信息和链接
  */
 export function AppFooter({ className }: { className?: string }) {
+  const t = useTranslations('common.footer')
   return (
     <footer
       className={cn(
@@ -14,16 +16,16 @@ export function AppFooter({ className }: { className?: string }) {
         className,
       )}
     >
-      <div>© 2026 云枢 (CLOUDPIVOT IMS) V1.0.0. 保留所有权利。</div>
+      <div>{t('rights')}</div>
       <div className="mt-2 flex items-center gap-6 text-[10px] tracking-widest md:mt-0">
         <a href="#" className="transition-colors hover:text-slate-600 dark:hover:text-slate-200">
-          服务条例
+          {t('terms')}
         </a>
         <a href="#" className="transition-colors hover:text-slate-600 dark:hover:text-slate-200">
-          隐私政策
+          {t('privacy')}
         </a>
         <a href="#" className="uppercase transition-colors hover:text-slate-600 dark:hover:text-slate-200">
-          技术支持
+          {t('support')}
         </a>
       </div>
     </footer>

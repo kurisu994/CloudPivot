@@ -23,7 +23,20 @@
     "enabled": "Hoạt động",
     "disabled": "Ngừng hoạt động",
     "developing": "Đang phát triển",
-    "developingDesc": "Tính năng này đang được phát triển, vui lòng chờ đợi"
+    "developingDesc": "Tính năng này đang được phát triển, vui lòng chờ đợi",
+    "subtitle": "Hệ thống quản lý kho nhà máy nội thất Việt Nam",
+    "systemName": "CloudPivot IMS",
+    "saveSuccess": "Lưu thành công",
+    "saveFailed": "Lưu thất bại",
+    "confirmSuccess": "Xác nhận thành công",
+    "confirmFailed": "Xác nhận thất bại",
+    "deleteSuccess": "Xóa thành công",
+    "deleteFailed": "Xóa thất bại",
+    "loadDetailFailed": "Tải chi tiết thất bại",
+    "createSuccess": "Tạo thành công",
+    "createFailed": "Tạo thất bại",
+    "itemExists": "{name} đã được thêm",
+    "fillRequiredBlock": "Vui lòng nhập thông tin bắt buộc"
   },
   "nav": {
     "dashboard": "Bảng điều khiển",
@@ -82,5 +95,11 @@
   "sidebar": {
     "collapse": "Thu gọn menu",
     "expand": "Mở rộng menu"
+  },
+  "footer": {
+    "rights": "© 2026 CloudPivot IMS V1.0.0. Bảo lưu mọi quyền.",
+    "terms": "Điều khoản dịch vụ",
+    "privacy": "Chính sách bảo mật",
+    "support": "Hỗ trợ"
   }
 }

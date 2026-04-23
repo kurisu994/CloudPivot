@@ -41,6 +41,7 @@ const TYPE_OPTIONS = [
 export function StockMovementsListPage() {
   const t = useTranslations('stockMovements')
   const tc = useTranslations('common')
+  const ti = useTranslations('inventory')
 
   const [items, setItems] = useState<TransactionListItem[]>([])
   const [total, setTotal] = useState(0)
@@ -187,7 +188,7 @@ export function StockMovementsListPage() {
         tableClassName="min-w-[1200px]"
         footer={
           <BusinessListTableFooter>
-            <span>共 {total} 条</span>
+            <span>{t('totalItems', { total })}</span>
             <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </BusinessListTableFooter>
         }
@@ -197,9 +198,9 @@ export function StockMovementsListPage() {
             <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[160px]`}>{t('transactionNo')}</TableHead>
             <TableHead className="w-[100px]">{t('transactionDate')}</TableHead>
             <TableHead className="w-[120px]">{t('transactionType')}</TableHead>
-            <TableHead className="w-[120px]">物料编码</TableHead>
-            <TableHead className="w-[140px]">物料名称</TableHead>
-            <TableHead className="w-[100px]">仓库</TableHead>
+            <TableHead className="w-[120px]">{ti('materialCode')}</TableHead>
+            <TableHead className="w-[140px]">{ti('materialName')}</TableHead>
+            <TableHead className="w-[100px]">{ti('warehouse')}</TableHead>
             <TableHead className="w-[90px] text-right">{t('changeQty')}</TableHead>
             <TableHead className="w-[80px] text-right">{t('beforeQty')}</TableHead>
             <TableHead className="w-[80px] text-right">{t('afterQty')}</TableHead>

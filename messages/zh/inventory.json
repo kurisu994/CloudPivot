@@ -64,7 +64,8 @@
     "dateFrom": "开始日期",
     "dateTo": "结束日期",
     "searchPlaceholder": "搜索物料/流水号/单据号",
-    "noRecords": "暂无流水记录"
+    "noRecords": "暂无流水记录",
+    "totalItems": "共 {total} 条"
   },
   "stockChecks": {
     "title": "库存盘点",
@@ -98,7 +99,8 @@
     "loss": "盘亏",
     "createSuccess": "盘点单创建成功",
     "createFailed": "创建失败",
-    "warehouse": "仓库"
+    "warehouse": "仓库",
+    "totalItems": "共 {total} 条"
   },
   "stockTransfers": {
     "title": "库存调拨",
@@ -135,6 +137,7 @@
     "quantity": "数量",
     "selectMaterial": "选择物料",
     "createdBy": "创建人",
-    "createdAt": "创建时间"
+    "createdAt": "创建时间",
+    "totalItems": "共 {total} 条"
   }
 }

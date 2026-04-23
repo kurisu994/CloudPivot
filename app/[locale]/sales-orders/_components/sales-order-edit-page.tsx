@@ -215,7 +215,7 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
         })),
       )
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('loadError'))
+      toast.error(typeof error === 'string' ? error : tc('loadDetailFailed'))
     } finally {
       setLoading(false)
     }
@@ -258,7 +258,7 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
 
     // 检查是否已添加
     if (items.some(item => item.materialId === mat.id)) {
-      toast.error(`${mat.name} 已添加`)
+      toast.error(tc('itemExists', { name: mat.name }))
       return
     }
 
@@ -356,10 +356,10 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
       }
 
       await invoke<number>('save_sales_order', { params })
-      toast.success(t('saveSuccess'))
+      toast.success(tc('saveSuccess'))
       onBack()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('saveError'))
+      toast.error(typeof error === 'string' ? error : tc('saveFailed'))
     } finally {
       setSaving(false)
     }

@@ -344,7 +344,7 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
 
   const handleSave = async () => {
     if (!customerId) {
-      toast.error(t('customer') + '不能为空')
+      toast.error(tc('fillRequiredBlock'))
       return
     }
     setSaving(true)

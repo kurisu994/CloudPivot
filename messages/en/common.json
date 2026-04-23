@@ -23,7 +23,20 @@
     "enabled": "Enabled",
     "disabled": "Disabled",
     "developing": "In Development",
-    "developingDesc": "This feature is under development, please stay tuned"
+    "developingDesc": "This feature is under development, please stay tuned",
+    "subtitle": "Vietnam Furniture Factory IMS",
+    "systemName": "CloudPivot IMS",
+    "saveSuccess": "Saved Successfully",
+    "saveFailed": "Failed to Save",
+    "confirmSuccess": "Confirmed Successfully",
+    "confirmFailed": "Failed to Confirm",
+    "deleteSuccess": "Deleted Successfully",
+    "deleteFailed": "Failed to Delete",
+    "loadDetailFailed": "Failed to load details",
+    "createSuccess": "Created Successfully",
+    "createFailed": "Failed to Create",
+    "itemExists": "{name} already added",
+    "fillRequiredBlock": "Please fill required fields"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -82,5 +95,11 @@
   "sidebar": {
     "collapse": "Collapse Menu",
     "expand": "Expand Menu"
+  },
+  "footer": {
+    "rights": "© 2026 CloudPivot IMS V1.0.0. All rights reserved.",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "support": "Support"
   }
 }
