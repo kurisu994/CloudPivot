@@ -1306,3 +1306,169 @@ pub async fn convert_to_sales_order(
 
     Ok(sales_order_id)
 }
+
+// ================================================================
+// 11. 从定制单开始生产（自动创建工单）
+// ================================================================
+
+/// 从定制单开始生产：校验状态→查找定制BOM→创建工单→展算BOM明细→更新定制单状态
+#[tauri::command]
+pub async fn start_production_from_custom_order(
+    db: State<'_, DbState>,
+    custom_order_id: i64,
+) -> Result<i64, AppError> {
+    // 查询定制单状态
+    #[derive(sqlx::FromRow)]
+    struct CustomOrderInfo {
+        status: String,
+    }
+    let custom_order: CustomOrderInfo =
+        sqlx::query_as("SELECT status FROM custom_orders WHERE id = ?")
+            .bind(custom_order_id)
+            .fetch_optional(&db.pool)
+            .await
+            .map_err(|e| AppError::Database(format!("查询定制单失败: {}", e)))?
+            .ok_or_else(|| AppError::Business("定制单不存在".to_string()))?;
+
+    if custom_order.status != "confirmed" {
+        return Err(AppError::Business(
+            "只有已确认状态的定制单才能开始生产".to_string(),
+        ));
+    }
+
+    // 查找定制 BOM（取最新一个未取消的）
+    #[derive(sqlx::FromRow)]
+    struct CustomBomInfo {
+        id: i64,
+        material_id: i64,
+    }
+    let custom_bom: CustomBomInfo = sqlx::query_as(
+        "SELECT id, material_id FROM bom WHERE custom_order_id = ? AND status != 'cancelled' ORDER BY id DESC LIMIT 1",
+    )
+    .bind(custom_order_id)
+    .fetch_optional(&db.pool)
+    .await
+    .map_err(|e| AppError::Database(format!("查询定制BOM失败: {}", e)))?
+    .ok_or_else(|| AppError::Business("定制单没有可用的BOM，请先创建BOM再开始生产".to_string()))?;
+
+    let mut tx = db
+        .pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
+
+    // 生成工单编号（WO-YYYYMMDD-NNN）
+    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+    let date_part = today.replace('-', "");
+    let prefix = format!("WO-{}-", date_part);
+    let max_no: Option<String> = sqlx::query_scalar(
+        "SELECT order_no FROM production_orders WHERE order_no LIKE ? ORDER BY order_no DESC LIMIT 1",
+    )
+    .bind(format!("{}%", prefix))
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("查询工单编号失败: {}", e)))?;
+
+    let next_seq = if let Some(last_no) = max_no {
+        let seq_str = last_no.trim_start_matches(&prefix);
+        seq_str.parse::<i64>().unwrap_or(0) + 1
+    } else {
+        1
+    };
+    let order_no = format!("{}{:03}", prefix, next_seq);
+
+    // 创建工单（draft 状态，由定制单自动关联）
+    let production_order_id: i64 = sqlx::query_scalar(
+        "INSERT INTO production_orders (
+            order_no, bom_id, custom_order_id, output_material_id,
+            planned_qty, status,
+            planned_start_date, planned_end_date,
+            remark, created_by_user_id, created_by_name,
+            created_at, updated_at
+         ) VALUES (
+            ?, ?, ?, ?,
+            1, 'draft',
+            NULL, NULL,
+            '由定制单自动创建', 1, 'admin',
+            datetime('now'), datetime('now')
+         ) RETURNING id",
+    )
+    .bind(&order_no)
+    .bind(custom_bom.id)
+    .bind(custom_order_id)
+    .bind(custom_bom.material_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("创建工单失败: {}", e)))?;
+
+    // 从 BOM 明细展算物料需求（与 save_production_order 保持一致）
+    #[derive(sqlx::FromRow)]
+    struct BomItemRow {
+        material_id: i64,
+        material_name: String,
+        material_code: Option<String>,
+        standard_qty: f64,
+        waste_rate: f64,
+        unit_name: Option<String>,
+    }
+    let bom_items: Vec<BomItemRow> = sqlx::query_as(
+        "SELECT bi.material_id,
+                COALESCE(m.name, '') AS material_name,
+                m.code AS material_code,
+                bi.standard_qty, bi.waste_rate,
+                u.name AS unit_name
+         FROM bom_items bi
+         LEFT JOIN materials m ON bi.material_id = m.id
+         LEFT JOIN units u ON m.base_unit_id = u.id
+         WHERE bi.bom_id = ?",
+    )
+    .bind(custom_bom.id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("查询BOM明细失败: {}", e)))?;
+
+    // 获取默认原材料仓
+    let default_raw_wh: Option<i64> = sqlx::query_scalar(
+        "SELECT warehouse_id FROM default_warehouses WHERE material_type = 'raw'",
+    )
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("查询默认仓库失败: {}", e)))?;
+    let default_wh = default_raw_wh.unwrap_or(1);
+
+    for item in &bom_items {
+        // 需求量 = 单位用量 × (1 + 损耗率/100)，计划量为1
+        let required = item.standard_qty * (1.0 + item.waste_rate / 100.0);
+        sqlx::query(
+            "INSERT INTO production_order_materials (
+                production_order_id, material_id, material_name, material_code,
+                required_qty, picked_qty, returned_qty, unit_name, warehouse_id
+             ) VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?)",
+        )
+        .bind(production_order_id)
+        .bind(item.material_id)
+        .bind(&item.material_name)
+        .bind(&item.material_code)
+        .bind(required)
+        .bind(&item.unit_name)
+        .bind(default_wh)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("写入物料需求失败: {}", e)))?;
+    }
+
+    // 更新定制单状态为 producing
+    sqlx::query(
+        "UPDATE custom_orders SET status = 'producing', updated_at = datetime('now') WHERE id = ?",
+    )
+    .bind(custom_order_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("更新定制单状态失败: {}", e)))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    Ok(production_order_id)
+}

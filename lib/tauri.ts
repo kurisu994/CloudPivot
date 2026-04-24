@@ -3475,3 +3475,77 @@ export async function getSalesMaterialDetail(filter: SalesReportFilter): Promise
   if (!isTauriEnv()) return emptyBusinessReport<MaterialReportItem>(filter.page, filter.page_size)
   return invoke<BusinessReportResponse<MaterialReportItem>>('get_sales_material_detail', { filter })
 }
+
+// ================================================================
+// 销售单详情
+// ================================================================
+
+/** 销售单详情（含明细） */
+export interface SalesOrderDetail {
+  id: number
+  orderNo: string
+  customerId: number
+  customerName: string | null
+  orderDate: string
+  deliveryDate: string | null
+  warehouseId: number
+  warehouseName: string | null
+  currency: string
+  exchangeRate: number
+  status: string
+  totalAmount: number
+  totalAmountBase: number
+  discountRate: number
+  discountAmount: number
+  freightAmount: number
+  otherCharges: number
+  receivableAmount: number
+  shippingAddress: string | null
+  remark: string | null
+  createdByUserId: number | null
+  createdByName: string | null
+  approvedByName: string | null
+  approvedAt: string | null
+  cancelledByName: string | null
+  cancelledAt: string | null
+  createdAt: string | null
+  updatedAt: string | null
+  items: SalesOrderItemData[]
+}
+
+/** 销售单明细项 */
+export interface SalesOrderItemData {
+  id: number | null
+  materialId: number
+  materialCode: string | null
+  materialName: string | null
+  spec: string | null
+  unitId: number
+  unitNameSnapshot: string
+  conversionRateSnapshot: number
+  quantity: number
+  baseQuantity: number
+  unitPrice: number
+  discountRate: number
+  amount: number
+  shippedQty: number | null
+  warehouseId: number
+  remark: string | null
+  sortOrder: number | null
+}
+
+/** 获取销售单详情 */
+export async function getSalesOrderDetail(id: number): Promise<SalesOrderDetail> {
+  if (isTauriEnv()) {
+    return invoke<SalesOrderDetail>('get_sales_order_detail', { id })
+  }
+  throw new Error('非 Tauri 环境暂不支持')
+}
+
+/** 从定制单开始生产（自动创建工单），返回新建工单 id */
+export async function startProductionFromCustomOrder(customOrderId: number): Promise<number> {
+  if (isTauriEnv()) {
+    return invoke<number>('start_production_from_custom_order', { customOrderId })
+  }
+  return Date.now()
+}

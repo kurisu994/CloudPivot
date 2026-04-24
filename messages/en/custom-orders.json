@@ -107,6 +107,11 @@
     "configCharges": "Config Charges",
     "totalCost": "Total Cost",
     "quotePrice": "Quote Price",
-    "estimatedProfit": "Estimated Profit"
+    "estimatedProfit": "Estimated Profit",
+
+    "startProduction": "Start Production",
+    "startProductionConfirm": "Are you sure you want to create a production order from this custom order?",
+    "startProductionSuccess": "Production order created successfully",
+    "startProductionError": "Failed to create production order"
   }
 }

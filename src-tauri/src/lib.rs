@@ -168,6 +168,7 @@ pub fn run() {
             commands::custom_order::create_custom_bom,
             commands::custom_order::calculate_custom_cost,
             commands::custom_order::convert_to_sales_order,
+            commands::custom_order::start_production_from_custom_order,
             // 生产工单
             commands::production_order::get_production_orders,
             commands::production_order::get_production_order_detail,

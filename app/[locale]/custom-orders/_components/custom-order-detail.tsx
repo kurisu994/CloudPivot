@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Calculator, Plus, ShoppingCart, Trash2 } from 'lucide-react'
+import { ArrowLeft, Calculator, Factory, Plus, ShoppingCart, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount } from '@/lib/currency'
 import type { CustomerListItem } from '@/lib/tauri'
-import { getCustomers, invoke } from '@/lib/tauri'
+import { getCustomers, invoke, startProductionFromCustomOrder } from '@/lib/tauri'
 
 // ================================================================
 // 类型定义
@@ -425,6 +425,19 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
     }
   }
 
+  /** 开始生产（自动创建工单） */
+  const handleStartProduction = async () => {
+    if (!window.confirm(t('startProductionConfirm'))) return
+    if (orderId == null) return
+    try {
+      await startProductionFromCustomOrder(orderId)
+      toast.success(t('startProductionSuccess'))
+      await loadDetail()
+    } catch (error) {
+      toast.error(typeof error === 'string' ? error : t('startProductionError'))
+    }
+  }
+
   // ================================================================
   // 下拉选项
   // ================================================================
@@ -473,6 +486,12 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
             <Button variant="outline" onClick={handleConvert}>
               <ShoppingCart className="size-4" />
               {t('convertToSales')}
+            </Button>
+          )}
+          {status === 'confirmed' && (
+            <Button variant="outline" onClick={handleStartProduction}>
+              <Factory className="size-4" />
+              {t('startProduction')}
             </Button>
           )}
           {status === 'quoting' && !isNew && customBom && (

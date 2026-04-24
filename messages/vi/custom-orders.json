@@ -107,6 +107,11 @@
     "configCharges": "Phụ phí tùy chỉnh",
     "totalCost": "Tổng chi phí",
     "quotePrice": "Giá báo",
-    "estimatedProfit": "Lợi nhuận ước tính"
+    "estimatedProfit": "Lợi nhuận ước tính",
+
+    "startProduction": "Bắt đầu sản xuất",
+    "startProductionConfirm": "Bạn có chắc muốn tạo lệnh sản xuất từ đơn đặt hàng này không?",
+    "startProductionSuccess": "Đã tạo lệnh sản xuất thành công",
+    "startProductionError": "Tạo lệnh sản xuất thất bại"
   }
 }

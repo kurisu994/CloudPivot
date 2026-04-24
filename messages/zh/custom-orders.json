@@ -107,6 +107,11 @@
     "configCharges": "定制加价",
     "totalCost": "成本合计",
     "quotePrice": "报价金额",
-    "estimatedProfit": "预估毛利"
+    "estimatedProfit": "预估毛利",
+
+    "startProduction": "开始生产",
+    "startProductionConfirm": "确定要根据此定制单创建生产工单吗？",
+    "startProductionSuccess": "已成功创建生产工单",
+    "startProductionError": "创建生产工单失败"
   }
 }

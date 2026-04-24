@@ -317,7 +317,7 @@ pub async fn get_production_order_detail(
 
     // BOM 名称
     let bom_name: String = sqlx::query_scalar(
-        "SELECT COALESCE(m.name, '') FROM bom b LEFT JOIN materials m ON b.parent_material_id = m.id WHERE b.id = ?",
+        "SELECT COALESCE(m.name, '') FROM bom b LEFT JOIN materials m ON b.material_id = m.id WHERE b.id = ?",
     )
     .bind(header.bom_id)
     .fetch_optional(&db.pool)
@@ -412,10 +412,10 @@ pub async fn save_production_order(
     // 校验 BOM 存在且已启用
     #[derive(sqlx::FromRow)]
     struct BomInfo {
-        parent_material_id: i64,
+        material_id: i64,
         status: String,
     }
-    let bom: BomInfo = sqlx::query_as("SELECT parent_material_id, status FROM bom WHERE id = ?")
+    let bom: BomInfo = sqlx::query_as("SELECT material_id, status FROM bom WHERE id = ?")
         .bind(input.bom_id)
         .fetch_optional(&db.pool)
         .await
@@ -464,7 +464,7 @@ pub async fn save_production_order(
         )
         .bind(input.bom_id)
         .bind(input.custom_order_id)
-        .bind(bom.parent_material_id)
+        .bind(bom.material_id)
         .bind(input.planned_qty)
         .bind(&input.planned_start_date)
         .bind(&input.planned_end_date)
@@ -522,7 +522,7 @@ pub async fn save_production_order(
         .bind(&order_no)
         .bind(input.bom_id)
         .bind(input.custom_order_id)
-        .bind(bom.parent_material_id)
+        .bind(bom.material_id)
         .bind(input.planned_qty)
         .bind(&input.planned_start_date)
         .bind(&input.planned_end_date)
