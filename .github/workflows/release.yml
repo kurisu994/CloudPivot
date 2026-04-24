@@ -106,7 +106,7 @@ jobs:
           # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "CloudPivot IMS ${{ github.ref_name }}"
+          releaseName: "CloudPivot ${{ github.ref_name }}"
           releaseBody: ${{ steps.changelog.outputs.notes }}
           releaseDraft: false
           prerelease: false
