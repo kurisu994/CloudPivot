@@ -9,6 +9,7 @@ use tauri::State;
 use super::PaginatedResponse;
 use crate::db::DbState;
 use crate::error::AppError;
+use crate::operation_log;
 
 // ================================================================
 // 应付账款相关数据结构
@@ -446,6 +447,30 @@ pub async fn record_payment(
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
+    // 记录操作日志
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM payables WHERE id = ?")
+        .bind(params.payable_id)
+        .fetch_one(&db.pool)
+        .await
+        .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "finance".to_string(),
+            action: "payment".to_string(),
+            target_type: Some("payable".to_string()),
+            target_id: Some(params.payable_id),
+            target_no: Some(order_no.clone()),
+            detail: format!(
+                "登记付款 {}，金额 {} {}",
+                order_no, params.payment_amount, currency
+            ),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
     Ok(record_id)
 }
 
@@ -722,6 +747,30 @@ pub async fn record_receipt(
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    // 记录操作日志
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM receivables WHERE id = ?")
+        .bind(params.receivable_id)
+        .fetch_one(&db.pool)
+        .await
+        .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "finance".to_string(),
+            action: "receipt".to_string(),
+            target_type: Some("receivable".to_string()),
+            target_id: Some(params.receivable_id),
+            target_no: Some(order_no.clone()),
+            detail: format!(
+                "登记收款 {}，金额 {} {}",
+                order_no, params.receipt_amount, currency
+            ),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
 
     Ok(record_id)
 }

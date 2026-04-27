@@ -35,3 +35,5 @@ chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4"] }
 # 错误处理
 thiserror = "2"
+# 系统钥匙串
+keyring = "3"

@@ -400,4 +400,3 @@ pub async fn get_user_info(pool: &SqlitePool, user_id: i64) -> Result<UserInfo, 
         session_version,
     })
 }
-

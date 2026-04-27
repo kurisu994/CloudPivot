@@ -755,7 +755,11 @@ pub async fn save_purchase_order(
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
     // 记录操作日志
-    let action = if params.id.is_some() { "update" } else { "create" };
+    let action = if params.id.is_some() {
+        "update"
+    } else {
+        "create"
+    };
     let order_no: String = sqlx::query_scalar("SELECT order_no FROM purchase_orders WHERE id = ?")
         .bind(order_id)
         .fetch_one(&db.pool)
@@ -769,7 +773,15 @@ pub async fn save_purchase_order(
             target_type: Some("purchase_order".to_string()),
             target_id: Some(order_id),
             target_no: Some(order_no.clone()),
-            detail: format!("{} 采购单 {}", if action == "create" { "创建" } else { "更新" }, order_no),
+            detail: format!(
+                "{} 采购单 {}",
+                if action == "create" {
+                    "创建"
+                } else {
+                    "更新"
+                },
+                order_no
+            ),
             operator_user_id: Some(1),
             operator_name: Some("admin".to_string()),
         },
@@ -887,6 +899,27 @@ pub async fn cancel_purchase_order(db: State<'_, DbState>, id: i64) -> Result<()
         ));
     }
 
+    // 记录操作日志
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM purchase_orders WHERE id = ?")
+        .bind(id)
+        .fetch_one(&db.pool)
+        .await
+        .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "purchase".to_string(),
+            action: "cancel".to_string(),
+            target_type: Some("purchase_order".to_string()),
+            target_id: Some(id),
+            target_no: Some(order_no.clone()),
+            detail: format!("作废采购单 {}", order_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
     Ok(())
 }
 
@@ -907,6 +940,13 @@ pub async fn delete_purchase_order(db: State<'_, DbState>, id: i64) -> Result<()
         }
         _ => {}
     }
+
+    // 提前获取单号用于日志
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM purchase_orders WHERE id = ?")
+        .bind(id)
+        .fetch_one(&db.pool)
+        .await
+        .unwrap_or_else(|_| "未知".to_string());
 
     let mut tx = db
         .pool
@@ -931,6 +971,22 @@ pub async fn delete_purchase_order(db: State<'_, DbState>, id: i64) -> Result<()
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    // 记录操作日志
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "purchase".to_string(),
+            action: "delete".to_string(),
+            target_type: Some("purchase_order".to_string()),
+            target_id: Some(id),
+            target_no: Some(order_no.clone()),
+            detail: format!("删除采购单 {}", order_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
 
     Ok(())
 }
@@ -1663,6 +1719,30 @@ pub async fn save_and_confirm_inbound(
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
+    // 记录操作日志
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "purchase".to_string(),
+            action: "inbound_confirm".to_string(),
+            target_type: Some("inbound_order".to_string()),
+            target_id: Some(inbound_id),
+            target_no: Some(inbound_no.clone()),
+            detail: format!(
+                "确认入库单 {}，关联采购单 {}，入库总金额 {}",
+                inbound_no,
+                params
+                    .purchase_id
+                    .map(|id| id.to_string())
+                    .unwrap_or_else(|| "无".to_string()),
+                payable_amount
+            ),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
     Ok(inbound_id)
 }
 
@@ -2249,6 +2329,25 @@ pub async fn save_and_confirm_purchase_return(
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    // 记录操作日志
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "purchase".to_string(),
+            action: "return_confirm".to_string(),
+            target_type: Some("purchase_return".to_string()),
+            target_id: Some(return_id),
+            target_no: Some(return_no.clone()),
+            detail: format!(
+                "确认采购退货单 {}，原入库单 {}，退货金额 {}",
+                return_no, params.inbound_id, total_amount
+            ),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
 
     Ok(return_id)
 }

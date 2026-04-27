@@ -5,7 +5,15 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { ensureReplenishmentRules, getReplenishmentSuggestions } from '@/lib/tauri'
+import {
+  ensureReplenishmentRules,
+  getInventoryList,
+  getPayables,
+  getPurchaseReportSummary,
+  getReceivables,
+  getReplenishmentSuggestions,
+  getSalesReportSummary,
+} from '@/lib/tauri'
 
 /** 看板主要指标卡片 */
 export function MetricsCards() {
@@ -14,6 +22,13 @@ export function MetricsCards() {
   const [replenishmentCount, setReplenishmentCount] = useState(0)
   const [urgentDelta, setUrgentDelta] = useState(0)
 
+  const [todaySales, setTodaySales] = useState(0)
+  const [monthSales, setMonthSales] = useState(0)
+  const [todayPurchase, setTodayPurchase] = useState(0)
+  const [lowStockCount, setLowStockCount] = useState(0)
+  const [receivables, setReceivables] = useState(0)
+  const [payables, setPayables] = useState(0)
+
   useEffect(() => {
     void (async () => {
       try {
@@ -21,6 +36,33 @@ export function MetricsCards() {
         const suggestions = await getReplenishmentSuggestions({})
         setReplenishmentCount(suggestions.length)
         setUrgentDelta(suggestions.filter(s => s.urgency === 'urgent').length)
+      } catch {
+        // 非 Tauri 环境下降级为 0
+      }
+    })()
+  }, [])
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const today = new Date().toISOString().slice(0, 10)
+        const monthStart = `${today.slice(0, 7)}-01`
+
+        const [salesTodayRes, salesMonthRes, purchaseTodayRes, inventoryLowRes, receivablesRes, payablesRes] = await Promise.all([
+          getSalesReportSummary({ start_date: today, end_date: today, page: 1, page_size: 1 }),
+          getSalesReportSummary({ start_date: monthStart, end_date: today, page: 1, page_size: 1 }),
+          getPurchaseReportSummary({ start_date: today, end_date: today, page: 1, page_size: 1 }),
+          getInventoryList({ page: 1, pageSize: 1, alertStatus: 'low' }),
+          getReceivables({ page: 1, page_size: 1 }),
+          getPayables({ page: 1, page_size: 1 }),
+        ])
+
+        setTodaySales(salesTodayRes.stats.total_amount)
+        setMonthSales(salesMonthRes.stats.total_amount)
+        setTodayPurchase(purchaseTodayRes.stats.total_amount)
+        setLowStockCount(inventoryLowRes.total)
+        setReceivables(receivablesRes.summary.total_overdue)
+        setPayables(payablesRes.summary.total_overdue)
       } catch {
         // 非 Tauri 环境下降级为 0
       }
@@ -39,7 +81,7 @@ export function MetricsCards() {
             </Badge>
           </CardHeader>
           <CardContent className="p-5 pt-0">
-            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">$125,800</h3>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">${(todaySales / 100).toLocaleString()}</h3>
             <p className="mt-2 text-[10px] text-slate-400">{t('vsYesterday')}</p>
           </CardContent>
         </Card>
@@ -52,7 +94,7 @@ export function MetricsCards() {
             </Badge>
           </CardHeader>
           <CardContent className="p-5 pt-0">
-            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">$3,582,000</h3>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">${(monthSales / 100).toLocaleString()}</h3>
             <p className="mt-2 text-[10px] text-slate-400">{t('progress', { percent: '85', target: '$4.2M' })}</p>
           </CardContent>
         </Card>
@@ -65,7 +107,7 @@ export function MetricsCards() {
             </Badge>
           </CardHeader>
           <CardContent className="p-5 pt-0">
-            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">$83,200</h3>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">${(todayPurchase / 100).toLocaleString()}</h3>
             <p className="mt-2 text-[10px] text-slate-400">{t('mainMaterial')}</p>
           </CardContent>
         </Card>
@@ -78,7 +120,7 @@ export function MetricsCards() {
             </Badge>
           </CardHeader>
           <CardContent className="p-5 pt-0">
-            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{t('lowStockCount', { count: 12 })}</h3>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{t('lowStockCount', { count: lowStockCount })}</h3>
             <p className="mt-2 text-[10px] text-slate-400">{t('belowSafetyLevel')}</p>
           </CardContent>
         </Card>
@@ -92,7 +134,7 @@ export function MetricsCards() {
           </div>
           <div>
             <p className="text-[11px] font-bold tracking-tight text-slate-500 uppercase">{t('receivables')}</p>
-            <p className="text-lg font-bold text-slate-800 dark:text-slate-200">$865,000</p>
+            <p className="text-lg font-bold text-slate-800 dark:text-slate-200">${(receivables / 100).toLocaleString()}</p>
           </div>
         </div>
 
@@ -102,7 +144,7 @@ export function MetricsCards() {
           </div>
           <div>
             <p className="text-[11px] font-bold tracking-tight text-slate-500 uppercase">{t('payables')}</p>
-            <p className="text-lg font-bold text-slate-800 dark:text-slate-200">$423,000</p>
+            <p className="text-lg font-bold text-slate-800 dark:text-slate-200">${(payables / 100).toLocaleString()}</p>
           </div>
         </div>
 

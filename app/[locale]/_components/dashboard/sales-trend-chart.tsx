@@ -1,24 +1,41 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { getSalesReportSummary } from '@/lib/tauri'
 
-const salesData = [
-  { week: 'Week 1', current: 240000, previous: 180000 },
-  { week: 'Week 2', current: 860000, previous: 280000 },
-  { week: 'Week 3', current: 1240000, previous: 350000 },
-  { week: 'Week 4', current: 680000, previous: 420000 },
-]
+interface TrendPoint {
+  label: string
+  current: number
+}
 
 /** 近30天销售趋势柱状图 */
 export function SalesTrendChart({ className }: { className?: string }) {
   const t = useTranslations('dashboard')
+  const [data, setData] = useState<TrendPoint[]>([])
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const end = new Date().toISOString().slice(0, 10)
+        const start = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
+        const res = await getSalesReportSummary({ start_date: start, end_date: end, page: 1, page_size: 1 })
+        const points = res.trend.map(p => ({
+          label: p.date.slice(5),
+          current: p.amount,
+        }))
+        setData(points)
+      } catch {
+        // 降级为空数据
+      }
+    })()
+  }, [])
 
   const salesConfig = {
     current: { label: t('currentPeriod'), color: '#294985' },
-    previous: { label: t('previousPeriod'), color: '#6b85c1' },
   } satisfies ChartConfig
 
   return (
@@ -29,10 +46,10 @@ export function SalesTrendChart({ className }: { className?: string }) {
       </CardHeader>
       <CardContent>
         <ChartContainer config={salesConfig} className="h-[250px] min-h-[250px] w-full min-w-full">
-          <BarChart accessibilityLayer data={salesData} margin={{ top: 20, left: -20, right: 10 }}>
+          <BarChart accessibilityLayer data={data} margin={{ top: 20, left: -20, right: 10 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.5} />
             <XAxis
-              dataKey="week"
+              dataKey="label"
               tickLine={false}
               tickMargin={15}
               axisLine={false}
@@ -49,7 +66,6 @@ export function SalesTrendChart({ className }: { className?: string }) {
               tickFormatter={value => `$${value / 1000}k`}
             />
             <ChartTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} content={<ChartTooltipContent indicator="dashed" className="w-[180px]" />} />
-            <Bar dataKey="previous" fill="var(--color-previous)" radius={[4, 4, 0, 0]} />
             <Bar dataKey="current" fill="var(--color-current)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ChartContainer>

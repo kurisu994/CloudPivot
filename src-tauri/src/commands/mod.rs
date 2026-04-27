@@ -334,7 +334,7 @@ pub async fn get_operation_logs(
     filter: OperationLogFilter,
 ) -> Result<PaginatedResponse<OperationLogItem>, AppError> {
     let page = filter.page.max(1);
-    let page_size = filter.page_size.max(1).min(500);
+    let page_size = filter.page_size.clamp(1, 500);
     let offset = (page - 1) * page_size;
 
     // 动态构建 WHERE 子句
@@ -393,7 +393,21 @@ pub async fn get_operation_logs(
          LIMIT ? OFFSET ?",
         where_clause
     );
-    let mut list_query = sqlx::query_as::<_, (i64, String, String, Option<String>, Option<i64>, Option<String>, String, Option<i64>, Option<String>, String)>(&list_sql);
+    let mut list_query = sqlx::query_as::<
+        _,
+        (
+            i64,
+            String,
+            String,
+            Option<String>,
+            Option<i64>,
+            Option<String>,
+            String,
+            Option<i64>,
+            Option<String>,
+            String,
+        ),
+    >(&list_sql);
     for b in &binds {
         list_query = list_query.bind(b);
     }
@@ -410,7 +424,18 @@ pub async fn get_operation_logs(
     let items: Vec<OperationLogItem> = rows
         .into_iter()
         .map(
-            |(id, module, action, target_type, target_id, target_no, detail, operator_user_id, operator_name_snapshot, created_at)| {
+            |(
+                id,
+                module,
+                action,
+                target_type,
+                target_id,
+                target_no,
+                detail,
+                operator_user_id,
+                operator_name_snapshot,
+                created_at,
+            )| {
                 OperationLogItem {
                     id,
                     module,

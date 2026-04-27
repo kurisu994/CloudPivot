@@ -10,6 +10,7 @@ use tauri::State;
 
 use crate::db::DbState;
 use crate::error::AppError;
+use crate::operation_log;
 
 use super::PaginatedResponse;
 
@@ -594,6 +595,41 @@ pub async fn save_production_order(
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
+    // 记录操作日志
+    let action = if input.id.is_some() {
+        "update"
+    } else {
+        "create"
+    };
+    let order_no: String =
+        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = ?")
+            .bind(order_id)
+            .fetch_one(&db.pool)
+            .await
+            .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "production_order".to_string(),
+            action: action.to_string(),
+            target_type: Some("production_order".to_string()),
+            target_id: Some(order_id),
+            target_no: Some(order_no.clone()),
+            detail: format!(
+                "{} 生产工单 {}",
+                if action == "create" {
+                    "创建"
+                } else {
+                    "更新"
+                },
+                order_no
+            ),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
     Ok(order_id)
 }
 
@@ -623,6 +659,22 @@ pub async fn delete_production_order(db: State<'_, DbState>, id: i64) -> Result<
         .execute(&db.pool)
         .await
         .map_err(|e| AppError::Database(format!("清除物料需求失败: {}", e)))?;
+
+    // 记录操作日志
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "production_order".to_string(),
+            action: "delete".to_string(),
+            target_type: Some("production_order".to_string()),
+            target_id: Some(id),
+            target_no: None,
+            detail: format!("删除生产工单 {}", id),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
 
     Ok(())
 }
@@ -753,6 +805,53 @@ pub async fn pick_materials(
                     .execute(&mut *tx)
                     .await
                     .map_err(|e| AppError::Database(format!("更新库存预留失败: {}", e)))?;
+
+                    // 同步消耗 inventory_reservation_lots
+                    let lot_items: Vec<(i64, f64)> = sqlx::query_as(
+                        "SELECT id, reserved_qty - consumed_qty AS available FROM inventory_reservation_lots WHERE reservation_id = ? AND status = 'allocated' ORDER BY id"
+                    )
+                    .bind(res_id)
+                    .fetch_all(&mut *tx)
+                    .await
+                    .map_err(|e| AppError::Database(format!("查询预留批次失败: {}", e)))?;
+
+                    let mut remaining_consume = consume_qty;
+                    for (lot_res_id, avail) in lot_items {
+                        if remaining_consume <= 0.0 {
+                            break;
+                        }
+                        let c = remaining_consume.min(avail);
+                        sqlx::query(
+                            "UPDATE inventory_reservation_lots SET consumed_qty = consumed_qty + ?, status = CASE WHEN consumed_qty + ? >= reserved_qty THEN 'consumed' ELSE 'allocated' END, updated_at = datetime('now') WHERE id = ?"
+                        )
+                        .bind(c)
+                        .bind(c)
+                        .bind(lot_res_id)
+                        .execute(&mut *tx)
+                        .await
+                        .map_err(|e| AppError::Database(format!("更新预留批次消耗失败: {}", e)))?;
+
+                        // 减少 inventory_lots.qty_reserved
+                        let lot_id: i64 = sqlx::query_scalar(
+                            "SELECT lot_id FROM inventory_reservation_lots WHERE id = ?",
+                        )
+                        .bind(lot_res_id)
+                        .fetch_one(&mut *tx)
+                        .await
+                        .map_err(|e| {
+                            AppError::Database(format!("查询预留批次 lot_id 失败: {}", e))
+                        })?;
+                        sqlx::query(
+                            "UPDATE inventory_lots SET qty_reserved = MAX(0, qty_reserved - ?) WHERE id = ?"
+                        )
+                        .bind(c)
+                        .bind(lot_id)
+                        .execute(&mut *tx)
+                        .await
+                        .map_err(|e| AppError::Database(format!("更新批次预留失败: {}", e)))?;
+
+                        remaining_consume -= c;
+                    }
                 }
             }
         }
@@ -806,6 +905,28 @@ pub async fn pick_materials(
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
+    // 记录操作日志
+    let order_no: String =
+        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = ?")
+            .bind(input.production_order_id)
+            .fetch_one(&db.pool)
+            .await
+            .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "production_order".to_string(),
+            action: "pick".to_string(),
+            target_type: Some("production_order".to_string()),
+            target_id: Some(input.production_order_id),
+            target_no: Some(order_no.clone()),
+            detail: format!("生产工单 {} 领料", order_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
     Ok(())
 }
 
@@ -827,22 +948,25 @@ pub async fn return_materials(
         return Err(AppError::Business("退料明细不能为空".to_string()));
     }
 
-    let status: Option<String> =
-        sqlx::query_scalar("SELECT status FROM production_orders WHERE id = ?")
+    #[derive(sqlx::FromRow)]
+    struct ReturnOrderInfo {
+        status: String,
+        custom_order_id: Option<i64>,
+    }
+    let order: ReturnOrderInfo =
+        sqlx::query_as("SELECT status, custom_order_id FROM production_orders WHERE id = ?")
             .bind(input.production_order_id)
             .fetch_optional(&db.pool)
             .await
-            .map_err(|e| AppError::Database(format!("查询工单失败: {}", e)))?;
+            .map_err(|e| AppError::Database(format!("查询工单失败: {}", e)))?
+            .ok_or_else(|| AppError::Business("工单不存在".to_string()))?;
 
-    match status.as_deref() {
-        Some("picking" | "producing") => {}
-        Some(_) => {
+    match order.status.as_str() {
+        "picking" | "producing" => {}
+        _ => {
             return Err(AppError::Business(
                 "仅领料中或生产中状态可以退料".to_string(),
             ));
-        }
-        None => {
-            return Err(AppError::Business("工单不存在".to_string()));
         }
     }
 
@@ -917,11 +1041,133 @@ pub async fn return_materials(
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("更新退料量失败: {}", e)))?;
+
+        // 若关联定制单，恢复预留
+        if let Some(co_id) = order.custom_order_id {
+            let reservation: Option<(i64, f64, f64)> = sqlx::query_as(
+                "SELECT id, reserved_qty, consumed_qty FROM inventory_reservations
+                 WHERE source_type = 'custom_order' AND source_id = ?
+                   AND material_id = ? AND status IN ('active', 'consumed')
+                 LIMIT 1",
+            )
+            .bind(co_id)
+            .bind(line.material_id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("查询预留失败: {}", e)))?;
+
+            if let Some((res_id, _reserved, consumed)) = reservation {
+                let restore_qty = line.quantity.min(consumed);
+                if restore_qty > 0.0 {
+                    let new_consumed = consumed - restore_qty;
+                    let new_status = if new_consumed <= 0.0 {
+                        "active"
+                    } else {
+                        "consumed"
+                    };
+                    sqlx::query(
+                        "UPDATE inventory_reservations SET consumed_qty = ?, status = ?, updated_at = datetime('now') WHERE id = ?",
+                    )
+                    .bind(new_consumed)
+                    .bind(new_status)
+                    .bind(res_id)
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(|e| AppError::Database(format!("更新预留失败: {}", e)))?;
+
+                    // 恢复 inventory 的 reserved_qty
+                    sqlx::query(
+                        "UPDATE inventory SET reserved_qty = reserved_qty + ? WHERE material_id = ? AND warehouse_id = ?",
+                    )
+                    .bind(restore_qty)
+                    .bind(line.material_id)
+                    .bind(line.warehouse_id)
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(|e| AppError::Database(format!("更新库存预留失败: {}", e)))?;
+
+                    // 恢复 inventory_reservation_lots
+                    let lot_items: Vec<(i64, f64, f64)> = sqlx::query_as(
+                        "SELECT id, consumed_qty, reserved_qty FROM inventory_reservation_lots WHERE reservation_id = ? AND status = 'consumed' ORDER BY id DESC"
+                    )
+                    .bind(res_id)
+                    .fetch_all(&mut *tx)
+                    .await
+                    .map_err(|e| AppError::Database(format!("查询预留批次失败: {}", e)))?;
+
+                    let mut remaining_restore = restore_qty;
+                    for (lot_res_id, lot_consumed, _lot_reserved) in lot_items {
+                        if remaining_restore <= 0.0 {
+                            break;
+                        }
+                        let r = remaining_restore.min(lot_consumed);
+                        let new_lot_consumed = lot_consumed - r;
+                        let new_lot_status = if new_lot_consumed <= 0.0 {
+                            "allocated"
+                        } else {
+                            "consumed"
+                        };
+                        sqlx::query(
+                            "UPDATE inventory_reservation_lots SET consumed_qty = ?, status = ?, updated_at = datetime('now') WHERE id = ?"
+                        )
+                        .bind(new_lot_consumed)
+                        .bind(new_lot_status)
+                        .bind(lot_res_id)
+                        .execute(&mut *tx)
+                        .await
+                        .map_err(|e| AppError::Database(format!("更新预留批次恢复失败: {}", e)))?;
+
+                        // 恢复 inventory_lots.qty_reserved
+                        let lot_id: i64 = sqlx::query_scalar(
+                            "SELECT lot_id FROM inventory_reservation_lots WHERE id = ?",
+                        )
+                        .bind(lot_res_id)
+                        .fetch_one(&mut *tx)
+                        .await
+                        .map_err(|e| {
+                            AppError::Database(format!("查询预留批次 lot_id 失败: {}", e))
+                        })?;
+                        sqlx::query(
+                            "UPDATE inventory_lots SET qty_reserved = qty_reserved + ? WHERE id = ?"
+                        )
+                        .bind(r)
+                        .bind(lot_id)
+                        .execute(&mut *tx)
+                        .await
+                        .map_err(|e| AppError::Database(format!("更新批次预留恢复失败: {}", e)))?;
+
+                        remaining_restore -= r;
+                    }
+                }
+            }
+        }
     }
 
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    // 记录操作日志
+    let order_no: String =
+        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = ?")
+            .bind(input.production_order_id)
+            .fetch_one(&db.pool)
+            .await
+            .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "production_order".to_string(),
+            action: "return_material".to_string(),
+            target_type: Some("production_order".to_string()),
+            target_id: Some(input.production_order_id),
+            target_no: Some(order_no.clone()),
+            detail: format!("生产工单 {} 退料", order_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
 
     Ok(())
 }
@@ -975,6 +1221,28 @@ pub async fn start_production(db: State<'_, DbState>, id: i64) -> Result<(), App
     .execute(&db.pool)
     .await
     .map_err(|e| AppError::Database(format!("更新工单状态失败: {}", e)))?;
+
+    // 记录操作日志
+    let order_no: String =
+        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = ?")
+            .bind(id)
+            .fetch_one(&db.pool)
+            .await
+            .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "production_order".to_string(),
+            action: "start_production".to_string(),
+            target_type: Some("production_order".to_string()),
+            target_id: Some(id),
+            target_no: Some(order_no.clone()),
+            detail: format!("生产工单 {} 开始生产", order_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
 
     Ok(())
 }
@@ -1123,6 +1391,28 @@ pub async fn complete_production(
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
+    // 记录操作日志
+    let order_no: String =
+        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = ?")
+            .bind(input.production_order_id)
+            .fetch_one(&db.pool)
+            .await
+            .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "production_order".to_string(),
+            action: "complete".to_string(),
+            target_type: Some("production_order".to_string()),
+            target_id: Some(input.production_order_id),
+            target_no: Some(order_no.clone()),
+            detail: format!("生产工单 {} 完工入库，数量 {}", order_no, input.quantity),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
     Ok(())
 }
 
@@ -1169,6 +1459,28 @@ pub async fn finish_production_order(db: State<'_, DbState>, id: i64) -> Result<
     .await
     .map_err(|e| AppError::Database(format!("完成工单失败: {}", e)))?;
 
+    // 记录操作日志
+    let order_no: String =
+        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = ?")
+            .bind(id)
+            .fetch_one(&db.pool)
+            .await
+            .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "production_order".to_string(),
+            action: "finish".to_string(),
+            target_type: Some("production_order".to_string()),
+            target_id: Some(id),
+            target_no: Some(order_no.clone()),
+            detail: format!("生产工单 {} 完成结单", order_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
     Ok(())
 }
 
@@ -1211,6 +1523,28 @@ pub async fn cancel_production_order(db: State<'_, DbState>, id: i64) -> Result<
     .execute(&db.pool)
     .await
     .map_err(|e| AppError::Database(format!("取消工单失败: {}", e)))?;
+
+    // 记录操作日志
+    let order_no: String =
+        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = ?")
+            .bind(id)
+            .fetch_one(&db.pool)
+            .await
+            .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "production_order".to_string(),
+            action: "cancel".to_string(),
+            target_type: Some("production_order".to_string()),
+            target_id: Some(id),
+            target_no: Some(order_no.clone()),
+            detail: format!("取消生产工单 {}", order_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
 
     Ok(())
 }

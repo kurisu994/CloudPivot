@@ -6,6 +6,7 @@ mod auth;
 mod commands;
 mod db;
 mod error;
+mod keychain;
 mod operation_log;
 
 use db::DbState;
@@ -58,6 +59,9 @@ pub fn run() {
             commands::set_system_configs,
             commands::setup_create_warehouses,
             commands::get_operation_logs,
+            keychain::save_auth_keychain,
+            keychain::read_auth_keychain,
+            keychain::clear_auth_keychain,
             commands::material::get_categories,
             commands::material::get_units,
             commands::material::get_materials,

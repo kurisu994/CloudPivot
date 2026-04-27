@@ -1,37 +1,15 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import {
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Layers,
-  Search,
-  User,
-  Zap,
-} from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Download, Layers, Search, User, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { getOperationLogs, type OperationLogFilter, type OperationLogItem } from '@/lib/tauri'
 import { cn } from '@/lib/utils'
-import { getOperationLogs, type OperationLogItem, type OperationLogFilter } from '@/lib/tauri'
 
 /** 模块名映射 */
 const MODULE_LABELS: Record<string, string> = {
@@ -205,7 +183,11 @@ export function OperationLogsContent() {
     if (['delete', 'cancel', 'login_failed', 'account_locked'].includes(action)) {
       return 'text-red-600 dark:text-red-400'
     }
-    if (['approve', 'inbound_confirm', 'outbound_confirm', 'stock_check_confirm', 'transfer_confirm', 'complete', 'finish', 'login_success'].includes(action)) {
+    if (
+      ['approve', 'inbound_confirm', 'outbound_confirm', 'stock_check_confirm', 'transfer_confirm', 'complete', 'finish', 'login_success'].includes(
+        action,
+      )
+    ) {
       return 'text-emerald-600 dark:text-emerald-400'
     }
     if (['create'].includes(action)) {
@@ -225,7 +207,7 @@ export function OperationLogsContent() {
               <Layers className="mr-1 size-3.5" />
               {t('module')}
             </Label>
-            <Select value={moduleFilter} onValueChange={setModuleFilter}>
+            <Select value={moduleFilter} onValueChange={value => setModuleFilter(value ?? '')}>
               <SelectTrigger className="h-10 w-full bg-slate-50 dark:bg-slate-900/50">
                 <SelectValue placeholder={t('allModules')} />
               </SelectTrigger>
@@ -245,7 +227,7 @@ export function OperationLogsContent() {
               <Zap className="mr-1 size-3.5" />
               {t('actionType')}
             </Label>
-            <Select value={actionFilter} onValueChange={setActionFilter}>
+            <Select value={actionFilter} onValueChange={value => setActionFilter(value ?? '')}>
               <SelectTrigger className="h-10 w-full bg-slate-50 dark:bg-slate-900/50">
                 <SelectValue placeholder={t('allTypes')} />
               </SelectTrigger>
@@ -279,51 +261,51 @@ export function OperationLogsContent() {
               {t('dateRange')}
             </Label>
             <div className="flex items-center gap-2">
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={e => setDateFrom(e.target.value)}
-                className="h-10 bg-slate-50 dark:bg-slate-900/50"
-              />
+              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-10 bg-slate-50 dark:bg-slate-900/50" />
               <span className="text-slate-300">~</span>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={e => setDateTo(e.target.value)}
-                className="h-10 bg-slate-50 dark:bg-slate-900/50"
-              />
+              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-10 bg-slate-50 dark:bg-slate-900/50" />
             </div>
           </div>
 
           <div className="flex-1" />
 
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="h-10 gap-2 font-bold" onClick={() => {
-              // 导出 CSV（简单实现）
-              if (logs.length === 0) return
-              const headers = ['时间', '模块', '动作', '对象类型', '对象编号', '详情', '操作人']
-              const rows = logs.map(log => [
-                log.created_at,
-                MODULE_LABELS[log.module] ?? log.module,
-                ACTION_LABELS[log.action] ?? log.action,
-                log.target_type ?? '',
-                log.target_no ?? '',
-                log.detail,
-                log.operator_name ?? '',
-              ])
-              const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
-              const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a')
-              a.href = url
-              a.download = `operation-logs-${new Date().toISOString().slice(0, 10)}.csv`
-              a.click()
-              URL.revokeObjectURL(url)
-            }}>
+            <Button
+              variant="outline"
+              className="h-10 gap-2 font-bold"
+              onClick={() => {
+                // 导出 CSV（简单实现）
+                if (logs.length === 0) return
+                const headers = ['时间', '模块', '动作', '对象类型', '对象编号', '详情', '操作人']
+                const rows = logs.map(log => [
+                  log.created_at,
+                  MODULE_LABELS[log.module] ?? log.module,
+                  ACTION_LABELS[log.action] ?? log.action,
+                  log.target_type ?? '',
+                  log.target_no ?? '',
+                  log.detail,
+                  log.operator_name ?? '',
+                ])
+                const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
+                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `operation-logs-${new Date().toISOString().slice(0, 10)}.csv`
+                a.click()
+                URL.revokeObjectURL(url)
+              }}
+            >
               <Download className="size-4" />
               {t('exportData')}
             </Button>
-            <Button className="h-10 gap-2 px-8 font-bold" onClick={() => { setPage(1); void fetchLogs() }}>
+            <Button
+              className="h-10 gap-2 px-8 font-bold"
+              onClick={() => {
+                setPage(1)
+                void fetchLogs()
+              }}
+            >
               <Search className="size-4" />
               {t('query')}
             </Button>
@@ -337,24 +319,12 @@ export function OperationLogsContent() {
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50">
-                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
-                  {t('time')}
-                </TableHead>
-                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
-                  {t('user')}
-                </TableHead>
-                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
-                  {t('module')}
-                </TableHead>
-                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
-                  {t('action')}
-                </TableHead>
-                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
-                  {t('target')}
-                </TableHead>
-                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
-                  {t('changeSummary')}
-                </TableHead>
+                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('time')}</TableHead>
+                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('user')}</TableHead>
+                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('module')}</TableHead>
+                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('action')}</TableHead>
+                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('target')}</TableHead>
+                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('changeSummary')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -386,9 +356,7 @@ export function OperationLogsContent() {
                         <div className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
                           {getInitials(log.operator_name)}
                         </div>
-                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                          {log.operator_name ?? 'system'}
-                        </span>
+                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{log.operator_name ?? 'system'}</span>
                       </div>
                     </TableCell>
                     {/* 模块 */}
@@ -406,9 +374,7 @@ export function OperationLogsContent() {
                       {log.target_no ?? log.target_type ?? '--'}
                     </TableCell>
                     {/* 详情 */}
-                    <TableCell className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
-                      {log.detail}
-                    </TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">{log.detail}</TableCell>
                   </TableRow>
                 ))
               )}
@@ -418,9 +384,7 @@ export function OperationLogsContent() {
 
         {/* 分页 */}
         <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/50">
-          <p className="text-xs font-bold text-slate-400">
-            {t('showingRange', { from: fromCount, to: toCount, total })}
-          </p>
+          <p className="text-xs font-bold text-slate-400">{t('showingRange', { from: fromCount, to: toCount, total })}</p>
           <div className="flex items-center gap-1">
             <button
               className="flex size-8 items-center justify-center rounded border border-slate-200 text-slate-400 transition-colors hover:bg-white dark:border-slate-700 dark:hover:bg-slate-800 disabled:opacity-40"

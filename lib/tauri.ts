@@ -136,6 +136,33 @@ export async function getUserInfo(userId: number): Promise<UserInfo> {
   return invoke<UserInfo>('get_user_info', { user_id: userId })
 }
 
+/** 认证数据在 localStorage 中的存储键（Web 调试模式降级用） */
+const AUTH_STORAGE_KEY = 'cloudpivot_auth'
+
+/** 保存认证信息到系统钥匙串（Tauri 环境）或 localStorage（Web 调试模式） */
+export async function saveAuthKeychain(data: string): Promise<void> {
+  if (isTauriEnv()) {
+    return invoke<void>('save_auth_keychain', { data })
+  }
+  localStorage.setItem(AUTH_STORAGE_KEY, data)
+}
+
+/** 从系统钥匙串读取认证信息 */
+export async function readAuthKeychain(): Promise<string | null> {
+  if (isTauriEnv()) {
+    return invoke<string | null>('read_auth_keychain')
+  }
+  return localStorage.getItem(AUTH_STORAGE_KEY)
+}
+
+/** 清除系统钥匙串中的认证信息 */
+export async function clearAuthKeychain(): Promise<void> {
+  if (isTauriEnv()) {
+    return invoke<void>('clear_auth_keychain')
+  }
+  localStorage.removeItem(AUTH_STORAGE_KEY)
+}
+
 // ================================================================
 // 系统配置命令
 // ================================================================
@@ -2367,6 +2394,10 @@ export interface PendingOutboundItem {
   availableStock: number
   standardCost: number
   actualCost: number
+  /** 后端按 FIFO 建议分配的批次 ID */
+  suggestedLotId: number | null
+  /** 后端按 FIFO 建议分配的批次号 */
+  suggestedLotNo: string | null
 }
 
 /** 出库明细行批次分配 */

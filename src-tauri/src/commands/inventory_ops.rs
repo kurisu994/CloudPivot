@@ -381,6 +381,32 @@ pub async fn recalc_avg_cost_after_return(
     Ok(())
 }
 
+/// 按 FIFO 查询可用批次库存
+///
+/// 返回按 received_date ASC 排序的可用批次列表 `(lot_id, lot_no, available_qty)`。
+/// available_qty = qty_on_hand - qty_reserved，仅返回大于 0 的批次。
+pub async fn get_available_lots(
+    tx: &mut SqliteConnection,
+    material_id: i64,
+    warehouse_id: i64,
+) -> Result<Vec<(i64, String, f64)>, AppError> {
+    let lots: Vec<(i64, String, f64)> = sqlx::query_as(
+        r#"
+        SELECT id, lot_no, qty_on_hand - qty_reserved AS available_qty
+        FROM inventory_lots
+        WHERE material_id = ? AND warehouse_id = ? AND qty_on_hand > qty_reserved
+        ORDER BY received_date ASC, id ASC
+        "#,
+    )
+    .bind(material_id)
+    .bind(warehouse_id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("查询可用批次失败: {}", e)))?;
+
+    Ok(lots)
+}
+
 /// 扣减批次库存
 pub async fn decrease_lot_inventory(
     tx: &mut SqliteConnection,

@@ -11,8 +11,10 @@ use tauri::State;
 
 use crate::db::DbState;
 use crate::error::AppError;
+use crate::operation_log;
 
 use super::PaginatedResponse;
+use super::inventory_ops;
 
 // ================================================================
 // 销售单数据结构
@@ -785,6 +787,40 @@ pub async fn save_sales_order(
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
+    // 记录操作日志
+    let action = if params.id.is_some() {
+        "update"
+    } else {
+        "create"
+    };
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM sales_orders WHERE id = ?")
+        .bind(order_id)
+        .fetch_one(&db.pool)
+        .await
+        .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "sales".to_string(),
+            action: action.to_string(),
+            target_type: Some("sales_order".to_string()),
+            target_id: Some(order_id),
+            target_no: Some(order_no.clone()),
+            detail: format!(
+                "{} 销售单 {}",
+                if action == "create" {
+                    "创建"
+                } else {
+                    "更新"
+                },
+                order_no
+            ),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
     Ok(order_id)
 }
 
@@ -880,6 +916,27 @@ pub async fn approve_sales_order(
         ));
     }
 
+    // 记录操作日志
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM sales_orders WHERE id = ?")
+        .bind(id)
+        .fetch_one(&db.pool)
+        .await
+        .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "sales".to_string(),
+            action: "approve".to_string(),
+            target_type: Some("sales_order".to_string()),
+            target_id: Some(id),
+            target_no: Some(order_no.clone()),
+            detail: format!("审核销售单 {}", order_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
     Ok(warning)
 }
 
@@ -930,6 +987,27 @@ pub async fn cancel_sales_order(db: State<'_, DbState>, id: i64) -> Result<(), A
         ));
     }
 
+    // 记录操作日志
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM sales_orders WHERE id = ?")
+        .bind(id)
+        .fetch_one(&db.pool)
+        .await
+        .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "sales".to_string(),
+            action: "cancel".to_string(),
+            target_type: Some("sales_order".to_string()),
+            target_id: Some(id),
+            target_no: Some(order_no.clone()),
+            detail: format!("作废销售单 {}", order_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
     Ok(())
 }
 
@@ -949,6 +1027,13 @@ pub async fn delete_sales_order(db: State<'_, DbState>, id: i64) -> Result<(), A
         }
         _ => {}
     }
+
+    // 提前获取单号用于日志
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM sales_orders WHERE id = ?")
+        .bind(id)
+        .fetch_one(&db.pool)
+        .await
+        .unwrap_or_else(|_| "未知".to_string());
 
     let mut tx = db
         .pool
@@ -971,6 +1056,22 @@ pub async fn delete_sales_order(db: State<'_, DbState>, id: i64) -> Result<(), A
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    // 记录操作日志
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "sales".to_string(),
+            action: "delete".to_string(),
+            target_type: Some("sales_order".to_string()),
+            target_id: Some(id),
+            target_no: Some(order_no.clone()),
+            detail: format!("删除销售单 {}", order_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
 
     Ok(())
 }
@@ -1062,6 +1163,8 @@ pub struct PendingOutboundItem {
     pub unit_price: i64,
     pub discount_rate: f64,
     pub lot_tracking_mode: String,
+    pub suggested_lot_id: Option<i64>,
+    pub suggested_lot_no: Option<String>,
 }
 
 // ================================================================
@@ -1074,7 +1177,7 @@ pub async fn get_pending_outbound_items(
     db: State<'_, DbState>,
     sales_id: i64,
 ) -> Result<Vec<PendingOutboundItem>, AppError> {
-    let items = sqlx::query_as::<_, PendingOutboundItem>(
+    let mut items: Vec<PendingOutboundItem> = sqlx::query_as::<_, PendingOutboundItem>(
         r#"
         SELECT
             soi.id AS sales_order_item_id,
@@ -1083,7 +1186,9 @@ pub async fn get_pending_outbound_items(
             soi.quantity AS order_quantity, soi.shipped_qty,
             (soi.quantity - soi.shipped_qty) AS remaining_qty,
             soi.unit_price, soi.discount_rate,
-            COALESCE(m.lot_tracking_mode, 'none') AS lot_tracking_mode
+            COALESCE(m.lot_tracking_mode, 'none') AS lot_tracking_mode,
+            NULL AS suggested_lot_id,
+            NULL AS suggested_lot_no
         FROM sales_order_items soi
         JOIN materials m ON m.id = soi.material_id
         WHERE soi.order_id = ? AND soi.quantity > soi.shipped_qty
@@ -1094,6 +1199,33 @@ pub async fn get_pending_outbound_items(
     .fetch_all(&db.pool)
     .await
     .map_err(|e| AppError::Database(format!("查询待出库明细失败: {}", e)))?;
+
+    // 获取销售单仓库 ID
+    let warehouse_id: i64 =
+        sqlx::query_scalar("SELECT warehouse_id FROM sales_orders WHERE id = ?")
+            .bind(sales_id)
+            .fetch_one(&db.pool)
+            .await
+            .unwrap_or(1);
+
+    // 为批次追踪物料查询最早可用批次（FIFO 建议）
+    for item in &mut items {
+        if item.lot_tracking_mode == "required" || item.lot_tracking_mode == "optional" {
+            let mut conn = db
+                .pool
+                .acquire()
+                .await
+                .map_err(|e| AppError::Database(format!("获取数据库连接失败: {}", e)))?;
+            if let Ok(lots) =
+                inventory_ops::get_available_lots(&mut *conn, item.material_id, warehouse_id).await
+            {
+                if let Some((lot_id, lot_no, _)) = lots.first() {
+                    item.suggested_lot_id = Some(*lot_id);
+                    item.suggested_lot_no = Some(lot_no.clone());
+                }
+            }
+        }
+    }
 
     Ok(items)
 }
@@ -1500,6 +1632,47 @@ pub async fn save_and_confirm_outbound(
             )));
         }
 
+        // 自动 FIFO 批次分配
+        let mut lot_id = item.lot_id;
+        let lot_mode: Option<String> = sqlx::query_scalar(
+            "SELECT COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = ?",
+        )
+        .bind(item.material_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("查询物料批次追踪模式失败: {}", e)))?;
+
+        if (lot_mode.as_deref() == Some("required") || lot_mode.as_deref() == Some("optional"))
+            && lot_id.is_none()
+        {
+            let lots =
+                inventory_ops::get_available_lots(&mut *tx, item.material_id, params.warehouse_id)
+                    .await?;
+            if let Some((lid, _, avail)) = lots.first() {
+                if *avail < base_quantity {
+                    let mat_name: String =
+                        sqlx::query_scalar("SELECT name FROM materials WHERE id = ?")
+                            .bind(item.material_id)
+                            .fetch_one(&mut *tx)
+                            .await
+                            .unwrap_or_else(|_| format!("物料#{}", item.material_id));
+                    return Err(AppError::Business(format!(
+                        "{} 批次库存不足：最早批次可用 {:.2}，需出库 {:.2}",
+                        mat_name, avail, base_quantity
+                    )));
+                }
+                lot_id = Some(*lid);
+            } else {
+                let mat_name: String =
+                    sqlx::query_scalar("SELECT name FROM materials WHERE id = ?")
+                        .bind(item.material_id)
+                        .fetch_one(&mut *tx)
+                        .await
+                        .unwrap_or_else(|_| format!("物料#{}", item.material_id));
+                return Err(AppError::Business(format!("{} 无可用批次库存", mat_name)));
+            }
+        }
+
         // 获取实际成本快照（移动加权平均成本）
         let avg_cost: i64 = sqlx::query_scalar(
             "SELECT COALESCE(avg_cost, 0) FROM inventory WHERE material_id = ? AND warehouse_id = ?",
@@ -1554,7 +1727,7 @@ pub async fn save_and_confirm_outbound(
         )
         .bind(outbound_id)
         .bind(item.sales_order_item_id)
-        .bind(item.lot_id)
+        .bind(lot_id)
         .bind(item.material_id)
         .bind(item.unit_id)
         .bind(&item.unit_name_snapshot)
@@ -1586,7 +1759,7 @@ pub async fn save_and_confirm_outbound(
         .await?;
 
         // 扣减批次库存
-        if let Some(lid) = item.lot_id {
+        if let Some(lid) = lot_id {
             inventory_ops::decrease_lot_inventory(&mut *tx, lid, base_quantity).await?;
         }
 
@@ -1596,7 +1769,7 @@ pub async fn save_and_confirm_outbound(
             &params.outbound_date,
             item.material_id,
             params.warehouse_id,
-            item.lot_id,
+            lot_id,
             "sales_out",
             -base_quantity,
             before_qty,
@@ -1657,6 +1830,30 @@ pub async fn save_and_confirm_outbound(
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    // 记录操作日志
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "sales".to_string(),
+            action: "outbound_confirm".to_string(),
+            target_type: Some("outbound_order".to_string()),
+            target_id: Some(outbound_id),
+            target_no: Some(outbound_no.clone()),
+            detail: format!(
+                "确认出库单 {}，关联销售单 {}，应收金额 {}",
+                outbound_no,
+                params
+                    .sales_id
+                    .map(|id| id.to_string())
+                    .unwrap_or_else(|| "无".to_string()),
+                receivable_amount
+            ),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
 
     Ok(outbound_id)
 }
@@ -2241,6 +2438,25 @@ pub async fn save_and_confirm_sales_return(
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    // 记录操作日志
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "sales".to_string(),
+            action: "return_confirm".to_string(),
+            target_type: Some("sales_return".to_string()),
+            target_id: Some(return_id),
+            target_no: Some(return_no.clone()),
+            detail: format!(
+                "确认销售退货单 {}，原出库单 {}，退货金额 {}",
+                return_no, params.outbound_id, total_amount
+            ),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
 
     Ok(return_id)
 }

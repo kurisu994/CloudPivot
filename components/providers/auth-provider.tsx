@@ -38,9 +38,6 @@ interface LoginResult {
   error?: string
 }
 
-/** localStorage 键名 */
-const AUTH_STORAGE_KEY = 'cloudpivot_auth'
-
 /** 认证数据持久化结构 */
 interface AuthStorage {
   userId: number
@@ -66,24 +63,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authRoutes = ['/login', '/change-password', '/setup-wizard']
   const isAuthRoute = authRoutes.includes(pathname)
 
-  /** 保存认证信息到 localStorage */
-  const saveAuth = useCallback((userInfo: UserInfo) => {
+  /** 保存认证信息到系统钥匙串（Tauri）或 localStorage（Web 调试模式） */
+  const saveAuth = useCallback(async (userInfo: UserInfo) => {
     const data: AuthStorage = {
       userId: userInfo.id,
       sessionVersion: userInfo.session_version,
     }
     try {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data))
+      await tauriApi.saveAuthKeychain(JSON.stringify(data))
     } catch {
-      // localStorage 不可用（如隐私模式）
+      // 钥匙串或 localStorage 不可用（如隐私模式）
     }
   }, [])
 
   /** 清除认证信息 */
-  const clearAuth = useCallback(() => {
+  const clearAuth = useCallback(async () => {
     setUser(null)
     try {
-      localStorage.removeItem(AUTH_STORAGE_KEY)
+      await tauriApi.clearAuthKeychain()
     } catch {
       // 忽略
     }
@@ -121,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           session_version: 1,
         }
         setUser(mockUser)
-        saveAuth(mockUser)
+        await saveAuth(mockUser)
         // 模拟环境也要检查向导状态
         await checkSetupCompleted()
         return { success: true, mustChangePassword: false }
@@ -130,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const response = await tauriApi.login(username, password)
         setUser(response.user)
-        saveAuth(response.user)
+        await saveAuth(response.user)
 
         // 不需要改密时检查向导状态
         if (!response.must_change_password) {
@@ -169,15 +166,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // 非 Tauri 环境：模拟改密
         const updated = { ...user, must_change_password: false }
         setUser(updated)
-        saveAuth(updated)
+        await saveAuth(updated)
       }
     },
     [user, saveAuth],
   )
 
   /** 登出 */
-  const logout = useCallback(() => {
-    clearAuth()
+  const logout = useCallback(async () => {
+    await clearAuth()
     setNeedsSetup(false)
     router.push('/login')
   }, [clearAuth, router])
@@ -191,7 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const restoreAuth = async () => {
       try {
-        const stored = localStorage.getItem(AUTH_STORAGE_KEY)
+        const stored = await tauriApi.readAuthKeychain()
         if (!stored) {
           setIsLoading(false)
           return
@@ -207,7 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             restoredUser = userInfo
           } else {
             // session_version 不匹配（已改密），清除会话
-            clearAuth()
+            await clearAuth()
           }
         } else {
           // 非 Tauri 开发环境：直接恢复 mock 用户
@@ -229,7 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch {
-        clearAuth()
+        await clearAuth()
       } finally {
         setIsLoading(false)
       }

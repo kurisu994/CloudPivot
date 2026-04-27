@@ -10,6 +10,7 @@ use tauri::State;
 
 use crate::db::DbState;
 use crate::error::AppError;
+use crate::operation_log;
 
 use super::PaginatedResponse;
 use super::inventory_ops;
@@ -1261,6 +1262,27 @@ pub async fn confirm_stock_check(db: State<'_, DbState>, id: i64) -> Result<(), 
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
+    // 记录操作日志
+    let check_no: String = sqlx::query_scalar("SELECT check_no FROM stock_checks WHERE id = ?")
+        .bind(id)
+        .fetch_one(&db.pool)
+        .await
+        .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "inventory".to_string(),
+            action: "stock_check_confirm".to_string(),
+            target_type: Some("stock_check".to_string()),
+            target_id: Some(id),
+            target_no: Some(check_no.clone()),
+            detail: format!("确认盘点单 {}", check_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
     Ok(())
 }
 
@@ -1746,6 +1768,26 @@ pub async fn confirm_transfer(db: State<'_, DbState>, id: i64) -> Result<(), App
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    // 记录操作日志
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "inventory".to_string(),
+            action: "transfer_confirm".to_string(),
+            target_type: Some("transfer".to_string()),
+            target_id: Some(id),
+            target_no: Some(transfer_no.clone()),
+            detail: format!(
+                "确认调拨单 {}，从仓库 {} 调往仓库 {}",
+                transfer_no, from_wh, to_wh
+            ),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
     Ok(())
 }
 
@@ -1777,5 +1819,22 @@ pub async fn delete_transfer(db: State<'_, DbState>, id: i64) -> Result<(), AppE
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    // 记录操作日志
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "inventory".to_string(),
+            action: "delete".to_string(),
+            target_type: Some("transfer".to_string()),
+            target_id: Some(id),
+            target_no: None,
+            detail: format!("删除调拨单 {}", id),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
     Ok(())
 }

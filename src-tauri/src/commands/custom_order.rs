@@ -10,6 +10,7 @@ use tauri::State;
 
 use crate::db::DbState;
 use crate::error::AppError;
+use crate::operation_log;
 
 use super::PaginatedResponse;
 
@@ -724,6 +725,40 @@ pub async fn save_custom_order(
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
+    // 记录操作日志
+    let action = if params.id.is_some() {
+        "update"
+    } else {
+        "create"
+    };
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = ?")
+        .bind(order_id)
+        .fetch_one(&db.pool)
+        .await
+        .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "custom_order".to_string(),
+            action: action.to_string(),
+            target_type: Some("custom_order".to_string()),
+            target_id: Some(order_id),
+            target_no: Some(order_no.clone()),
+            detail: format!(
+                "{} 定制单 {}",
+                if action == "create" {
+                    "创建"
+                } else {
+                    "更新"
+                },
+                order_no
+            ),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
     Ok(order_id)
 }
 
@@ -746,6 +781,13 @@ pub async fn delete_custom_order(db: State<'_, DbState>, id: i64) -> Result<(), 
             ));
         }
     }
+
+    // 提前获取单号用于日志
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = ?")
+        .bind(id)
+        .fetch_one(&db.pool)
+        .await
+        .unwrap_or_else(|_| "未知".to_string());
 
     let mut tx = db
         .pool
@@ -791,6 +833,22 @@ pub async fn delete_custom_order(db: State<'_, DbState>, id: i64) -> Result<(), 
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    // 记录操作日志
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "custom_order".to_string(),
+            action: "delete".to_string(),
+            target_type: Some("custom_order".to_string()),
+            target_id: Some(id),
+            target_no: Some(order_no.clone()),
+            detail: format!("删除定制单 {}", order_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
 
     Ok(())
 }
@@ -864,19 +922,20 @@ pub async fn confirm_custom_order(db: State<'_, DbState>, id: i64) -> Result<(),
         .map_err(|e| AppError::Database(format!("查询物料仓库失败: {}", e)))?;
 
         // 创建预留记录
-        sqlx::query(
+        let reservation_id: i64 = sqlx::query_scalar(
             r#"
             INSERT INTO inventory_reservations (
                 source_type, source_id, material_id, warehouse_id,
                 reserved_qty, status, created_at, updated_at
             ) VALUES ('custom_order', ?, ?, ?, ?, 'active', datetime('now'), datetime('now'))
+            RETURNING id
             "#,
         )
         .bind(id)
         .bind(material_id)
         .bind(wh_id)
         .bind(actual_qty)
-        .execute(&mut *tx)
+        .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("创建预留失败: {}", e)))?;
 
@@ -895,6 +954,59 @@ pub async fn confirm_custom_order(db: State<'_, DbState>, id: i64) -> Result<(),
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("更新库存预留数量失败: {}", e)))?;
+
+        // 如果是批次追踪物料，按 FIFO 分配具体批次
+        let lot_mode: Option<String> = sqlx::query_scalar(
+            "SELECT COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = ?",
+        )
+        .bind(material_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("查询物料批次追踪模式失败: {}", e)))?;
+
+        if lot_mode.as_deref() == Some("required") || lot_mode.as_deref() == Some("optional") {
+            let lots =
+                super::inventory_ops::get_available_lots(&mut *tx, *material_id, wh_id).await?;
+            let mut remaining = actual_qty;
+            for (lot_id, _, avail) in lots {
+                if remaining <= 0.0 {
+                    break;
+                }
+                let alloc = remaining.min(avail);
+                sqlx::query(
+                    r#"
+                    INSERT INTO inventory_reservation_lots
+                    (reservation_id, lot_id, reserved_qty, status, created_at, updated_at)
+                    VALUES (?, ?, ?, 'allocated', datetime('now'), datetime('now'))
+                    "#,
+                )
+                .bind(reservation_id)
+                .bind(lot_id)
+                .bind(alloc)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| AppError::Database(format!("创建预留批次分配失败: {}", e)))?;
+
+                // 增加 inventory_lots.qty_reserved
+                sqlx::query(
+                    "UPDATE inventory_lots SET qty_reserved = qty_reserved + ? WHERE id = ?",
+                )
+                .bind(alloc)
+                .bind(lot_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| AppError::Database(format!("更新批次预留数量失败: {}", e)))?;
+
+                remaining -= alloc;
+            }
+
+            if remaining > 0.0 {
+                return Err(AppError::Business(format!(
+                    "物料#{} 批次库存不足以完成预留：缺口 {:.2}",
+                    material_id, remaining
+                )));
+            }
+        }
     }
 
     // 更新定制单状态
@@ -915,6 +1027,27 @@ pub async fn confirm_custom_order(db: State<'_, DbState>, id: i64) -> Result<(),
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    // 记录操作日志
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = ?")
+        .bind(id)
+        .fetch_one(&db.pool)
+        .await
+        .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "custom_order".to_string(),
+            action: "confirm".to_string(),
+            target_type: Some("custom_order".to_string()),
+            target_id: Some(id),
+            target_no: Some(order_no.clone()),
+            detail: format!("确认定制单 {}", order_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
 
     Ok(())
 }
@@ -1007,6 +1140,27 @@ pub async fn cancel_custom_order(db: State<'_, DbState>, id: i64) -> Result<(), 
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    // 记录操作日志
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = ?")
+        .bind(id)
+        .fetch_one(&db.pool)
+        .await
+        .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "custom_order".to_string(),
+            action: "cancel".to_string(),
+            target_type: Some("custom_order".to_string()),
+            target_id: Some(id),
+            target_no: Some(order_no.clone()),
+            detail: format!("取消定制单 {}", order_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
 
     Ok(())
 }
@@ -1303,6 +1457,27 @@ pub async fn convert_to_sales_order(
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    // 记录操作日志
+    let custom_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = ?")
+        .bind(custom_order_id)
+        .fetch_one(&db.pool)
+        .await
+        .unwrap_or_else(|_| "未知".to_string());
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "custom_order".to_string(),
+            action: "convert_to_sales".to_string(),
+            target_type: Some("custom_order".to_string()),
+            target_id: Some(custom_order_id),
+            target_no: Some(custom_no.clone()),
+            detail: format!("定制单 {} 转为销售单 {}", custom_no, sales_order_no),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
 
     Ok(sales_order_id)
 }

@@ -57,6 +57,8 @@ interface OutboundItemRow {
   standardCost: number
   /** 实际成本 */
   actualCost: number
+  /** 建议分配的批次号（FIFO） */
+  suggestedLotNo: string | null
   /** 本次出库数量（用户输入） */
   thisQty: string
   remark: string
@@ -126,6 +128,7 @@ export function OutboundExecutePage({ salesId, onBack }: OutboundExecutePageProp
           availableStock: item.availableStock,
           standardCost: item.standardCost,
           actualCost: item.actualCost,
+          suggestedLotNo: item.suggestedLotNo,
           thisQty: String(Math.min(item.remainingQty, item.availableStock)),
           remark: '',
         })),
@@ -339,6 +342,7 @@ export function OutboundExecutePage({ salesId, onBack }: OutboundExecutePageProp
                         {isLotTracked && (
                           <div className="text-xs text-amber-600">
                             {item.lotTrackingMode === 'required' ? '🔒 ' + t('lotRequired') : '📦 ' + t('lotOptional')}
+                            {item.suggestedLotNo && <span className="ml-1 text-emerald-600">(FIFO: {item.suggestedLotNo})</span>}
                           </div>
                         )}
                       </TableCell>

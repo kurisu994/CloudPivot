@@ -1,20 +1,43 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { getSalesMaterialDetail } from '@/lib/tauri'
+
+interface BestSellerItem {
+  name: string
+  units: number
+  percent: number
+}
 
 /** 热销产品排行组件 */
 export function BestSellers({ className }: { className?: string }) {
   const t = useTranslations('dashboard')
+  const [products, setProducts] = useState<BestSellerItem[]>([])
 
-  // mock 数据（将来由后端替换）
-  const products = [
-    { name: '橡木A级板材', units: 842, percent: 92 },
-    { name: '45mm 不锈钢支架', units: 756, percent: 81 },
-    { name: '标准餐桌套装', units: 620, percent: 65 },
-    { name: '工业胶水 X2', units: 544, percent: 58 },
-    { name: '皮革沙发套装', units: 410, percent: 44 },
-  ]
+  useEffect(() => {
+    void (async () => {
+      try {
+        const end = new Date().toISOString().slice(0, 10)
+        const start = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
+        const res = await getSalesMaterialDetail({ start_date: start, end_date: end, page: 1, page_size: 5 })
+        if (res.items.length === 0) {
+          setProducts([])
+          return
+        }
+        const maxAmount = Math.max(...res.items.map(i => i.amount))
+        const mapped = res.items.map(item => ({
+          name: item.material_name,
+          units: Math.round(item.quantity),
+          percent: maxAmount > 0 ? Math.round((item.amount / maxAmount) * 100) : 0,
+        }))
+        setProducts(mapped)
+      } catch {
+        setProducts([])
+      }
+    })()
+  }, [])
 
   return (
     <Card className={`rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 ${className || ''}`}>
@@ -22,6 +45,7 @@ export function BestSellers({ className }: { className?: string }) {
         <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-100">{t('bestSellers')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {products.length === 0 && <p className="text-muted-foreground text-center text-sm">{t('noData')}</p>}
         {products.map(item => (
           <div key={item.name} className="space-y-1.5">
             <div className="flex justify-between text-xs font-medium">

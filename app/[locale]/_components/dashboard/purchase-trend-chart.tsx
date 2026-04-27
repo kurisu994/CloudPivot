@@ -1,25 +1,38 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { getPurchaseReportSummary } from '@/lib/tauri'
 
-const purchaseData = [
-  { date: '03-01', value: 1200000000 },
-  { date: '03-04', value: 1600000000 },
-  { date: '03-08', value: 850000000 },
-  { date: '03-12', value: 2150000000 },
-  { date: '03-15', value: 3250000000 },
-  { date: '03-20', value: 2800000000 },
-  { date: '03-22', value: 4250000000 },
-  { date: '03-28', value: 3600000000 },
-  { date: '03-31', value: 2800000000 },
-]
+interface TrendPoint {
+  date: string
+  value: number
+}
 
 /** 近30天采购趋势面积图 */
 export function PurchaseTrendChart({ className }: { className?: string }) {
   const t = useTranslations('dashboard')
+  const [data, setData] = useState<TrendPoint[]>([])
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const end = new Date().toISOString().slice(0, 10)
+        const start = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
+        const res = await getPurchaseReportSummary({ start_date: start, end_date: end, page: 1, page_size: 1 })
+        const points = res.trend.map(p => ({
+          date: p.date.slice(5),
+          value: p.amount,
+        }))
+        setData(points)
+      } catch {
+        // 降级为空数据
+      }
+    })()
+  }, [])
 
   const purchaseConfig = {
     value: { label: t('purchaseAmount'), color: '#944a00' },
@@ -33,7 +46,7 @@ export function PurchaseTrendChart({ className }: { className?: string }) {
       </CardHeader>
       <CardContent>
         <ChartContainer config={purchaseConfig} className="h-[250px] min-h-[250px] w-full min-w-full">
-          <AreaChart accessibilityLayer data={purchaseData} margin={{ top: 10, left: 0, right: 0, bottom: 0 }}>
+          <AreaChart accessibilityLayer data={data} margin={{ top: 10, left: 0, right: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="fillPurchase" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="var(--color-value)" stopOpacity={0.3} />
