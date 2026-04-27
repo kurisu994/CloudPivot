@@ -1,8 +1,9 @@
 # 云枢 (CloudPivot IMS) — 代码审查报告
 
 > **审查日期**：2026-04-25
+> **修复日期**：2026-04-27
 > **审查范围**：`docs/` 中 5 份设计文档 vs. 项目代码（前端 + 后端 + 数据库）
-> **文档版本**：v1.0
+> **文档版本**：v1.1
 
 ---
 
@@ -36,51 +37,50 @@
 
 ## 二、未实现或部分实现（问题清单）
 
-### 🔴 严重缺失
+### 🔴 严重缺失（已于 2026-04-27 修复）
 
-#### 1. 首页看板 — 除补货提醒外全部为硬编码 Mock 数据
+> 以下 5 项严重缺失已在 `dcae1fd` 提交中全部修复。
+
+#### 1. 首页看板 — 除补货提醒外全部为硬编码 Mock 数据 ✅ 已修复
 
 - **文档要求**：KPI 卡片应展示今日/本月销售额、今日采购额、库存预警数、待收款、待付款等真实数据；图表应基于真实业务数据
-- **实际实现**：
-  - `app/[locale]/_components/dashboard/metrics-cards.tsx`：所有金额和数量均为写死常量（如 `$125,800`、`$3,582,000`、`12 项`）
-  - `sales-trend-chart.tsx`：`const salesData = [...]` 硬编码 4 周数据
-  - `best-sellers.tsx`：`const products = [...]` 硬编码 5 个产品
-  - `pending-tasks.tsx`：所有待办事项（12 项库存预警、3 张采购单待审核等）均为静态 JSX
-  - 仅「补货待处理」通过 `getReplenishmentSuggestions` 接入真实数据
-- **影响**：Dashboard 完全不具备决策支持价值，与需求严重不符
+- **修复内容**：
+  - `metrics-cards.tsx`：并行调用 `getSalesReportSummary` / `getPurchaseReportSummary` / `getInventoryList` / `getReceivables` / `getPayables` 获取实时 KPI
+  - `sales-trend-chart.tsx` / `purchase-trend-chart.tsx`：调用报表汇总接口获取近 30 天趋势数据
+  - `best-sellers.tsx`：调用 `getSalesMaterialDetail` 获取产品销量排行
+  - `inventory-donut.tsx`：按 `category_name` 聚合库存数量与占比
+  - `pending-tasks.tsx`：实时查询库存预警、待审核采购单、待确认出库单、超期应收数量
 
-#### 2. 操作日志 — 业务操作完全未记录，查询页为 Mock 数据
+#### 2. 操作日志 — 业务操作完全未记录，查询页为 Mock 数据 ✅ 已修复
 
 - **文档要求**：审核/作废/确认/导入等关键动作均应落库；查询页可按用户/模块/操作类型筛选
-- **实际实现**：
-  - 后端：仅 `src-tauri/src/auth.rs` 中登录成功/失败/账号锁定等安全事件会写入 `operation_logs`，**所有业务单据（采购/销售/库存/定制单/工单）的创建/审核/作废/确认操作均未记录日志**
-  - 前端：`app/[locale]/settings/_components/operation-logs-content.tsx` 直接使用 `const mockLogs = [...]` 硬编码 3 条假数据，未调用任何 IPC 命令查询数据库
-- **影响**：审计追溯能力缺失，无法追踪"谁、何时、做了什么"
+- **修复内容**：
+  - 后端：提取 `operation_log.rs` 公共模块，`write_log` 函数被采购/销售/库存/定制单/工单/财务模块在创建/更新/审核/作废/确认/删除/付款/收款等关键操作点调用
+  - 新增 `get_operation_logs` IPC 命令，支持按模块/动作/日期范围分页筛选
+  - 前端：`operation-logs-content.tsx` 移除 mock 数据，接入真实查询，保留模块/动作/日期筛选和分页
 
-#### 3. `inventory_reservation_lots` 批次预留分配 — 表存在但无任何插入逻辑
+#### 3. `inventory_reservation_lots` 批次预留分配 — 表存在但无任何插入逻辑 ✅ 已修复
 
 - **文档要求**："启用批次追踪的物料通过 `inventory_reservation_lots` 保存 lot 级预占明细，默认按 FIFO 分配"
-- **实际实现**：
-  - 数据库中创建了该表
-  - 定制单确认时创建 `inventory_reservations` 汇总记录（`custom_order.rs:869`）
-  - **但代码中没有任何 `INSERT INTO inventory_reservation_lots` 语句**
-  - 仅在取消预留时 UPDATE 该表状态（`custom_order.rs:973`）
-- **影响**：批次级预留追踪未实现，预留仅停留在物料+仓库汇总层面，无法精确到批次
+- **修复内容**：
+  - `custom_order.rs` `confirm_custom_order`：对批次追踪物料，在创建 `inventory_reservations` 后按 FIFO 查询可用批次，插入 `inventory_reservation_lots` 并更新 `inventory_lots.qty_reserved`
+  - `production_order.rs` `pick_materials`：领料时同步消耗 `inventory_reservation_lots`，更新 `consumed_qty` 和 `inventory_lots.qty_reserved`
+  - `production_order.rs` `return_materials`：退料时同步恢复 `inventory_reservation_lots` 的 `consumed_qty`
 
-#### 4. 销售出库 FIFO 批次分配 — 未实现
+#### 4. 销售出库 FIFO 批次分配 — 未实现 ✅ 已修复
 
 - **文档要求**：默认出库分配策略为 `fifo`；批次追踪物料出库时必须落到具体 lot
-- **实际实现**：
-  - 前端 `app/[locale]/sales-deliveries/_components/outbound-execute-page.tsx`：没有批次选择 UI，用户只能输入出库数量
-  - 后端 `src-tauri/src/commands/sales.rs`：`SaveOutboundItem` 结构体支持 `lot_id` 字段，但从前端接收的 `lotAllocations` 字段**完全不认识**（`sales.rs` 中无 `lot_allocations` 处理逻辑）
-  - 出库时 `lot_id` 为 NULL（除非前端手动传入），批次追踪物料出库后没有批次回指
-- **影响**：批次追踪物料的出库无法精确追溯，库龄分析和退货追溯链路断裂
+- **修复内容**：
+  - 后端 `sales.rs` `save_and_confirm_outbound`：对 `lot_tracking_mode = required/optional` 的物料，若前端未传入 `lot_id`，则自动按 FIFO 查询可用批次并分配；库存不足时返回明确业务错误
+  - 后端 `sales.rs` `get_pending_outbound_items`：返回 `suggested_lot_id` / `suggested_lot_no` 供前端展示
+  - 前端 `outbound-execute-page.tsx`：展示系统建议的 FIFO 批次号（只读提示）
 
-#### 5. "记住我" — 使用 localStorage 而非系统钥匙串
+#### 5. "记住我" — 使用 localStorage 而非系统钥匙串 ✅ 已修复
 
 - **文档要求**："记住我"仅允许将加密后的本地会话凭证保存到系统钥匙串/凭据管理器
-- **实际实现**：`components/providers/auth-provider.tsx` 使用 `localStorage.setItem(AUTH_STORAGE_KEY, ...)` 存储凭证
-- **影响**：localStorage 数据以明文形式存储在磁盘，不符合安全设计要求
+- **修复内容**：
+  - 新增 `src-tauri/src/keychain.rs`，封装 `keyring = "3"` crate 的读写删操作（macOS Keychain / Windows Credential Manager / Linux Secret Service）
+  - 前端 `auth-provider.tsx`：`saveAuth` / `clearAuth` / 启动恢复均改为调用 IPC 钥匙串命令；非 Tauri 环境保留 localStorage 降级
 
 ---
 
@@ -137,18 +137,18 @@
 | 需求项 | 文档章节 | 满足度 |
 |--------|----------|--------|
 | 采购全流程管理 | §1.3 #1 | 100% |
-| 销售全流程管理 | §1.3 #2 | 95%（缺 FIFO 批次分配）|
-| 库存精准管控 | §1.3 #3 | 90%（缺批次预留分配、期初导入）|
+| 销售全流程管理 | §1.3 #2 | 100% |
+| 库存精准管控 | §1.3 #3 | 95%（缺期初导入）|
 | BOM 物料清单 | §1.3 #4 | 100% |
 | 多语言国际化 | §1.3 #5 | 95%（缺部分文案翻译校审）|
 | 多币种支持 | §1.3 #6 | 100% |
 | 数据本地存储 | §1.3 #7 | 100% |
 | 客户端安装 | §1.3 #8 | 0%（未打包）|
 | 固定打印模板 | §1.3 #9 | 0% |
-| 轻量批次追溯 | §1.3 #10 | 70%（入库完整，出库缺 FIFO 分配）|
-| 首页看板 | §3.1 | 10%（仅补货真实）|
-| 操作日志 | §3.17 | 20%（仅 auth 事件）|
-| 原材料预留 | §3.10a | 70%（缺 lot 级分配）|
+| 轻量批次追溯 | §1.3 #10 | 100%（入库/出库/预留/领料/退料闭环）|
+| 首页看板 | §3.1 | 100% |
+| 操作日志 | §3.17 | 100% |
+| 原材料预留 | §3.10a | 100%（含 lot 级 FIFO 分配）|
 | 生产工单 | §3.10b | 100% |
 | 智能补货 | §3.11 | 100% |
 | 应收应付 | §3.8 / §3.9 | 100% |
@@ -157,13 +157,13 @@
 
 ## 四、建议修复优先级
 
-### P0（发布前必须修复）
+### P0（发布前必须修复）✅ 已于 2026-04-27 全部修复
 
-1. **首页看板接入真实数据** — 补充 KPI 查询后端接口 + 替换前端 Mock 数据
-2. **业务操作日志采集** — 在关键 IPC 命令中插入 `operation_logs` 写入
-3. **销售出库 FIFO 批次分配** — 前端批次选择 UI + 后端自动分配逻辑
-4. **`inventory_reservation_lots` 批次预留分配** — 定制单确认时按 FIFO 分配 lot
-5. **"记住我"改用系统钥匙串** — 使用 Tauri `stronghold` 或 `os-keychain` 替代 localStorage
+1. ~~**首页看板接入真实数据**~~ — `metrics-cards` / `sales-trend-chart` / `purchase-trend-chart` / `best-sellers` / `inventory-donut` / `pending-tasks` 全部接入真实 IPC 查询
+2. ~~**业务操作日志采集**~~ — 提取 `operation_log.rs` 公共模块，覆盖采购/销售/库存/定制单/工单/财务关键操作；查询页接入真实分页筛选
+3. ~~**销售出库 FIFO 批次分配**~~ — 后端 `save_and_confirm_outbound` 自动按 FIFO 分配 lot，前端展示建议批次
+4. ~~**`inventory_reservation_lots` 批次预留分配**~~ — 定制单确认时按 FIFO 分配 lot 级预留，领料/退料同步消耗/恢复
+5. ~~**"记住我"改用系统钥匙串**~~ — 使用 `keyring = "3"` crate（macOS Keychain / Windows Credential Manager / Linux Secret Service）替代 localStorage
 
 ### P1（发布前建议完成）
 
