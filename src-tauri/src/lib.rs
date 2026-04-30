@@ -159,6 +159,7 @@ pub fn run() {
             commands::inventory::get_inventory_list,
             commands::inventory::get_inventory_detail,
             commands::inventory::get_inventory_transactions,
+            commands::inventory::create_manual_stock_movement,
             // 库存盘点
             commands::inventory::get_stock_checks,
             commands::inventory::get_stock_check_detail,

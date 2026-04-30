@@ -58,6 +58,7 @@
     "salesReturns": "Sales Returns",
     "inventory": "Inventory",
     "inventoryQuery": "Inventory Query",
+    "manualStockMovements": "Manual Stock Movement",
     "stockMovements": "Stock Movements",
     "stockChecks": "Stock Checks",
     "stockTransfers": "Stock Transfers",

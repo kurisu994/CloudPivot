@@ -58,6 +58,7 @@
     "salesReturns": "Trả hàng bán",
     "inventory": "Quản lý kho",
     "inventoryQuery": "Tra cứu tồn kho",
+    "manualStockMovements": "Xuất nhập tự do",
     "stockMovements": "Lịch sử xuất nhập kho",
     "stockChecks": "Kiểm kê kho",
     "stockTransfers": "Điều chuyển kho",

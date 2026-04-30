@@ -928,7 +928,7 @@ CREATE TABLE inventory_transactions (
     before_qty          REAL    NOT NULL,               -- 变动前库存
     after_qty           REAL    NOT NULL,               -- 变动后库存
     unit_cost           INTEGER DEFAULT 0,              -- 成本单价（USD，最小货币单位）
-    source_type         TEXT,                           -- 来源类型：purchase_inbound/outbound/transfer/check...
+    source_type         TEXT,                           -- 来源类型：purchase_inbound/outbound/transfer/check/manual_stock_movement...
     source_id           INTEGER,                        -- 来源单据头 ID
     source_item_id      INTEGER,                        -- 来源单据明细行 ID
     related_order_no    TEXT,                           -- 关联单据号

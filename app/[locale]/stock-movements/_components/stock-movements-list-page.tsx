@@ -33,6 +33,10 @@ const TYPE_OPTIONS = [
   { value: 'check_loss', labelKey: 'checkLoss' },
   { value: 'transfer_in', labelKey: 'transferIn' },
   { value: 'transfer_out', labelKey: 'transferOut' },
+  { value: 'production_out', labelKey: 'productionOut' },
+  { value: 'production_in', labelKey: 'productionIn' },
+  { value: 'other_in', labelKey: 'otherIn' },
+  { value: 'other_out', labelKey: 'otherOut' },
 ] as const
 
 /**

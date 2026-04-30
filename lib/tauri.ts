@@ -2968,6 +2968,19 @@ export interface SaveTransferParams {
   items: SaveTransferItemParams[]
 }
 
+/** 自由出入库参数 */
+export interface ManualStockMovementParams {
+  movementType: 'in' | 'out'
+  materialId: number
+  warehouseId: number
+  movementDate: string
+  quantity: number
+  unitCostUsd?: number | null
+  lotNo?: string | null
+  supplierBatchNo?: string | null
+  remark?: string | null
+}
+
 // ---- 库存查询 ----
 
 /** 获取库存列表 */
@@ -2991,6 +3004,14 @@ export async function getInventoryTransactions(filter: TransactionFilter): Promi
     return invoke<PaginatedResponse<TransactionListItem>>('get_inventory_transactions', { filter })
   }
   return { total: 0, items: [], page: filter.page, page_size: filter.pageSize }
+}
+
+/** 创建自由出入库记录 */
+export async function createManualStockMovement(params: ManualStockMovementParams): Promise<string> {
+  if (isTauriEnv()) {
+    return invoke<string>('create_manual_stock_movement', { params })
+  }
+  return `FM-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-001`
 }
 
 // ---- 库存盘点 ----

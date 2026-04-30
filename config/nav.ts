@@ -19,6 +19,7 @@ import {
   Package,
   PackageCheck,
   PackageOpen,
+  PackagePlus,
   PackageSearch,
   Paintbrush,
   Palette,
@@ -119,6 +120,11 @@ export const navConfig: NavItem[] = [
     icon: Box,
     children: [
       { titleKey: 'nav.inventoryQuery', href: '/inventory', icon: Box },
+      {
+        titleKey: 'nav.manualStockMovements',
+        href: '/manual-stock-movements',
+        icon: PackagePlus,
+      },
       {
         titleKey: 'nav.stockMovements',
         href: '/stock-movements',

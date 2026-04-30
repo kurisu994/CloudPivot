@@ -58,6 +58,7 @@
     "salesReturns": "销售退货",
     "inventory": "库存管理",
     "inventoryQuery": "库存查询",
+    "manualStockMovements": "自由出入库",
     "stockMovements": "出入库流水",
     "stockChecks": "库存盘点",
     "stockTransfers": "库存调拨",

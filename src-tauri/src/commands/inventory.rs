@@ -330,6 +330,25 @@ pub struct SaveTransferItemParams {
 }
 
 // ================================================================
+// 数据结构 — 自由出入库
+// ================================================================
+
+/// 自由出入库参数
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManualStockMovementParams {
+    pub movement_type: String,
+    pub material_id: i64,
+    pub warehouse_id: i64,
+    pub movement_date: String,
+    pub quantity: f64,
+    pub unit_cost_usd: Option<i64>,
+    pub lot_no: Option<String>,
+    pub supplier_batch_no: Option<String>,
+    pub remark: Option<String>,
+}
+
+// ================================================================
 // IPC 命令 — 库存查询
 // ================================================================
 
@@ -722,6 +741,248 @@ pub async fn get_inventory_transactions(
         page,
         page_size,
     })
+}
+
+/// 生成自由出入库单号：FM-YYYYMMDD-XXX
+async fn generate_manual_movement_no(
+    tx: &mut sqlx::SqliteConnection,
+    movement_date: &str,
+) -> Result<String, AppError> {
+    let date_part = movement_date.replace('-', "");
+    let prefix = format!("FM-{}-", date_part);
+
+    let max_no: Option<String> = sqlx::query_scalar(
+        "SELECT related_order_no FROM inventory_transactions WHERE related_order_no LIKE ? ORDER BY related_order_no DESC LIMIT 1",
+    )
+    .bind(format!("{}%", prefix))
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("查询自由出入库单号失败: {}", e)))?;
+
+    let next_seq = if let Some(last_no) = max_no {
+        last_no
+            .trim_start_matches(&prefix)
+            .parse::<i64>()
+            .unwrap_or(0)
+            + 1
+    } else {
+        1
+    };
+
+    Ok(format!("{}{:03}", prefix, next_seq))
+}
+
+/// 自由出入库（不关联采购/销售单，仅更新库存、批次和流水）
+#[tauri::command]
+pub async fn create_manual_stock_movement(
+    db: State<'_, DbState>,
+    params: ManualStockMovementParams,
+) -> Result<String, AppError> {
+    let movement_type = params.movement_type.trim();
+    if movement_type != "in" && movement_type != "out" {
+        return Err(AppError::Business("请选择入库或出库类型".to_string()));
+    }
+    if params.material_id <= 0 {
+        return Err(AppError::Business("请选择物料".to_string()));
+    }
+    if params.warehouse_id <= 0 {
+        return Err(AppError::Business("请选择仓库".to_string()));
+    }
+    if params.movement_date.trim().is_empty() {
+        return Err(AppError::Business("请选择变动日期".to_string()));
+    }
+    if params.quantity <= 0.0 {
+        return Err(AppError::Business("数量必须大于 0".to_string()));
+    }
+
+    let mut tx = db
+        .pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
+
+    let (material_name, lot_tracking_mode): (String, String) = sqlx::query_as(
+        "SELECT name, COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = ? AND is_enabled = 1",
+    )
+    .bind(params.material_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("查询物料失败: {}", e)))?
+    .ok_or_else(|| AppError::Business("物料不存在或已停用".to_string()))?;
+
+    let warehouse_exists: Option<(i64,)> =
+        sqlx::query_as("SELECT id FROM warehouses WHERE id = ? AND is_enabled = 1")
+            .bind(params.warehouse_id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("查询仓库失败: {}", e)))?;
+    if warehouse_exists.is_none() {
+        return Err(AppError::Business("仓库不存在或已停用".to_string()));
+    }
+
+    let movement_no = generate_manual_movement_no(&mut *tx, &params.movement_date).await?;
+    let lot_id = if movement_type == "in" {
+        let unit_cost = params
+            .unit_cost_usd
+            .ok_or_else(|| AppError::Business("入库必须填写单位成本".to_string()))?;
+        if unit_cost < 0 {
+            return Err(AppError::Business("单位成本不能为负数".to_string()));
+        }
+
+        let (before_qty, after_qty) = inventory_ops::increase_inventory(
+            &mut *tx,
+            params.material_id,
+            params.warehouse_id,
+            params.quantity,
+            unit_cost,
+            &params.movement_date,
+        )
+        .await?;
+
+        let lot_id = if lot_tracking_mode != "none" {
+            let lot_no = if let Some(lot_no) = params
+                .lot_no
+                .as_deref()
+                .map(str::trim)
+                .filter(|v| !v.is_empty())
+            {
+                lot_no.to_string()
+            } else {
+                inventory_ops::generate_lot_no(&mut *tx, &params.movement_date).await?
+            };
+
+            Some(
+                inventory_ops::create_inventory_lot(
+                    &mut *tx,
+                    &lot_no,
+                    params.material_id,
+                    params.warehouse_id,
+                    0,
+                    None,
+                    &params.movement_date,
+                    params.supplier_batch_no.as_deref(),
+                    None,
+                    params.quantity,
+                    unit_cost,
+                )
+                .await?,
+            )
+        } else {
+            None
+        };
+
+        inventory_ops::record_transaction(
+            &mut *tx,
+            &params.movement_date,
+            params.material_id,
+            params.warehouse_id,
+            lot_id,
+            "other_in",
+            params.quantity,
+            before_qty,
+            after_qty,
+            unit_cost,
+            Some("manual_stock_movement"),
+            None,
+            None,
+            Some(&movement_no),
+            params.remark.as_deref(),
+        )
+        .await?;
+
+        lot_id
+    } else {
+        let mut lot_id: Option<i64> = None;
+        if lot_tracking_mode != "none" {
+            let lots = inventory_ops::get_available_lots(
+                &mut *tx,
+                params.material_id,
+                params.warehouse_id,
+            )
+            .await?;
+            let total_available: f64 = lots.iter().map(|(_, _, qty)| qty).sum();
+            if total_available < params.quantity {
+                return Err(AppError::Business(format!(
+                    "{} 批次库存不足：当前可用 {:.2}，需出库 {:.2}",
+                    material_name, total_available, params.quantity
+                )));
+            }
+            if lots.len() == 1 {
+                lot_id = Some(lots[0].0);
+            }
+
+            let mut remaining = params.quantity;
+            for (lid, _, available_qty) in lots {
+                if remaining <= 0.0 {
+                    break;
+                }
+                let deduct_qty = remaining.min(available_qty);
+                inventory_ops::decrease_lot_inventory(&mut *tx, lid, deduct_qty).await?;
+                remaining -= deduct_qty;
+            }
+        }
+
+        let (before_qty, after_qty, avg_cost) = inventory_ops::decrease_inventory(
+            &mut *tx,
+            params.material_id,
+            params.warehouse_id,
+            params.quantity,
+            &params.movement_date,
+        )
+        .await?;
+
+        inventory_ops::record_transaction(
+            &mut *tx,
+            &params.movement_date,
+            params.material_id,
+            params.warehouse_id,
+            lot_id,
+            "other_out",
+            -params.quantity,
+            before_qty,
+            after_qty,
+            avg_cost,
+            Some("manual_stock_movement"),
+            None,
+            None,
+            Some(&movement_no),
+            params.remark.as_deref(),
+        )
+        .await?;
+
+        lot_id
+    };
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
+
+    operation_log::write_log(
+        &db.pool,
+        operation_log::OperationLogEntry {
+            module: "inventory".to_string(),
+            action: format!("manual_{}", movement_type),
+            target_type: Some("manual_stock_movement".to_string()),
+            target_id: lot_id,
+            target_no: Some(movement_no.clone()),
+            detail: format!(
+                "自由{} {}，物料 {}，数量 {}",
+                if movement_type == "in" {
+                    "入库"
+                } else {
+                    "出库"
+                },
+                movement_no,
+                material_name,
+                params.quantity
+            ),
+            operator_user_id: Some(1),
+            operator_name: Some("admin".to_string()),
+        },
+    )
+    .await;
+
+    Ok(movement_no)
 }
 
 // ================================================================
