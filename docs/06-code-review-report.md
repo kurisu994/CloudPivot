@@ -91,34 +91,34 @@
 - **文档要求**：Rust 层 + 导入向导（模板校验、其他入库流水、lot 初始化）
 - **实际实现**：Rust 层已有 `import_initial_inventory`，数据管理页可导入初始库存并生成 `other_in` 流水；首次使用向导中的专门导入步骤仍待补齐
 
-#### 7. 物料 Excel 导入导出 — 未实现
+#### 7. 物料 Excel 导入导出 — ✅ 已实现
 
 - **文档要求**：模板、字段映射、预览校验
-- **实际实现**：开发计划明确标记为"未开始"，代码中无相关 IPC 命令
+- **实际实现**：已实现 `export_materials` / `import_materials` IPC、物料页预览校验、模板下载和导入结果反馈；已补充被业务引用物料的核心字段变更保护
 
 #### 8. 9 种固定打印模板 — 未实现
 
 - **文档要求**：`@react-pdf/renderer` 集成 + 9 种固定单据打印模板 + 多语言 + 打印预览
 - **实际实现**：仅有 `/settings/print-settings` 配置页面，无任何打印模板组件
 
-#### 9. 数据备份与恢复 — 未实现
+#### 9. 数据备份与恢复 — ✅ 手动备份/恢复已实现，自动备份待实现
 
 - **文档要求**：手动备份 + 自动备份 + 恢复
-- **实际实现**：设置页面有"数据管理"入口 UI，但无实际备份/恢复 IPC 命令
+- **实际实现**：已实现 `create_database_backup` / `restore_database_backup` / `delete_database_backup` IPC；恢复会替换主库并自动重启应用，避免关闭连接池后继续操作
 
-#### 10. CI 构建与代码签名 — 未实现
+#### 10. CI 构建与代码签名 — CI 已实现，代码签名待完善
 
 - **文档要求**：GitHub Actions 自动构建 + Windows/macOS 安装包归档 + 代码签名
-- **实际实现**：无 CI 配置文件，无签名脚本
+- **实际实现**：已存在 GitHub Actions CI 与 release workflow；Updater 签名已接入，macOS/Windows 平台签名与 notarization 仍需发布前补齐
 
 ---
 
 ### 🟢 轻微问题 / 设计不一致
 
-#### 11. 废弃表 `work_orders` 残留在数据库中
+#### 11. 废弃表 `work_orders` 残留在数据库中 — ✅ 已清理
 
-- `001_init.sql` 创建了 `work_orders` 表，但后端实际使用的是 `004_production_orders.sql` 创建的 `production_orders` 表
-- 数据库中存在两个工单表，设计不一致
+- `005_drop_legacy_work_orders.sql` 已删除旧 `work_orders` / `work_order_materials`
+- BOM 删除保护已改为检查 `production_orders`，避免引用旧表导致保护失效
 
 #### 12. 前端 `lotAllocations` 类型与后端不匹配
 
@@ -168,13 +168,11 @@
 ### P1（发布前建议完成）
 
 6. 期初库存导入向导（底层导入能力已完成，缺向导入口）
-7. 物料 Excel 导入导出
-8. 9 种固定打印模板
-9. 数据备份与恢复
-10. 清理废弃的 `work_orders` 表
+7. 9 种固定打印模板
+8. 自动备份调度
+9. 平台代码签名与 notarization
 
 ### P2（可延后）
 
-11. CI 构建与代码签名
-12. 销售毛利分析增强
-13. Repository trait 抽象层
+10. 销售毛利分析增强
+11. Repository trait 抽象层

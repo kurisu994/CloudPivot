@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, QueryBuilder, Sqlite};
+use sqlx::{FromRow, QueryBuilder, Sqlite, SqlitePool};
 use tauri::State;
 
 use super::PaginatedResponse;
@@ -23,6 +23,109 @@ pub struct UnitOption {
     pub name_vi: Option<String>,
     pub symbol: Option<String>,
     pub decimal_places: i64,
+}
+
+/// 物料核心字段快照
+#[derive(Debug, FromRow)]
+struct MaterialCoreFields {
+    material_type: String,
+    base_unit_id: i64,
+    lot_tracking_mode: String,
+}
+
+/// 需要锁定物料核心字段的业务引用表
+const MATERIAL_CORE_REFERENCE_TABLES: [(&str, &str); 17] = [
+    ("bom", "material_id"),
+    ("bom_items", "child_material_id"),
+    ("purchase_order_items", "material_id"),
+    ("inbound_order_items", "material_id"),
+    ("purchase_return_items", "material_id"),
+    ("sales_order_items", "material_id"),
+    ("outbound_order_items", "material_id"),
+    ("sales_return_items", "material_id"),
+    ("inventory", "material_id"),
+    ("inventory_lots", "material_id"),
+    ("inventory_reservations", "material_id"),
+    ("inventory_transactions", "material_id"),
+    ("stock_check_items", "material_id"),
+    ("transfer_items", "material_id"),
+    ("custom_orders", "ref_material_id"),
+    ("production_orders", "output_material_id"),
+    ("production_order_materials", "material_id"),
+];
+
+/// 规范化批次追踪模式用于核心字段比较
+fn normalize_lot_tracking_for_compare(value: Option<&str>) -> String {
+    match value.map(str::trim).filter(|v| !v.is_empty()) {
+        Some(v) => v.to_string(),
+        None => "none".to_string(),
+    }
+}
+
+/// 查询物料是否已有会影响历史口径的业务引用
+async fn has_material_core_references(
+    pool: &SqlitePool,
+    material_id: i64,
+) -> Result<bool, AppError> {
+    let mut query = QueryBuilder::<'_, Sqlite>::new("SELECT COALESCE(SUM(ref_count), 0) FROM (");
+
+    for (index, (table, column)) in MATERIAL_CORE_REFERENCE_TABLES.iter().enumerate() {
+        if index > 0 {
+            query.push(" UNION ALL ");
+        }
+        query
+            .push("SELECT COUNT(*) AS ref_count FROM ")
+            .push(*table)
+            .push(" WHERE ")
+            .push(*column)
+            .push(" = ")
+            .push_bind(material_id);
+    }
+
+    query.push(")");
+
+    let count: (i64,) = query
+        .build_query_as()
+        .fetch_one(pool)
+        .await
+        .map_err(|e| AppError::Database(format!("检查物料业务引用失败: {}", e)))?;
+
+    Ok(count.0 > 0)
+}
+
+/// 校验被引用物料的核心字段不可变
+pub(crate) async fn ensure_material_core_fields_editable(
+    pool: &SqlitePool,
+    material_id: i64,
+    next_material_type: &str,
+    next_base_unit_id: i64,
+    next_lot_tracking_mode: Option<&str>,
+) -> Result<(), AppError> {
+    let current = sqlx::query_as::<_, MaterialCoreFields>(
+        "SELECT material_type, base_unit_id, lot_tracking_mode FROM materials WHERE id = ?",
+    )
+    .bind(material_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| AppError::Database(format!("查询物料核心字段失败: {}", e)))?
+    .ok_or_else(|| AppError::Business("物料不存在".to_string()))?;
+
+    let next_lot_tracking_mode = normalize_lot_tracking_for_compare(next_lot_tracking_mode);
+    let core_fields_unchanged = current.material_type == next_material_type
+        && current.base_unit_id == next_base_unit_id
+        && current.lot_tracking_mode == next_lot_tracking_mode;
+
+    if core_fields_unchanged {
+        return Ok(());
+    }
+
+    if has_material_core_references(pool, material_id).await? {
+        return Err(AppError::Business(
+            "物料已有库存或业务单据引用，不能修改物料类型、基础单位或批次追踪模式".to_string(),
+        ));
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -250,6 +353,15 @@ pub async fn save_material(
     }
 
     if let Some(id) = params.id {
+        ensure_material_core_fields_editable(
+            &db.pool,
+            id,
+            &params.material_type,
+            params.base_unit_id,
+            params.lot_tracking_mode.as_deref(),
+        )
+        .await?;
+
         // Update
         sqlx::query(
             "UPDATE materials SET
@@ -349,4 +461,91 @@ pub async fn toggle_material_status(
         .map_err(|e| AppError::Database(format!("更新状态失败: {}", e)))?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use sqlx::sqlite::SqlitePoolOptions;
+
+    use super::{MATERIAL_CORE_REFERENCE_TABLES, ensure_material_core_fields_editable};
+
+    async fn setup_material_core_pool() -> sqlx::SqlitePool {
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect("sqlite::memory:")
+            .await
+            .expect("创建物料核心字段测试数据库失败");
+
+        sqlx::query(
+            "CREATE TABLE materials (
+                id INTEGER PRIMARY KEY,
+                material_type TEXT NOT NULL,
+                base_unit_id INTEGER NOT NULL,
+                lot_tracking_mode TEXT NOT NULL
+            )",
+        )
+        .execute(&pool)
+        .await
+        .expect("创建物料测试表失败");
+
+        for (table, column) in MATERIAL_CORE_REFERENCE_TABLES {
+            let sql = format!("CREATE TABLE {table} (id INTEGER PRIMARY KEY, {column} INTEGER)");
+            sqlx::query(&sql)
+                .execute(&pool)
+                .await
+                .expect("创建物料引用测试表失败");
+        }
+
+        pool
+    }
+
+    async fn insert_material(pool: &sqlx::SqlitePool, id: i64) {
+        sqlx::query(
+            "INSERT INTO materials (id, material_type, base_unit_id, lot_tracking_mode)
+             VALUES (?, 'raw', 1, 'none')",
+        )
+        .bind(id)
+        .execute(pool)
+        .await
+        .expect("插入物料测试数据失败");
+    }
+
+    #[tokio::test]
+    async fn ensure_material_core_fields_editable_blocks_referenced_material_changes() {
+        let pool = setup_material_core_pool().await;
+        insert_material(&pool, 1).await;
+        sqlx::query("INSERT INTO inventory (id, material_id) VALUES (1, 1)")
+            .execute(&pool)
+            .await
+            .expect("插入库存引用测试数据失败");
+
+        let result = ensure_material_core_fields_editable(&pool, 1, "semi", 1, Some("none")).await;
+
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn ensure_material_core_fields_editable_allows_same_fields_with_references() {
+        let pool = setup_material_core_pool().await;
+        insert_material(&pool, 1).await;
+        sqlx::query("INSERT INTO sales_order_items (id, material_id) VALUES (1, 1)")
+            .execute(&pool)
+            .await
+            .expect("插入销售引用测试数据失败");
+
+        let result = ensure_material_core_fields_editable(&pool, 1, "raw", 1, Some("none")).await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn ensure_material_core_fields_editable_allows_unreferenced_material_changes() {
+        let pool = setup_material_core_pool().await;
+        insert_material(&pool, 1).await;
+
+        let result =
+            ensure_material_core_fields_editable(&pool, 1, "semi", 2, Some("required")).await;
+
+        assert!(result.is_ok());
+    }
 }

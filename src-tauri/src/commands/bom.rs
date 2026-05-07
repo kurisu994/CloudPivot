@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, QueryBuilder, Sqlite};
+use sqlx::{FromRow, QueryBuilder, Sqlite, SqlitePool};
 use tauri::State;
 
 use super::PaginatedResponse;
@@ -442,32 +442,7 @@ pub async fn delete_bom(db: State<'_, DbState>, id: i64) -> Result<(), AppError>
         _ => {}
     }
 
-    // 检查是否被定制单或工单引用
-    let ref_count: (i64,) =
-        sqlx::query_as("SELECT COUNT(*) FROM custom_orders WHERE bom_id = ? OR custom_bom_id = ?")
-            .bind(id)
-            .bind(id)
-            .fetch_one(&db.pool)
-            .await
-            .unwrap_or((0,));
-
-    if ref_count.0 > 0 {
-        return Err(AppError::Business(
-            "该 BOM 已被定制单引用，无法删除".to_string(),
-        ));
-    }
-
-    let wo_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM work_orders WHERE bom_id = ?")
-        .bind(id)
-        .fetch_one(&db.pool)
-        .await
-        .unwrap_or((0,));
-
-    if wo_count.0 > 0 {
-        return Err(AppError::Business(
-            "该 BOM 已被生产工单引用，无法删除".to_string(),
-        ));
-    }
+    ensure_bom_not_referenced(&db.pool, id).await?;
 
     let mut tx = db
         .pool
@@ -801,4 +776,109 @@ pub(crate) async fn generate_bom_code_internal(
     };
 
     Ok(format!("{}{:03}", prefix, next_seq))
+}
+
+/// 校验 BOM 未被业务单据引用
+async fn ensure_bom_not_referenced(pool: &SqlitePool, bom_id: i64) -> Result<(), AppError> {
+    let custom_order_count: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM custom_orders WHERE bom_id = ? OR custom_bom_id = ?")
+            .bind(bom_id)
+            .bind(bom_id)
+            .fetch_one(pool)
+            .await
+            .map_err(|e| AppError::Database(format!("检查定制单引用失败: {}", e)))?;
+
+    if custom_order_count.0 > 0 {
+        return Err(AppError::Business(
+            "该 BOM 已被定制单引用，无法删除".to_string(),
+        ));
+    }
+
+    let production_order_count: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM production_orders WHERE bom_id = ?")
+            .bind(bom_id)
+            .fetch_one(pool)
+            .await
+            .map_err(|e| AppError::Database(format!("检查生产工单引用失败: {}", e)))?;
+
+    if production_order_count.0 > 0 {
+        return Err(AppError::Business(
+            "该 BOM 已被生产工单引用，无法删除".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use sqlx::sqlite::SqlitePoolOptions;
+
+    use super::ensure_bom_not_referenced;
+
+    async fn setup_bom_reference_pool() -> sqlx::SqlitePool {
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect("sqlite::memory:")
+            .await
+            .expect("创建测试数据库失败");
+
+        sqlx::query(
+            "CREATE TABLE custom_orders (
+                id INTEGER PRIMARY KEY,
+                bom_id INTEGER,
+                custom_bom_id INTEGER
+            )",
+        )
+        .execute(&pool)
+        .await
+        .expect("创建定制单测试表失败");
+
+        sqlx::query(
+            "CREATE TABLE production_orders (
+                id INTEGER PRIMARY KEY,
+                bom_id INTEGER NOT NULL
+            )",
+        )
+        .execute(&pool)
+        .await
+        .expect("创建生产工单测试表失败");
+
+        pool
+    }
+
+    #[tokio::test]
+    async fn ensure_bom_not_referenced_blocks_production_order_reference() {
+        let pool = setup_bom_reference_pool().await;
+        sqlx::query("INSERT INTO production_orders (id, bom_id) VALUES (1, 10)")
+            .execute(&pool)
+            .await
+            .expect("插入生产工单测试数据失败");
+
+        let result = ensure_bom_not_referenced(&pool, 10).await;
+
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn ensure_bom_not_referenced_blocks_custom_order_reference() {
+        let pool = setup_bom_reference_pool().await;
+        sqlx::query("INSERT INTO custom_orders (id, custom_bom_id) VALUES (1, 20)")
+            .execute(&pool)
+            .await
+            .expect("插入定制单测试数据失败");
+
+        let result = ensure_bom_not_referenced(&pool, 20).await;
+
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn ensure_bom_not_referenced_allows_unreferenced_bom() {
+        let pool = setup_bom_reference_pool().await;
+
+        let result = ensure_bom_not_referenced(&pool, 30).await;
+
+        assert!(result.is_ok());
+    }
 }

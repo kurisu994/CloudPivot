@@ -15,7 +15,7 @@ use crate::db::DbState;
 use crate::error::AppError;
 use crate::operation_log::{OperationLogEntry, write_log};
 
-use super::inventory_ops;
+use super::{inventory_ops, material};
 
 /// 备份文件信息
 #[derive(Debug, Serialize)]
@@ -223,6 +223,14 @@ fn remove_sqlite_sidecar_files(db_path: &Path) -> Result<(), AppError> {
     Ok(())
 }
 
+/// 使用备份文件替换主库文件
+fn replace_database_file(source: &Path, db_path: &Path) -> Result<(), AppError> {
+    remove_sqlite_sidecar_files(db_path)?;
+    fs::copy(source, db_path).map_err(AppError::Io)?;
+    remove_sqlite_sidecar_files(db_path)?;
+    Ok(())
+}
+
 /// 解析物料类型
 fn normalize_material_type(value: &str) -> Result<String, AppError> {
     match value.trim() {
@@ -396,9 +404,8 @@ pub async fn restore_database_backup(
         .map_err(|e| AppError::Database(format!("恢复前执行 WAL 检查点失败: {}", e)))?;
 
     db.pool.close().await;
-    remove_sqlite_sidecar_files(&db_path)?;
-    fs::copy(&source, &db_path).map_err(AppError::Io)?;
-    remove_sqlite_sidecar_files(&db_path)?;
+    replace_database_file(&source, &db_path)?;
+    app.request_restart();
 
     Ok(())
 }
@@ -467,6 +474,48 @@ pub async fn import_materials(
         }
         if let Err(e) = normalize_lot_tracking_mode(row.lot_tracking_mode.as_deref()) {
             errors.push(format!("第 {} 行：{}", line_no, e));
+        }
+    }
+
+    if !errors.is_empty() {
+        return Ok(ImportResult {
+            created: 0,
+            updated: 0,
+            skipped: rows.len() as u32,
+            errors,
+        });
+    }
+
+    for (index, row) in rows.iter().enumerate() {
+        let line_no = index + 2;
+        let material_type = normalize_material_type(&row.material_type)?;
+        let lot_tracking_mode = normalize_lot_tracking_mode(row.lot_tracking_mode.as_deref())?;
+        let base_unit_id = match resolve_unit_id(&db.pool, &row.base_unit_name).await {
+            Ok(id) => id,
+            Err(e) => {
+                errors.push(format!("第 {} 行：{}", line_no, e));
+                continue;
+            }
+        };
+
+        let existing_id = sqlx::query_scalar::<_, i64>("SELECT id FROM materials WHERE code = ?")
+            .bind(row.code.trim())
+            .fetch_optional(&db.pool)
+            .await
+            .map_err(|e| AppError::Database(format!("查询物料编码失败: {}", e)))?;
+
+        if let Some(id) = existing_id {
+            if let Err(e) = material::ensure_material_core_fields_editable(
+                &db.pool,
+                id,
+                &material_type,
+                base_unit_id,
+                Some(&lot_tracking_mode),
+            )
+            .await
+            {
+                errors.push(format!("第 {} 行：{}", line_no, e));
+            }
         }
     }
 
@@ -769,7 +818,9 @@ pub async fn import_initial_inventory(
 
 #[cfg(test)]
 mod tests {
-    use super::{build_backup_file_name, validate_import_quantity};
+    use std::fs;
+
+    use super::{build_backup_file_name, replace_database_file, validate_import_quantity};
 
     #[test]
     fn build_backup_file_name_keeps_stable_prefix_and_extension() {
@@ -783,5 +834,34 @@ mod tests {
         assert!(validate_import_quantity(1.0).is_ok());
         assert!(validate_import_quantity(0.0).is_err());
         assert!(validate_import_quantity(-1.0).is_err());
+    }
+
+    #[test]
+    fn replace_database_file_removes_sidecar_files_and_copies_backup() {
+        let test_dir = std::env::temp_dir().join(format!(
+            "cloudpivot-restore-test-{}",
+            chrono::Local::now()
+                .timestamp_nanos_opt()
+                .unwrap_or_default()
+        ));
+        fs::create_dir_all(&test_dir).expect("创建恢复测试目录失败");
+
+        let backup_path = test_dir.join("backup.db");
+        let db_path = test_dir.join("main.db");
+        let wal_path = test_dir.join("main.db-wal");
+        let shm_path = test_dir.join("main.db-shm");
+
+        fs::write(&backup_path, b"backup").expect("写入备份测试文件失败");
+        fs::write(&db_path, b"current").expect("写入主库测试文件失败");
+        fs::write(&wal_path, b"wal").expect("写入 WAL 测试文件失败");
+        fs::write(&shm_path, b"shm").expect("写入 SHM 测试文件失败");
+
+        replace_database_file(&backup_path, &db_path).expect("替换数据库文件失败");
+
+        assert_eq!(fs::read(&db_path).expect("读取主库测试文件失败"), b"backup");
+        assert!(!wal_path.exists());
+        assert!(!shm_path.exists());
+
+        fs::remove_dir_all(&test_dir).expect("清理恢复测试目录失败");
     }
 }

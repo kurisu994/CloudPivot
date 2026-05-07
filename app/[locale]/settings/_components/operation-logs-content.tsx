@@ -11,74 +11,37 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { getOperationLogs, type OperationLogFilter, type OperationLogItem } from '@/lib/tauri'
 import { cn } from '@/lib/utils'
 
-/** 模块名映射 */
-const MODULE_LABELS: Record<string, string> = {
-  auth: '认证',
-  purchase: '采购管理',
-  sales: '销售管理',
-  inventory: '库存管理',
-  custom_order: '定制单',
-  production_order: '生产工单',
-  finance: '财务管理',
-  replenishment: '智能补货',
-}
+const MODULE_KEYS = ['auth', 'settings', 'material', 'purchase', 'sales', 'inventory', 'custom_order', 'production_order', 'finance', 'replenishment']
 
-const MODULE_OPTIONS = [
-  { value: 'auth', label: '认证' },
-  { value: 'purchase', label: '采购管理' },
-  { value: 'sales', label: '销售管理' },
-  { value: 'inventory', label: '库存管理' },
-  { value: 'custom_order', label: '定制单' },
-  { value: 'production_order', label: '生产工单' },
-  { value: 'finance', label: '财务管理' },
-  { value: 'replenishment', label: '智能补货' },
-]
-
-/** 动作名映射 */
-const ACTION_LABELS: Record<string, string> = {
-  login_success: '登录成功',
-  login_failed: '登录失败',
-  account_locked: '账号锁定',
-  change_password: '修改密码',
-  create: '创建',
-  update: '更新',
-  approve: '审核',
-  cancel: '作废/取消',
-  delete: '删除',
-  inbound_confirm: '入库确认',
-  return_confirm: '退货确认',
-  outbound_confirm: '出库确认',
-  stock_check_confirm: '盘点确认',
-  transfer_confirm: '调拨确认',
-  pick: '领料',
-  return_material: '退料',
-  complete: '完工',
-  finish: '结单',
-  payment: '付款',
-  receipt: '收款',
-  convert_to_sales: '转销售单',
-  start_production: '开始生产',
-}
-
-const ACTION_OPTIONS = [
-  { value: 'create', label: '创建' },
-  { value: 'update', label: '更新' },
-  { value: 'approve', label: '审核' },
-  { value: 'cancel', label: '作废/取消' },
-  { value: 'delete', label: '删除' },
-  { value: 'inbound_confirm', label: '入库确认' },
-  { value: 'return_confirm', label: '退货确认' },
-  { value: 'outbound_confirm', label: '出库确认' },
-  { value: 'stock_check_confirm', label: '盘点确认' },
-  { value: 'transfer_confirm', label: '调拨确认' },
-  { value: 'pick', label: '领料' },
-  { value: 'return_material', label: '退料' },
-  { value: 'complete', label: '完工' },
-  { value: 'finish', label: '结单' },
-  { value: 'payment', label: '付款' },
-  { value: 'receipt', label: '收款' },
-  { value: 'convert_to_sales', label: '转销售单' },
-  { value: 'start_production', label: '开始生产' },
+const ACTION_KEYS = [
+  'login_success',
+  'login_failed',
+  'account_locked',
+  'change_password',
+  'backup',
+  'import',
+  'import_initial',
+  'create',
+  'update',
+  'approve',
+  'confirm',
+  'cancel',
+  'delete',
+  'manual_in',
+  'manual_out',
+  'inbound_confirm',
+  'return_confirm',
+  'outbound_confirm',
+  'stock_check_confirm',
+  'transfer_confirm',
+  'pick',
+  'return_material',
+  'complete',
+  'finish',
+  'payment',
+  'receipt',
+  'convert_to_sales',
+  'start_production',
 ]
 
 /** 操作日志内容 */
@@ -96,6 +59,17 @@ export function OperationLogsContent() {
   const [actionFilter, setActionFilter] = useState<string>('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+
+  const moduleLabels = Object.fromEntries(MODULE_KEYS.map(value => [value, t(`modules.${value}`)]))
+  const actionLabels = Object.fromEntries(ACTION_KEYS.map(value => [value, t(`actions.${value}`)]))
+  const moduleOptions = [{ value: 'all', label: t('allModules') }, ...MODULE_KEYS.map(value => ({ value, label: moduleLabels[value] }))]
+  const actionOptions = [{ value: 'all', label: t('allTypes') }, ...ACTION_KEYS.map(value => ({ value, label: actionLabels[value] }))]
+
+  /** 获取模块显示名称 */
+  const getModuleLabel = (module: string) => moduleLabels[module] ?? module
+
+  /** 获取动作显示名称 */
+  const getActionLabel = (action: string) => actionLabels[action] ?? action
 
   /** 查询日志 */
   const fetchLogs = useCallback(async () => {
@@ -207,13 +181,12 @@ export function OperationLogsContent() {
               <Layers className="mr-1 size-3.5" />
               {t('module')}
             </Label>
-            <Select value={moduleFilter} onValueChange={value => setModuleFilter(value ?? '')}>
+            <Select value={moduleFilter} onValueChange={value => setModuleFilter(value ?? '')} items={moduleOptions}>
               <SelectTrigger className="h-10 w-full bg-slate-50 dark:bg-slate-900/50">
                 <SelectValue placeholder={t('allModules')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('allModules')}</SelectItem>
-                {MODULE_OPTIONS.map(opt => (
+                {moduleOptions.map(opt => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
@@ -227,13 +200,12 @@ export function OperationLogsContent() {
               <Zap className="mr-1 size-3.5" />
               {t('actionType')}
             </Label>
-            <Select value={actionFilter} onValueChange={value => setActionFilter(value ?? '')}>
+            <Select value={actionFilter} onValueChange={value => setActionFilter(value ?? '')} items={actionOptions}>
               <SelectTrigger className="h-10 w-full bg-slate-50 dark:bg-slate-900/50">
                 <SelectValue placeholder={t('allTypes')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('allTypes')}</SelectItem>
-                {ACTION_OPTIONS.map(opt => (
+                {actionOptions.map(opt => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
@@ -276,11 +248,11 @@ export function OperationLogsContent() {
               onClick={() => {
                 // 导出 CSV（简单实现）
                 if (logs.length === 0) return
-                const headers = ['时间', '模块', '动作', '对象类型', '对象编号', '详情', '操作人']
+                const headers = [t('time'), t('module'), t('action'), t('targetType'), t('targetNo'), t('details'), t('user')]
                 const rows = logs.map(log => [
                   log.created_at,
-                  MODULE_LABELS[log.module] ?? log.module,
-                  ACTION_LABELS[log.action] ?? log.action,
+                  getModuleLabel(log.module),
+                  getActionLabel(log.action),
                   log.target_type ?? '',
                   log.target_no ?? '',
                   log.detail,
@@ -362,13 +334,11 @@ export function OperationLogsContent() {
                     {/* 模块 */}
                     <TableCell className="px-6 py-4">
                       <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-bold', getModuleBadgeClass(log.module))}>
-                        {MODULE_LABELS[log.module] ?? log.module}
+                        {getModuleLabel(log.module)}
                       </span>
                     </TableCell>
                     {/* 动作 */}
-                    <TableCell className={cn('px-6 py-4 text-sm font-bold', getActionColor(log.action))}>
-                      {ACTION_LABELS[log.action] ?? log.action}
-                    </TableCell>
+                    <TableCell className={cn('px-6 py-4 text-sm font-bold', getActionColor(log.action))}>{getActionLabel(log.action)}</TableCell>
                     {/* 对象 */}
                     <TableCell className="px-6 py-4 font-mono text-xs text-slate-600 dark:text-slate-400">
                       {log.target_no ?? log.target_type ?? '--'}
