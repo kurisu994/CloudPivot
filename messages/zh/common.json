@@ -36,7 +36,14 @@
     "createSuccess": "创建成功",
     "createFailed": "创建失败",
     "itemExists": "{name} 已添加",
-    "fillRequiredBlock": "请填写必填项"
+    "fillRequiredBlock": "请填写必填项",
+    "errorTitle": "出错了",
+    "errorDesc": "页面加载时发生了错误，请尝试刷新",
+    "retry": "重试",
+    "backHome": "返回首页",
+    "notFoundTitle": "页面不存在",
+    "notFoundDesc": "您访问的页面不存在或已被移除",
+    "loadFailed": "数据加载失败"
   },
   "nav": {
     "dashboard": "首页看板",

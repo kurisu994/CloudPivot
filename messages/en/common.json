@@ -36,7 +36,14 @@
     "createSuccess": "Created Successfully",
     "createFailed": "Failed to Create",
     "itemExists": "{name} already added",
-    "fillRequiredBlock": "Please fill required fields"
+    "fillRequiredBlock": "Please fill required fields",
+    "errorTitle": "Something went wrong",
+    "errorDesc": "An error occurred while loading the page, please try refreshing",
+    "retry": "Retry",
+    "backHome": "Back to Home",
+    "notFoundTitle": "Page Not Found",
+    "notFoundDesc": "The page you are looking for does not exist or has been removed",
+    "loadFailed": "Failed to load data"
   },
   "nav": {
     "dashboard": "Dashboard",

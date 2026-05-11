@@ -15,8 +15,9 @@ interface BestSellerItem {
 /** 热销产品排行组件 */
 export function BestSellers({ className }: { className?: string }) {
   const t = useTranslations('dashboard')
+  const tc = useTranslations('common')
   const [products, setProducts] = useState<BestSellerItem[]>([])
-
+  const [error, setError] = useState(false)
   useEffect(() => {
     void (async () => {
       try {
@@ -37,6 +38,7 @@ export function BestSellers({ className }: { className?: string }) {
         setProducts(mapped)
       } catch {
         setProducts([])
+        setError(true)
       }
     })()
   }, [])
@@ -47,7 +49,8 @@ export function BestSellers({ className }: { className?: string }) {
         <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-100">{t('bestSellers')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {products.length === 0 && <p className="text-muted-foreground text-center text-sm">{t('noData')}</p>}
+        {error && <p className="text-muted-foreground text-center text-sm">{tc('loadFailed')}</p>}
+        {!error && products.length === 0 && <p className="text-muted-foreground text-center text-sm">{t('noData')}</p>}
         {products.map(item => (
           <div key={item.name} className="space-y-1.5">
             <div className="flex justify-between text-xs font-medium">

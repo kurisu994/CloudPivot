@@ -40,7 +40,13 @@ pub fn run() {
                     }
                     Err(e) => {
                         log::error!("数据库初始化失败: {}", e);
-                        panic!("数据库初始化失败: {}", e);
+                        // 注入降级状态：内存数据库 + 错误标记
+                        // 前端 IPC 调用会因为表不存在而返回错误，展示友好提示
+                        let fallback_pool = db::create_fallback_pool().await;
+                        handle.manage(DbState { pool: fallback_pool });
+                        handle.manage(db::DbInitError {
+                            message: format!("{}", e),
+                        });
                     }
                 }
             });
@@ -50,6 +56,7 @@ pub fn run() {
         // 注册 IPC 命令
         .invoke_handler(tauri::generate_handler![
             commands::ping,
+            commands::get_db_init_error,
             commands::get_db_version,
             commands::login,
             commands::change_password,

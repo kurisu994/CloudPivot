@@ -36,7 +36,14 @@
     "createSuccess": "Tạo thành công",
     "createFailed": "Tạo thất bại",
     "itemExists": "{name} đã được thêm",
-    "fillRequiredBlock": "Vui lòng nhập thông tin bắt buộc"
+    "fillRequiredBlock": "Vui lòng nhập thông tin bắt buộc",
+    "errorTitle": "Đã xảy ra lỗi",
+    "errorDesc": "Đã xảy ra lỗi khi tải trang, vui lòng thử làm mới",
+    "retry": "Thử lại",
+    "backHome": "Về trang chủ",
+    "notFoundTitle": "Không tìm thấy trang",
+    "notFoundDesc": "Trang bạn đang tìm không tồn tại hoặc đã bị xóa",
+    "loadFailed": "Tải dữ liệu thất bại"
   },
   "nav": {
     "dashboard": "Bảng điều khiển",

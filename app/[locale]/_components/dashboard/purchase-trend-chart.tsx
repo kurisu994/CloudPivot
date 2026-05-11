@@ -16,7 +16,9 @@ interface TrendPoint {
 /** 近30天采购趋势面积图 */
 export function PurchaseTrendChart({ className }: { className?: string }) {
   const t = useTranslations('dashboard')
+  const tc = useTranslations('common')
   const [data, setData] = useState<TrendPoint[]>([])
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     void (async () => {
@@ -30,7 +32,7 @@ export function PurchaseTrendChart({ className }: { className?: string }) {
         }))
         setData(points)
       } catch {
-        // 降级为空数据
+        setError(true)
       }
     })()
   }, [])
@@ -46,36 +48,40 @@ export function PurchaseTrendChart({ className }: { className?: string }) {
         <span className="text-xs text-slate-400">{t('unitUSD')}</span>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={purchaseConfig} className="h-[250px] min-h-[250px] w-full min-w-full">
-          <AreaChart accessibilityLayer data={data} margin={{ top: 10, left: 0, right: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="fillPurchase" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-value)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="var(--color-value)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
-            <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={12} fontSize={11} className="font-bold text-slate-400" />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickMargin={12}
-              fontSize={11}
-              className="text-slate-400"
-              tickFormatter={val => formatDashboardUsdCompact(Number(val))}
-            />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent className="min-w-[150px]" />} />
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke="var(--color-value)"
-              strokeWidth={2}
-              fill="url(#fillPurchase)"
-              fillOpacity={1}
-              activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--color-value)' }}
-            />
-          </AreaChart>
-        </ChartContainer>
+        {error ? (
+          <p className="text-muted-foreground flex h-[250px] items-center justify-center text-sm">{tc('loadFailed')}</p>
+        ) : (
+          <ChartContainer config={purchaseConfig} className="h-[250px] min-h-[250px] w-full min-w-full">
+            <AreaChart accessibilityLayer data={data} margin={{ top: 10, left: 0, right: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="fillPurchase" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--color-value)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="var(--color-value)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={12} fontSize={11} className="font-bold text-slate-400" />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={12}
+                fontSize={11}
+                className="text-slate-400"
+                tickFormatter={val => formatDashboardUsdCompact(Number(val))}
+              />
+              <ChartTooltip cursor={false} content={<ChartTooltipContent className="min-w-[150px]" />} />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="var(--color-value)"
+                strokeWidth={2}
+                fill="url(#fillPurchase)"
+                fillOpacity={1}
+                activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--color-value)' }}
+              />
+            </AreaChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   )

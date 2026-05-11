@@ -17,6 +17,26 @@ pub struct DbState {
     pub pool: SqlitePool,
 }
 
+/// 数据库初始化失败状态
+///
+/// 当数据库初始化失败时注入此状态，前端通过 IPC 调用检测到后展示错误页面。
+/// 同时注入一个内存数据库的 DbState 以避免 Tauri State 解析 panic。
+pub struct DbInitError {
+    pub message: String,
+}
+
+/// 创建一个空的内存数据库连接池作为降级方案
+///
+/// 当主数据库初始化失败时使用，确保 DbState 始终可用，
+/// 避免 Tauri State 解析时 panic。
+pub async fn create_fallback_pool() -> SqlitePool {
+    SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect("sqlite::memory:")
+        .await
+        .expect("内存数据库连接不应失败")
+}
+
 /// 初始化数据库连接池
 ///
 /// 流程：

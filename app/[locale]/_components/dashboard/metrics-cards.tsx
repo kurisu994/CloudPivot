@@ -78,9 +78,11 @@ function KpiDeltaBadge({ delta }: { delta: KpiDelta }) {
 /** 看板主要指标卡片 */
 export function MetricsCards() {
   const t = useTranslations('dashboard')
+  const tc = useTranslations('common')
 
   const [replenishmentCount, setReplenishmentCount] = useState(0)
   const [urgentDelta, setUrgentDelta] = useState(0)
+  const [error, setError] = useState(false)
 
   const [todaySales, setTodaySales] = useState(0)
   const [yesterdaySales, setYesterdaySales] = useState(0)
@@ -104,6 +106,7 @@ export function MetricsCards() {
         setUrgentDelta(suggestions.filter(s => s.urgency === 'urgent').length)
       } catch {
         // 非 Tauri 环境下降级为 0
+        setError(true)
       }
     })()
   }, [])
@@ -158,12 +161,19 @@ export function MetricsCards() {
         setPayables(payablesRes.summary.total_overdue)
       } catch {
         // 非 Tauri 环境下降级为 0
+        setError(true)
       }
     })()
   }, [])
 
   return (
     <>
+      {error && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>{tc('loadFailed')}</span>
+        </div>
+      )}
       {/* 主要 KPI */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">

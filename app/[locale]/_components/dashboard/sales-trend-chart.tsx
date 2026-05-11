@@ -16,7 +16,9 @@ interface TrendPoint {
 /** 近30天销售趋势柱状图 */
 export function SalesTrendChart({ className }: { className?: string }) {
   const t = useTranslations('dashboard')
+  const tc = useTranslations('common')
   const [data, setData] = useState<TrendPoint[]>([])
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     void (async () => {
@@ -30,7 +32,7 @@ export function SalesTrendChart({ className }: { className?: string }) {
         }))
         setData(points)
       } catch {
-        // 降级为空数据
+        setError(true)
       }
     })()
   }, [])
@@ -46,30 +48,34 @@ export function SalesTrendChart({ className }: { className?: string }) {
         <span className="text-xs text-slate-400">{t('unitUSD')}</span>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={salesConfig} className="h-[250px] min-h-[250px] w-full min-w-full">
-          <BarChart accessibilityLayer data={data} margin={{ top: 20, left: -20, right: 10 }}>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.5} />
-            <XAxis
-              dataKey="label"
-              tickLine={false}
-              tickMargin={15}
-              axisLine={false}
-              fontSize={12}
-              fontWeight={600}
-              className="tracking-wider text-slate-400 uppercase"
-            />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickMargin={10}
-              fontSize={11}
-              className="text-slate-400"
-              tickFormatter={value => formatDashboardUsdCompact(Number(value))}
-            />
-            <ChartTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} content={<ChartTooltipContent indicator="dashed" className="w-[180px]" />} />
-            <Bar dataKey="current" fill="var(--color-current)" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ChartContainer>
+        {error ? (
+          <p className="text-muted-foreground flex h-[250px] items-center justify-center text-sm">{tc('loadFailed')}</p>
+        ) : (
+          <ChartContainer config={salesConfig} className="h-[250px] min-h-[250px] w-full min-w-full">
+            <BarChart accessibilityLayer data={data} margin={{ top: 20, left: -20, right: 10 }}>
+              <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.5} />
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                tickMargin={15}
+                axisLine={false}
+                fontSize={12}
+                fontWeight={600}
+                className="tracking-wider text-slate-400 uppercase"
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={10}
+                fontSize={11}
+                className="text-slate-400"
+                tickFormatter={value => formatDashboardUsdCompact(Number(value))}
+              />
+              <ChartTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} content={<ChartTooltipContent indicator="dashed" className="w-[180px]" />} />
+              <Bar dataKey="current" fill="var(--color-current)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   )

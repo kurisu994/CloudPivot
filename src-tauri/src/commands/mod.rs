@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use crate::auth::{self, LoginResponse, UserInfo};
-use crate::db::DbState;
+use crate::db::{DbInitError, DbState};
 use crate::error::AppError;
 
 /// 分页响应（通用泛型，供各业务模块共用）
@@ -46,6 +46,21 @@ pub async fn ping(db: State<'_, DbState>) -> Result<String, AppError> {
         .map_err(|e| AppError::Database(format!("数据库连接测试失败: {}", e)))?;
 
     Ok(format!("pong (db_status: ok, test_query: {})", row.0))
+}
+
+/// 获取数据库初始化错误信息
+///
+/// 如果数据库初始化失败，返回错误信息；否则返回 None。
+/// 前端可在启动时调用此命令检测数据库状态。
+#[tauri::command]
+pub async fn get_db_init_error(
+    app: tauri::AppHandle,
+) -> Result<Option<String>, AppError> {
+    use tauri::Manager;
+    match app.try_state::<DbInitError>() {
+        Some(e) => Ok(Some(e.message.clone())),
+        None => Ok(None),
+    }
 }
 
 /// 获取数据库版本信息
