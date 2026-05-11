@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { getErrorMessage } from '@/lib/error'
 import type { CategoryNode } from '@/lib/tauri'
 import { createCategory, getCategoryTree, updateCategory } from '@/lib/tauri'
 
@@ -123,7 +124,7 @@ export function CategoryEditModal({ open, onOpenChange, editingCategory, onSucce
       toast.success(t('saveSuccess'))
       onSuccess()
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : t('saveFailed'))
+      toast.error(getErrorMessage(e, t('saveFailed')))
     } finally {
       setSaving(false)
     }

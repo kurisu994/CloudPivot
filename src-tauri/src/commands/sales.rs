@@ -13,8 +13,8 @@ use crate::db::DbState;
 use crate::error::AppError;
 use crate::operation_log;
 
-use super::PaginatedResponse;
 use super::inventory_ops;
+use super::{CurrentUser, PaginatedResponse};
 
 // ================================================================
 // 销售单数据结构
@@ -604,6 +604,7 @@ pub async fn get_sales_order_detail(
 #[tauri::command]
 pub async fn save_sales_order(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: SaveSalesOrderParams,
 ) -> Result<i64, AppError> {
     validate_save_params(&params)?;
@@ -716,7 +717,7 @@ pub async fn save_sales_order(
                 ?, ?, ?, ?, ?, ?, ?, 'draft',
                 ?, ?, ?, ?, ?, ?, ?,
                 ?, ?,
-                1, 'admin',
+                ?, ?,
                 datetime('now'), datetime('now')
             ) RETURNING id
             "#,
@@ -737,6 +738,8 @@ pub async fn save_sales_order(
         .bind(receivable_amount)
         .bind(&params.shipping_address)
         .bind(&params.remark)
+        .bind(current_user.user_id())
+        .bind(current_user.display_name())
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("创建销售单失败: {}", e)))?;
@@ -815,8 +818,8 @@ pub async fn save_sales_order(
                 },
                 order_no
             ),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -830,6 +833,7 @@ pub async fn save_sales_order(
 #[tauri::command]
 pub async fn approve_sales_order(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<Option<String>, AppError> {
     // 查询销售单信息用于信用额度检查
@@ -931,8 +935,8 @@ pub async fn approve_sales_order(
             target_id: Some(id),
             target_no: Some(order_no.clone()),
             detail: format!("审核销售单 {}", order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -942,7 +946,11 @@ pub async fn approve_sales_order(
 
 /// 作废销售单
 #[tauri::command]
-pub async fn cancel_sales_order(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn cancel_sales_order(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     // 检查是否有关联出库单
     let outbound_count: (i64,) =
         sqlx::query_as("SELECT COUNT(*) FROM outbound_orders WHERE sales_id = ?")
@@ -1002,8 +1010,8 @@ pub async fn cancel_sales_order(db: State<'_, DbState>, id: i64) -> Result<(), A
             target_id: Some(id),
             target_no: Some(order_no.clone()),
             detail: format!("作废销售单 {}", order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -1013,7 +1021,11 @@ pub async fn cancel_sales_order(db: State<'_, DbState>, id: i64) -> Result<(), A
 
 /// 删除销售单（仅草稿状态可删除）
 #[tauri::command]
-pub async fn delete_sales_order(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn delete_sales_order(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     let current: Option<(String,)> = sqlx::query_as("SELECT status FROM sales_orders WHERE id = ?")
         .bind(id)
         .fetch_optional(&db.pool)
@@ -1067,8 +1079,8 @@ pub async fn delete_sales_order(db: State<'_, DbState>, id: i64) -> Result<(), A
             target_id: Some(id),
             target_no: Some(order_no.clone()),
             detail: format!("删除销售单 {}", order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -1396,6 +1408,7 @@ pub async fn get_outbound_orders(
 #[tauri::command]
 pub async fn save_and_confirm_outbound(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: SaveOutboundOrderParams,
 ) -> Result<i64, AppError> {
     use super::inventory_ops;
@@ -1557,8 +1570,8 @@ pub async fn save_and_confirm_outbound(
             ?, ?, ?,
             ?, ?, ?, ?, ?,
             'confirmed', ?,
-            1, 'admin',
-            1, 'admin', datetime('now'),
+            ?, ?,
+            ?, ?, datetime('now'),
             datetime('now'), datetime('now')
         ) RETURNING id
         "#,
@@ -1577,6 +1590,10 @@ pub async fn save_and_confirm_outbound(
     .bind(allocated_other)
     .bind(receivable_amount)
     .bind(&params.remark)
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
     .fetch_one(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("创建出库单失败: {}", e)))?;
@@ -1780,6 +1797,8 @@ pub async fn save_and_confirm_outbound(
             None,
             Some(&outbound_no),
             None,
+            current_user.user_id(),
+            &current_user.display_name(),
         )
         .await?;
 
@@ -1849,8 +1868,8 @@ pub async fn save_and_confirm_outbound(
                     .unwrap_or_else(|| "无".to_string()),
                 receivable_amount
             ),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -2191,6 +2210,7 @@ pub async fn get_sales_returns(
 #[tauri::command]
 pub async fn save_and_confirm_sales_return(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: SaveSalesReturnParams,
 ) -> Result<i64, AppError> {
     use super::inventory_ops;
@@ -2272,8 +2292,8 @@ pub async fn save_and_confirm_sales_return(
             ?, ?, ?,
             ?, ?,
             'confirmed', ?,
-            1, 'admin',
-            1, 'admin', datetime('now'),
+            ?, ?,
+            ?, ?, datetime('now'),
             datetime('now'), datetime('now')
         ) RETURNING id
         "#,
@@ -2288,6 +2308,10 @@ pub async fn save_and_confirm_sales_return(
     .bind(total_amount)
     .bind(total_amount_base)
     .bind(&params.remark)
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
     .fetch_one(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("创建退货单失败: {}", e)))?;
@@ -2404,6 +2428,8 @@ pub async fn save_and_confirm_sales_return(
             None,
             Some(&return_no),
             params.return_reason.as_deref(),
+            current_user.user_id(),
+            &current_user.display_name(),
         )
         .await?;
     }
@@ -2452,8 +2478,8 @@ pub async fn save_and_confirm_sales_return(
                 "确认销售退货单 {}，原出库单 {}，退货金额 {}",
                 return_no, params.outbound_id, total_amount
             ),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;

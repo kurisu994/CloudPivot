@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { getErrorMessage } from '@/lib/error'
 import type { StockCheckDetail, UpdateStockCheckItemParams } from '@/lib/tauri'
 import { confirmStockCheck, getStockCheckDetail, updateStockCheckItems } from '@/lib/tauri'
 
@@ -46,7 +47,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
       }
       setEditValues(vals)
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : tc('loadDetailFailed'))
+      toast.error(getErrorMessage(error, tc('loadDetailFailed')))
     } finally {
       setLoading(false)
     }
@@ -72,7 +73,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
       toast.success(tc('saveSuccess'))
       await loadDetail()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : tc('saveFailed'))
+      toast.error(getErrorMessage(error, tc('saveFailed')))
     } finally {
       setSaving(false)
     }
@@ -88,7 +89,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
       toast.success(tc('confirmSuccess'))
       await loadDetail()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : tc('confirmFailed'))
+      toast.error(getErrorMessage(error, tc('confirmFailed')))
     } finally {
       setConfirming(false)
     }

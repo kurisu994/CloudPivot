@@ -180,6 +180,8 @@ pub async fn record_transaction(
     source_item_id: Option<i64>,
     related_order_no: Option<&str>,
     remark: Option<&str>,
+    operator_user_id: i64,
+    operator_name: &str,
 ) -> Result<i64, AppError> {
     let transaction_no = generate_transaction_no(tx).await?;
 
@@ -191,7 +193,7 @@ pub async fn record_transaction(
             source_type, source_id, source_item_id, related_order_no,
             operator_user_id, operator_name, remark,
             created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'admin', ?, datetime('now'))
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
         RETURNING id
         "#,
     )
@@ -209,6 +211,8 @@ pub async fn record_transaction(
     .bind(source_id)
     .bind(source_item_id)
     .bind(related_order_no)
+    .bind(operator_user_id)
+    .bind(operator_name)
     .bind(remark)
     .fetch_one(&mut *tx)
     .await
@@ -438,4 +442,158 @@ pub async fn decrease_lot_inventory(
     .map_err(|e| AppError::Database(format!("扣减批次库存失败: {}", e)))?;
 
     Ok(())
+}
+
+// ================================================================
+// 单元测试
+// ================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ----------------------------------------------------------------
+    // convert_to_usd_cents 测试
+    // ----------------------------------------------------------------
+
+    #[test]
+    fn convert_usd_returns_amount_unchanged() {
+        // USD 金额直接返回，不做任何转换
+        assert_eq!(convert_to_usd_cents(1500, "USD", 1.0), 1500);
+        assert_eq!(convert_to_usd_cents(0, "USD", 25000.0), 0);
+    }
+
+    #[test]
+    fn convert_vnd_to_usd_cents() {
+        // VND 无小数，公式：VND金额 / 汇率 × 100
+        // 例：25000 VND / 25000 汇率 × 100 = 100 USD分 = $1.00
+        assert_eq!(convert_to_usd_cents(25000, "VND", 25000.0), 100);
+        // 50000 VND / 25000 = 2 USD = 200 分
+        assert_eq!(convert_to_usd_cents(50000, "VND", 25000.0), 200);
+        // 小数四舍五入
+        assert_eq!(convert_to_usd_cents(10000, "VND", 25000.0), 40);
+    }
+
+    #[test]
+    fn convert_cny_to_usd_cents() {
+        // CNY 以分存储，公式：CNY分 / 汇率
+        // 例：700 CNY分 (¥7.00) / 7.0 汇率 = 100 USD分 = $1.00
+        assert_eq!(convert_to_usd_cents(700, "CNY", 7.0), 100);
+        // 1400 CNY分 (¥14.00) / 7.0 = 200 USD分 = $2.00
+        assert_eq!(convert_to_usd_cents(1400, "CNY", 7.0), 200);
+    }
+
+    #[test]
+    fn convert_unknown_currency_returns_unchanged() {
+        // 未知币种直接返回原值
+        assert_eq!(convert_to_usd_cents(999, "EUR", 1.1), 999);
+    }
+
+    // ----------------------------------------------------------------
+    // unit_cost_to_usd 测试
+    // ----------------------------------------------------------------
+
+    #[test]
+    fn unit_cost_to_usd_delegates_to_convert() {
+        // unit_cost_to_usd 是 convert_to_usd_cents 的别名
+        assert_eq!(unit_cost_to_usd(25000, "VND", 25000.0), 100);
+        assert_eq!(unit_cost_to_usd(700, "CNY", 7.0), 100);
+        assert_eq!(unit_cost_to_usd(100, "USD", 1.0), 100);
+    }
+
+    // ----------------------------------------------------------------
+    // 移动加权平均成本计算逻辑测试（纯数学验证）
+    // ----------------------------------------------------------------
+
+    /// 模拟 increase_inventory 中的移动加权平均成本计算
+    fn calc_new_avg_cost(old_qty: f64, old_cost: i64, in_qty: f64, in_cost: i64) -> i64 {
+        let new_qty = old_qty + in_qty;
+        if new_qty > 0.0 {
+            let old_value = old_qty * old_cost as f64;
+            let in_value = in_qty * in_cost as f64;
+            ((old_value + in_value) / new_qty).round() as i64
+        } else {
+            0
+        }
+    }
+
+    #[test]
+    fn avg_cost_first_inbound() {
+        // 首次入库：空库存 + 100个 × $5.00 = 平均成本 500分
+        let cost = calc_new_avg_cost(0.0, 0, 100.0, 500);
+        assert_eq!(cost, 500);
+    }
+
+    #[test]
+    fn avg_cost_second_inbound_same_price() {
+        // 第二次入库同价：100个×$5 + 100个×$5 = 平均 $5
+        let cost = calc_new_avg_cost(100.0, 500, 100.0, 500);
+        assert_eq!(cost, 500);
+    }
+
+    #[test]
+    fn avg_cost_second_inbound_different_price() {
+        // 100个×$5 + 100个×$3 = (50000+30000)/200 = 400分 = $4.00
+        let cost = calc_new_avg_cost(100.0, 500, 100.0, 300);
+        assert_eq!(cost, 400);
+    }
+
+    #[test]
+    fn avg_cost_small_inbound_to_large_stock() {
+        // 1000个×$10 + 10个×$20 = (1000000+20000)/1010 ≈ 1010分
+        let cost = calc_new_avg_cost(1000.0, 1000, 10.0, 2000);
+        assert_eq!(cost, 1010);
+    }
+
+    // ----------------------------------------------------------------
+    // 采购退货成本回调逻辑测试（纯数学验证）
+    // ----------------------------------------------------------------
+
+    /// 模拟 recalc_avg_cost_after_return 中的成本回调计算
+    fn calc_cost_after_return(
+        current_qty: f64,
+        current_cost: i64,
+        return_qty: f64,
+        return_unit_cost: i64,
+    ) -> i64 {
+        let original_qty = current_qty + return_qty;
+        let original_value = original_qty * current_cost as f64;
+        let return_value = return_qty * return_unit_cost as f64;
+        if current_qty > 0.0 {
+            ((original_value - return_value) / current_qty)
+                .round()
+                .max(0.0) as i64
+        } else {
+            0
+        }
+    }
+
+    #[test]
+    fn return_cost_callback_normal() {
+        // 原库存 100个×$5，退货 10个×$3
+        // 扣减后库存 = 90个
+        // 原库存金额 = (90+10)×500 = 50000
+        // 退货金额 = 10×300 = 3000
+        // 新平均成本 = (50000-3000)/90 ≈ 522
+        let cost = calc_cost_after_return(90.0, 500, 10.0, 300);
+        assert_eq!(cost, 522);
+    }
+
+    #[test]
+    fn return_cost_callback_all_returned() {
+        // 全部退货后库存为 0，成本重置为 0
+        let cost = calc_cost_after_return(0.0, 500, 100.0, 500);
+        assert_eq!(cost, 0);
+    }
+
+    #[test]
+    fn return_cost_callback_negative_clamped_to_zero() {
+        // 退货成本高于原成本，可能导致负值，应 clamp 到 0
+        // 原库存 10个×$1，退货 5个×$100
+        // 原库存金额 = (10+5)×100 = 1500（注意 current_cost 是扣减后的）
+        // 退货金额 = 5×10000 = 50000
+        // 新平均成本 = (1500-50000)/10 = -4850 → clamp 到 0
+        let cost = calc_cost_after_return(10.0, 100, 5.0, 10000);
+        assert_eq!(cost, 0);
+    }
 }

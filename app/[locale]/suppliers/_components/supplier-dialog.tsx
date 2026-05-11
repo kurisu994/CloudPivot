@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatAmount } from '@/lib/currency'
+import { getErrorMessage } from '@/lib/error'
 import type { MaterialReferenceOption, SaveSupplierMaterialParams, SaveSupplierParams, SupplierMaterialItem } from '@/lib/tauri'
 import {
   deleteSupplierMaterial,
@@ -316,7 +317,7 @@ export function SupplierDialog({ open, onOpenChange, supplierId, onSaved }: Supp
       toast.success(t('saveSuccess'))
     } catch (error) {
       console.error('保存供应商失败', error)
-      toast.error(typeof error === 'string' ? error : t('saveError'))
+      toast.error(getErrorMessage(error, t('saveError')))
     } finally {
       setSaving(false)
     }
@@ -355,7 +356,7 @@ export function SupplierDialog({ open, onOpenChange, supplierId, onSaved }: Supp
       resetMaterialDialog()
     } catch (error) {
       console.error('保存供应物料失败', error)
-      toast.error(typeof error === 'string' ? error : t('materialSaveError'))
+      toast.error(getErrorMessage(error, t('materialSaveError')))
     } finally {
       setMaterialSaving(false)
     }
@@ -373,7 +374,7 @@ export function SupplierDialog({ open, onOpenChange, supplierId, onSaved }: Supp
       toast.success(t('materialDeleteSuccess'))
     } catch (error) {
       console.error('删除供应物料失败', error)
-      toast.error(typeof error === 'string' ? error : t('materialDeleteError'))
+      toast.error(getErrorMessage(error, t('materialDeleteError')))
     }
   }
 

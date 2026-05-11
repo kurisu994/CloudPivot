@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount } from '@/lib/currency'
+import { getErrorMessage } from '@/lib/error'
 import type { OutboundOrderListItem, ReturnableOutboundItem, SaveSalesReturnParams } from '@/lib/tauri'
 import { getOutboundOrders, getReturnableOutboundItems, saveAndConfirmSalesReturn } from '@/lib/tauri'
 
@@ -92,7 +93,7 @@ export function ReturnExecutePage({ outboundId, onBack }: ReturnExecutePageProps
         })),
       )
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('loadReturnError'))
+      toast.error(getErrorMessage(error, t('loadReturnError')))
     } finally {
       setLoading(false)
     }
@@ -166,7 +167,7 @@ export function ReturnExecutePage({ outboundId, onBack }: ReturnExecutePageProps
       toast.success(t('confirmReturnSuccess'))
       onBack()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('confirmReturnError'))
+      toast.error(getErrorMessage(error, t('confirmReturnError')))
     } finally {
       setConfirming(false)
     }

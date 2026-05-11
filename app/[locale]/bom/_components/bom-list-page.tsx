@@ -19,8 +19,8 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount } from '@/lib/currency'
+import { getErrorMessage } from '@/lib/error'
 import { invoke, isTauriEnv } from '@/lib/tauri'
-
 import { BomCopyDialog } from './bom-copy-dialog'
 import { BomReverseLookup } from './bom-reverse-lookup'
 
@@ -176,7 +176,7 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
       setData(res.items)
       setTotal(res.total)
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : t('notifications.loadFailed'))
+      toast.error(getErrorMessage(e, t('notifications.loadFailed')))
     } finally {
       setLoading(false)
     }
@@ -209,7 +209,7 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
       toast.success(t('notifications.deleteBomSuccess'))
       fetchBomList()
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : t('notifications.deleteBomFailed'))
+      toast.error(getErrorMessage(e, t('notifications.deleteBomFailed')))
     }
   }
 
@@ -234,7 +234,7 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
       toast.success(t('notifications.statusChangeSuccess'))
       fetchBomList()
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : t('notifications.statusChangeFailed'))
+      toast.error(getErrorMessage(e, t('notifications.statusChangeFailed')))
     }
   }
 

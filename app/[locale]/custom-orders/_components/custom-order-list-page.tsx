@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { getErrorMessage } from '@/lib/error'
 import type { CustomerListItem } from '@/lib/tauri'
 import { getCustomers, invoke } from '@/lib/tauri'
 import { type CustomOrderListItem, CustomOrderTable } from './custom-order-table'
@@ -164,7 +165,7 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
       toast.success(t('confirmSuccess'))
       await loadOrders()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('confirmError'))
+      toast.error(getErrorMessage(error, t('confirmError')))
     }
   }
 
@@ -176,7 +177,7 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
       toast.success(t('cancelSuccess'))
       await loadOrders()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('cancelError'))
+      toast.error(getErrorMessage(error, t('cancelError')))
     }
   }
 
@@ -188,7 +189,7 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
       toast.success(t('deleteSuccess'))
       await loadOrders()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('deleteError'))
+      toast.error(getErrorMessage(error, t('deleteError')))
     }
   }
 

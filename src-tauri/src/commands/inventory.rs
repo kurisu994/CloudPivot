@@ -12,8 +12,8 @@ use crate::db::DbState;
 use crate::error::AppError;
 use crate::operation_log;
 
-use super::PaginatedResponse;
 use super::inventory_ops;
+use super::{CurrentUser, PaginatedResponse};
 
 // ================================================================
 // 数据结构 — 库存查询
@@ -776,6 +776,7 @@ async fn generate_manual_movement_no(
 #[tauri::command]
 pub async fn create_manual_stock_movement(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: ManualStockMovementParams,
 ) -> Result<String, AppError> {
     let movement_type = params.movement_type.trim();
@@ -887,6 +888,8 @@ pub async fn create_manual_stock_movement(
             None,
             Some(&movement_no),
             params.remark.as_deref(),
+            current_user.user_id(),
+            &current_user.display_name(),
         )
         .await?;
 
@@ -947,6 +950,8 @@ pub async fn create_manual_stock_movement(
             None,
             Some(&movement_no),
             params.remark.as_deref(),
+            current_user.user_id(),
+            &current_user.display_name(),
         )
         .await?;
 
@@ -976,8 +981,8 @@ pub async fn create_manual_stock_movement(
                 material_name,
                 params.quantity
             ),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -1205,6 +1210,7 @@ pub async fn get_stock_check_detail(
 #[tauri::command]
 pub async fn create_stock_check(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: CreateStockCheckParams,
 ) -> Result<i64, AppError> {
     if params.warehouse_id <= 0 {
@@ -1228,7 +1234,7 @@ pub async fn create_stock_check(
         INSERT INTO stock_checks (
             check_no, warehouse_id, check_date, status, scope_type, scope_category_id,
             remark, created_by_user_id, created_by_name, created_at, updated_at
-        ) VALUES (?, ?, ?, 'draft', ?, ?, ?, 1, 'admin', datetime('now'), datetime('now'))
+        ) VALUES (?, ?, ?, 'draft', ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
         RETURNING id
         "#,
     )
@@ -1238,6 +1244,8 @@ pub async fn create_stock_check(
     .bind(&params.scope_type)
     .bind(params.scope_category_id)
     .bind(&params.remark)
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
     .fetch_one(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("创建盘点单失败: {}", e)))?;
@@ -1398,7 +1406,11 @@ pub async fn update_stock_check_items(
 
 /// 审核确认盘点单（生成盘盈/盘亏流水 + 调整库存）
 #[tauri::command]
-pub async fn confirm_stock_check(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn confirm_stock_check(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     let mut tx = db
         .pool
         .begin()
@@ -1470,6 +1482,8 @@ pub async fn confirm_stock_check(db: State<'_, DbState>, id: i64) -> Result<(), 
                 None,
                 None,
                 Some("盘点盈余"),
+                current_user.user_id(),
+                &current_user.display_name(),
             )
             .await?;
         } else if diff < 0.0 {
@@ -1499,6 +1513,8 @@ pub async fn confirm_stock_check(db: State<'_, DbState>, id: i64) -> Result<(), 
                 None,
                 None,
                 Some("盘点亏损"),
+                current_user.user_id(),
+                &current_user.display_name(),
             )
             .await?;
         }
@@ -1538,8 +1554,8 @@ pub async fn confirm_stock_check(db: State<'_, DbState>, id: i64) -> Result<(), 
             target_id: Some(id),
             target_no: Some(check_no.clone()),
             detail: format!("确认盘点单 {}", check_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -1809,6 +1825,7 @@ pub async fn get_transfer_detail(
 #[tauri::command]
 pub async fn save_transfer(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: SaveTransferParams,
 ) -> Result<i64, AppError> {
     if params.from_warehouse_id <= 0 || params.to_warehouse_id <= 0 {
@@ -1861,12 +1878,14 @@ pub async fn save_transfer(
             r#"
             INSERT INTO transfers (transfer_no, from_warehouse_id, to_warehouse_id, transfer_date, status, remark,
                                    created_by_user_id, created_by_name, created_at, updated_at)
-            VALUES (?, ?, ?, ?, 'draft', ?, 1, 'admin', datetime('now'), datetime('now'))
+            VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, datetime('now'), datetime('now'))
             RETURNING id
             "#,
         )
         .bind(&no).bind(params.from_warehouse_id).bind(params.to_warehouse_id)
         .bind(&params.transfer_date).bind(&params.remark)
+        .bind(current_user.user_id())
+        .bind(current_user.display_name())
         .fetch_one(&mut *tx).await
         .map_err(|e| AppError::Database(format!("创建调拨单失败: {}", e)))?;
         id
@@ -1896,7 +1915,11 @@ pub async fn save_transfer(
 
 /// 确认调拨（更新双仓库存 + 生成流水）
 #[tauri::command]
-pub async fn confirm_transfer(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn confirm_transfer(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     let mut tx = db
         .pool
         .begin()
@@ -1958,6 +1981,8 @@ pub async fn confirm_transfer(db: State<'_, DbState>, id: i64) -> Result<(), App
             Some(*item_id),
             Some(transfer_no),
             None,
+            current_user.user_id(),
+            &current_user.display_name(),
         )
         .await?;
 
@@ -1989,6 +2014,8 @@ pub async fn confirm_transfer(db: State<'_, DbState>, id: i64) -> Result<(), App
             Some(*item_id),
             Some(transfer_no),
             None,
+            current_user.user_id(),
+            &current_user.display_name(),
         )
         .await?;
 
@@ -2043,8 +2070,8 @@ pub async fn confirm_transfer(db: State<'_, DbState>, id: i64) -> Result<(), App
                 "确认调拨单 {}，从仓库 {} 调往仓库 {}",
                 transfer_no, from_wh, to_wh
             ),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -2054,7 +2081,11 @@ pub async fn confirm_transfer(db: State<'_, DbState>, id: i64) -> Result<(), App
 
 /// 删除草稿调拨单
 #[tauri::command]
-pub async fn delete_transfer(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn delete_transfer(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     let mut tx = db
         .pool
         .begin()
@@ -2091,8 +2122,8 @@ pub async fn delete_transfer(db: State<'_, DbState>, id: i64) -> Result<(), AppE
             target_id: Some(id),
             target_no: None,
             detail: format!("删除调拨单 {}", id),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;

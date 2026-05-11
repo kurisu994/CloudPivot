@@ -32,7 +32,7 @@
 | Cargo Clippy | ✅ 通过 | `-D warnings` 严格模式零警告 |
 | Cargo Fmt | ✅ 通过 | 格式一致 |
 | i18n 完整性 | ✅ 通过 | zh/en/vi 三语 key 完全对齐 |
-| Rust 测试 | ⚠️ 7 个测试 | data_management(3) + reports(4)，覆盖率极低 |
+| Rust 测试 | ✅ 33 个测试 | inventory_ops(12) + finance(8) + data_management(3) + reports(4) + material(6)，核心成本逻辑已覆盖 |
 | 前端测试 | ⚠️ 无测试框架 | package.json 无 test 脚本 |
 
 ---
@@ -76,10 +76,10 @@
 - 编号生成在事务内执行，保证唯一性
 
 **不足：**
-- 所有写操作硬编码 `user_id=1`，多用户场景无法追溯操作人
+- 所有写操作硬编码 `user_id=1`，多用户场景无法追溯操作人 → ✅ 已修复（CurrentUser state）
 - 动态 SQL 构建存在两种风格（手动拼接 vs `QueryBuilder`），不统一
 - count/data 查询条件重复（每个列表命令约 80 行重复代码）
-- 仅 7 个单元测试（data_management: 3, reports: 4），核心业务逻辑无覆盖
+- ~~仅 7 个单元测试（data_management: 3, reports: 4），核心业务逻辑无覆盖~~ → ✅ 已修复（33 个测试）
 - 库存数量使用 f64 浮点类型，大量出入库后可能累积误差
 - 采购/销售模块高度对称但完全复制（4,815 行 DRY 违规）
 - 数据库初始化失败直接 panic，无优雅降级
@@ -159,10 +159,10 @@
 |---|------|----------|----------|
 | 1 | Dashboard 7 个数据面板错误被静默吞掉 | 用户体验 | `metrics-cards.tsx` 等 7 个组件的 `catch {}` 为空，Tauri API 失败时显示 0 值或空白图表。添加 `ErrorPanel` 组件（带重试按钮） |
 | 2 | 缺少 Next.js 错误边界页面 | 用户体验 | 不存在 `error.tsx`、`global-error.tsx`、`not-found.tsx`，渲染错误导致白屏。创建错误边界页面 |
-| 3 | 测试覆盖率极低（7 个测试 / 20,000 行 Rust） | 数据完整性 | 核心业务逻辑（FIFO、成本核算、费用分摊）无测试保障。优先为 `inventory_ops.rs`、`finance.rs` 编写测试 |
+| 3 | ~~测试覆盖率极低（7 个测试 / 20,000 行 Rust）~~ | ~~数据完整性~~ | ✅ 已修复：测试从 7 个增至 33 个，覆盖成本折算、移动加权平均、退货成本回调、财务状态判断 |
 | 4 | `lib/tauri.ts` 3,774 行单文件 | 维护困难 | API 封装与 mock 数据混合。拆分为 `lib/tauri/` 目录，按业务域组织 |
 | 5 | 数据库初始化失败直接 panic | 应用崩溃 | `lib.rs` 中 `db::init_db` 失败时 `panic!`，无用户友好错误页面。转化为可恢复状态 |
-| 6 | 写操作硬编码 `user_id=1` | 审计追溯 | 所有操作日志 `operator_user_id = 1`，多用户场景无法追溯。从 AuthProvider 传递 user_id |
+| 6 | ~~写操作硬编码 `user_id=1`~~ | ~~审计追溯~~ | ✅ 已修复：引入 `CurrentUser` managed state，登录后自动更新，所有写操作动态读取 |
 
 ### 🟡 中优先级（High）
 
@@ -170,7 +170,7 @@
 |---|------|----------|----------|
 | 7 | 库存数量使用 f64 浮点类型 | 数据精度 | 大量出入库后浮点累积误差可能导致总库存与批次汇总不一致。改用整数存储最小单位 |
 | 8 | 采购/销售模块严重 DRY 违规 | 维护成本 | 两模块完全对称但复制粘贴了 4,815 行代码（purchase.rs 2,353 行 + sales.rs 2,462 行）。提取共享抽象 |
-| 9 | 错误信息无结构化 | 前端体验 | `AppError` 序列化为纯文本，前端无法做程序化错误分类。增加 `{ code, message, details }` 结构 |
+| 9 | ~~错误信息无结构化~~ | ~~前端体验~~ | ✅ 已修复：`AppError` 序列化为 `{ code, message, details? }` JSON，前端 `lib/error.ts` 提供 `getErrorMessage` 等工具函数 |
 | 10 | Loading 状态不统一 | 用户体验 | 骨架屏无脉冲动画、旋转图标、纯文本、无 loading 状态混用。统一骨架屏设计系统 |
 | 11 | 快捷操作按钮无功能 | 用户体验 | Dashboard `QuickActions` 4 个按钮（新建采购/销售单等）无 `onClick` 或 `href`，为纯占位符 |
 | 12 | 面包屑导航未覆盖深层路径 | 导航体验 | `useBreadcrumbs()` 仅匹配 `navConfig` 二级路径，深层页面回退到仅显示 "Dashboard" |
@@ -341,10 +341,10 @@ tag push (v*) → 4 平台构建 → GitHub Release + Updater 签名
 3. 修复数据库初始化失败 panic → 转为可恢复状态
 
 **P1 — 短期修复（2 周内）：**
-4. 为 `inventory_ops.rs`、`finance.rs` 编写核心单元测试
+4. ~~为 `inventory_ops.rs`、`finance.rs` 编写核心单元测试~~ ✅ 已完成（测试从 7 个增至 33 个）
 5. 将 f64 库存数量改为整数存储最小单位
-6. 结构化 `AppError`（添加 `{ code, message, details }`）
-7. 支持真实 user_id 传递（替代硬编码 admin）
+6. ~~结构化 `AppError`（添加 `{ code, message, details }`）~~ ✅ 已完成
+7. ~~支持真实 user_id 传递（替代硬编码 admin）~~ ✅ 已完成（CurrentUser managed state）
 8. 拆分 `lib/tauri.ts` 为按业务域组织的多文件
 
 **P2 — 中期改善（Phase 5 前）：**

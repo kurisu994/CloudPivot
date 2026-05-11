@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { getErrorMessage } from '@/lib/error'
 import type { CustomerFilter, CustomerListItem } from '@/lib/tauri'
 import { deleteCustomer, getCustomers, toggleCustomerStatus } from '@/lib/tauri'
 import { CustomerDetailDialog } from './customer-detail-dialog'
@@ -154,7 +155,7 @@ export function CustomersContent() {
       await loadCustomers()
     } catch (error) {
       console.error('切换客户状态失败', error)
-      toast.error(typeof error === 'string' ? error : t('toast.toggleError'))
+      toast.error(getErrorMessage(error, t('toast.toggleError')))
     }
   }
 
@@ -169,7 +170,7 @@ export function CustomersContent() {
       await loadCustomers()
     } catch (error) {
       console.error('删除客户失败', error)
-      toast.error(typeof error === 'string' ? error : t('toast.deleteError'))
+      toast.error(getErrorMessage(error, t('toast.deleteError')))
     }
   }
 

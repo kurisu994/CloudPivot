@@ -13,7 +13,7 @@ use crate::db::DbState;
 use crate::error::AppError;
 use crate::operation_log;
 
-use super::PaginatedResponse;
+use super::{CurrentUser, PaginatedResponse};
 
 // ================================================================
 // 数据结构
@@ -584,6 +584,7 @@ pub async fn get_purchase_order_detail(
 #[tauri::command]
 pub async fn save_purchase_order(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: SavePurchaseOrderParams,
 ) -> Result<i64, AppError> {
     validate_save_params(&params)?;
@@ -691,7 +692,7 @@ pub async fn save_purchase_order(
             ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?, 'draft',
                 ?, ?, ?, ?, ?, ?,
-                ?, 1, 'admin',
+                ?, ?, ?,
                 datetime('now'), datetime('now')
             ) RETURNING id
             "#,
@@ -710,6 +711,8 @@ pub async fn save_purchase_order(
         .bind(params.other_charges)
         .bind(payable_amount)
         .bind(&params.remark)
+        .bind(current_user.user_id())
+        .bind(current_user.display_name())
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("创建采购单失败: {}", e)))?;
@@ -782,8 +785,8 @@ pub async fn save_purchase_order(
                 },
                 order_no
             ),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -795,7 +798,11 @@ pub async fn save_purchase_order(
 ///
 /// 使用原子 UPDATE WHERE status = 'draft' 避免 TOCTOU 竞态。
 #[tauri::command]
-pub async fn approve_purchase_order(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn approve_purchase_order(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     let result = sqlx::query(
         r#"
         UPDATE purchase_orders SET
@@ -840,8 +847,8 @@ pub async fn approve_purchase_order(db: State<'_, DbState>, id: i64) -> Result<(
             target_id: Some(id),
             target_no: Some(order_no.clone()),
             detail: format!("审核采购单 {}", order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -853,7 +860,11 @@ pub async fn approve_purchase_order(db: State<'_, DbState>, id: i64) -> Result<(
 ///
 /// 使用原子 UPDATE 避免 TOCTOU 竞态。仅草稿和已审核（且无关联入库单）状态可作废。
 #[tauri::command]
-pub async fn cancel_purchase_order(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn cancel_purchase_order(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     // 先检查是否有关联入库单（这个检查在作废场景下是安全的：
     // 即使并发创建了入库单，下面的原子 UPDATE 会因为状态已变为 partial_in 而失败）
     let inbound_count: (i64,) =
@@ -914,8 +925,8 @@ pub async fn cancel_purchase_order(db: State<'_, DbState>, id: i64) -> Result<()
             target_id: Some(id),
             target_no: Some(order_no.clone()),
             detail: format!("作废采购单 {}", order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -925,7 +936,11 @@ pub async fn cancel_purchase_order(db: State<'_, DbState>, id: i64) -> Result<()
 
 /// 删除采购单（仅草稿状态可删除）
 #[tauri::command]
-pub async fn delete_purchase_order(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn delete_purchase_order(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     let current: Option<(String,)> =
         sqlx::query_as("SELECT status FROM purchase_orders WHERE id = ?")
             .bind(id)
@@ -982,8 +997,8 @@ pub async fn delete_purchase_order(db: State<'_, DbState>, id: i64) -> Result<()
             target_id: Some(id),
             target_no: Some(order_no.clone()),
             detail: format!("删除采购单 {}", order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -1331,6 +1346,7 @@ pub async fn get_inbound_orders(
 #[tauri::command]
 pub async fn save_and_confirm_inbound(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: SaveInboundOrderParams,
 ) -> Result<i64, AppError> {
     use super::inventory_ops;
@@ -1496,8 +1512,8 @@ pub async fn save_and_confirm_inbound(
             ?, ?, ?,
             ?, ?, ?, ?, ?,
             'confirmed', ?,
-            1, 'admin',
-            1, 'admin', datetime('now'),
+            ?, ?,
+            ?, ?, datetime('now'),
             datetime('now'), datetime('now')
         ) RETURNING id
         "#,
@@ -1516,6 +1532,10 @@ pub async fn save_and_confirm_inbound(
     .bind(allocated_other)
     .bind(payable_amount)
     .bind(&params.remark)
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
     .fetch_one(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("创建入库单失败: {}", e)))?;
@@ -1666,6 +1686,8 @@ pub async fn save_and_confirm_inbound(
             Some(inbound_item_id),
             Some(&inbound_no),
             None,
+            current_user.user_id(),
+            &current_user.display_name(),
         )
         .await?;
 
@@ -1737,8 +1759,8 @@ pub async fn save_and_confirm_inbound(
                     .unwrap_or_else(|| "无".to_string()),
                 payable_amount
             ),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -2082,6 +2104,7 @@ pub async fn get_purchase_returns(
 #[tauri::command]
 pub async fn save_and_confirm_purchase_return(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: SavePurchaseReturnParams,
 ) -> Result<i64, AppError> {
     use super::inventory_ops;
@@ -2166,8 +2189,8 @@ pub async fn save_and_confirm_purchase_return(
             ?, ?, ?,
             ?, ?,
             'confirmed', ?,
-            1, 'admin',
-            1, 'admin', datetime('now'),
+            ?, ?,
+            ?, ?, datetime('now'),
             datetime('now'), datetime('now')
         ) RETURNING id
         "#,
@@ -2182,6 +2205,10 @@ pub async fn save_and_confirm_purchase_return(
     .bind(total_amount)
     .bind(total_amount_base)
     .bind(&params.remark)
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
     .fetch_one(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("创建退货单失败: {}", e)))?;
@@ -2295,6 +2322,8 @@ pub async fn save_and_confirm_purchase_return(
             None,
             Some(&return_no),
             params.return_reason.as_deref(),
+            current_user.user_id(),
+            &current_user.display_name(),
         )
         .await?;
     }
@@ -2343,8 +2372,8 @@ pub async fn save_and_confirm_purchase_return(
                 "确认采购退货单 {}，原入库单 {}，退货金额 {}",
                 return_no, params.inbound_id, total_amount
             ),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;

@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatAmount } from '@/lib/currency'
+import { getErrorMessage } from '@/lib/error'
 import type { CategoryNode, InventoryDetail, InventoryFilter, InventoryListItem, WarehouseItem } from '@/lib/tauri'
 import { getCategoryTree, getInventoryDetail, getInventoryList, getWarehouses } from '@/lib/tauri'
 
@@ -133,7 +134,7 @@ export function InventoryListPage() {
       const d = await getInventoryDetail(materialId)
       setDetail(d)
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('loadDetailFailed'))
+      toast.error(getErrorMessage(error, t('loadDetailFailed')))
     } finally {
       setDetailLoading(false)
     }

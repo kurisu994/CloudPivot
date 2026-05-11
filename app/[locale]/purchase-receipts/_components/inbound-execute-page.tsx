@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount } from '@/lib/currency'
+import { getErrorMessage } from '@/lib/error'
 import type { PendingInboundItem, PurchaseOrderDetail, SaveInboundOrderParams } from '@/lib/tauri'
 import { getPendingInboundItems, getPurchaseOrderDetail, saveAndConfirmInbound } from '@/lib/tauri'
 
@@ -110,7 +111,7 @@ export function InboundExecutePage({ purchaseId, onBack }: InboundExecutePagePro
         })),
       )
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('loadError'))
+      toast.error(getErrorMessage(error, t('loadError')))
     } finally {
       setLoading(false)
     }
@@ -208,7 +209,7 @@ export function InboundExecutePage({ purchaseId, onBack }: InboundExecutePagePro
       toast.success(t('confirmInboundSuccess'))
       onBack()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('confirmInboundError'))
+      toast.error(getErrorMessage(error, t('confirmInboundError')))
     } finally {
       setConfirming(false)
     }

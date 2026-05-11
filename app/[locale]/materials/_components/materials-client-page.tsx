@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { downloadBusinessWorkbook, materialExcelColumns, readBusinessExcelRows } from '@/lib/business-excel'
+import { getErrorMessage } from '@/lib/error'
 import type { MaterialImportRow } from '@/lib/tauri'
 import { exportMaterials, importMaterials, invoke, isTauriEnv } from '@/lib/tauri'
 import { buildToggleMaterialStatusArgs } from './material-command-args'
@@ -256,7 +257,7 @@ export function MaterialsClientPage() {
       setData(res.items)
       setTotal(res.total)
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : t('notifications.loadMaterialsFailed'))
+      toast.error(getErrorMessage(e, t('notifications.loadMaterialsFailed')))
     } finally {
       setLoading(false)
     }
@@ -293,7 +294,7 @@ export function MaterialsClientPage() {
       toast.success(currentEnabled ? t('notifications.materialDisabled') : t('notifications.materialEnabled'))
       fetchMaterials()
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : t('notifications.toggleFailed'))
+      toast.error(getErrorMessage(e, t('notifications.toggleFailed')))
     }
   }
 
@@ -349,7 +350,7 @@ export function MaterialsClientPage() {
       setPendingImportRows([])
       fetchMaterials()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('notifications.importFailed'))
+      toast.error(getErrorMessage(error, t('notifications.importFailed')))
     } finally {
       setImporting(false)
     }

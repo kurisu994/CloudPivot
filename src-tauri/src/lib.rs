@@ -23,6 +23,9 @@ pub fn run() {
                     .build(),
             )?;
 
+            // 注入当前用户状态（默认 admin）
+            app.manage(commands::CurrentUser::default());
+
             // 初始化数据库（异步）
             let handle = app.handle().clone();
             tauri::async_runtime::block_on(async move {
@@ -43,7 +46,9 @@ pub fn run() {
                         // 注入降级状态：内存数据库 + 错误标记
                         // 前端 IPC 调用会因为表不存在而返回错误，展示友好提示
                         let fallback_pool = db::create_fallback_pool().await;
-                        handle.manage(DbState { pool: fallback_pool });
+                        handle.manage(DbState {
+                            pool: fallback_pool,
+                        });
                         handle.manage(db::DbInitError {
                             message: format!("{}", e),
                         });

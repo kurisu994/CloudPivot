@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { getErrorMessage } from '@/lib/error'
 import type { CustomerListItem, WarehouseItem } from '@/lib/tauri'
 import { getCustomers, getWarehouses, invoke } from '@/lib/tauri'
 import { type SalesOrderListItem, SalesOrderTable } from './sales-order-table'
@@ -150,7 +151,7 @@ export function SalesOrderListPage({ onEdit, onNew }: SalesOrderListPageProps) {
       toast.success(t('approveSuccess'))
       await loadOrders()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('approveError'))
+      toast.error(getErrorMessage(error, t('approveError')))
     }
   }
 
@@ -162,7 +163,7 @@ export function SalesOrderListPage({ onEdit, onNew }: SalesOrderListPageProps) {
       toast.success(t('cancelSuccess'))
       await loadOrders()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('cancelError'))
+      toast.error(getErrorMessage(error, t('cancelError')))
     }
   }
 
@@ -174,7 +175,7 @@ export function SalesOrderListPage({ onEdit, onNew }: SalesOrderListPageProps) {
       toast.success(t('deleteSuccess'))
       await loadOrders()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('deleteError'))
+      toast.error(getErrorMessage(error, t('deleteError')))
     }
   }
 

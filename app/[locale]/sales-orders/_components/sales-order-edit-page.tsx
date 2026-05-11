@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount } from '@/lib/currency'
+import { getErrorMessage } from '@/lib/error'
 import type { CustomerListItem, MaterialReferenceOption, WarehouseItem } from '@/lib/tauri'
 import { getCustomers, getMaterialReferenceOptions, getWarehouses, invoke } from '@/lib/tauri'
 
@@ -215,7 +216,7 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
         })),
       )
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : tc('loadDetailFailed'))
+      toast.error(getErrorMessage(error, tc('loadDetailFailed')))
     } finally {
       setLoading(false)
     }
@@ -359,7 +360,7 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
       toast.success(tc('saveSuccess'))
       onBack()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : tc('saveFailed'))
+      toast.error(getErrorMessage(error, tc('saveFailed')))
     } finally {
       setSaving(false)
     }

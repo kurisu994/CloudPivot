@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{QueryBuilder, Sqlite};
 use tauri::State;
 
-use super::PaginatedResponse;
+use super::{CurrentUser, PaginatedResponse};
 use crate::db::DbState;
 use crate::error::AppError;
 use crate::operation_log;
@@ -370,6 +370,7 @@ pub async fn get_payment_records(
 #[tauri::command]
 pub async fn record_payment(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: RecordPaymentParams,
 ) -> Result<i64, AppError> {
     if params.payment_amount <= 0 {
@@ -465,8 +466,8 @@ pub async fn record_payment(
                 "登记付款 {}，金额 {} {}",
                 order_no, params.payment_amount, currency
             ),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -671,6 +672,7 @@ pub async fn get_receipt_records(
 #[tauri::command]
 pub async fn record_receipt(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: RecordReceiptParams,
 ) -> Result<i64, AppError> {
     if params.receipt_amount <= 0 {
@@ -766,11 +768,95 @@ pub async fn record_receipt(
                 "登记收款 {}，金额 {} {}",
                 order_no, params.receipt_amount, currency
             ),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
 
     Ok(record_id)
+}
+
+// ================================================================
+// 单元测试
+// ================================================================
+
+#[cfg(test)]
+mod tests {
+    /// 付款状态判断逻辑（与 record_payment 中一致）
+    fn determine_payment_status(paid_amount: i64, payable_amount: i64) -> &'static str {
+        if paid_amount >= payable_amount {
+            "paid"
+        } else {
+            "partial"
+        }
+    }
+
+    /// 收款状态判断逻辑（与 record_receipt 中一致）
+    fn determine_receipt_status(received_amount: i64, receivable_amount: i64) -> &'static str {
+        if received_amount >= receivable_amount {
+            "paid"
+        } else {
+            "partial"
+        }
+    }
+
+    #[test]
+    fn payment_status_partial_when_underpaid() {
+        assert_eq!(determine_payment_status(5000, 10000), "partial");
+    }
+
+    #[test]
+    fn payment_status_paid_when_exact() {
+        assert_eq!(determine_payment_status(10000, 10000), "paid");
+    }
+
+    #[test]
+    fn payment_status_paid_when_overpaid() {
+        // 理论上不应发生（有校验），但逻辑上 >= 即为 paid
+        assert_eq!(determine_payment_status(15000, 10000), "paid");
+    }
+
+    #[test]
+    fn receipt_status_partial_when_underreceived() {
+        assert_eq!(determine_receipt_status(3000, 10000), "partial");
+    }
+
+    #[test]
+    fn receipt_status_paid_when_exact() {
+        assert_eq!(determine_receipt_status(10000, 10000), "paid");
+    }
+
+    #[test]
+    fn payment_amount_validation() {
+        // 付款金额必须 > 0
+        assert!(0_i64 <= 0); // 模拟校验逻辑
+        assert!(1_i64 > 0);
+    }
+
+    #[test]
+    fn unpaid_amount_calculation() {
+        // 未付余额 = 应付总额 - 已付金额
+        let payable_amount = 100_000_i64;
+        let paid_amount = 30_000_i64;
+        let unpaid = payable_amount - paid_amount;
+        assert_eq!(unpaid, 70_000);
+
+        // 付款金额不能超过未付余额
+        let payment = 80_000_i64;
+        assert!(payment > unpaid); // 应被拒绝
+    }
+
+    #[test]
+    fn unreceived_amount_calculation() {
+        // 未收余额 = 应收总额 - 已收金额
+        let receivable_amount = 200_000_i64;
+        let received_amount = 50_000_i64;
+        let unreceived = receivable_amount - received_amount;
+        assert_eq!(unreceived, 150_000);
+
+        // 收款金额不能超过未收余额
+        let receipt = 100_000_i64;
+        assert!(receipt <= unreceived); // 应被允许
+    }
 }

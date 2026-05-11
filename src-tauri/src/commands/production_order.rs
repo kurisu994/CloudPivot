@@ -12,7 +12,7 @@ use crate::db::DbState;
 use crate::error::AppError;
 use crate::operation_log;
 
-use super::PaginatedResponse;
+use super::{CurrentUser, PaginatedResponse};
 
 // ================================================================
 // 数据结构
@@ -408,6 +408,7 @@ pub async fn get_production_order_detail(
 #[tauri::command]
 pub async fn save_production_order(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     input: SaveProductionOrderInput,
 ) -> Result<i64, AppError> {
     // 校验 BOM 存在且已启用
@@ -516,7 +517,7 @@ pub async fn save_production_order(
                 ?, ?, ?, ?,
                 ?, 'draft',
                 ?, ?,
-                ?, 1, 'admin',
+                ?, ?, ?,
                 datetime('now'), datetime('now')
              ) RETURNING id",
         )
@@ -528,6 +529,8 @@ pub async fn save_production_order(
         .bind(&input.planned_start_date)
         .bind(&input.planned_end_date)
         .bind(&input.remark)
+        .bind(current_user.user_id())
+        .bind(current_user.display_name())
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("创建工单失败: {}", e)))?;
@@ -624,8 +627,8 @@ pub async fn save_production_order(
                 },
                 order_no
             ),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -639,7 +642,11 @@ pub async fn save_production_order(
 
 /// 删除工单（仅草稿态）
 #[tauri::command]
-pub async fn delete_production_order(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn delete_production_order(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     let affected = sqlx::query("DELETE FROM production_orders WHERE id = ? AND status = 'draft'")
         .bind(id)
         .execute(&db.pool)
@@ -670,8 +677,8 @@ pub async fn delete_production_order(db: State<'_, DbState>, id: i64) -> Result<
             target_id: Some(id),
             target_no: None,
             detail: format!("删除生产工单 {}", id),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -693,6 +700,7 @@ pub async fn delete_production_order(db: State<'_, DbState>, id: i64) -> Result<
 #[tauri::command]
 pub async fn pick_materials(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     input: PickMaterialInput,
 ) -> Result<(), AppError> {
     if input.items.is_empty() {
@@ -873,6 +881,8 @@ pub async fn pick_materials(
             None,
             None,
             None,
+            current_user.user_id(),
+            &current_user.display_name(),
         )
         .await?;
 
@@ -921,8 +931,8 @@ pub async fn pick_materials(
             target_id: Some(input.production_order_id),
             target_no: Some(order_no.clone()),
             detail: format!("生产工单 {} 领料", order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -942,6 +952,7 @@ pub async fn pick_materials(
 #[tauri::command]
 pub async fn return_materials(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     input: ReturnMaterialInput,
 ) -> Result<(), AppError> {
     if input.items.is_empty() {
@@ -1027,6 +1038,8 @@ pub async fn return_materials(
             None,
             None,
             None,
+            current_user.user_id(),
+            &current_user.display_name(),
         )
         .await?;
 
@@ -1163,8 +1176,8 @@ pub async fn return_materials(
             target_id: Some(input.production_order_id),
             target_no: Some(order_no.clone()),
             detail: format!("生产工单 {} 退料", order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -1180,7 +1193,11 @@ pub async fn return_materials(
 ///
 /// 校验至少有一笔领料记录。
 #[tauri::command]
-pub async fn start_production(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn start_production(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     // 校验状态
     let status: Option<String> =
         sqlx::query_scalar("SELECT status FROM production_orders WHERE id = ?")
@@ -1238,8 +1255,8 @@ pub async fn start_production(db: State<'_, DbState>, id: i64) -> Result<(), App
             target_id: Some(id),
             target_no: Some(order_no.clone()),
             detail: format!("生产工单 {} 开始生产", order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -1260,6 +1277,7 @@ pub async fn start_production(db: State<'_, DbState>, id: i64) -> Result<(), App
 #[tauri::command]
 pub async fn complete_production(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     input: CompleteProductionInput,
 ) -> Result<(), AppError> {
     if input.quantity <= 0.0 {
@@ -1374,6 +1392,8 @@ pub async fn complete_production(
         None,
         None,
         None,
+        current_user.user_id(),
+        &current_user.display_name(),
     )
     .await?;
 
@@ -1407,8 +1427,8 @@ pub async fn complete_production(
             target_id: Some(input.production_order_id),
             target_no: Some(order_no.clone()),
             detail: format!("生产工单 {} 完工入库，数量 {}", order_no, input.quantity),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -1424,7 +1444,11 @@ pub async fn complete_production(
 ///
 /// 校验已完工数量 > 0，记录 actual_end_date。
 #[tauri::command]
-pub async fn finish_production_order(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn finish_production_order(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     #[derive(sqlx::FromRow)]
     struct Info {
         status: String,
@@ -1475,8 +1499,8 @@ pub async fn finish_production_order(db: State<'_, DbState>, id: i64) -> Result<
             target_id: Some(id),
             target_no: Some(order_no.clone()),
             detail: format!("生产工单 {} 完成结单", order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -1492,7 +1516,11 @@ pub async fn finish_production_order(db: State<'_, DbState>, id: i64) -> Result<
 ///
 /// 草稿态直接取消；领料中/生产中状态需确认（v1.0 不自动退料）。
 #[tauri::command]
-pub async fn cancel_production_order(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn cancel_production_order(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     let status: Option<String> =
         sqlx::query_scalar("SELECT status FROM production_orders WHERE id = ?")
             .bind(id)
@@ -1540,8 +1568,8 @@ pub async fn cancel_production_order(db: State<'_, DbState>, id: i64) -> Result<
             target_id: Some(id),
             target_no: Some(order_no.clone()),
             detail: format!("取消生产工单 {}", order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;

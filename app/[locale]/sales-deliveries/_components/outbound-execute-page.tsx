@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount } from '@/lib/currency'
+import { getErrorMessage } from '@/lib/error'
 import type { PendingOutboundItem, SaveOutboundOrderParams } from '@/lib/tauri'
 import { getPendingOutboundItems, invoke, saveAndConfirmOutbound } from '@/lib/tauri'
 
@@ -134,7 +135,7 @@ export function OutboundExecutePage({ salesId, onBack }: OutboundExecutePageProp
         })),
       )
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('loadOutboundError'))
+      toast.error(getErrorMessage(error, t('loadOutboundError')))
     } finally {
       setLoading(false)
     }
@@ -227,7 +228,7 @@ export function OutboundExecutePage({ salesId, onBack }: OutboundExecutePageProp
       toast.success(t('confirmOutboundSuccess'))
       onBack()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('confirmOutboundError'))
+      toast.error(getErrorMessage(error, t('confirmOutboundError')))
     } finally {
       setConfirming(false)
     }

@@ -3,6 +3,7 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react'
 import { SplashScreen } from '@/components/common/splash-screen'
 import { usePathname, useRouter } from '@/i18n/navigation'
+import { getErrorMessage } from '@/lib/error'
 import * as tauriApi from '@/lib/tauri'
 import { isTauriEnv, type UserInfo } from '@/lib/tauri'
 import { SystemConfigKeys } from '@/lib/types/system-config'
@@ -142,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return {
           success: false,
           mustChangePassword: false,
-          error: err instanceof Error ? err.message : String(err),
+          error: getErrorMessage(err),
         }
       }
     },

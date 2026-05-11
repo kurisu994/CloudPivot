@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { type Currency, formatAmount } from '@/lib/currency'
+import { getErrorMessage } from '@/lib/error'
 import type { ReceiptRecordItem, ReceivableListItem } from '@/lib/tauri'
 import { getReceiptRecords, getReceivables, recordReceipt } from '@/lib/tauri'
 
@@ -147,7 +148,7 @@ export function ReceivablesPage() {
       setReceiptDialogOpen(false)
       void loadData()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : String(error))
+      toast.error(getErrorMessage(error, String(error)))
     } finally {
       setReceiptSubmitting(false)
     }

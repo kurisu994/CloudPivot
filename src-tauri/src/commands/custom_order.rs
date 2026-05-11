@@ -12,7 +12,7 @@ use crate::db::DbState;
 use crate::error::AppError;
 use crate::operation_log;
 
-use super::PaginatedResponse;
+use super::{CurrentUser, PaginatedResponse};
 
 // ================================================================
 // 数据结构
@@ -571,6 +571,7 @@ pub async fn get_custom_order_detail(
 #[tauri::command]
 pub async fn save_custom_order(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: SaveCustomOrderParams,
 ) -> Result<i64, AppError> {
     validate_save_params(&params)?;
@@ -672,7 +673,7 @@ pub async fn save_custom_order(
                 ?, ?, ?, ?, ?, ?, ?, ?, 'quoting',
                 ?, ?, ?, ?, ?,
                 ?, ?,
-                1, 'admin',
+                ?, ?,
                 datetime('now'), datetime('now')
             ) RETURNING id
             "#,
@@ -692,6 +693,8 @@ pub async fn save_custom_order(
         .bind(quote_amount_base)
         .bind(&params.attachment_path)
         .bind(&params.remark)
+        .bind(current_user.user_id())
+        .bind(current_user.display_name())
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("创建定制单失败: {}", e)))?;
@@ -753,8 +756,8 @@ pub async fn save_custom_order(
                 },
                 order_no
             ),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -764,7 +767,11 @@ pub async fn save_custom_order(
 
 /// 删除定制单（仅报价中状态）
 #[tauri::command]
-pub async fn delete_custom_order(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn delete_custom_order(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     let status: Option<String> =
         sqlx::query_scalar("SELECT status FROM custom_orders WHERE id = ?")
             .bind(id)
@@ -844,8 +851,8 @@ pub async fn delete_custom_order(db: State<'_, DbState>, id: i64) -> Result<(), 
             target_id: Some(id),
             target_no: Some(order_no.clone()),
             detail: format!("删除定制单 {}", order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -855,7 +862,11 @@ pub async fn delete_custom_order(db: State<'_, DbState>, id: i64) -> Result<(), 
 
 /// 确认定制单（报价中 → 已确认，创建原材料预留）
 #[tauri::command]
-pub async fn confirm_custom_order(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn confirm_custom_order(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     let order_info: Option<(String, i64)> =
         sqlx::query_as("SELECT status, quote_amount FROM custom_orders WHERE id = ?")
             .bind(id)
@@ -1043,8 +1054,8 @@ pub async fn confirm_custom_order(db: State<'_, DbState>, id: i64) -> Result<(),
             target_id: Some(id),
             target_no: Some(order_no.clone()),
             detail: format!("确认定制单 {}", order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -1054,7 +1065,11 @@ pub async fn confirm_custom_order(db: State<'_, DbState>, id: i64) -> Result<(),
 
 /// 取消定制单（释放原材料预留）
 #[tauri::command]
-pub async fn cancel_custom_order(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn cancel_custom_order(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
     let status: Option<String> =
         sqlx::query_scalar("SELECT status FROM custom_orders WHERE id = ?")
             .bind(id)
@@ -1156,8 +1171,8 @@ pub async fn cancel_custom_order(db: State<'_, DbState>, id: i64) -> Result<(), 
             target_id: Some(id),
             target_no: Some(order_no.clone()),
             detail: format!("取消定制单 {}", order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -1341,6 +1356,7 @@ pub async fn calculate_custom_cost(
 #[tauri::command]
 pub async fn convert_to_sales_order(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     custom_order_id: i64,
 ) -> Result<i64, AppError> {
     // 查询定制单信息
@@ -1425,7 +1441,7 @@ pub async fn convert_to_sales_order(
         ) VALUES (
             ?, ?, ?, ?, ?, ?, ?, 'draft',
             ?, 0, ?, ?,
-            1, 'admin',
+            ?, ?,
             datetime('now'), datetime('now')
         ) RETURNING id
         "#,
@@ -1440,6 +1456,8 @@ pub async fn convert_to_sales_order(
     .bind(info.quote_amount)
     .bind(info.quote_amount)
     .bind("由定制单转入".to_string())
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
     .fetch_one(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("创建销售单失败: {}", e)))?;
@@ -1473,8 +1491,8 @@ pub async fn convert_to_sales_order(
             target_id: Some(custom_order_id),
             target_no: Some(custom_no.clone()),
             detail: format!("定制单 {} 转为销售单 {}", custom_no, sales_order_no),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -1490,6 +1508,7 @@ pub async fn convert_to_sales_order(
 #[tauri::command]
 pub async fn start_production_from_custom_order(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     custom_order_id: i64,
 ) -> Result<i64, AppError> {
     // 查询定制单状态
@@ -1564,7 +1583,7 @@ pub async fn start_production_from_custom_order(
             ?, ?, ?, ?,
             1, 'draft',
             NULL, NULL,
-            '由定制单自动创建', 1, 'admin',
+            '由定制单自动创建', ?, ?,
             datetime('now'), datetime('now')
          ) RETURNING id",
     )
@@ -1572,6 +1591,8 @@ pub async fn start_production_from_custom_order(
     .bind(custom_bom.id)
     .bind(custom_order_id)
     .bind(custom_bom.material_id)
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
     .fetch_one(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("创建工单失败: {}", e)))?;

@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { getErrorMessage } from '@/lib/error'
 import type { SupplierFilter, SupplierListItem } from '@/lib/tauri'
 import { deleteSupplier, getSupplierCategories, getSuppliers, toggleSupplierStatus } from '@/lib/tauri'
 import { SupplierDetailDialog } from './supplier-detail-dialog'
@@ -161,7 +162,7 @@ export function SuppliersContent() {
       await loadSuppliers()
     } catch (error) {
       console.error('切换供应商状态失败', error)
-      toast.error(typeof error === 'string' ? error : t('saveError'))
+      toast.error(getErrorMessage(error, t('saveError')))
     }
   }
 
@@ -176,7 +177,7 @@ export function SuppliersContent() {
       await loadCategories()
     } catch (error) {
       console.error('删除供应商失败', error)
-      toast.error(typeof error === 'string' ? error : t('deleteError'))
+      toast.error(getErrorMessage(error, t('deleteError')))
     }
   }
 

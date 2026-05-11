@@ -1,3 +1,5 @@
+import type { AppErrorResponse } from './error'
+
 /**
  * Tauri IPC 通信封装
  *
@@ -96,7 +98,14 @@ export async function invoke<T>(command: string, args?: Record<string, unknown>)
   }
 
   const { invoke: tauriInvoke } = await import('@tauri-apps/api/core')
-  return tauriInvoke<T>(command, args)
+  try {
+    return await tauriInvoke<T>(command, args)
+  } catch (error: unknown) {
+    // Tauri 2 将后端 Err 序列化后作为 rejected value 传递
+    // 新的结构化格式为 { code, message, details? }
+    // 直接抛出，前端使用 getErrorMessage() 解析
+    throw error as AppErrorResponse
+  }
 }
 
 // ================================================================

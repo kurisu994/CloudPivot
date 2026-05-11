@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount } from '@/lib/currency'
+import { getErrorMessage } from '@/lib/error'
 import type { CustomerListItem } from '@/lib/tauri'
 import { getCustomers, invoke, startProductionFromCustomOrder } from '@/lib/tauri'
 
@@ -289,7 +290,7 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
         await loadBomOptions(detail.ref_material_id)
       }
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('loadError'))
+      toast.error(getErrorMessage(error, t('loadError')))
     } finally {
       setLoading(false)
     }
@@ -378,7 +379,7 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
       toast.success(t('saveSuccess'))
       onBack()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('saveError'))
+      toast.error(getErrorMessage(error, t('saveError')))
     } finally {
       setSaving(false)
     }
@@ -398,7 +399,7 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
       toast.success(t('bomCreateSuccess'))
       await loadDetail()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('bomCreateError'))
+      toast.error(getErrorMessage(error, t('bomCreateError')))
     }
   }
 
@@ -409,7 +410,7 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
       setCostAmount(cost)
       toast.success(t('costCalcSuccess'))
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('costCalcError'))
+      toast.error(getErrorMessage(error, t('costCalcError')))
     }
   }
 
@@ -421,7 +422,7 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
       toast.success(t('convertSuccess'))
       await loadDetail()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('convertError'))
+      toast.error(getErrorMessage(error, t('convertError')))
     }
   }
 
@@ -434,7 +435,7 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
       toast.success(t('startProductionSuccess'))
       await loadDetail()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('startProductionError'))
+      toast.error(getErrorMessage(error, t('startProductionError')))
     }
   }
 

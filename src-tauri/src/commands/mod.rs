@@ -28,6 +28,56 @@ use crate::auth::{self, LoginResponse, UserInfo};
 use crate::db::{DbInitError, DbState};
 use crate::error::AppError;
 
+// ================================================================
+// 当前登录用户状态
+// ================================================================
+
+/// 当前登录用户信息（Tauri managed state）
+///
+/// 登录成功后更新此状态，所有写操作从中读取 user_id 和 display_name，
+/// 替代硬编码的 `1` / `"admin"`。支持未来多用户扩展。
+pub struct CurrentUser {
+    pub inner: std::sync::RwLock<CurrentUserInner>,
+}
+
+/// 当前用户内部数据
+#[derive(Debug, Clone)]
+pub struct CurrentUserInner {
+    pub user_id: i64,
+    pub display_name: String,
+}
+
+impl Default for CurrentUser {
+    /// 默认值：admin (id=1)，确保未登录时也有合理的降级值
+    fn default() -> Self {
+        Self {
+            inner: std::sync::RwLock::new(CurrentUserInner {
+                user_id: 1,
+                display_name: "admin".to_string(),
+            }),
+        }
+    }
+}
+
+impl CurrentUser {
+    /// 获取当前用户 ID
+    pub fn user_id(&self) -> i64 {
+        self.inner.read().unwrap().user_id
+    }
+
+    /// 获取当前用户显示名
+    pub fn display_name(&self) -> String {
+        self.inner.read().unwrap().display_name.clone()
+    }
+
+    /// 更新当前用户（登录成功后调用）
+    pub fn set(&self, user_id: i64, display_name: String) {
+        let mut inner = self.inner.write().unwrap();
+        inner.user_id = user_id;
+        inner.display_name = display_name;
+    }
+}
+
 /// 分页响应（通用泛型，供各业务模块共用）
 #[derive(Debug, Serialize)]
 pub struct PaginatedResponse<T> {
@@ -53,9 +103,7 @@ pub async fn ping(db: State<'_, DbState>) -> Result<String, AppError> {
 /// 如果数据库初始化失败，返回错误信息；否则返回 None。
 /// 前端可在启动时调用此命令检测数据库状态。
 #[tauri::command]
-pub async fn get_db_init_error(
-    app: tauri::AppHandle,
-) -> Result<Option<String>, AppError> {
+pub async fn get_db_init_error(app: tauri::AppHandle) -> Result<Option<String>, AppError> {
     use tauri::Manager;
     match app.try_state::<DbInitError>() {
         Some(e) => Ok(Some(e.message.clone())),
@@ -90,9 +138,15 @@ pub struct LoginRequest {
 #[tauri::command]
 pub async fn login(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     request: LoginRequest,
 ) -> Result<LoginResponse, AppError> {
-    auth::login(&db.pool, &request.username, &request.password).await
+    let response = auth::login(&db.pool, &request.username, &request.password).await?;
+
+    // 登录成功后更新当前用户状态
+    current_user.set(response.user.id, response.user.display_name.clone());
+
+    Ok(response)
 }
 
 /// 修改密码请求参数

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { type NodeApi, type NodeRendererProps, Tree } from 'react-arborist'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { getErrorMessage } from '@/lib/error'
 import type { CategoryNode, CategorySortItem } from '@/lib/tauri'
 import { deleteCategory, getCategoryTree, updateCategoryOrder } from '@/lib/tauri'
 
@@ -184,7 +185,7 @@ export function CategoryTree({ onEdit, refreshKey }: CategoryTreeProps) {
       const nodes = await getCategoryTree()
       setTreeData(buildTree(nodes))
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : tc('loading'))
+      toast.error(getErrorMessage(e, tc('loading')))
     } finally {
       setLoading(false)
     }
@@ -251,7 +252,7 @@ export function CategoryTree({ onEdit, refreshKey }: CategoryTreeProps) {
         toast.success(t('deleteSuccess'))
         fetchCategories()
       } catch (e) {
-        toast.error(typeof e === 'string' ? e : t('hasMaterials'))
+        toast.error(getErrorMessage(e, t('hasMaterials')))
       }
     },
     [t, fetchCategories],
@@ -287,12 +288,12 @@ export function CategoryTree({ onEdit, refreshKey }: CategoryTreeProps) {
           const sortItems = flattenTreeForOrder(current)
           // fire-and-forget 持久化
           updateCategoryOrder(sortItems).catch(e => {
-            toast.error(typeof e === 'string' ? e : t('sortUpdateFailed'))
+            toast.error(getErrorMessage(e, t('sortUpdateFailed')))
           })
           return current // 不修改状态
         })
       } catch (e) {
-        toast.error(typeof e === 'string' ? e : t('sortUpdateFailed'))
+        toast.error(getErrorMessage(e, t('sortUpdateFailed')))
         fetchCategories() // 回滚到服务端状态
       }
     },

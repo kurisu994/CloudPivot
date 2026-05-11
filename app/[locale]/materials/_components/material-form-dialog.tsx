@@ -10,6 +10,7 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { getErrorMessage } from '@/lib/error'
 import { invoke, isTauriEnv } from '@/lib/tauri'
 import type { CategoryOption, UnitOption } from './materials-client-page'
 
@@ -184,7 +185,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
       toast.success(materialId ? t('notifications.updateSuccess') : t('notifications.createSuccess'))
       onSuccess()
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : t('notifications.saveFailed'))
+      toast.error(getErrorMessage(e, t('notifications.saveFailed')))
     } finally {
       setLoading(false)
     }

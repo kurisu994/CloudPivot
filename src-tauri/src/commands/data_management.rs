@@ -15,7 +15,7 @@ use crate::db::DbState;
 use crate::error::AppError;
 use crate::operation_log::{OperationLogEntry, write_log};
 
-use super::{inventory_ops, material};
+use super::{CurrentUser, inventory_ops, material};
 
 /// 备份文件信息
 #[derive(Debug, Serialize)]
@@ -340,6 +340,7 @@ pub async fn get_data_management_status(
 pub async fn create_database_backup(
     app: AppHandle,
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
 ) -> Result<BackupFileInfo, AppError> {
     let backup_dir = get_backup_dir(&app)?;
     fs::create_dir_all(&backup_dir)?;
@@ -368,8 +369,8 @@ pub async fn create_database_backup(
             target_id: None,
             target_no: Some(backup_path_text.clone()),
             detail: "创建数据库备份".to_string(),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -445,6 +446,7 @@ pub async fn export_materials(db: State<'_, DbState>) -> Result<Vec<MaterialExpo
 #[tauri::command]
 pub async fn import_materials(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     rows: Vec<MaterialImportRow>,
 ) -> Result<ImportResult, AppError> {
     if rows.is_empty() {
@@ -645,8 +647,8 @@ pub async fn import_materials(
             target_id: None,
             target_no: None,
             detail: format!("导入物料：新增 {} 条，更新 {} 条", created, updated),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -663,6 +665,7 @@ pub async fn import_materials(
 #[tauri::command]
 pub async fn import_initial_inventory(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     rows: Vec<InitialInventoryImportRow>,
 ) -> Result<ImportResult, AppError> {
     if rows.is_empty() {
@@ -785,6 +788,8 @@ pub async fn import_initial_inventory(
             None,
             Some("INIT"),
             row.remark.as_deref(),
+            current_user.user_id(),
+            &current_user.display_name(),
         )
         .await?;
 
@@ -802,8 +807,8 @@ pub async fn import_initial_inventory(
             target_id: None,
             target_no: Some("INIT".to_string()),
             detail: format!("导入期初库存 {} 条", created),
-            operator_user_id: Some(1),
-            operator_name: Some("admin".to_string()),
+            operator_user_id: Some(current_user.user_id()),
+            operator_name: Some(current_user.display_name()),
         },
     )
     .await;
@@ -820,7 +825,9 @@ pub async fn import_initial_inventory(
 mod tests {
     use std::fs;
 
-    use super::{build_backup_file_name, replace_database_file, validate_import_quantity};
+    use super::{
+        CurrentUser, build_backup_file_name, replace_database_file, validate_import_quantity,
+    };
 
     #[test]
     fn build_backup_file_name_keeps_stable_prefix_and_extension() {

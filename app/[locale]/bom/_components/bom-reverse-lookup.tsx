@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { getErrorMessage } from '@/lib/error'
 import { invoke, isTauriEnv } from '@/lib/tauri'
 
 /** 物料反查结果项 */
@@ -98,7 +99,7 @@ export function BomReverseLookup() {
       })
       setResults(items)
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : t('notifications.loadFailed'))
+      toast.error(getErrorMessage(e, t('notifications.loadFailed')))
     } finally {
       setLoading(false)
     }

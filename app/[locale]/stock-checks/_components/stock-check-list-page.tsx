@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { getErrorMessage } from '@/lib/error'
 import type { CategoryNode, StockCheckFilter, StockCheckListItem, WarehouseItem } from '@/lib/tauri'
 import { createStockCheck, getCategoryTree, getStockChecks, getWarehouses } from '@/lib/tauri'
 
@@ -142,7 +143,7 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
       setCreateOpen(false)
       onCreated(id)
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('createFailed'))
+      toast.error(getErrorMessage(error, t('createFailed')))
     } finally {
       setCreating(false)
     }

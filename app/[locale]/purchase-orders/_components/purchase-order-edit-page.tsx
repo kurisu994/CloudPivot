@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount } from '@/lib/currency'
+import { getErrorMessage } from '@/lib/error'
 import type { PurchaseOrderDetail, SavePurchaseOrderParams, SupplierListItem, SupplierMaterialForPurchase, WarehouseItem } from '@/lib/tauri'
 import { getPurchaseOrderDetail, getSupplierMaterialsForPurchase, getSuppliers, getWarehouses, savePurchaseOrder } from '@/lib/tauri'
 
@@ -152,7 +153,7 @@ export function PurchaseOrderEditPage({ orderId, onBack }: PurchaseOrderEditPage
         })),
       )
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('loadError'))
+      toast.error(getErrorMessage(error, t('loadError')))
     } finally {
       setLoading(false)
     }
@@ -297,7 +298,7 @@ export function PurchaseOrderEditPage({ orderId, onBack }: PurchaseOrderEditPage
       toast.success(t('saveSuccess'))
       onBack()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('saveError'))
+      toast.error(getErrorMessage(error, t('saveError')))
     } finally {
       setSaving(false)
     }

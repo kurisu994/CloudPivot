@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { downloadBusinessWorkbook, initialInventoryExcelColumns, materialExcelColumns, readBusinessExcelRows } from '@/lib/business-excel'
+import { getErrorMessage } from '@/lib/error'
 import type { DataManagementStatus, InitialInventoryImportRow } from '@/lib/tauri'
 import {
   createDatabaseBackup,
@@ -47,7 +48,7 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
       toast.success(t('backupSuccess'))
       await onRefresh()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('backupFailed'))
+      toast.error(getErrorMessage(error, t('backupFailed')))
     } finally {
       setBusyFile(null)
     }
@@ -61,7 +62,7 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
       await restoreDatabaseBackup(fileName)
       toast.success(t('restoreSuccess'))
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('restoreFailed'))
+      toast.error(getErrorMessage(error, t('restoreFailed')))
     } finally {
       setBusyFile(null)
     }
@@ -76,7 +77,7 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
       toast.success(t('deleteBackupSuccess'))
       await onRefresh()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('deleteBackupFailed'))
+      toast.error(getErrorMessage(error, t('deleteBackupFailed')))
     } finally {
       setBusyFile(null)
     }
@@ -270,7 +271,7 @@ function DataImportExportSection({ onRefresh }: { onRefresh: () => Promise<void>
       setRows([])
       await onRefresh()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('initialImport.failed'))
+      toast.error(getErrorMessage(error, t('initialImport.failed')))
     } finally {
       setImporting(false)
     }

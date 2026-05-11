@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { formatAmount } from '@/lib/currency'
+import { getErrorMessage } from '@/lib/error'
 import { invoke } from '@/lib/tauri'
 
 // ================================================================
@@ -143,8 +144,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
       const data = await invoke<ProductionOrderDetail>('get_production_order_detail', { id: orderId })
       setDetail(data)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      toast.error(msg)
+      toast.error(getErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -208,8 +208,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
       toast.success(orderId ? t('toast.updateSuccess') : t('toast.createSuccess'))
       onBack()
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      toast.error(msg)
+      toast.error(getErrorMessage(err))
     } finally {
       setSaving(false)
     }
@@ -238,8 +237,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
       setPickDialogOpen(false)
       loadDetail()
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      toast.error(msg)
+      toast.error(getErrorMessage(err))
     } finally {
       setDialogSubmitting(false)
     }
@@ -268,8 +266,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
       setReturnDialogOpen(false)
       loadDetail()
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      toast.error(msg)
+      toast.error(getErrorMessage(err))
     } finally {
       setDialogSubmitting(false)
     }
@@ -294,8 +291,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
       setCompleteDialogOpen(false)
       loadDetail()
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      toast.error(msg)
+      toast.error(getErrorMessage(err))
     } finally {
       setDialogSubmitting(false)
     }
@@ -310,8 +306,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
       toast.success(t('toast.startSuccess'))
       loadDetail()
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      toast.error(msg)
+      toast.error(getErrorMessage(err))
     }
   }
 
@@ -321,8 +316,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
       toast.success(t('toast.finishSuccess'))
       loadDetail()
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      toast.error(msg)
+      toast.error(getErrorMessage(err))
     }
   }
 
@@ -332,8 +326,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
       toast.success(t('toast.cancelSuccess'))
       loadDetail()
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      toast.error(msg)
+      toast.error(getErrorMessage(err))
     }
   }
 

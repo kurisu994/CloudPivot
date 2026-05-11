@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { getErrorMessage } from '@/lib/error'
 import type { MaterialReferenceOption, SaveTransferItemParams, TransferDetail, WarehouseItem } from '@/lib/tauri'
 import { confirmTransfer, getMaterialReferenceOptions, getTransferDetail, getWarehouses, saveTransfer } from '@/lib/tauri'
 
@@ -80,7 +81,7 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
         })),
       )
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('loadDetailFailed'))
+      toast.error(getErrorMessage(error, t('loadDetailFailed')))
     } finally {
       setLoading(false)
     }
@@ -190,7 +191,7 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
       toast.success(t('saveSuccess'))
       onBack()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('saveFailed'))
+      toast.error(getErrorMessage(error, t('saveFailed')))
     } finally {
       setSaving(false)
     }
@@ -205,7 +206,7 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
       toast.success(t('confirmSuccess'))
       onBack()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('confirmFailed'))
+      toast.error(getErrorMessage(error, t('confirmFailed')))
     }
   }
 

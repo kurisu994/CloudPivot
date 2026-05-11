@@ -12,8 +12,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount } from '@/lib/currency'
+import { getErrorMessage } from '@/lib/error'
 import { invoke, isTauriEnv } from '@/lib/tauri'
-
 import { BomItemDialog } from './bom-item-dialog'
 
 /* ------------------------------------------------------------------ */
@@ -284,7 +284,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
       setStatus(detail.status)
       setItems(detail.items)
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : t('notifications.loadFailed'))
+      toast.error(getErrorMessage(e, t('notifications.loadFailed')))
     } finally {
       setLoading(false)
     }
@@ -341,7 +341,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
       toast.success(t('notifications.saveBomSuccess'))
       onBack()
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : t('notifications.saveBomFailed'))
+      toast.error(getErrorMessage(e, t('notifications.saveBomFailed')))
     } finally {
       setSaving(false)
     }
@@ -403,7 +403,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
       })
       setDemandResults(results)
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : t('notifications.loadFailed'))
+      toast.error(getErrorMessage(e, t('notifications.loadFailed')))
     } finally {
       setDemandLoading(false)
     }

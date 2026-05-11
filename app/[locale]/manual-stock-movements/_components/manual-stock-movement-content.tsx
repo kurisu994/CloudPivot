@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toStorageAmount } from '@/lib/currency'
+import { getErrorMessage } from '@/lib/error'
 import type { MaterialReferenceOption, WarehouseItem } from '@/lib/tauri'
 import { createManualStockMovement, getMaterialReferenceOptions, getWarehouses } from '@/lib/tauri'
 
@@ -105,7 +106,7 @@ export function ManualStockMovementContent() {
       toast.success(t('saveSuccess', { movementNo }))
       handleReset()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('saveFailed'))
+      toast.error(getErrorMessage(error, t('saveFailed')))
     } finally {
       setSaving(false)
     }

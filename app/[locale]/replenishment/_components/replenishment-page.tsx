@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { type Currency, formatAmount } from '@/lib/currency'
+import { getErrorMessage } from '@/lib/error'
 import type { CategoryNode, ConsumptionTrendPoint, ReplenishmentRule, ReplenishmentSuggestion, RuleFilter, UpdateRuleParams } from '@/lib/tauri'
 import {
   createPurchaseOrdersFromSuggestions,
@@ -200,7 +201,7 @@ export function ReplenishmentPage() {
       }
       void loadSuggestions()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : String(error))
+      toast.error(getErrorMessage(error, String(error)))
     }
   }
 
@@ -226,7 +227,7 @@ export function ReplenishmentPage() {
       toast.success(t('ignoreSuccess'))
       void loadSuggestions()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : String(error))
+      toast.error(getErrorMessage(error, String(error)))
     }
   }
 
@@ -310,7 +311,7 @@ export function ReplenishmentPage() {
       setEditRuleOpen(false)
       void loadRules()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : String(error))
+      toast.error(getErrorMessage(error, String(error)))
     }
   }
 

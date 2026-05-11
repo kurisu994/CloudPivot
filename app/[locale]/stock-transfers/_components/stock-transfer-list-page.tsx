@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { getErrorMessage } from '@/lib/error'
 import type { TransferFilter, TransferListItem, WarehouseItem } from '@/lib/tauri'
 import { confirmTransfer, deleteTransfer, getTransfers, getWarehouses } from '@/lib/tauri'
 
@@ -108,7 +109,7 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
       toast.success(t('deleteSuccess'))
       await loadData()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('deleteFailed'))
+      toast.error(getErrorMessage(error, t('deleteFailed')))
     }
   }
 
@@ -119,7 +120,7 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
       toast.success(t('confirmSuccess'))
       await loadData()
     } catch (error) {
-      toast.error(typeof error === 'string' ? error : t('confirmFailed'))
+      toast.error(getErrorMessage(error, t('confirmFailed')))
     }
   }
 

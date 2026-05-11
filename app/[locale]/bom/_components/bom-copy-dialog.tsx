@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { getErrorMessage } from '@/lib/error'
 import { invoke, isTauriEnv } from '@/lib/tauri'
 
 interface BomCopyDialogProps {
@@ -45,7 +46,7 @@ export function BomCopyDialog({ open, onOpenChange, sourceId, onSuccess }: BomCo
       setNewVersion('')
       onSuccess()
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : t('notifications.copyBomFailed'))
+      toast.error(getErrorMessage(e, t('notifications.copyBomFailed')))
     } finally {
       setSaving(false)
     }

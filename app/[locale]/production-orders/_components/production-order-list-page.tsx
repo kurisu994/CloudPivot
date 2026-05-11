@@ -8,6 +8,7 @@ import { PaginationControls } from '@/components/common/pagination'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { getErrorMessage } from '@/lib/error'
 import { invoke } from '@/lib/tauri'
 import { ProductionOrderTable } from './production-order-table'
 
@@ -79,8 +80,7 @@ export function ProductionOrderListPage({ onEdit, onNew }: Props) {
       setItems(result.items)
       setTotal(result.total)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      toast.error(msg)
+      toast.error(getErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -97,8 +97,7 @@ export function ProductionOrderListPage({ onEdit, onNew }: Props) {
       toast.success(t('toast.deleteSuccess'))
       loadData()
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      toast.error(msg)
+      toast.error(getErrorMessage(err))
     }
   }
 

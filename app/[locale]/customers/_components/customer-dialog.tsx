@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
+import { getErrorMessage } from '@/lib/error'
 import type { SaveCustomerParams } from '@/lib/tauri'
 import { generateCustomerCode, getCustomerById, saveCustomer } from '@/lib/tauri'
 import { validateCustomerForm } from './customer-helpers'
@@ -208,7 +209,7 @@ export function CustomerDialog({ open, onOpenChange, customerId, onSaved }: Cust
       onSaved()
     } catch (error) {
       console.error('保存客户失败', error)
-      toast.error(typeof error === 'string' ? error : t('toast.saveError'))
+      toast.error(getErrorMessage(error, t('toast.saveError')))
     } finally {
       setSaving(false)
     }
