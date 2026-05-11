@@ -82,7 +82,7 @@
 - ~~仅 7 个单元测试（data_management: 3, reports: 4），核心业务逻辑无覆盖~~ → ✅ 已修复（33 个测试）
 - 库存数量使用 f64 浮点类型，大量出入库后可能累积误差
 - 采购/销售模块高度对称但完全复制（4,815 行 DRY 违规）
-- 数据库初始化失败直接 panic，无优雅降级
+- ~~数据库初始化失败直接 panic，无优雅降级~~ → ✅ 已修复（降级为内存数据库 + DbInitError 标记）
 
 ### 3.3 前端架构 — ⭐⭐⭐⭐ (4/5)
 
@@ -95,9 +95,9 @@
 - AuthProvider 路由守卫 + 钥匙串持久化 + session_version 校验
 
 **不足：**
-- `lib/tauri.ts` 达 3,774 行，API 封装与 mock 数据混合，维护困难
-- Dashboard 7 个数据面板的 `catch {}` 为空，错误被静默吞掉
-- 缺少 Next.js 错误边界（`error.tsx`、`not-found.tsx`）
+- ~~`lib/tauri.ts` 达 3,774 行，API 封装与 mock 数据混合，维护困难~~ → ✅ 已修复（拆分为 15 个子模块）
+- ~~Dashboard 7 个数据面板的 `catch {}` 为空，错误被静默吞掉~~ → ✅ 已修复
+- ~~缺少 Next.js 错误边界（`error.tsx`、`not-found.tsx`）~~ → ✅ 已修复
 - Loading 状态不统一（骨架屏/旋转图标/纯文本/无状态混用）
 - Dashboard 快捷操作按钮为纯占位符（无 onClick/href）
 - 面包屑导航仅覆盖二级路径，深层页面回退到 "Dashboard"
@@ -157,11 +157,11 @@
 
 | # | 问题 | 影响范围 | 建议方案 |
 |---|------|----------|----------|
-| 1 | Dashboard 7 个数据面板错误被静默吞掉 | 用户体验 | `metrics-cards.tsx` 等 7 个组件的 `catch {}` 为空，Tauri API 失败时显示 0 值或空白图表。添加 `ErrorPanel` 组件（带重试按钮） |
-| 2 | 缺少 Next.js 错误边界页面 | 用户体验 | 不存在 `error.tsx`、`global-error.tsx`、`not-found.tsx`，渲染错误导致白屏。创建错误边界页面 |
+| 1 | ~~Dashboard 7 个数据面板错误被静默吞掉~~ | ~~用户体验~~ | ✅ 已修复：添加错误状态 UI，替代空 catch |
+| 2 | ~~缺少 Next.js 错误边界页面~~ | ~~用户体验~~ | ✅ 已修复：创建 `error.tsx`、`not-found.tsx` 错误边界页面 |
 | 3 | ~~测试覆盖率极低（7 个测试 / 20,000 行 Rust）~~ | ~~数据完整性~~ | ✅ 已修复：测试从 7 个增至 33 个，覆盖成本折算、移动加权平均、退货成本回调、财务状态判断 |
-| 4 | `lib/tauri.ts` 3,774 行单文件 | 维护困难 | API 封装与 mock 数据混合。拆分为 `lib/tauri/` 目录，按业务域组织 |
-| 5 | 数据库初始化失败直接 panic | 应用崩溃 | `lib.rs` 中 `db::init_db` 失败时 `panic!`，无用户友好错误页面。转化为可恢复状态 |
+| 4 | ~~`lib/tauri.ts` 3,774 行单文件~~ | ~~维护困难~~ | ✅ 已修复：拆分为 `lib/tauri/` 目录 15 个子模块，按业务域组织 |
+| 5 | ~~数据库初始化失败直接 panic~~ | ~~应用崩溃~~ | ✅ 已修复：转为可恢复状态，注入降级 DbState + DbInitError 标记 |
 | 6 | ~~写操作硬编码 `user_id=1`~~ | ~~审计追溯~~ | ✅ 已修复：引入 `CurrentUser` managed state，登录后自动更新，所有写操作动态读取 |
 
 ### 🟡 中优先级（High）
@@ -336,16 +336,16 @@ tag push (v*) → 4 平台构建 → GitHub Release + Updater 签名
 ### 下一步建议（按优先级）
 
 **P0 — 立即修复（影响用户体验）：**
-1. 添加 Next.js `error.tsx` 和 `not-found.tsx` 错误边界页面
-2. 为 Dashboard 7 个数据面板添加错误状态 UI（替代空 catch）
-3. 修复数据库初始化失败 panic → 转为可恢复状态
+1. ~~添加 Next.js `error.tsx` 和 `not-found.tsx` 错误边界页面~~ ✅ 已完成
+2. ~~为 Dashboard 7 个数据面板添加错误状态 UI（替代空 catch）~~ ✅ 已完成
+3. ~~修复数据库初始化失败 panic → 转为可恢复状态~~ ✅ 已完成
 
 **P1 — 短期修复（2 周内）：**
 4. ~~为 `inventory_ops.rs`、`finance.rs` 编写核心单元测试~~ ✅ 已完成（测试从 7 个增至 33 个）
 5. 将 f64 库存数量改为整数存储最小单位
 6. ~~结构化 `AppError`（添加 `{ code, message, details }`）~~ ✅ 已完成
 7. ~~支持真实 user_id 传递（替代硬编码 admin）~~ ✅ 已完成（CurrentUser managed state）
-8. 拆分 `lib/tauri.ts` 为按业务域组织的多文件
+8. ~~拆分 `lib/tauri.ts` 为按业务域组织的多文件~~ ✅ 已完成（拆分为 15 个子模块）
 
 **P2 — 中期改善（Phase 5 前）：**
 9. 提取采购/销售共享抽象（DRY 修复，~4,800 行）
