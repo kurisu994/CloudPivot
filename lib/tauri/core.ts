@@ -1,0 +1,131 @@
+import type { AppErrorResponse } from '../error'
+
+/**
+ * Tauri IPC 通信封装
+ *
+ * 封装前端与 Rust 后端的通信接口。
+ * 在浏览器环境下（开发模式无 Tauri）提供 mock 降级。
+ */
+
+// ================================================================
+// 类型定义
+// ================================================================
+
+/** 用户信息（对应 Rust UserInfo） */
+export interface UserInfo {
+  id: number
+  username: string
+  display_name: string
+  role: 'admin' | 'operator'
+  must_change_password: boolean
+  session_version: number
+}
+
+/** 登录响应 */
+export interface LoginResponse {
+  user: UserInfo
+  must_change_password: boolean
+}
+
+/** 分页响应（通用，对应 Rust PaginatedResponse<T>） */
+export interface PaginatedResponse<T> {
+  total: number
+  items: T[]
+  page: number
+  page_size: number
+}
+
+// ================================================================
+// 底层通信
+// ================================================================
+
+/**
+ * 判断是否运行在 Tauri 环境中
+ */
+export function isTauriEnv(): boolean {
+  return typeof window !== 'undefined' && '__TAURI__' in window
+}
+
+/**
+ * 调用 Tauri IPC 命令
+ *
+ * @param command - 命令名称（对应 Rust #[tauri::command] 函数名）
+ * @param args - 传递给命令的参数
+ * @returns 命令返回值
+ */
+export async function invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
+  if (!isTauriEnv()) {
+    // 智能 mock 常见的数据结构，避免 dev-web 下页面崩溃
+
+    // 1. 明确返回数组的命令
+    const arrayCommands = [
+      'get_bom_child_materials',
+      'get_bom_parent_materials',
+      'calculate_bom_demand',
+      'reverse_lookup_material',
+      'get_category_tree',
+      'get_warehouses',
+      'get_system_configs',
+      'get_supplier_categories',
+      'get_material_reference_options',
+      'get_default_warehouses',
+      'get_all_units',
+      'get_supplier_materials_for_purchase',
+      'get_pending_inbound_items',
+      'get_returnable_inbound_items',
+      'get_pending_outbound_items',
+      'get_returnable_outbound_items',
+      'get_replenishment_suggestions',
+      'get_consumption_trend',
+    ]
+    if (arrayCommands.includes(command)) {
+      return [] as unknown as T
+    }
+
+    // 2. 明确返回带有 items 的对象的命令（非分页）
+    if (command === 'get_boms') {
+      return { items: [] } as unknown as T
+    }
+
+    // 3. 详情查询与分页列表的混合探测策略
+    if (command.startsWith('get_') || command.includes('_list')) {
+      if (args && ('filter' in args || 'page' in args)) {
+        return { total: 0, items: [], page: 1, pageSize: 10, page_size: 10 } as unknown as T
+      }
+      // 如果不是分页列表，默认当做返回空对象详情
+      return {} as unknown as T
+    }
+
+    if (command.startsWith('calculate_')) {
+      return {} as unknown as T
+    }
+
+    // 5. 其余写操作命令默认返回 null
+    console.warn(`[Tauri] 未匹配到 Mock 策略的命令: ${command}`, args)
+    return null as unknown as T
+  }
+
+  const { invoke: tauriInvoke } = await import('@tauri-apps/api/core')
+  try {
+    return await tauriInvoke<T>(command, args)
+  } catch (error: unknown) {
+    // Tauri 2 将后端 Err 序列化后作为 rejected value 传递
+    // 新的结构化格式为 { code, message, details? }
+    // 直接抛出，前端使用 getErrorMessage() 解析
+    throw error as AppErrorResponse
+  }
+}
+
+// ================================================================
+// 通用命令
+// ================================================================
+
+/** ping 测试 — 验证前后端通信链路 */
+export async function ping(): Promise<string> {
+  return invoke<string>('ping')
+}
+
+/** 获取数据库版本号 */
+export async function getDbVersion(): Promise<number> {
+  return invoke<number>('get_db_version')
+}
