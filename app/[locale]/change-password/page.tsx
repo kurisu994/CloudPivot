@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { getErrorMessage } from '@/lib/error'
 import { cn } from '@/lib/utils'
 
 /**
@@ -59,10 +60,9 @@ export default function ChangePasswordPage() {
     try {
       await changePassword(newPassword)
       // 改密成功 → 登出并跳转登录页
-      logout()
+      await logout()
     } catch (err) {
-      const message = err instanceof Error ? err.message : t('changeFailed')
-      setError(message)
+      setError(getErrorMessage(err, t('changeFailed')))
     } finally {
       setIsLoading(false)
     }
@@ -70,7 +70,7 @@ export default function ChangePasswordPage() {
 
   /** 退出登录 */
   const handleLogout = () => {
-    logout()
+    void logout()
   }
 
   return (

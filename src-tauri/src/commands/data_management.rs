@@ -825,9 +825,7 @@ pub async fn import_initial_inventory(
 mod tests {
     use std::fs;
 
-    use super::{
-        CurrentUser, build_backup_file_name, replace_database_file, validate_import_quantity,
-    };
+    use super::{build_backup_file_name, replace_database_file, validate_import_quantity};
 
     #[test]
     fn build_backup_file_name_keeps_stable_prefix_and_extension() {

@@ -46,6 +46,7 @@ pub struct InventoryListItem {
 
 /// 库存查询筛选参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InventoryFilter {
     pub keyword: Option<String>,
     pub warehouse_id: Option<i64>,
@@ -142,6 +143,7 @@ pub struct TransactionListItem {
 
 /// 流水查询筛选参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TransactionFilter {
     pub keyword: Option<String>,
     pub warehouse_id: Option<i64>,
@@ -175,6 +177,7 @@ pub struct StockCheckListItem {
 
 /// 盘点单筛选参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StockCheckFilter {
     pub warehouse_id: Option<i64>,
     pub status: Option<String>,
@@ -224,6 +227,7 @@ pub struct StockCheckDetail {
 
 /// 创建盘点单参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateStockCheckParams {
     pub warehouse_id: i64,
     pub check_date: String,
@@ -234,6 +238,7 @@ pub struct CreateStockCheckParams {
 
 /// 更新实盘数量参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateStockCheckItemParams {
     pub item_id: i64,
     pub actual_qty: Option<f64>,
@@ -260,6 +265,7 @@ pub struct TransferListItem {
 
 /// 调拨单筛选参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TransferFilter {
     pub status: Option<String>,
     pub warehouse_id: Option<i64>,
@@ -308,6 +314,7 @@ pub struct TransferDetail {
 
 /// 保存调拨单参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveTransferParams {
     pub id: Option<i64>,
     pub from_warehouse_id: i64,
@@ -319,6 +326,7 @@ pub struct SaveTransferParams {
 
 /// 保存调拨单明细参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveTransferItemParams {
     pub material_id: i64,
     pub unit_id: i64,
@@ -2129,4 +2137,95 @@ pub async fn delete_transfer(
     .await;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn inventory_filter_accepts_frontend_camel_case() {
+        // 验证前端传入的 camelCase 字段能映射到 Rust 的 snake_case 字段。
+        let filter: InventoryFilter = serde_json::from_value(serde_json::json!({
+            "keyword": "MAT",
+            "warehouseId": 2,
+            "categoryId": 3,
+            "alertStatus": "low",
+            "page": 1,
+            "pageSize": 20
+        }))
+        .expect("库存筛选参数应支持前端 camelCase 字段");
+
+        assert_eq!(filter.keyword.as_deref(), Some("MAT"));
+        assert_eq!(filter.warehouse_id, Some(2));
+        assert_eq!(filter.category_id, Some(3));
+        assert_eq!(filter.alert_status.as_deref(), Some("low"));
+        assert_eq!(filter.page, 1);
+        assert_eq!(filter.page_size, 20);
+    }
+
+    #[test]
+    fn transaction_filter_accepts_frontend_camel_case() {
+        // 自由出入库后流水页会用这些筛选字段请求后端。
+        let filter: TransactionFilter = serde_json::from_value(serde_json::json!({
+            "keyword": "FM-20260512-001",
+            "warehouseId": 2,
+            "transactionType": "other_in",
+            "materialId": 7,
+            "dateFrom": "2026-05-01",
+            "dateTo": "2026-05-12",
+            "page": 1,
+            "pageSize": 20
+        }))
+        .expect("流水筛选参数应支持前端 camelCase 字段");
+
+        assert_eq!(filter.keyword.as_deref(), Some("FM-20260512-001"));
+        assert_eq!(filter.warehouse_id, Some(2));
+        assert_eq!(filter.transaction_type.as_deref(), Some("other_in"));
+        assert_eq!(filter.material_id, Some(7));
+        assert_eq!(filter.date_from.as_deref(), Some("2026-05-01"));
+        assert_eq!(filter.date_to.as_deref(), Some("2026-05-12"));
+        assert_eq!(filter.page_size, 20);
+    }
+
+    #[test]
+    fn stock_check_and_transfer_params_accept_frontend_camel_case() {
+        // 库存模块其他页面也通过同一套前端命名约定调用 IPC。
+        let check: CreateStockCheckParams = serde_json::from_value(serde_json::json!({
+            "warehouseId": 1,
+            "checkDate": "2026-05-12",
+            "scopeType": "all",
+            "scopeCategoryId": null,
+            "remark": "月度盘点"
+        }))
+        .expect("盘点创建参数应支持前端 camelCase 字段");
+        assert_eq!(check.warehouse_id, 1);
+        assert_eq!(check.check_date, "2026-05-12");
+        assert_eq!(check.scope_type, "all");
+
+        let transfer: SaveTransferParams = serde_json::from_value(serde_json::json!({
+            "id": null,
+            "fromWarehouseId": 1,
+            "toWarehouseId": 2,
+            "transferDate": "2026-05-12",
+            "remark": "补货调拨",
+            "items": [{
+                "materialId": 7,
+                "unitId": 1,
+                "unitNameSnapshot": "件",
+                "conversionRateSnapshot": 1.0,
+                "quantity": 5.0,
+                "lotId": null,
+                "remark": null
+            }]
+        }))
+        .expect("调拨保存参数应支持前端 camelCase 字段");
+
+        assert_eq!(transfer.from_warehouse_id, 1);
+        assert_eq!(transfer.to_warehouse_id, 2);
+        assert_eq!(transfer.transfer_date, "2026-05-12");
+        assert_eq!(transfer.items.len(), 1);
+        assert_eq!(transfer.items[0].material_id, 7);
+        assert_eq!(transfer.items[0].unit_name_snapshot, "件");
+    }
 }

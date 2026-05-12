@@ -159,10 +159,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (isTauriEnv()) {
         await tauriApi.changePassword(user.id, newPassword)
-        // 刷新用户信息（session_version 已递增）
-        const updated = await tauriApi.getUserInfo(user.id)
+        // 刷新用户信息（session_version 已递增）；刷新失败不应反向判定为改密失败。
+        let updated = { ...user, must_change_password: false, session_version: user.session_version + 1 }
+        try {
+          updated = await tauriApi.getUserInfo(user.id)
+        } catch (error) {
+          console.warn('[Auth] 改密成功后刷新用户信息失败，使用本地状态继续', error)
+        }
         setUser(updated)
-        saveAuth(updated)
+        try {
+          await saveAuth(updated)
+        } catch (error) {
+          console.warn('[Auth] 改密成功后保存认证信息失败', error)
+        }
       } else {
         // 非 Tauri 环境：模拟改密
         const updated = { ...user, must_change_password: false }

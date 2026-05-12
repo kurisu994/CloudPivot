@@ -830,8 +830,11 @@ mod tests {
     #[test]
     fn payment_amount_validation() {
         // 付款金额必须 > 0
-        assert!(0_i64 <= 0); // 模拟校验逻辑
-        assert!(1_i64 > 0);
+        let invalid_amount = 0_i64;
+        let valid_amount = 1_i64;
+
+        assert!(invalid_amount <= 0); // 模拟校验逻辑
+        assert!(valid_amount > 0);
     }
 
     #[test]

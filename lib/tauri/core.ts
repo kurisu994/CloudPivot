@@ -43,7 +43,17 @@ export interface PaginatedResponse<T> {
  * 判断是否运行在 Tauri 环境中
  */
 export function isTauriEnv(): boolean {
-  return typeof window !== 'undefined' && '__TAURI__' in window
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  const tauriGlobal = globalThis as typeof globalThis & {
+    isTauri?: boolean
+    __TAURI__?: unknown
+    __TAURI_INTERNALS__?: { invoke?: unknown }
+  }
+
+  return tauriGlobal.isTauri === true || typeof tauriGlobal.__TAURI_INTERNALS__?.invoke === 'function' || '__TAURI__' in tauriGlobal
 }
 
 /**
