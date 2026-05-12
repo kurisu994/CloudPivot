@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-越南家具工厂桌面端进销存系统。**Tauri 2**（Rust + SQLite）+ **Next.js 16**（SSG）+ **shadcn/ui** + **Tailwind CSS 4**。
+越南家具工厂桌面端进销存系统。**Tauri 2**（Rust + PostgreSQL）+ **Next.js 16**（SSG）+ **shadcn/ui** + **Tailwind CSS 4**。
 支持中/越/英三语、VND/CNY/USD 三币种。
 
 ## 目录结构
@@ -11,7 +11,7 @@
 app/[locale]/              # Next.js App Router + i18n 路由（next-intl）
   page.tsx                 # 首页看板（7 个子组件 + 实时数据）
   login/ change-password/  # 认证页面（独立布局）
-  {模块名}/page.tsx        # 业务页面（32 个已实现，全部完成）
+  {模块名}/page.tsx        # 业务页面（39 个路由页面，全部完成）
     _components/           # 页面私有组件
 components/
   ui/                      # shadcn/ui（base-nova 风格，基于 @base-ui/react）
@@ -25,6 +25,8 @@ lib/
   tauri.ts                 # IPC 统一导出入口
   tauri/                   # IPC 分域封装（invoke 泛型 + 非 Tauri 降级）
   currency.ts              # 多币种格式化（VND/CNY/USD，整数存储 ↔ 显示）
+  business-excel.ts        # 报表 Excel 导出工具
+  error.ts                 # 前端错误处理工具
   types/system-config.ts   # 系统配置键名枚举 + 业务类型
 src-tauri/src/
   lib.rs                   # Tauri Builder：日志 + DB 初始化 + IPC 注册
@@ -33,9 +35,11 @@ src-tauri/src/
   keychain.rs              # 系统钥匙串封装（macOS Keychain / Windows Credential Manager / Linux Secret Service）
   operation_log.rs         # 操作日志公共模块（统一写入能力）
   db/{mod,migration}.rs    # PostgreSQL 连接池 + 自管理迁移框架
-  commands/                # IPC 命令模块（156 个命令，详见下方）
+  commands/                # IPC 命令模块（155 个命令，详见下方）
     order_shared.rs        # 采购/销售共享抽象（编号生成、列表查询、审核/作废/删除、状态更新）
-  migrations/postgres/     # 2 个迁移文件（001_init + 002_seed_data）
+  migrations/
+    postgres/              # PostgreSQL 迁移文件（001_init + 002_seed_data）
+    sqlite/                # SQLite 历史迁移文件（5 个，已废弃）
 docs/                      # 设计文档（实现功能前必读）
   01-requirements.md       # 需求规格：12 大模块
   02-database-design.md    # 数据库：45 张表 DDL + ER
@@ -70,7 +74,7 @@ just release <tag> # 一键发布
 
 - **风格**：`base-nova`（`@base-ui/react`，非 Radix）| **图标**：`lucide-react`
 - **安装**：`pnpm shadcn add <component>` | **路径**：`@/components/ui`
-- 已安装：badge button card chart checkbox dialog field input label pagination progress radio-group select separator sheet skeleton sonner switch table tabs
+- 已安装：badge button card chart checkbox dialog field input label pagination progress radio-group scroll-area select separator sheet skeleton sonner switch table tabs
 - **不要**手写 Modal/Toast。编辑/详情统一用 Dialog，不用 Drawer/Sheet。
 
 ### 业务列表表格骨架
@@ -112,11 +116,11 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 - `TAURI_ENV_PLATFORM` 存在时启用 SSG；开发模式用 Next.js 服务器
 - `lib/tauri/core.ts` 的 `isTauriEnv()` 兼容 Tauri 2 `__TAURI_INTERNALS__` / `isTauri` 运行时判断，非 Tauri 自动降级 mock
 
-## IPC 命令（156 个）
+## IPC 命令（155 个）
 
 | 模块 | 文件 | 命令数 | 说明 |
 |------|------|--------|------|
-| 基础 | `mod.rs` | 12 | ping / db_init_error / db_version / login / change_password / user_info / system_configs CRUD / setup_warehouses / operation_logs |
+| 基础 | `mod.rs` | 11 | ping / db_init_error / db_version / login / change_password / user_info / system_configs CRUD / setup_warehouses / operation_logs |
 | 数据管理 | `data_management.rs` | 7 | 备份/恢复/删除备份 + 数据管理状态 + 物料导入导出 + 期初库存导入 |
 | 钥匙串 | `keychain.rs` | 3 | 系统钥匙串存取清除（macOS Keychain / Windows Credential Manager / Linux Secret Service） |
 | 物料 | `material.rs` | 6 | CRUD + 状态切换 |
@@ -144,10 +148,10 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 
 ## 数据库
 
-sqlx + PostgreSQL，45 张表，自管理迁移。`AppError` 统一错误类型 + `Serialize` 返回前端。
-数据库连接地址通过 `DATABASE_URL` 环境变量在编译时注入二进制（本地开发读 `.env`，CI 读 GitHub Secrets）。
+sqlx + PostgreSQL，45 张表，自管理迁移（从 SQLite 迁移至 PostgreSQL，支持多终端共享数据）。`AppError` 统一错误类型 + `Serialize` 返回前端。
+数据库连接地址通过 `DATABASE_URL` 环境变量在编译时注入二进制（`build.rs` 从 `.env` 或环境变量读取，本地开发读 `.env`，CI 读 GitHub Secrets）。
 
-## 当前状态（阶段四已全部完成，进入阶段五收尾）
+## 当前状态（全部五个阶段已完成）
 
 | 模块 | 状态 | 后端 | 前端 |
 |------|------|------|------|
@@ -160,7 +164,7 @@ sqlx + PostgreSQL，45 张表，自管理迁移。`AppError` 统一错误类型 
 | 仓库管理 | ✅ | 8 命令 | Card+Table+默认仓映射 |
 | 单位管理 | ✅ | 5 命令 | Card+Table+编辑弹窗 |
 | BOM 管理 | ✅ | 10 命令 | 列表+编辑页+反查+需求计算 |
-| 系统设置 | ✅ | IPC | 8 个子页面(企业信息/显示偏好/编码规则/库存规则/汇率/打印/数据管理/操作日志) |
+| 系统设置 | ✅ | IPC | 9 个子页面(企业信息/显示偏好/编码规则/库存规则/汇率/打印/数据管理/操作日志/用户管理) |
 | **采购单** | ✅ | 7 命令 | 列表+编辑页(inline明细) |
 | **采购入库** | ✅ | 3 命令 | 列表+执行页(批次+费用分摊) |
 | **采购退货** | ✅ | 3 命令 | 列表+执行页(成本回调) |
