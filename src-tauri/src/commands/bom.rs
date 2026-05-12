@@ -677,7 +677,7 @@ pub async fn get_bom_parent_materials(
     sqlx::query_as::<_, BomParentMaterialOption>(
         r#"SELECT id, code, name, spec, material_type
            FROM materials
-           WHERE material_type IN ('semi', 'finished') AND is_enabled = 1
+           WHERE material_type IN ('semi', 'finished') AND is_enabled = TRUE
            ORDER BY material_type DESC, code ASC"#,
     )
     .fetch_all(&db.pool)
@@ -709,7 +709,7 @@ pub async fn get_bom_child_materials(
                           u.name as unit_name, m.ref_cost_price
                    FROM materials m
                    LEFT JOIN units u ON m.base_unit_id = u.id
-                   WHERE m.is_enabled = 1 AND (m.code LIKE $1 OR m.name LIKE $2)
+                   WHERE m.is_enabled = TRUE AND (m.code LIKE $1 OR m.name LIKE $2)
                    ORDER BY m.code ASC
                    LIMIT 50"#,
             )
@@ -726,7 +726,7 @@ pub async fn get_bom_child_materials(
                   u.name as unit_name, m.ref_cost_price
            FROM materials m
            LEFT JOIN units u ON m.base_unit_id = u.id
-           WHERE m.is_enabled = 1
+           WHERE m.is_enabled = TRUE
            ORDER BY m.code ASC
            LIMIT 50"#,
     )

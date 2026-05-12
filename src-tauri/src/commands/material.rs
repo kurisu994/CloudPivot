@@ -128,7 +128,7 @@ pub(crate) async fn ensure_material_core_fields_editable(
 #[tauri::command]
 pub async fn get_categories(db: State<'_, DbState>) -> Result<Vec<CategoryOption>, AppError> {
     sqlx::query_as::<_, CategoryOption>(
-        "SELECT id, name, code FROM categories WHERE is_enabled = 1 ORDER BY sort_order ASC, id ASC"
+        "SELECT id, name, code FROM categories WHERE is_enabled = TRUE ORDER BY sort_order ASC, id ASC"
     )
     .fetch_all(&db.pool)
     .await
@@ -138,7 +138,7 @@ pub async fn get_categories(db: State<'_, DbState>) -> Result<Vec<CategoryOption
 #[tauri::command]
 pub async fn get_units(db: State<'_, DbState>) -> Result<Vec<UnitOption>, AppError> {
     sqlx::query_as::<_, UnitOption>(
-        "SELECT id, name, name_en, name_vi, symbol, decimal_places FROM units WHERE is_enabled = 1 ORDER BY sort_order ASC, id ASC"
+        "SELECT id, name, name_en, name_vi, symbol, decimal_places FROM units WHERE is_enabled = TRUE ORDER BY sort_order ASC, id ASC"
     )
     .fetch_all(&db.pool)
     .await

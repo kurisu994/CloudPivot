@@ -919,7 +919,7 @@ pub async fn get_material_reference_options(
         SELECT m.id, m.code, m.name, m.spec, u.name AS unit_name
         FROM materials m
         LEFT JOIN units u ON u.id = m.base_unit_id
-        WHERE m.is_enabled = 1
+        WHERE m.is_enabled = TRUE
         ORDER BY m.code ASC, m.id ASC
         "#,
     )
@@ -1016,7 +1016,7 @@ pub async fn save_supplier_material(
 
     if params.is_preferred {
         sqlx::query(
-            "UPDATE supplier_materials SET is_preferred = 0, updated_at = NOW() WHERE material_id = $1 AND id != $2",
+            "UPDATE supplier_materials SET is_preferred = FALSE, updated_at = NOW() WHERE material_id = $1 AND id != $2",
         )
         .bind(params.material_id)
         .bind(saved_id)

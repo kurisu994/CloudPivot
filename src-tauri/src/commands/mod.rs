@@ -336,7 +336,7 @@ pub async fn setup_create_warehouses(
         // 插入仓库
         let warehouse_id: i64 = sqlx::query_scalar(
             "INSERT INTO warehouses (code, name, warehouse_type, manager, is_enabled, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, 1, NOW(), NOW())
+             VALUES ($1, $2, $3, $4, TRUE, NOW(), NOW())
              RETURNING id",
         )
         .bind(&code)

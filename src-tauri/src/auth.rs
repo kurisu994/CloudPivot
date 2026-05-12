@@ -50,7 +50,7 @@ pub async fn ensure_admin_exists(pool: &PgPool) -> Result<(), AppError> {
 
         sqlx::query(
             "INSERT INTO users (username, display_name, password_hash, role, must_change_password, session_version)
-             VALUES ('admin', '管理员', $1, 'admin', 1, 1)",
+             VALUES ('admin', '管理员', $1, 'admin', TRUE, 1)",
         )
         .bind(&password_hash)
         .execute(pool)
@@ -85,8 +85,8 @@ pub async fn login(
             String,
             String,
             String,
-            i64,
-            i64,
+            bool,
+            bool,
             i64,
             Option<String>,
         ),
@@ -133,7 +133,7 @@ pub async fn login(
     };
 
     // 检查是否启用
-    if is_enabled == 0 {
+    if !is_enabled {
         operation_log::write_log(
             pool,
             operation_log::OperationLogEntry {
@@ -273,7 +273,7 @@ pub async fn login(
         username: uname,
         display_name,
         role,
-        must_change_password: must_change_password != 0,
+        must_change_password,
         session_version,
     };
 
@@ -339,7 +339,7 @@ pub async fn change_password(
 
     sqlx::query(
         "UPDATE users SET password_hash = $1,
-                must_change_password = 0,
+                must_change_password = FALSE,
                 password_changed_at = NOW(),
                 session_version = session_version + 1,
                 updated_at = NOW()
@@ -380,9 +380,9 @@ pub async fn change_password(
 
 /// 获取用户信息（通过 ID）
 pub async fn get_user_info(pool: &PgPool, user_id: i64) -> Result<UserInfo, AppError> {
-    let row = sqlx::query_as::<_, (i64, String, String, String, i64, i64)>(
+    let row = sqlx::query_as::<_, (i64, String, String, String, bool, i64)>(
         "SELECT id, username, display_name, role, must_change_password, session_version
-         FROM users WHERE id = $1 AND is_enabled = 1",
+         FROM users WHERE id = $1 AND is_enabled = TRUE",
     )
     .bind(user_id)
     .fetch_optional(pool)
@@ -397,7 +397,7 @@ pub async fn get_user_info(pool: &PgPool, user_id: i64) -> Result<UserInfo, AppE
         username,
         display_name,
         role,
-        must_change_password: must_change_password != 0,
+        must_change_password,
         session_version,
     })
 }

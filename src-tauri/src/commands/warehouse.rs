@@ -138,7 +138,7 @@ pub async fn get_warehouses(
     let sql = if include_disabled {
         "SELECT id, code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at, updated_at FROM warehouses ORDER BY warehouse_type ASC, code ASC"
     } else {
-        "SELECT id, code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at, updated_at FROM warehouses WHERE is_enabled = 1 ORDER BY warehouse_type ASC, code ASC"
+        "SELECT id, code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at, updated_at FROM warehouses WHERE is_enabled = TRUE ORDER BY warehouse_type ASC, code ASC"
     };
 
     sqlx::query_as::<_, Warehouse>(sql)
@@ -207,7 +207,7 @@ pub async fn save_warehouse(
         // 新增模式
         let id: i64 = sqlx::query_scalar(
             "INSERT INTO warehouses (code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, 1, NOW(), NOW())
+             VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, NOW(), NOW())
              RETURNING id",
         )
         .bind(&params.code)
@@ -289,7 +289,7 @@ pub async fn toggle_warehouse_status(db: State<'_, DbState>, id: i64) -> Result<
 
     if new_enabled {
         // 启用：直接更新
-        sqlx::query("UPDATE warehouses SET is_enabled = 1, updated_at = NOW() WHERE id = $1")
+        sqlx::query("UPDATE warehouses SET is_enabled = TRUE, updated_at = NOW() WHERE id = $1")
             .bind(id)
             .execute(&db.pool)
             .await
@@ -302,7 +302,7 @@ pub async fn toggle_warehouse_status(db: State<'_, DbState>, id: i64) -> Result<
             .await
             .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
-        sqlx::query("UPDATE warehouses SET is_enabled = 0, updated_at = NOW() WHERE id = $1")
+        sqlx::query("UPDATE warehouses SET is_enabled = FALSE, updated_at = NOW() WHERE id = $1")
             .bind(id)
             .execute(&mut *tx)
             .await

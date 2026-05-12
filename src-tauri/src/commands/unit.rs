@@ -68,7 +68,7 @@ pub async fn get_all_units(
     let sql = if include_disabled {
         "SELECT id, name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at, updated_at FROM units ORDER BY sort_order ASC, id ASC"
     } else {
-        "SELECT id, name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at, updated_at FROM units WHERE is_enabled = 1 ORDER BY sort_order ASC, id ASC"
+        "SELECT id, name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at, updated_at FROM units WHERE is_enabled = TRUE ORDER BY sort_order ASC, id ASC"
     };
 
     sqlx::query_as::<_, Unit>(sql)
@@ -135,7 +135,7 @@ pub async fn save_unit(db: State<'_, DbState>, params: SaveUnitParams) -> Result
         // 新增模式
         let id: i64 = sqlx::query_scalar(
             "INSERT INTO units (name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, 1, NOW(), NOW())
+             VALUES ($1, $2, $3, $4, $5, $6, TRUE, NOW(), NOW())
              RETURNING id",
         )
         .bind(&params.name)
@@ -197,7 +197,7 @@ pub async fn toggle_unit_status(db: State<'_, DbState>, id: i64) -> Result<(), A
         .await
         .map_err(|e| AppError::Database(format!("查询单位状态失败: {}", e)))?;
 
-    let new_val = if current_enabled { 0 } else { 1 };
+    let new_val = !current_enabled;
 
     sqlx::query("UPDATE units SET is_enabled = $1, updated_at = NOW() WHERE id = $2")
         .bind(new_val)

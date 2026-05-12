@@ -357,7 +357,7 @@ pub async fn get_inventory_report_summary(
             WHERE ($11 IS NULL OR warehouse_id = $21)
             GROUP BY material_id
         ) i_agg ON i_agg.material_id = m.id
-        WHERE m.is_enabled = 1
+        WHERE m.is_enabled = TRUE
           AND ($32 IS NULL OR m.category_id = $42)
           AND ($53 IS NULL OR m.material_type = $63)
           AND ($74 IS NULL OR m.name LIKE '%' || $84 || '%' OR m.code LIKE '%' || $94 || '%')
@@ -622,7 +622,7 @@ pub async fn get_inventory_slow_moving(
             WHERE ($12 IS NULL OR warehouse_id = $22)
             GROUP BY material_id
         ) i_agg ON i_agg.material_id = m.id
-        WHERE m.is_enabled = 1
+        WHERE m.is_enabled = TRUE
           AND COALESCE(i_agg.total_qty, 0) > 0
           AND (i_agg.last_out_date IS NULL
                OR CAST(julianday('now') - julianday(i_agg.last_out_date) AS INTEGER) > $31)
@@ -672,7 +672,7 @@ pub async fn get_inventory_slow_moving(
             WHERE ($12 IS NULL OR warehouse_id = $22)
             GROUP BY material_id
         ) i_agg ON i_agg.material_id = m.id
-        WHERE m.is_enabled = 1
+        WHERE m.is_enabled = TRUE
           AND COALESCE(i_agg.total_qty, 0) > 0
           AND (i_agg.last_out_date IS NULL
                OR CAST(julianday('now') - julianday(i_agg.last_out_date) AS INTEGER) > $31)

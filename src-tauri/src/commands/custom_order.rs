@@ -579,7 +579,7 @@ pub async fn save_custom_order(
 
     // 校验客户存在
     let customer_exists: Option<(i64,)> =
-        sqlx::query_as("SELECT id FROM customers WHERE id = $1 AND is_enabled = 1")
+        sqlx::query_as("SELECT id FROM customers WHERE id = $1 AND is_enabled = TRUE")
             .bind(params.customer_id)
             .fetch_optional(&db.pool)
             .await

@@ -474,7 +474,7 @@ pub async fn save_purchase_order(
 
     // 校验供应商存在
     let supplier_exists: Option<(i64,)> =
-        sqlx::query_as("SELECT id FROM suppliers WHERE id = $1 AND is_enabled = 1")
+        sqlx::query_as("SELECT id FROM suppliers WHERE id = $1 AND is_enabled = TRUE")
             .bind(params.supplier_id)
             .fetch_optional(&db.pool)
             .await
@@ -485,7 +485,7 @@ pub async fn save_purchase_order(
 
     // 校验仓库存在
     let wh_exists: Option<(i64,)> =
-        sqlx::query_as("SELECT id FROM warehouses WHERE id = $1 AND is_enabled = 1")
+        sqlx::query_as("SELECT id FROM warehouses WHERE id = $1 AND is_enabled = TRUE")
             .bind(params.warehouse_id)
             .fetch_optional(&db.pool)
             .await
@@ -816,7 +816,7 @@ pub async fn get_supplier_materials_for_purchase(
                sm.supply_price AS unit_price, sm.currency AS price_currency,
                sm.lead_days
         FROM supplier_materials sm
-        JOIN materials m ON m.id = sm.material_id AND m.is_enabled = 1
+        JOIN materials m ON m.id = sm.material_id AND m.is_enabled = TRUE
         LEFT JOIN units u ON u.id = m.base_unit_id
         WHERE sm.supplier_id = $1
         ORDER BY sm.is_preferred DESC, m.code

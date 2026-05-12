@@ -813,7 +813,7 @@ pub async fn create_manual_stock_movement(
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
     let (material_name, lot_tracking_mode): (String, String) = sqlx::query_as(
-        "SELECT name, COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = $1 AND is_enabled = 1",
+        "SELECT name, COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = $1 AND is_enabled = TRUE",
     )
     .bind(params.material_id)
     .fetch_optional(&mut *tx)
@@ -822,7 +822,7 @@ pub async fn create_manual_stock_movement(
     .ok_or_else(|| AppError::Business("物料不存在或已停用".to_string()))?;
 
     let warehouse_exists: Option<(i64,)> =
-        sqlx::query_as("SELECT id FROM warehouses WHERE id = $1 AND is_enabled = 1")
+        sqlx::query_as("SELECT id FROM warehouses WHERE id = $1 AND is_enabled = TRUE")
             .bind(params.warehouse_id)
             .fetch_optional(&mut *tx)
             .await

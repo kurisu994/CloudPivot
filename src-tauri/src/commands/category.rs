@@ -85,7 +85,7 @@ pub async fn create_category(
     // 插入分类
     let id: i64 = sqlx::query_scalar(
         "INSERT INTO categories (parent_id, name, code, sort_order, level, path, remark, is_enabled, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 1, NOW(), NOW())
+         VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, NOW(), NOW())
          RETURNING id",
     )
     .bind(params.parent_id)

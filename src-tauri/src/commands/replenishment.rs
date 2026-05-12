@@ -220,7 +220,7 @@ pub async fn ensure_replenishment_rules(db: State<'_, DbState>) -> Result<i64, A
         INSERT INTO replenishment_rules (material_id, analysis_days, lead_days, safety_days, batch_multiple, is_enabled)
         SELECT m.id, $1, $2, $3, 1, 1
         FROM materials m
-        WHERE m.is_enabled = 1
+        WHERE m.is_enabled = TRUE
           AND m.id NOT IN (SELECT material_id FROM replenishment_rules)
         "#,
     )
@@ -275,7 +275,7 @@ pub async fn get_replenishment_suggestions(
             sm.supply_price AS pref_supply_price,
             sm.currency AS pref_supply_currency
         FROM materials m
-        JOIN replenishment_rules rr ON rr.material_id = m.id AND rr.is_enabled = 1
+        JOIN replenishment_rules rr ON rr.material_id = m.id AND rr.is_enabled = TRUE
         LEFT JOIN categories c ON c.id = m.category_id
         LEFT JOIN units u ON u.id = m.base_unit_id
         LEFT JOIN (
@@ -287,8 +287,8 @@ pub async fn get_replenishment_suggestions(
         ) inv ON inv.material_id = m.id
         LEFT JOIN supplier_materials sm ON sm.supplier_id = rr.preferred_supplier_id
                                         AND sm.material_id = m.id
-        LEFT JOIN suppliers ps ON ps.id = rr.preferred_supplier_id AND ps.is_enabled = 1
-        WHERE m.is_enabled = 1
+        LEFT JOIN suppliers ps ON ps.id = rr.preferred_supplier_id AND ps.is_enabled = TRUE
+        WHERE m.is_enabled = TRUE
           AND m.id NOT IN (
               SELECT material_id FROM replenishment_logs
               WHERE suggestion_date = "#,
@@ -459,7 +459,7 @@ pub async fn get_replenishment_suggestions(
                     r#"
                     SELECT sm.supplier_id, s.name, sm.supply_price, sm.currency
                     FROM supplier_materials sm
-                    JOIN suppliers s ON s.id = sm.supplier_id AND s.is_enabled = 1
+                    JOIN suppliers s ON s.id = sm.supplier_id AND s.is_enabled = TRUE
                     WHERE sm.material_id = $1
                     ORDER BY sm.is_preferred DESC, sm.supply_price ASC
                     LIMIT 1
@@ -907,7 +907,7 @@ pub async fn create_purchase_orders_from_suggestions(
         // 查询 fallback 仓库 ID（当物料类型无默认仓时使用）
         let fallback_wh_id: Option<i64> = {
             let any_wh: Option<(i64,)> =
-                sqlx::query_as("SELECT id FROM warehouses WHERE is_enabled = 1 LIMIT 1")
+                sqlx::query_as("SELECT id FROM warehouses WHERE is_enabled = TRUE LIMIT 1")
                     .fetch_optional(&db.pool)
                     .await
                     .map_err(|e| AppError::Database(format!("查询仓库失败: {}", e)))?;

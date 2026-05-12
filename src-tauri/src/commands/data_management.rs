@@ -621,7 +621,7 @@ pub async fn import_materials(
                     height_mm, barcode, remark, is_enabled, created_at, updated_at
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 0), COALESCE($10, 0),
                           COALESCE($11, 0), COALESCE($12, 0), $13, $14, $15, $16, $17, $18, $19, $20, $21,
-                          1, NOW(), NOW())
+                          TRUE, NOW(), NOW())
                 "#,
             )
             .bind(row.code.trim())
