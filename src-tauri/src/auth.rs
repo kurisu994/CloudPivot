@@ -17,7 +17,7 @@ pub struct UserInfo {
     pub display_name: String,
     pub role: String,
     pub must_change_password: bool,
-    pub session_version: i64,
+    pub session_version: i32,
 }
 
 /// 登录响应
@@ -261,7 +261,7 @@ pub async fn login(
     .map_err(|e| AppError::Database(format!("更新登录状态失败: {}", e)))?;
 
     // 获取最新 session_version
-    let session_version: i64 =
+    let session_version: i32 =
         sqlx::query_scalar("SELECT session_version FROM users WHERE id = $1")
             .bind(id)
             .fetch_one(pool)
@@ -380,7 +380,7 @@ pub async fn change_password(
 
 /// 获取用户信息（通过 ID）
 pub async fn get_user_info(pool: &PgPool, user_id: i64) -> Result<UserInfo, AppError> {
-    let row = sqlx::query_as::<_, (i64, String, String, String, bool, i64)>(
+    let row = sqlx::query_as::<_, (i64, String, String, String, bool, i32)>(
         "SELECT id, username, display_name, role, must_change_password, session_version
          FROM users WHERE id = $1 AND is_enabled = TRUE",
     )
