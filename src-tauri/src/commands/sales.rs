@@ -219,26 +219,7 @@ async fn generate_order_no(
     tx: &mut sqlx::SqliteConnection,
     order_date: &str,
 ) -> Result<String, AppError> {
-    let date_part = order_date.replace('-', "");
-    let prefix = format!("SO-{}-", date_part);
-
-    let max_no: Option<String> = sqlx::query_scalar(
-        "SELECT order_no FROM sales_orders WHERE order_no LIKE ? ORDER BY order_no DESC LIMIT 1",
-    )
-    .bind(format!("{}%", prefix))
-    .fetch_optional(&mut *tx)
-    .await
-    .map_err(|e| AppError::Database(format!("查询销售单编号失败: {}", e)))?;
-
-    let next_seq = if let Some(last_no) = max_no {
-        let seq_str = last_no.trim_start_matches(&prefix);
-        let seq: i64 = seq_str.parse().unwrap_or(0);
-        seq + 1
-    } else {
-        1
-    };
-
-    Ok(format!("{}{:03}", prefix, next_seq))
+    super::order_shared::generate_order_no(tx, "sales_orders", "order_no", "SO", order_date).await
 }
 
 /// 计算销售单金额
@@ -302,6 +283,8 @@ pub async fn get_sales_orders(
     db: State<'_, DbState>,
     filter: SalesOrderFilter,
 ) -> Result<PaginatedResponse<SalesOrderListItem>, AppError> {
+    use super::order_shared::{self, ListFilterParams, ListQueryConfig};
+
     let mut count_query = QueryBuilder::<'_, Sqlite>::new(
         "SELECT COUNT(*) FROM sales_orders so JOIN customers c ON c.id = so.customer_id JOIN warehouses w ON w.id = so.warehouse_id",
     );
@@ -319,125 +302,37 @@ pub async fn get_sales_orders(
         "#,
     );
 
-    let mut has_where = false;
-    macro_rules! add_cond {
-        ($q:expr) => {
-            if !has_where {
-                $q.push(" WHERE ");
-            } else {
-                $q.push(" AND ");
-            }
-        };
-    }
+    let config = ListQueryConfig {
+        table_alias: "so",
+        partner_id_column: "customer_id",
+        partner_name_expr: "c.name",
+        order_no_column: "order_no",
+        date_column: "order_date",
+        error_context: "销售单",
+    };
 
-    if let Some(keyword) = &filter.keyword {
-        if !keyword.trim().is_empty() {
-            let kw = format!("%{}%", keyword.trim());
-            add_cond!(&mut count_query);
-            count_query.push("(so.order_no LIKE ");
-            count_query.push_bind(kw.clone());
-            count_query.push(" OR c.name LIKE ");
-            count_query.push_bind(kw.clone());
-            count_query.push(")");
-            add_cond!(&mut data_query);
-            data_query.push("(so.order_no LIKE ");
-            data_query.push_bind(kw.clone());
-            data_query.push(" OR c.name LIKE ");
-            data_query.push_bind(kw);
-            data_query.push(")");
-            has_where = true;
-        }
-    }
+    let params = ListFilterParams {
+        keyword: filter.keyword.as_deref(),
+        partner_id: filter.customer_id,
+        status: filter.status.as_deref(),
+        warehouse_id: filter.warehouse_id,
+        date_from: filter.date_from.as_deref(),
+        date_to: filter.date_to.as_deref(),
+        page: filter.page,
+        page_size: filter.page_size,
+    };
 
-    if let Some(cid) = filter.customer_id {
-        if cid > 0 {
-            add_cond!(&mut count_query);
-            count_query.push("so.customer_id = ");
-            count_query.push_bind(cid);
-            add_cond!(&mut data_query);
-            data_query.push("so.customer_id = ");
-            data_query.push_bind(cid);
-            has_where = true;
-        }
-    }
+    order_shared::apply_list_filters(&mut count_query, &mut data_query, &config, &params);
 
-    if let Some(status) = &filter.status {
-        if !status.trim().is_empty() {
-            add_cond!(&mut count_query);
-            count_query.push("so.status = ");
-            count_query.push_bind(status.trim().to_string());
-            add_cond!(&mut data_query);
-            data_query.push("so.status = ");
-            data_query.push_bind(status.trim().to_string());
-            has_where = true;
-        }
-    }
-
-    if let Some(wid) = filter.warehouse_id {
-        if wid > 0 {
-            add_cond!(&mut count_query);
-            count_query.push("so.warehouse_id = ");
-            count_query.push_bind(wid);
-            add_cond!(&mut data_query);
-            data_query.push("so.warehouse_id = ");
-            data_query.push_bind(wid);
-            has_where = true;
-        }
-    }
-
-    if let Some(date_from) = &filter.date_from {
-        if !date_from.trim().is_empty() {
-            add_cond!(&mut count_query);
-            count_query.push("so.order_date >= ");
-            count_query.push_bind(date_from.trim().to_string());
-            add_cond!(&mut data_query);
-            data_query.push("so.order_date >= ");
-            data_query.push_bind(date_from.trim().to_string());
-            has_where = true;
-        }
-    }
-    if let Some(date_to) = &filter.date_to {
-        if !date_to.trim().is_empty() {
-            add_cond!(&mut count_query);
-            count_query.push("so.order_date <= ");
-            count_query.push_bind(date_to.trim().to_string());
-            add_cond!(&mut data_query);
-            data_query.push("so.order_date <= ");
-            data_query.push_bind(date_to.trim().to_string());
-            #[allow(unused_assignments)]
-            {
-                has_where = true;
-            }
-        }
-    }
-
-    let total: (i64,) = count_query
-        .build_query_as()
-        .fetch_one(&db.pool)
-        .await
-        .map_err(|e| AppError::Database(format!("统计销售单数量失败: {}", e)))?;
-
-    let page_size = filter.page_size.max(1);
-    let page = filter.page.max(1);
-    let offset = (page - 1) * page_size;
-
-    data_query.push(" ORDER BY so.id DESC LIMIT ");
-    data_query.push_bind(page_size);
-    data_query.push(" OFFSET ");
-    data_query.push_bind(offset);
-
-    let items = data_query
-        .build_query_as::<SalesOrderListItem>()
-        .fetch_all(&db.pool)
-        .await
-        .map_err(|e| AppError::Database(format!("查询销售单列表失败: {}", e)))?;
-
-    Ok(PaginatedResponse {
-        total: total.0,
-        items,
-        page,
-        page_size,
-    })
+    order_shared::execute_paginated_query::<SalesOrderListItem>(
+        count_query,
+        data_query,
+        &db.pool,
+        params.page,
+        params.page_size,
+        "销售单",
+    )
+    .await
 }
 
 /// 销售单头数据库行
@@ -951,6 +846,8 @@ pub async fn cancel_sales_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    use super::order_shared;
+
     // 检查是否有关联出库单
     let outbound_count: (i64,) =
         sqlx::query_as("SELECT COUNT(*) FROM outbound_orders WHERE sales_id = ?")
@@ -965,29 +862,10 @@ pub async fn cancel_sales_order(
         ));
     }
 
-    let result = sqlx::query(
-        r#"
-        UPDATE sales_orders SET
-            status = 'cancelled',
-            cancelled_by_user_id = 1,
-            cancelled_by_name = 'admin',
-            cancelled_at = datetime('now'),
-            updated_at = datetime('now')
-        WHERE id = ? AND status IN ('draft', 'approved')
-        "#,
-    )
-    .bind(id)
-    .execute(&db.pool)
-    .await
-    .map_err(|e| AppError::Database(format!("作废销售单失败: {}", e)))?;
+    let rows = order_shared::cancel_order(&db.pool, "sales_orders", id, "销售单").await?;
 
-    if result.rows_affected() == 0 {
-        let exists: Option<(i64,)> = sqlx::query_as("SELECT id FROM sales_orders WHERE id = ?")
-            .bind(id)
-            .fetch_optional(&db.pool)
-            .await
-            .map_err(|e| AppError::Database(format!("查询销售单失败: {}", e)))?;
-        if exists.is_none() {
+    if rows == 0 {
+        if !order_shared::check_order_exists(&db.pool, "sales_orders", id, "销售单").await? {
             return Err(AppError::Business("销售单不存在".to_string()));
         }
         return Err(AppError::Business(
@@ -995,24 +873,16 @@ pub async fn cancel_sales_order(
         ));
     }
 
-    // 记录操作日志
-    let order_no: String = sqlx::query_scalar("SELECT order_no FROM sales_orders WHERE id = ?")
-        .bind(id)
-        .fetch_one(&db.pool)
-        .await
-        .unwrap_or_else(|_| "未知".to_string());
-    operation_log::write_log(
+    let order_no = order_shared::get_order_no(&db.pool, "sales_orders", "order_no", id).await;
+    order_shared::log_operation(
         &db.pool,
-        operation_log::OperationLogEntry {
-            module: "sales".to_string(),
-            action: "cancel".to_string(),
-            target_type: Some("sales_order".to_string()),
-            target_id: Some(id),
-            target_no: Some(order_no.clone()),
-            detail: format!("作废销售单 {}", order_no),
-            operator_user_id: Some(current_user.user_id()),
-            operator_name: Some(current_user.display_name()),
-        },
+        "sales",
+        "cancel",
+        "sales_order",
+        id,
+        &order_no,
+        &format!("作废销售单 {}", order_no),
+        &current_user,
     )
     .await;
 
@@ -1026,62 +896,21 @@ pub async fn delete_sales_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
-    let current: Option<(String,)> = sqlx::query_as("SELECT status FROM sales_orders WHERE id = ?")
-        .bind(id)
-        .fetch_optional(&db.pool)
-        .await
-        .map_err(|e| AppError::Database(format!("查询销售单失败: {}", e)))?;
+    use super::order_shared;
 
-    match current {
-        None => return Err(AppError::Business("销售单不存在".to_string())),
-        Some((status,)) if status != "draft" => {
-            return Err(AppError::Business("仅草稿状态的销售单可以删除".to_string()));
-        }
-        _ => {}
-    }
+    let order_no = order_shared::get_order_no(&db.pool, "sales_orders", "order_no", id).await;
 
-    // 提前获取单号用于日志
-    let order_no: String = sqlx::query_scalar("SELECT order_no FROM sales_orders WHERE id = ?")
-        .bind(id)
-        .fetch_one(&db.pool)
-        .await
-        .unwrap_or_else(|_| "未知".to_string());
+    order_shared::delete_order(&db.pool, "sales_orders", "sales_order_items", id, "销售单").await?;
 
-    let mut tx = db
-        .pool
-        .begin()
-        .await
-        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
-
-    sqlx::query("DELETE FROM sales_order_items WHERE order_id = ?")
-        .bind(id)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| AppError::Database(format!("删除销售单明细失败: {}", e)))?;
-
-    sqlx::query("DELETE FROM sales_orders WHERE id = ?")
-        .bind(id)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| AppError::Database(format!("删除销售单失败: {}", e)))?;
-
-    tx.commit()
-        .await
-        .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
-
-    // 记录操作日志
-    operation_log::write_log(
+    order_shared::log_operation(
         &db.pool,
-        operation_log::OperationLogEntry {
-            module: "sales".to_string(),
-            action: "delete".to_string(),
-            target_type: Some("sales_order".to_string()),
-            target_id: Some(id),
-            target_no: Some(order_no.clone()),
-            detail: format!("删除销售单 {}", order_no),
-            operator_user_id: Some(current_user.user_id()),
-            operator_name: Some(current_user.display_name()),
-        },
+        "sales",
+        "delete",
+        "sales_order",
+        id,
+        &order_no,
+        &format!("删除销售单 {}", order_no),
+        &current_user,
     )
     .await;
 
@@ -1883,27 +1712,19 @@ async fn check_all_outbound_items_will_be_done(
     sales_id: i64,
     outbound_items: &[SaveOutboundItemParams],
 ) -> Result<bool, AppError> {
-    let so_items: Vec<(i64, f64, f64)> = sqlx::query_as(
-        "SELECT id, quantity, shipped_qty FROM sales_order_items WHERE order_id = ?",
+    let current_items: Vec<(i64, f64)> = outbound_items
+        .iter()
+        .filter_map(|item| item.sales_order_item_id.map(|id| (id, item.quantity)))
+        .collect();
+
+    super::order_shared::check_all_items_will_be_done(
+        tx,
+        "sales_order_items",
+        "shipped_qty",
+        sales_id,
+        &current_items,
     )
-    .bind(sales_id)
-    .fetch_all(&mut *tx)
     .await
-    .map_err(|e| AppError::Database(format!("查询销售单明细失败: {}", e)))?;
-
-    for (soi_id, order_qty, shipped_qty) in &so_items {
-        let this_qty: f64 = outbound_items
-            .iter()
-            .filter(|item| item.sales_order_item_id == Some(*soi_id))
-            .map(|item| item.quantity)
-            .sum();
-
-        if shipped_qty + this_qty < *order_qty {
-            return Ok(false);
-        }
-    }
-
-    Ok(true)
 }
 
 /// 根据明细行出库情况更新销售单状态
@@ -1911,33 +1732,16 @@ async fn update_sales_order_status(
     tx: &mut sqlx::SqliteConnection,
     sales_id: i64,
 ) -> Result<(), AppError> {
-    let stats: (i64, i64) = sqlx::query_as(
-        r#"
-        SELECT
-            COUNT(*) AS total_items,
-            COUNT(CASE WHEN shipped_qty >= quantity THEN 1 END) AS done_items
-        FROM sales_order_items WHERE order_id = ?
-        "#,
+    super::order_shared::update_order_status(
+        tx,
+        "sales_order_items",
+        "shipped_qty",
+        "sales_orders",
+        sales_id,
+        "partial_out",
+        "销售单出库状态",
     )
-    .bind(sales_id)
-    .fetch_one(&mut *tx)
     .await
-    .map_err(|e| AppError::Database(format!("查询销售单出库状态失败: {}", e)))?;
-
-    let new_status = if stats.1 >= stats.0 {
-        "completed"
-    } else {
-        "partial_out"
-    };
-
-    sqlx::query("UPDATE sales_orders SET status = ?, updated_at = datetime('now') WHERE id = ?")
-        .bind(new_status)
-        .bind(sales_id)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| AppError::Database(format!("更新销售单状态失败: {}", e)))?;
-
-    Ok(())
 }
 
 // ================================================================
@@ -2077,6 +1881,8 @@ pub async fn get_sales_returns(
     db: State<'_, DbState>,
     filter: SalesReturnFilter,
 ) -> Result<PaginatedResponse<SalesReturnListItem>, AppError> {
+    use super::order_shared::{self, ListFilterParams, ListQueryConfig};
+
     let mut count_query = QueryBuilder::<'_, Sqlite>::new(
         "SELECT COUNT(*) FROM sales_returns sr JOIN outbound_orders oo ON oo.id = sr.outbound_id JOIN customers c ON c.id = sr.customer_id",
     );
@@ -2093,110 +1899,37 @@ pub async fn get_sales_returns(
         "#,
     );
 
-    let mut has_where = false;
-    macro_rules! add_cond {
-        ($q:expr) => {
-            if !has_where {
-                $q.push(" WHERE ");
-            } else {
-                $q.push(" AND ");
-            }
-        };
-    }
+    let config = ListQueryConfig {
+        table_alias: "sr",
+        partner_id_column: "customer_id",
+        partner_name_expr: "c.name",
+        order_no_column: "return_no",
+        date_column: "return_date",
+        error_context: "退货单",
+    };
 
-    if let Some(keyword) = &filter.keyword {
-        if !keyword.trim().is_empty() {
-            let kw = format!("%{}%", keyword.trim());
-            add_cond!(&mut count_query);
-            count_query.push("(sr.return_no LIKE ");
-            count_query.push_bind(kw.clone());
-            count_query.push(" OR c.name LIKE ");
-            count_query.push_bind(kw.clone());
-            count_query.push(")");
-            add_cond!(&mut data_query);
-            data_query.push("(sr.return_no LIKE ");
-            data_query.push_bind(kw.clone());
-            data_query.push(" OR c.name LIKE ");
-            data_query.push_bind(kw);
-            data_query.push(")");
-            has_where = true;
-        }
-    }
-    if let Some(cid) = filter.customer_id {
-        if cid > 0 {
-            add_cond!(&mut count_query);
-            count_query.push("sr.customer_id = ");
-            count_query.push_bind(cid);
-            add_cond!(&mut data_query);
-            data_query.push("sr.customer_id = ");
-            data_query.push_bind(cid);
-            has_where = true;
-        }
-    }
-    if let Some(status) = &filter.status {
-        if !status.trim().is_empty() {
-            add_cond!(&mut count_query);
-            count_query.push("sr.status = ");
-            count_query.push_bind(status.trim().to_string());
-            add_cond!(&mut data_query);
-            data_query.push("sr.status = ");
-            data_query.push_bind(status.trim().to_string());
-            has_where = true;
-        }
-    }
-    if let Some(df) = &filter.date_from {
-        if !df.trim().is_empty() {
-            add_cond!(&mut count_query);
-            count_query.push("sr.return_date >= ");
-            count_query.push_bind(df.trim().to_string());
-            add_cond!(&mut data_query);
-            data_query.push("sr.return_date >= ");
-            data_query.push_bind(df.trim().to_string());
-            has_where = true;
-        }
-    }
-    if let Some(dt) = &filter.date_to {
-        if !dt.trim().is_empty() {
-            add_cond!(&mut count_query);
-            count_query.push("sr.return_date <= ");
-            count_query.push_bind(dt.trim().to_string());
-            add_cond!(&mut data_query);
-            data_query.push("sr.return_date <= ");
-            data_query.push_bind(dt.trim().to_string());
-            #[allow(unused_assignments)]
-            {
-                has_where = true;
-            }
-        }
-    }
+    let params = ListFilterParams {
+        keyword: filter.keyword.as_deref(),
+        partner_id: filter.customer_id,
+        status: filter.status.as_deref(),
+        warehouse_id: None,
+        date_from: filter.date_from.as_deref(),
+        date_to: filter.date_to.as_deref(),
+        page: filter.page,
+        page_size: filter.page_size,
+    };
 
-    let total: (i64,) = count_query
-        .build_query_as()
-        .fetch_one(&db.pool)
-        .await
-        .map_err(|e| AppError::Database(format!("统计退货单数量失败: {}", e)))?;
+    order_shared::apply_list_filters(&mut count_query, &mut data_query, &config, &params);
 
-    let page_size = filter.page_size.max(1);
-    let page = filter.page.max(1);
-    let offset = (page - 1) * page_size;
-
-    data_query.push(" ORDER BY sr.id DESC LIMIT ");
-    data_query.push_bind(page_size);
-    data_query.push(" OFFSET ");
-    data_query.push_bind(offset);
-
-    let items = data_query
-        .build_query_as::<SalesReturnListItem>()
-        .fetch_all(&db.pool)
-        .await
-        .map_err(|e| AppError::Database(format!("查询退货单列表失败: {}", e)))?;
-
-    Ok(PaginatedResponse {
-        total: total.0,
-        items,
-        page,
-        page_size,
-    })
+    order_shared::execute_paginated_query::<SalesReturnListItem>(
+        count_query,
+        data_query,
+        &db.pool,
+        params.page,
+        params.page_size,
+        "退货单",
+    )
+    .await
 }
 
 /// 保存并确认销售退货单（核心事务）
