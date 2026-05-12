@@ -6,7 +6,7 @@
 #![allow(clippy::explicit_auto_deref)]
 
 use serde::{Deserialize, Serialize};
-use sqlx::{QueryBuilder, Sqlite};
+use sqlx::{Postgres, QueryBuilder};
 use tauri::State;
 
 use crate::db::DbState;
@@ -137,8 +137,8 @@ pub struct PurchaseOrderFilter {
     pub warehouse_id: Option<i64>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 // ================================================================
@@ -202,7 +202,7 @@ fn validate_save_params(params: &SavePurchaseOrderParams) -> Result<(), AppError
 
 /// 生成采购单编号：PO-YYYYMMDD-XXX
 async fn generate_order_no(
-    tx: &mut sqlx::SqliteConnection,
+    tx: &mut sqlx::PgConnection,
     order_date: &str,
 ) -> Result<String, AppError> {
     super::order_shared::generate_order_no(tx, "purchase_orders", "order_no", "PO", order_date)
@@ -255,10 +255,10 @@ pub async fn get_purchase_orders(
 ) -> Result<PaginatedResponse<PurchaseOrderListItem>, AppError> {
     use super::order_shared::{self, ListFilterParams, ListQueryConfig};
 
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut count_query = QueryBuilder::<'_, Postgres>::new(
         "SELECT COUNT(*) FROM purchase_orders po JOIN suppliers s ON s.id = po.supplier_id JOIN warehouses w ON w.id = po.warehouse_id",
     );
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(
         r#"
         SELECT po.id, po.order_no, po.supplier_id, s.name AS supplier_name,
                po.order_date, po.expected_date, po.warehouse_id, w.name AS warehouse_name,
@@ -880,8 +880,8 @@ pub struct InboundOrderFilter {
     pub status: Option<String>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 保存入库单明细参数
@@ -977,10 +977,10 @@ pub async fn get_inbound_orders(
     db: State<'_, DbState>,
     filter: InboundOrderFilter,
 ) -> Result<PaginatedResponse<InboundOrderListItem>, AppError> {
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut count_query = QueryBuilder::<'_, Postgres>::new(
         "SELECT COUNT(*) FROM inbound_orders io LEFT JOIN suppliers s ON s.id = io.supplier_id JOIN warehouses w ON w.id = io.warehouse_id",
     );
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(
         r#"
         SELECT io.id, io.order_no, io.purchase_id,
                po.order_no AS purchase_order_no,
@@ -1565,7 +1565,7 @@ pub async fn save_and_confirm_inbound(
 
 /// 检查本次入库后是否所有采购单明细行都已完全入库
 async fn check_all_items_will_be_done(
-    tx: &mut sqlx::SqliteConnection,
+    tx: &mut sqlx::PgConnection,
     purchase_id: i64,
     inbound_items: &[SaveInboundItemParams],
 ) -> Result<bool, AppError> {
@@ -1586,7 +1586,7 @@ async fn check_all_items_will_be_done(
 
 /// 根据明细行入库情况更新采购单状态
 async fn update_purchase_order_status(
-    tx: &mut sqlx::SqliteConnection,
+    tx: &mut sqlx::PgConnection,
     purchase_id: i64,
 ) -> Result<(), AppError> {
     super::order_shared::update_order_status(
@@ -1631,8 +1631,8 @@ pub struct PurchaseReturnFilter {
     pub status: Option<String>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 入库单可退明细（创建退货单时用）
@@ -1741,10 +1741,10 @@ pub async fn get_purchase_returns(
 ) -> Result<PaginatedResponse<PurchaseReturnListItem>, AppError> {
     use super::order_shared::{self, ListFilterParams, ListQueryConfig};
 
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut count_query = QueryBuilder::<'_, Postgres>::new(
         "SELECT COUNT(*) FROM purchase_returns pr JOIN inbound_orders io ON io.id = pr.inbound_id JOIN suppliers s ON s.id = pr.supplier_id",
     );
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(
         r#"
         SELECT pr.id, pr.return_no, pr.inbound_id, io.order_no AS inbound_order_no,
                pr.supplier_id, s.name AS supplier_name,

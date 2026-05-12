@@ -5,7 +5,7 @@
 #![allow(clippy::explicit_auto_deref)]
 
 use serde::{Deserialize, Serialize};
-use sqlx::{QueryBuilder, Sqlite};
+use sqlx::{Postgres, QueryBuilder};
 use tauri::State;
 
 use crate::db::DbState;
@@ -44,8 +44,8 @@ pub struct ProductionOrderFilter {
     pub status: Option<String>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 工单详情
@@ -160,12 +160,12 @@ pub async fn get_production_orders(
     db: State<'_, DbState>,
     filter: ProductionOrderFilter,
 ) -> Result<PaginatedResponse<ProductionOrderListItem>, AppError> {
-    let mut count_builder: QueryBuilder<Sqlite> = QueryBuilder::new(
+    let mut count_builder: QueryBuilder<Postgres> = QueryBuilder::new(
         "SELECT COUNT(*) FROM production_orders po
          LEFT JOIN materials m ON po.output_material_id = m.id",
     );
 
-    let mut query_builder: QueryBuilder<Sqlite> = QueryBuilder::new(
+    let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
         "SELECT po.id, po.order_no, po.bom_id, po.custom_order_id,
                 co.order_no AS custom_order_no,
                 po.output_material_id,

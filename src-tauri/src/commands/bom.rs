@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, QueryBuilder, Sqlite, SqlitePool};
+use sqlx::{FromRow, PgPool, Postgres, QueryBuilder};
 use tauri::State;
 
 use super::PaginatedResponse;
@@ -34,8 +34,8 @@ pub struct BomListItem {
 pub struct BomFilter {
     pub keyword: Option<String>,
     pub status: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// BOM 明细项（含物料信息）
@@ -167,8 +167,8 @@ pub async fn get_bom_list(
         LEFT JOIN materials m ON b.material_id = m.id
     "#;
 
-    let mut count_qb = QueryBuilder::<'_, Sqlite>::new(format!("SELECT COUNT(*) {}", base_from));
-    let mut data_qb = QueryBuilder::<'_, Sqlite>::new(format!(
+    let mut count_qb = QueryBuilder::<'_, Postgres>::new(format!("SELECT COUNT(*) {}", base_from));
+    let mut data_qb = QueryBuilder::<'_, Postgres>::new(format!(
         r#"SELECT b.id, b.bom_code, b.material_id,
                   m.code as material_code, m.name as material_name, m.spec as material_spec,
                   b.version, b.status, b.effective_date, b.total_standard_cost,
@@ -754,9 +754,7 @@ pub struct BomChildMaterialOption {
 // ================================================================
 
 /// 生成 BOM 编号：BOM-YYYYMMDD-XXX
-pub(crate) async fn generate_bom_code_internal(
-    pool: &sqlx::SqlitePool,
-) -> Result<String, AppError> {
+pub(crate) async fn generate_bom_code_internal(pool: &sqlx::PgPool) -> Result<String, AppError> {
     let today = chrono::Local::now().format("%Y%m%d").to_string();
     let prefix = format!("BOM-{}-", today);
 
@@ -779,7 +777,7 @@ pub(crate) async fn generate_bom_code_internal(
 }
 
 /// 校验 BOM 未被业务单据引用
-async fn ensure_bom_not_referenced(pool: &SqlitePool, bom_id: i64) -> Result<(), AppError> {
+async fn ensure_bom_not_referenced(pool: &PgPool, bom_id: i64) -> Result<(), AppError> {
     let custom_order_count: (i64,) =
         sqlx::query_as("SELECT COUNT(*) FROM custom_orders WHERE bom_id = ? OR custom_bom_id = ?")
             .bind(bom_id)
@@ -812,14 +810,14 @@ async fn ensure_bom_not_referenced(pool: &SqlitePool, bom_id: i64) -> Result<(),
 
 #[cfg(test)]
 mod tests {
-    use sqlx::sqlite::SqlitePoolOptions;
+    use sqlx::postgres::PgPoolOptions;
 
     use super::ensure_bom_not_referenced;
 
-    async fn setup_bom_reference_pool() -> sqlx::SqlitePool {
-        let pool = SqlitePoolOptions::new()
+    async fn setup_bom_reference_pool() -> sqlx::PgPool {
+        let pool = PgPoolOptions::new()
             .max_connections(1)
-            .connect("sqlite::memory:")
+            .connect("postgres://test@localhost/test")
             .await
             .expect("创建测试数据库失败");
 

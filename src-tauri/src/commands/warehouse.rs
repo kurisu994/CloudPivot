@@ -3,7 +3,7 @@
 //! 包含仓库 CRUD、默认仓映射管理和编码自动生成。
 
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, PgPool};
 use tauri::State;
 
 use crate::db::DbState;
@@ -68,7 +68,7 @@ pub struct DefaultWarehouseMapping {
 /// 使用 MAX(seq) + 1 策略，避免删除后编码冲突。
 /// 此函数供 warehouse.rs 和 setup_create_warehouses 共用（DRY）。
 pub async fn generate_warehouse_code_internal(
-    pool: &SqlitePool,
+    pool: &PgPool,
     warehouse_type: &str,
 ) -> Result<String, AppError> {
     let type_prefix = match warehouse_type {

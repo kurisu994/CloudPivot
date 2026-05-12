@@ -84,8 +84,8 @@ impl CurrentUser {
 pub struct PaginatedResponse<T> {
     pub total: i64,
     pub items: Vec<T>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// ping 测试命令 — 验证前后端通信链路
@@ -377,8 +377,8 @@ pub struct OperationLogFilter {
     pub operator_user_id: Option<i64>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 操作日志记录（返回前端）

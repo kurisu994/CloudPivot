@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use tauri::State;
 
 use crate::db::DbState;
@@ -53,8 +53,8 @@ pub struct InventoryReportResponse {
     pub stats: ReportStats,
     pub items: Vec<InventoryReportItem>,
     pub total: i64,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 库龄分析项
@@ -108,8 +108,8 @@ pub struct InventoryReportFilter {
     pub category_id: Option<i64>,
     pub material_type: Option<String>, // raw / semi / finished
     pub keyword: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 库龄筛选
@@ -120,8 +120,8 @@ pub struct AgingFilter {
     pub min_days: Option<i64>,
     pub max_days: Option<i64>,
     pub keyword: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 滞销筛选
@@ -130,8 +130,8 @@ pub struct SlowMovingFilter {
     pub days_threshold: i64, // 默认 90
     pub warehouse_id: Option<i64>,
     pub category_id: Option<i64>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 趋势筛选
@@ -149,8 +149,8 @@ pub struct PurchaseReportFilter {
     pub supplier_id: Option<i64>,
     pub warehouse_id: Option<i64>,
     pub keyword: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 销售报表筛选
@@ -161,8 +161,8 @@ pub struct SalesReportFilter {
     pub customer_id: Option<i64>,
     pub warehouse_id: Option<i64>,
     pub keyword: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 业务报表 KPI
@@ -214,8 +214,8 @@ pub struct BusinessReportResponse<T> {
     pub trend: Vec<BusinessTrendPoint>,
     pub items: Vec<T>,
     pub total: i64,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 // ================================================================
@@ -823,14 +823,14 @@ fn default_report_dates(start_date: Option<&str>, end_date: Option<&str>) -> (St
     )
 }
 
-fn page_offset(page: u32, page_size: u32) -> (u32, u32, u32) {
+fn page_offset(page: i32, page_size: i32) -> (i32, i32, i32) {
     let page = page.max(1);
     let page_size = page_size.max(1);
     (page, page_size, (page - 1) * page_size)
 }
 
 async fn purchase_stats(
-    pool: &SqlitePool,
+    pool: &PgPool,
     filter: &PurchaseReportFilter,
     start_date: &str,
     end_date: &str,
@@ -876,7 +876,7 @@ async fn purchase_stats(
 }
 
 async fn sales_stats(
-    pool: &SqlitePool,
+    pool: &PgPool,
     filter: &SalesReportFilter,
     start_date: &str,
     end_date: &str,
@@ -966,7 +966,7 @@ pub async fn get_purchase_report_summary(
         items: trend,
         total,
         page: 1,
-        page_size: total as u32,
+        page_size: total as i32,
     })
 }
 
@@ -1015,7 +1015,7 @@ pub async fn get_sales_report_summary(
         items: trend,
         total,
         page: 1,
-        page_size: total as u32,
+        page_size: total as i32,
     })
 }
 

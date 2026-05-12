@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 use chrono::Local;
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, PgPool};
 use tauri::{AppHandle, Manager, State};
 
 use crate::db::DbState;
@@ -134,7 +134,7 @@ fn validate_import_quantity(quantity: f64) -> Result<(), AppError> {
 }
 
 /// 获取当前 SQLite 主库文件路径
-async fn get_db_path(pool: &SqlitePool) -> Result<PathBuf, AppError> {
+async fn get_db_path(pool: &PgPool) -> Result<PathBuf, AppError> {
     let db_path: String =
         sqlx::query_scalar("SELECT file FROM pragma_database_list WHERE name = 'main'")
             .fetch_one(pool)
@@ -256,7 +256,7 @@ fn normalize_lot_tracking_mode(value: Option<&str>) -> Result<String, AppError> 
 
 /// 按编码或名称解析分类
 async fn resolve_category_id(
-    pool: &SqlitePool,
+    pool: &PgPool,
     row: &MaterialImportRow,
 ) -> Result<Option<i64>, AppError> {
     if let Some(code) = row
@@ -295,7 +295,7 @@ async fn resolve_category_id(
 }
 
 /// 按名称或符号解析单位
-async fn resolve_unit_id(pool: &SqlitePool, unit_name: &str) -> Result<i64, AppError> {
+async fn resolve_unit_id(pool: &PgPool, unit_name: &str) -> Result<i64, AppError> {
     let unit_name = unit_name.trim();
     if unit_name.is_empty() {
         return Err(AppError::Business("基础单位不能为空".to_string()));

@@ -5,7 +5,7 @@
 #![allow(clippy::explicit_auto_deref)]
 
 use serde::{Deserialize, Serialize};
-use sqlx::{QueryBuilder, Sqlite};
+use sqlx::{Postgres, QueryBuilder};
 use tauri::State;
 
 use crate::db::DbState;
@@ -52,8 +52,8 @@ pub struct InventoryFilter {
     pub warehouse_id: Option<i64>,
     pub category_id: Option<i64>,
     pub alert_status: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 库存详情 — 分仓汇总项
@@ -151,8 +151,8 @@ pub struct TransactionFilter {
     pub material_id: Option<i64>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 // ================================================================
@@ -183,8 +183,8 @@ pub struct StockCheckFilter {
     pub status: Option<String>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 盘点单明细项
@@ -271,8 +271,8 @@ pub struct TransferFilter {
     pub warehouse_id: Option<i64>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 调拨单明细
@@ -373,8 +373,9 @@ pub async fn get_inventory_list(
         LEFT JOIN categories c ON c.id = m.category_id
     "#;
 
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new(format!("SELECT COUNT(*) {}", base_from));
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(format!(
+    let mut count_query =
+        QueryBuilder::<'_, Postgres>::new(format!("SELECT COUNT(*) {}", base_from));
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(format!(
         r#"
         SELECT inv.id, inv.material_id, m.code AS material_code, m.name AS material_name,
                m.spec, c.name AS category_name,
@@ -606,8 +607,9 @@ pub async fn get_inventory_transactions(
         LEFT JOIN inventory_lots il ON il.id = it.lot_id
     "#;
 
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new(format!("SELECT COUNT(*) {}", base_from));
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(format!(
+    let mut count_query =
+        QueryBuilder::<'_, Postgres>::new(format!("SELECT COUNT(*) {}", base_from));
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(format!(
         r#"
         SELECT it.id, it.transaction_no, it.transaction_date,
                it.material_id, m.code AS material_code, m.name AS material_name,
@@ -753,7 +755,7 @@ pub async fn get_inventory_transactions(
 
 /// 生成自由出入库单号：FM-YYYYMMDD-XXX
 async fn generate_manual_movement_no(
-    tx: &mut sqlx::SqliteConnection,
+    tx: &mut sqlx::PgConnection,
     movement_date: &str,
 ) -> Result<String, AppError> {
     let date_part = movement_date.replace('-', "");
@@ -1004,7 +1006,7 @@ pub async fn create_manual_stock_movement(
 
 /// 盘点单编号生成：SC-YYYYMMDD-XXX
 async fn generate_check_no(
-    tx: &mut sqlx::SqliteConnection,
+    tx: &mut sqlx::PgConnection,
     check_date: &str,
 ) -> Result<String, AppError> {
     let date_part = check_date.replace('-', "");
@@ -1037,8 +1039,9 @@ pub async fn get_stock_checks(
         JOIN warehouses w ON w.id = sc.warehouse_id
     "#;
 
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new(format!("SELECT COUNT(*) {}", base_from));
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(format!(
+    let mut count_query =
+        QueryBuilder::<'_, Postgres>::new(format!("SELECT COUNT(*) {}", base_from));
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(format!(
         r#"
         SELECT sc.id, sc.check_no, sc.warehouse_id, w.name AS warehouse_name,
                sc.check_date, sc.status, sc.scope_type,
@@ -1577,7 +1580,7 @@ pub async fn confirm_stock_check(
 
 /// 调拨单编号生成：TF-YYYYMMDD-XXX
 async fn generate_transfer_no(
-    tx: &mut sqlx::SqliteConnection,
+    tx: &mut sqlx::PgConnection,
     transfer_date: &str,
 ) -> Result<String, AppError> {
     let date_part = transfer_date.replace('-', "");
@@ -1611,8 +1614,9 @@ pub async fn get_transfers(
         JOIN warehouses tw ON tw.id = t.to_warehouse_id
     "#;
 
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new(format!("SELECT COUNT(*) {}", base_from));
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(format!(
+    let mut count_query =
+        QueryBuilder::<'_, Postgres>::new(format!("SELECT COUNT(*) {}", base_from));
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(format!(
         r#"
         SELECT t.id, t.transfer_no, fw.name AS from_warehouse_name, tw.name AS to_warehouse_name,
                t.transfer_date, t.status,

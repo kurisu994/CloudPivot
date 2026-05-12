@@ -3,7 +3,7 @@
 //! 实现客户的增删改查、状态切换、详情聚合和编码自动生成。
 
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, QueryBuilder, Sqlite};
+use sqlx::{FromRow, Postgres, QueryBuilder};
 use tauri::State;
 
 use super::PaginatedResponse;
@@ -65,8 +65,8 @@ pub struct CustomerFilter {
     pub customer_type: Option<String>,
     pub grade: Option<String>,
     pub country: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 销售记录摘要
@@ -375,8 +375,8 @@ pub async fn get_customers(
     db: State<'_, DbState>,
     filter: CustomerFilter,
 ) -> Result<PaginatedResponse<CustomerListItem>, AppError> {
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new("SELECT COUNT(*) FROM customers c");
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut count_query = QueryBuilder::<'_, Postgres>::new("SELECT COUNT(*) FROM customers c");
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(
         r#"
         SELECT c.id, c.code, c.name, c.customer_type, c.country, c.contact_person,
                c.contact_phone, c.grade, c.currency,

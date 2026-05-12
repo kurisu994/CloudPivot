@@ -6,7 +6,7 @@
 #![allow(clippy::explicit_auto_deref)]
 
 use serde::{Deserialize, Serialize};
-use sqlx::{QueryBuilder, Row, Sqlite};
+use sqlx::{Postgres, QueryBuilder, Row};
 use tauri::State;
 
 use crate::db::DbState;
@@ -87,8 +87,8 @@ pub struct SuggestionFilter {
 #[derive(Debug, Deserialize)]
 pub struct RuleFilter {
     pub keyword: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 策略更新参数
@@ -136,7 +136,7 @@ struct MaterialInventoryRow {
 // ================================================================
 
 /// 获取全局默认参数（从 system_config 读取，fallback 到硬编码值）
-async fn get_default_params(pool: &sqlx::SqlitePool) -> (i64, i64, i64) {
+async fn get_default_params(pool: &sqlx::PgPool) -> (i64, i64, i64) {
     let rows: Vec<(String, String)> = sqlx::query_as(
         "SELECT key, value FROM system_config WHERE key IN (
             'replenishment_default_analysis_days',
@@ -251,7 +251,7 @@ pub async fn get_replenishment_suggestions(
     // 1. 查询所有启用物料 + 库存聚合 + 策略 + 首选供应商
     //    使用 INNER JOIN replenishment_rules 确保只查有策略且已启用的物料
     //    通过子查询排除当天已有 ignored/ordered 日志的物料
-    let mut query = QueryBuilder::<'_, Sqlite>::new(
+    let mut query = QueryBuilder::<'_, Postgres>::new(
         r#"
         SELECT
             m.id AS material_id,
@@ -576,10 +576,10 @@ pub async fn get_replenishment_rules(
     db: State<'_, DbState>,
     filter: RuleFilter,
 ) -> Result<PaginatedResponse<ReplenishmentRule>, AppError> {
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut count_query = QueryBuilder::<'_, Postgres>::new(
         "SELECT COUNT(*) FROM replenishment_rules rr JOIN materials m ON m.id = rr.material_id",
     );
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(
         r#"
         SELECT rr.id, rr.material_id, m.code AS material_code, m.name AS material_name,
                m.spec, rr.analysis_days, rr.lead_days, rr.safety_days, rr.batch_multiple,

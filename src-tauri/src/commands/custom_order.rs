@@ -5,7 +5,7 @@
 #![allow(clippy::explicit_auto_deref)]
 
 use serde::{Deserialize, Serialize};
-use sqlx::{QueryBuilder, Sqlite};
+use sqlx::{Postgres, QueryBuilder};
 use tauri::State;
 
 use crate::db::DbState;
@@ -47,8 +47,8 @@ pub struct CustomOrderFilter {
     pub custom_type: Option<String>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 定制配置明细数据
@@ -232,7 +232,7 @@ fn validate_save_params(params: &SaveCustomOrderParams) -> Result<(), AppError> 
 
 /// 生成定制单编号：CO-YYYYMMDD-XXX
 async fn generate_order_no(
-    tx: &mut sqlx::SqliteConnection,
+    tx: &mut sqlx::PgConnection,
     order_date: &str,
 ) -> Result<String, AppError> {
     let date_part = order_date.replace('-', "");
@@ -286,8 +286,9 @@ pub async fn get_custom_orders(
         LEFT JOIN materials rm ON rm.id = co.ref_material_id
     "#;
 
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new(format!("SELECT COUNT(*) {}", base_from));
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(format!(
+    let mut count_query =
+        QueryBuilder::<'_, Postgres>::new(format!("SELECT COUNT(*) {}", base_from));
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(format!(
         r#"SELECT co.id, co.order_no, co.customer_id, c.name AS customer_name,
                co.order_date, co.delivery_date, co.currency,
                co.custom_type, co.priority, co.status,

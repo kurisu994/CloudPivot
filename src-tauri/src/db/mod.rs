@@ -1,97 +1,72 @@
-//! 数据库模块 — SQLite 连接池初始化与管理
+//! 数据库模块 — PostgreSQL 连接池初始化与管理
 //!
-//! 负责创建数据库连接池、执行 PRAGMA 初始化和自动迁移。
-//! v1.0 使用 SQLite，通过 Repository trait 抽象，为 v2.0 PostgreSQL 迁移预留。
+//! 负责创建 PostgreSQL 连接池并执行自动迁移。
+//! 数据库连接地址在编译时通过 DATABASE_URL 环境变量注入。
 
 pub mod migration;
 
-use sqlx::SqlitePool;
-use sqlx::sqlite::SqlitePoolOptions;
-use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
 
 use crate::error::AppError;
 
+/// 编译时注入的数据库连接地址
+const DATABASE_URL: &str = env!("DATABASE_URL");
+
 /// 数据库管理状态，注入 Tauri 全局状态
 pub struct DbState {
-    pub pool: SqlitePool,
+    pub pool: PgPool,
 }
 
 /// 数据库初始化失败状态
 ///
 /// 当数据库初始化失败时注入此状态，前端通过 IPC 调用检测到后展示错误页面。
-/// 同时注入一个内存数据库的 DbState 以避免 Tauri State 解析 panic。
+/// 同时注入一个连接失败的 DbState 以避免 Tauri State 解析 panic。
 pub struct DbInitError {
     pub message: String,
 }
 
-/// 创建一个空的内存数据库连接池作为降级方案
+/// 创建一个降级连接池（连接到同一地址但最小连接数）
 ///
 /// 当主数据库初始化失败时使用，确保 DbState 始终可用，
 /// 避免 Tauri State 解析时 panic。
-pub async fn create_fallback_pool() -> SqlitePool {
-    SqlitePoolOptions::new()
+pub async fn create_fallback_pool() -> PgPool {
+    // 尝试连接，如果失败则创建一个不可用的 pool
+    PgPoolOptions::new()
         .max_connections(1)
-        .connect("sqlite::memory:")
+        .acquire_timeout(std::time::Duration::from_secs(1))
+        .connect(DATABASE_URL)
         .await
-        .expect("内存数据库连接不应失败")
+        .unwrap_or_else(|_| {
+            // 如果连接失败，用 lazy 模式创建一个 pool（不会立即连接）
+            PgPoolOptions::new()
+                .max_connections(1)
+                .connect_lazy(DATABASE_URL)
+                .expect("创建 lazy 连接池不应失败")
+        })
 }
 
 /// 初始化数据库连接池
 ///
 /// 流程：
-/// 1. 确定数据库文件路径（Tauri app_data_dir）
-/// 2. 创建连接池并执行 PRAGMA 初始化
-/// 3. 运行迁移脚本
-pub async fn init_db(app: &AppHandle) -> Result<SqlitePool, AppError> {
-    // 获取应用数据目录（Tauri 2 API）
-    let app_data_dir: PathBuf = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| AppError::Database(format!("无法获取应用数据目录: {}", e)))?;
-
-    // 确保目录存在
-    std::fs::create_dir_all(&app_data_dir)
-        .map_err(|e| AppError::Database(format!("创建数据目录失败: {}", e)))?;
-
-    let db_path = app_data_dir.join("cloudpivot.db");
-    let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
-
-    log::info!("数据库路径: {}", db_path.display());
+/// 1. 使用编译时注入的 DATABASE_URL 创建连接池
+/// 2. 运行迁移脚本
+pub async fn init_db() -> Result<PgPool, AppError> {
+    log::info!("正在连接数据库...");
 
     // 创建连接池
-    let pool = SqlitePoolOptions::new()
+    let pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect(&db_url)
+        .acquire_timeout(std::time::Duration::from_secs(10))
+        .connect(DATABASE_URL)
         .await
         .map_err(|e| AppError::Database(format!("数据库连接失败: {}", e)))?;
 
-    // 执行 PRAGMA 初始化
-    init_pragmas(&pool).await?;
+    log::info!("数据库连接成功");
 
     // 执行迁移
     migration::run_migrations(&pool).await?;
 
     log::info!("数据库初始化完成");
     Ok(pool)
-}
-
-/// 执行 SQLite PRAGMA 初始化
-///
-/// 参考 docs/02-database-design.md §3.2 PRAGMA 初始化清单
-async fn init_pragmas(pool: &SqlitePool) -> Result<(), AppError> {
-    sqlx::raw_sql(
-        "PRAGMA journal_mode = WAL;
-         PRAGMA busy_timeout = 5000;
-         PRAGMA foreign_keys = OFF;
-         PRAGMA synchronous = NORMAL;
-         PRAGMA cache_size = -8000;
-         PRAGMA temp_store = MEMORY;",
-    )
-    .execute(pool)
-    .await
-    .map_err(|e| AppError::Database(format!("PRAGMA 初始化失败: {}", e)))?;
-
-    log::info!("SQLite PRAGMA 初始化完成");
-    Ok(())
 }

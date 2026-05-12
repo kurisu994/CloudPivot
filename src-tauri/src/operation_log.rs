@@ -3,7 +3,7 @@
 //! 提供统一的业务操作日志写入能力，供所有 IPC 命令调用。
 //! 日志写入失败不影响业务流程（仅打印警告）。
 
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 /// 操作日志条目
 ///
@@ -24,7 +24,7 @@ pub struct OperationLogEntry {
 ///
 /// 将一条操作记录写入 `operation_logs` 表。
 /// 写入失败时仅打印警告，不阻塞业务流程。
-pub async fn write_log(pool: &SqlitePool, entry: OperationLogEntry) {
+pub async fn write_log(pool: &PgPool, entry: OperationLogEntry) {
     let result = sqlx::query(
         "INSERT INTO operation_logs (module, action, target_type, target_id, target_no, detail, operator_user_id, operator_name_snapshot)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)",

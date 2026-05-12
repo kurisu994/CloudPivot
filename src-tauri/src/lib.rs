@@ -29,7 +29,7 @@ pub fn run() {
             // 初始化数据库（异步）
             let handle = app.handle().clone();
             tauri::async_runtime::block_on(async move {
-                match db::init_db(&handle).await {
+                match db::init_db().await {
                     Ok(pool) => {
                         log::info!("数据库初始化成功");
 
@@ -43,8 +43,8 @@ pub fn run() {
                     }
                     Err(e) => {
                         log::error!("数据库初始化失败: {}", e);
-                        // 注入降级状态：内存数据库 + 错误标记
-                        // 前端 IPC 调用会因为表不存在而返回错误，展示友好提示
+                        // 注入降级状态：降级连接池 + 错误标记
+                        // 前端 IPC 调用会因为连接不可用而返回错误，展示友好提示
                         let fallback_pool = db::create_fallback_pool().await;
                         handle.manage(DbState {
                             pool: fallback_pool,

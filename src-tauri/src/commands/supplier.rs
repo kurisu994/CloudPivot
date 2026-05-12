@@ -3,7 +3,7 @@
 //! 实现供应商的增删改查、状态切换、详情聚合和供应物料维护。
 
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, QueryBuilder, Sqlite};
+use sqlx::{FromRow, Postgres, QueryBuilder};
 use tauri::State;
 
 use super::PaginatedResponse;
@@ -67,8 +67,8 @@ pub struct SupplierFilter {
     pub country: Option<String>,
     pub business_category: Option<String>,
     pub grade: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 供应物料列表项
@@ -541,8 +541,8 @@ pub async fn get_suppliers(
     db: State<'_, DbState>,
     filter: SupplierFilter,
 ) -> Result<PaginatedResponse<SupplierListItem>, AppError> {
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new("SELECT COUNT(*) FROM suppliers s");
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut count_query = QueryBuilder::<'_, Postgres>::new("SELECT COUNT(*) FROM suppliers s");
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(
         r#"
         SELECT s.id, s.code, s.name, s.short_name, s.country, s.contact_person, s.contact_phone,
                s.business_category, s.grade, s.currency,

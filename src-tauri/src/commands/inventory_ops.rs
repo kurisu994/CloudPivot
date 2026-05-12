@@ -1,9 +1,9 @@
 //! 库存操作基础函数
 //!
 //! 提供可复用的库存变动操作，供采购入库、销售出库、盘点、调拨等模块调用。
-//! 所有函数接收事务引用（`&mut SqliteConnection`），由调用方管理事务边界。
+//! 所有函数接收事务引用（`&mut PgConnection`），由调用方管理事务边界。
 
-use sqlx::SqliteConnection;
+use sqlx::PgConnection;
 
 use crate::error::AppError;
 
@@ -19,7 +19,7 @@ use crate::error::AppError;
 /// 移动加权平均成本公式：
 /// `新平均成本 = (原库存数量 × 原平均成本 + 入库数量 × 入库单价) / 新库存数量`
 pub async fn increase_inventory(
-    tx: &mut SqliteConnection,
+    tx: &mut PgConnection,
     material_id: i64,
     warehouse_id: i64,
     quantity: f64,
@@ -87,7 +87,7 @@ pub async fn increase_inventory(
 /// 返回新创建的 lot_id。
 #[allow(clippy::too_many_arguments)]
 pub async fn create_inventory_lot(
-    tx: &mut SqliteConnection,
+    tx: &mut PgConnection,
     lot_no: &str,
     material_id: i64,
     warehouse_id: i64,
@@ -134,7 +134,7 @@ pub async fn create_inventory_lot(
 /// 生成库存流水号：IT-YYYYMMDDHHMMSS-XXX
 ///
 /// 基于当前时间戳 + 序号，保证唯一性。
-pub async fn generate_transaction_no(tx: &mut SqliteConnection) -> Result<String, AppError> {
+pub async fn generate_transaction_no(tx: &mut PgConnection) -> Result<String, AppError> {
     // 使用数据库时间确保一致性
     let now: (String,) = sqlx::query_as("SELECT strftime('%Y%m%d%H%M%S', 'now')")
         .fetch_one(&mut *tx)
@@ -165,7 +165,7 @@ pub async fn generate_transaction_no(tx: &mut SqliteConnection) -> Result<String
 /// 记录库存流水
 #[allow(clippy::too_many_arguments)]
 pub async fn record_transaction(
-    tx: &mut SqliteConnection,
+    tx: &mut PgConnection,
     transaction_date: &str,
     material_id: i64,
     warehouse_id: i64,
@@ -226,7 +226,7 @@ pub async fn record_transaction(
 // ================================================================
 
 /// 生成批次号：LOT-YYYYMMDD-XXX
-pub async fn generate_lot_no(tx: &mut SqliteConnection, date: &str) -> Result<String, AppError> {
+pub async fn generate_lot_no(tx: &mut PgConnection, date: &str) -> Result<String, AppError> {
     let date_part = date.replace('-', "");
     let prefix = format!("LOT-{}-", date_part);
 
@@ -288,7 +288,7 @@ pub fn unit_cost_to_usd(unit_price: i64, currency: &str, exchange_rate: f64) -> 
 /// `新平均成本 = (原库存金额 - 退货金额) / (原库存数量 - 退货数量)`
 /// 若退货后库存为 0，平均成本重置为 0
 pub async fn decrease_inventory(
-    tx: &mut SqliteConnection,
+    tx: &mut PgConnection,
     material_id: i64,
     warehouse_id: i64,
     quantity: f64,
@@ -339,7 +339,7 @@ pub async fn decrease_inventory(
 /// 公式：`新平均成本 = (原库存金额 - 退货金额) / (原库存数量 - 退货数量)`
 /// 若退货后库存为 0，平均成本重置为 0
 pub async fn recalc_avg_cost_after_return(
-    tx: &mut SqliteConnection,
+    tx: &mut PgConnection,
     material_id: i64,
     warehouse_id: i64,
     return_qty: f64,
@@ -390,7 +390,7 @@ pub async fn recalc_avg_cost_after_return(
 /// 返回按 received_date ASC 排序的可用批次列表 `(lot_id, lot_no, available_qty)`。
 /// available_qty = qty_on_hand - qty_reserved，仅返回大于 0 的批次。
 pub async fn get_available_lots(
-    tx: &mut SqliteConnection,
+    tx: &mut PgConnection,
     material_id: i64,
     warehouse_id: i64,
 ) -> Result<Vec<(i64, String, f64)>, AppError> {
@@ -413,7 +413,7 @@ pub async fn get_available_lots(
 
 /// 扣减批次库存
 pub async fn decrease_lot_inventory(
-    tx: &mut SqliteConnection,
+    tx: &mut PgConnection,
     lot_id: i64,
     quantity: f64,
 ) -> Result<(), AppError> {

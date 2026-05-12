@@ -3,7 +3,7 @@
 //! 提供应付账款、应收账款的查询与登记付款/收款功能。
 
 use serde::{Deserialize, Serialize};
-use sqlx::{QueryBuilder, Sqlite};
+use sqlx::{Postgres, QueryBuilder};
 use tauri::State;
 
 use super::{CurrentUser, PaginatedResponse};
@@ -58,8 +58,8 @@ pub struct PayablesFilter {
     pub status: Option<String>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 应付账款列表响应（含 KPI 概览）
@@ -139,8 +139,8 @@ pub struct ReceivablesFilter {
     pub status: Option<String>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 应收账款列表响应（含 KPI 概览）
@@ -213,8 +213,9 @@ pub async fn get_payables(
         LEFT JOIN suppliers s ON s.id = p.supplier_id
     "#;
 
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new(format!("SELECT COUNT(*) {}", base_from));
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(format!(
+    let mut count_query =
+        QueryBuilder::<'_, Postgres>::new(format!("SELECT COUNT(*) {}", base_from));
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(format!(
         r#"
         SELECT p.id, p.supplier_id, COALESCE(s.name, '') AS supplier_name,
                p.inbound_id, p.return_id, p.adjustment_type,
@@ -515,8 +516,9 @@ pub async fn get_receivables(
         LEFT JOIN customers c ON c.id = r.customer_id
     "#;
 
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new(format!("SELECT COUNT(*) {}", base_from));
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(format!(
+    let mut count_query =
+        QueryBuilder::<'_, Postgres>::new(format!("SELECT COUNT(*) {}", base_from));
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(format!(
         r#"
         SELECT r.id, r.customer_id, COALESCE(c.name, '') AS customer_name,
                r.outbound_id, r.return_id, r.adjustment_type,

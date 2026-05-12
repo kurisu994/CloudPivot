@@ -32,10 +32,10 @@ src-tauri/src/
   auth.rs                  # 认证：bcrypt + 锁定 + 改密 + session_version
   keychain.rs              # 系统钥匙串封装（macOS Keychain / Windows Credential Manager / Linux Secret Service）
   operation_log.rs         # 操作日志公共模块（统一写入能力）
-  db/{mod,migration}.rs    # SQLite 连接池（WAL）+ 自管理迁移框架
+  db/{mod,migration}.rs    # PostgreSQL 连接池 + 自管理迁移框架
   commands/                # IPC 命令模块（156 个命令，详见下方）
     order_shared.rs        # 采购/销售共享抽象（编号生成、列表查询、审核/作废/删除、状态更新）
-  migrations/sqlite/       # 5 个迁移文件（001_init ~ 005_drop_legacy）
+  migrations/postgres/     # 2 个迁移文件（001_init + 002_seed_data）
 docs/                      # 设计文档（实现功能前必读）
   01-requirements.md       # 需求规格：12 大模块
   02-database-design.md    # 数据库：45 张表 DDL + ER
@@ -144,7 +144,8 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 
 ## 数据库
 
-sqlx + SQLite（WAL），45 张表，自管理迁移。`AppError` 统一错误类型 + `Serialize` 返回前端。
+sqlx + PostgreSQL，45 张表，自管理迁移。`AppError` 统一错误类型 + `Serialize` 返回前端。
+数据库连接地址通过 `DATABASE_URL` 环境变量在编译时注入二进制（本地开发读 `.env`，CI 读 GitHub Secrets）。
 
 ## 当前状态（阶段四已全部完成，进入阶段五收尾）
 

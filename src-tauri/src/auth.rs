@@ -4,7 +4,7 @@
 //! v1.0 采用单账号模式（仅 admin），使用 bcrypt 哈希密码。
 
 use serde::Serialize;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 use crate::error::AppError;
 use crate::operation_log;
@@ -38,7 +38,7 @@ const LOCK_DURATION_MINUTES: i64 = 15;
 /// 确保初始管理员账号存在
 ///
 /// 应用启动时调用。如果 users 表为空，创建默认管理员。
-pub async fn ensure_admin_exists(pool: &SqlitePool) -> Result<(), AppError> {
+pub async fn ensure_admin_exists(pool: &PgPool) -> Result<(), AppError> {
     let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
         .fetch_one(pool)
         .await
@@ -72,7 +72,7 @@ pub async fn ensure_admin_exists(pool: &SqlitePool) -> Result<(), AppError> {
 /// 4. 更新登录状态
 /// 5. 写入操作日志
 pub async fn login(
-    pool: &SqlitePool,
+    pool: &PgPool,
     username: &str,
     password: &str,
 ) -> Result<LoginResponse, AppError> {
@@ -307,7 +307,7 @@ pub async fn login(
 /// 4. 更新密码哈希、清除 must_change_password 标记、递增 session_version
 /// 5. 写入操作日志
 pub async fn change_password(
-    pool: &SqlitePool,
+    pool: &PgPool,
     user_id: i64,
     new_password: &str,
 ) -> Result<(), AppError> {
@@ -378,7 +378,7 @@ pub async fn change_password(
 }
 
 /// 获取用户信息（通过 ID）
-pub async fn get_user_info(pool: &SqlitePool, user_id: i64) -> Result<UserInfo, AppError> {
+pub async fn get_user_info(pool: &PgPool, user_id: i64) -> Result<UserInfo, AppError> {
     let row = sqlx::query_as::<_, (i64, String, String, String, i64, i64)>(
         "SELECT id, username, display_name, role, must_change_password, session_version
          FROM users WHERE id = ? AND is_enabled = 1",

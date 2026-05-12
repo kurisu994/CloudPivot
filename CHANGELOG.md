@@ -10,6 +10,15 @@
 
 ### 重构
 
+- **数据库迁移 SQLite → PostgreSQL**：将嵌入式 SQLite 替换为远程 PostgreSQL，支持多终端共享数据和集中式数据安全。
+  - Cargo.toml 依赖从 `sqlx/sqlite` 切换为 `sqlx/postgres`，新增 `dotenvy` 用于编译时加载环境变量。
+  - `build.rs` 支持从 `.env`（本地开发）或环境变量（CI 打包）注入 `DATABASE_URL`，编译时写入二进制。
+  - `db/mod.rs` 重写为 `PgPool` 连接逻辑，移除 SQLite PRAGMA 和文件路径依赖。
+  - `migration.rs` 适配 PostgreSQL，迁移脚本从 `migrations/sqlite/` 迁移到 `migrations/postgres/`。
+  - 全部 18 个 Rust 源文件中的 `SqlitePool` → `PgPool`、`QueryBuilder<Sqlite>` → `QueryBuilder<Postgres>`、`SqliteConnection` → `PgConnection`。
+  - 分页参数类型从 `u32` 改为 `i32`（PostgreSQL 不支持无符号整数）。
+  - CI release workflow 新增 `DATABASE_URL` secret 注入。
+
 - **采购/销售共享抽象**：创建 `order_shared.rs` 模块，提取两个模块中 6 类重复模式（列表查询构建器、编号生成、审核/作废/删除、状态更新、费用分摊、完成检查），消除约 516 行重复代码。
 
 ### 新增

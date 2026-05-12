@@ -5,7 +5,7 @@
 
 #![allow(dead_code)]
 
-use sqlx::{QueryBuilder, Sqlite};
+use sqlx::{Postgres, QueryBuilder};
 
 use crate::error::AppError;
 use crate::operation_log;
@@ -27,7 +27,7 @@ use super::{CurrentUser, PaginatedResponse};
 /// - `prefix`: 编号前缀（如 "PO"、"SO"、"PI"、"SD"、"PR"、"SR"）
 /// - `order_date`: 日期字符串（YYYY-MM-DD 格式）
 pub async fn generate_order_no(
-    tx: &mut sqlx::SqliteConnection,
+    tx: &mut sqlx::PgConnection,
     table: &str,
     column: &str,
     prefix: &str,
@@ -84,7 +84,7 @@ pub struct AllocatedCharges {
 /// - `source_id`: 源单 ID 值
 #[allow(clippy::too_many_arguments)]
 pub async fn calculate_allocated_charges(
-    tx: &mut sqlx::SqliteConnection,
+    tx: &mut sqlx::PgConnection,
     is_last_batch: bool,
     current_total: i64,
     order_total: i64,
@@ -165,7 +165,7 @@ pub async fn calculate_allocated_charges(
 /// - `partial_status`: 部分完成状态（如 "partial_in"、"partial_out"）
 /// - `error_context`: 错误上下文描述
 pub async fn update_order_status(
-    tx: &mut sqlx::SqliteConnection,
+    tx: &mut sqlx::PgConnection,
     items_table: &str,
     done_column: &str,
     order_table: &str,
@@ -222,7 +222,7 @@ pub async fn update_order_status(
 /// - `order_id`: 源单 ID
 /// - `current_items`: 本次操作的明细列表（(源单明细行ID, 本次数量)）
 pub async fn check_all_items_will_be_done(
-    tx: &mut sqlx::SqliteConnection,
+    tx: &mut sqlx::PgConnection,
     items_table: &str,
     done_column: &str,
     order_id: i64,
@@ -273,9 +273,9 @@ pub struct ListFilterParams<'a> {
     /// 日期截止
     pub date_to: Option<&'a str>,
     /// 页码
-    pub page: u32,
+    pub page: i32,
     /// 每页数量
-    pub page_size: u32,
+    pub page_size: i32,
 }
 
 /// 列表查询配置
@@ -298,8 +298,8 @@ pub struct ListQueryConfig<'a> {
 ///
 /// 返回 has_where 状态，供调用方继续添加自定义条件。
 pub fn apply_list_filters(
-    count_query: &mut QueryBuilder<'_, Sqlite>,
-    data_query: &mut QueryBuilder<'_, Sqlite>,
+    count_query: &mut QueryBuilder<'_, Postgres>,
+    data_query: &mut QueryBuilder<'_, Postgres>,
     config: &ListQueryConfig<'_>,
     filter: &ListFilterParams<'_>,
 ) -> bool {
@@ -420,15 +420,15 @@ pub fn apply_list_filters(
 ///
 /// 泛型 T 必须实现 `sqlx::FromRow` + `Send` + `Unpin`。
 pub async fn execute_paginated_query<T>(
-    mut count_query: QueryBuilder<'_, Sqlite>,
-    mut data_query: QueryBuilder<'_, Sqlite>,
-    pool: &sqlx::SqlitePool,
-    page: u32,
-    page_size: u32,
+    mut count_query: QueryBuilder<'_, Postgres>,
+    mut data_query: QueryBuilder<'_, Postgres>,
+    pool: &sqlx::PgPool,
+    page: i32,
+    page_size: i32,
     error_context: &str,
 ) -> Result<PaginatedResponse<T>, AppError>
 where
-    T: for<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> + Send + Unpin,
+    T: for<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> + Send + Unpin,
 {
     let total: (i64,) = count_query
         .build_query_as()
@@ -467,7 +467,7 @@ where
 ///
 /// 返回受影响行数（0 表示失败）
 pub async fn approve_order(
-    pool: &sqlx::SqlitePool,
+    pool: &sqlx::PgPool,
     table: &str,
     id: i64,
     error_context: &str,
@@ -496,7 +496,7 @@ pub async fn approve_order(
 
 /// 检查单据是否存在
 pub async fn check_order_exists(
-    pool: &sqlx::SqlitePool,
+    pool: &sqlx::PgPool,
     table: &str,
     id: i64,
     error_context: &str,
@@ -514,7 +514,7 @@ pub async fn check_order_exists(
 ///
 /// 返回受影响行数
 pub async fn cancel_order(
-    pool: &sqlx::SqlitePool,
+    pool: &sqlx::PgPool,
     table: &str,
     id: i64,
     error_context: &str,
@@ -543,7 +543,7 @@ pub async fn cancel_order(
 
 /// 删除单据（仅草稿状态，含明细）
 pub async fn delete_order(
-    pool: &sqlx::SqlitePool,
+    pool: &sqlx::PgPool,
     order_table: &str,
     items_table: &str,
     id: i64,
@@ -597,7 +597,7 @@ pub async fn delete_order(
 }
 
 /// 获取单据编号（用于操作日志）
-pub async fn get_order_no(pool: &sqlx::SqlitePool, table: &str, column: &str, id: i64) -> String {
+pub async fn get_order_no(pool: &sqlx::PgPool, table: &str, column: &str, id: i64) -> String {
     let sql = format!("SELECT {} FROM {} WHERE id = ?", column, table);
     sqlx::query_scalar(&sql)
         .bind(id)
@@ -609,7 +609,7 @@ pub async fn get_order_no(pool: &sqlx::SqlitePool, table: &str, column: &str, id
 /// 记录操作日志（通用封装）
 #[allow(clippy::too_many_arguments)]
 pub async fn log_operation(
-    pool: &sqlx::SqlitePool,
+    pool: &sqlx::PgPool,
     module: &str,
     action: &str,
     target_type: &str,
@@ -658,7 +658,7 @@ pub fn compute_total_amount_base(total_amount: i64, currency: &str, exchange_rat
 // ================================================================
 
 /// 向查询构建器添加 WHERE 或 AND
-fn push_where_or_and(query: &mut QueryBuilder<'_, Sqlite>, has_where: bool) {
+fn push_where_or_and(query: &mut QueryBuilder<'_, Postgres>, has_where: bool) {
     if !has_where {
         query.push(" WHERE ");
     } else {

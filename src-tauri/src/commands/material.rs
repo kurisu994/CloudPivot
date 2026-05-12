@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, QueryBuilder, Sqlite, SqlitePool};
+use sqlx::{FromRow, PgPool, Postgres, QueryBuilder};
 use tauri::State;
 
 use super::PaginatedResponse;
@@ -63,11 +63,8 @@ fn normalize_lot_tracking_for_compare(value: Option<&str>) -> String {
 }
 
 /// 查询物料是否已有会影响历史口径的业务引用
-async fn has_material_core_references(
-    pool: &SqlitePool,
-    material_id: i64,
-) -> Result<bool, AppError> {
-    let mut query = QueryBuilder::<'_, Sqlite>::new("SELECT COALESCE(SUM(ref_count), 0) FROM (");
+async fn has_material_core_references(pool: &PgPool, material_id: i64) -> Result<bool, AppError> {
+    let mut query = QueryBuilder::<'_, Postgres>::new("SELECT COALESCE(SUM(ref_count), 0) FROM (");
 
     for (index, (table, column)) in MATERIAL_CORE_REFERENCE_TABLES.iter().enumerate() {
         if index > 0 {
@@ -95,7 +92,7 @@ async fn has_material_core_references(
 
 /// 校验被引用物料的核心字段不可变
 pub(crate) async fn ensure_material_core_fields_editable(
-    pool: &SqlitePool,
+    pool: &PgPool,
     material_id: i64,
     next_material_type: &str,
     next_base_unit_id: i64,
@@ -155,8 +152,8 @@ pub struct MaterialFilter {
     pub category_id: Option<i64>,
     pub material_type: Option<String>,
     pub is_enabled: Option<bool>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -183,8 +180,8 @@ pub async fn get_materials(
     db: State<'_, DbState>,
     filter: MaterialFilter,
 ) -> Result<PaginatedResponse<MaterialListItem>, AppError> {
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new("SELECT COUNT(*) FROM materials m");
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut count_query = QueryBuilder::<'_, Postgres>::new("SELECT COUNT(*) FROM materials m");
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(
         "SELECT m.id, m.code, m.name, m.material_type, m.category_id, 
                 c.name as category_name, m.spec, m.base_unit_id, u.name as unit_name,
                 m.ref_cost_price, m.sale_price, m.safety_stock, m.max_stock,
@@ -465,14 +462,14 @@ pub async fn toggle_material_status(
 
 #[cfg(test)]
 mod tests {
-    use sqlx::sqlite::SqlitePoolOptions;
+    use sqlx::postgres::PgPoolOptions;
 
     use super::{MATERIAL_CORE_REFERENCE_TABLES, ensure_material_core_fields_editable};
 
-    async fn setup_material_core_pool() -> sqlx::SqlitePool {
-        let pool = SqlitePoolOptions::new()
+    async fn setup_material_core_pool() -> sqlx::PgPool {
+        let pool = PgPoolOptions::new()
             .max_connections(1)
-            .connect("sqlite::memory:")
+            .connect("postgres://test@localhost/test")
             .await
             .expect("创建物料核心字段测试数据库失败");
 
@@ -499,7 +496,7 @@ mod tests {
         pool
     }
 
-    async fn insert_material(pool: &sqlx::SqlitePool, id: i64) {
+    async fn insert_material(pool: &sqlx::PgPool, id: i64) {
         sqlx::query(
             "INSERT INTO materials (id, material_type, base_unit_id, lot_tracking_mode)
              VALUES (?, 'raw', 1, 'none')",

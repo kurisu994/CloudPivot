@@ -6,7 +6,7 @@
 #![allow(clippy::explicit_auto_deref)]
 
 use serde::{Deserialize, Serialize};
-use sqlx::{QueryBuilder, Sqlite};
+use sqlx::{Postgres, QueryBuilder};
 use tauri::State;
 
 use crate::db::DbState;
@@ -143,8 +143,8 @@ pub struct SalesOrderFilter {
     pub warehouse_id: Option<i64>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 // ================================================================
@@ -216,7 +216,7 @@ fn validate_save_params(params: &SaveSalesOrderParams) -> Result<(), AppError> {
 
 /// 生成销售单编号：SO-YYYYMMDD-XXX
 async fn generate_order_no(
-    tx: &mut sqlx::SqliteConnection,
+    tx: &mut sqlx::PgConnection,
     order_date: &str,
 ) -> Result<String, AppError> {
     super::order_shared::generate_order_no(tx, "sales_orders", "order_no", "SO", order_date).await
@@ -285,10 +285,10 @@ pub async fn get_sales_orders(
 ) -> Result<PaginatedResponse<SalesOrderListItem>, AppError> {
     use super::order_shared::{self, ListFilterParams, ListQueryConfig};
 
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut count_query = QueryBuilder::<'_, Postgres>::new(
         "SELECT COUNT(*) FROM sales_orders so JOIN customers c ON c.id = so.customer_id JOIN warehouses w ON w.id = so.warehouse_id",
     );
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(
         r#"
         SELECT so.id, so.order_no, so.customer_id, c.name AS customer_name,
                so.order_date, so.delivery_date, so.warehouse_id, w.name AS warehouse_name,
@@ -952,8 +952,8 @@ pub struct OutboundOrderFilter {
     pub status: Option<String>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 保存出库单明细参数
@@ -1077,10 +1077,10 @@ pub async fn get_outbound_orders(
     db: State<'_, DbState>,
     filter: OutboundOrderFilter,
 ) -> Result<PaginatedResponse<OutboundOrderListItem>, AppError> {
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut count_query = QueryBuilder::<'_, Postgres>::new(
         "SELECT COUNT(*) FROM outbound_orders oo LEFT JOIN customers c ON c.id = oo.customer_id JOIN warehouses w ON w.id = oo.warehouse_id",
     );
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(
         r#"
         SELECT oo.id, oo.order_no, oo.sales_id,
                so.order_no AS sales_order_no,
@@ -1708,7 +1708,7 @@ pub async fn save_and_confirm_outbound(
 
 /// 检查本次出库后是否所有销售单明细行都已完全出库
 async fn check_all_outbound_items_will_be_done(
-    tx: &mut sqlx::SqliteConnection,
+    tx: &mut sqlx::PgConnection,
     sales_id: i64,
     outbound_items: &[SaveOutboundItemParams],
 ) -> Result<bool, AppError> {
@@ -1729,7 +1729,7 @@ async fn check_all_outbound_items_will_be_done(
 
 /// 根据明细行出库情况更新销售单状态
 async fn update_sales_order_status(
-    tx: &mut sqlx::SqliteConnection,
+    tx: &mut sqlx::PgConnection,
     sales_id: i64,
 ) -> Result<(), AppError> {
     super::order_shared::update_order_status(
@@ -1774,8 +1774,8 @@ pub struct SalesReturnFilter {
     pub status: Option<String>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
-    pub page: u32,
-    pub page_size: u32,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 /// 出库单可退明细
@@ -1883,10 +1883,10 @@ pub async fn get_sales_returns(
 ) -> Result<PaginatedResponse<SalesReturnListItem>, AppError> {
     use super::order_shared::{self, ListFilterParams, ListQueryConfig};
 
-    let mut count_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut count_query = QueryBuilder::<'_, Postgres>::new(
         "SELECT COUNT(*) FROM sales_returns sr JOIN outbound_orders oo ON oo.id = sr.outbound_id JOIN customers c ON c.id = sr.customer_id",
     );
-    let mut data_query = QueryBuilder::<'_, Sqlite>::new(
+    let mut data_query = QueryBuilder::<'_, Postgres>::new(
         r#"
         SELECT sr.id, sr.return_no, sr.outbound_id, oo.order_no AS outbound_order_no,
                sr.customer_id, c.name AS customer_name,

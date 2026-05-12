@@ -1,10 +1,10 @@
 //! 数据库迁移模块 — 轻量级版本化迁移
 //!
 //! 实现方案 B：自行管理迁移逻辑，不依赖 sqlx-cli。
-//! 读取 `migrations/sqlite/*.sql` 文件，按版本号顺序执行。
+//! 读取内嵌的 SQL 迁移脚本，按版本号顺序执行。
 //! 通过 `schema_migrations` 表跟踪已执行的迁移版本。
 
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 use crate::error::AppError;
 
@@ -27,27 +27,12 @@ fn get_migrations() -> Vec<Migration> {
         Migration {
             version: 1,
             name: "init",
-            sql: include_str!("../../migrations/sqlite/001_init.sql"),
+            sql: include_str!("../../migrations/postgres/001_init.sql"),
         },
         Migration {
             version: 2,
             name: "seed_data",
-            sql: include_str!("../../migrations/sqlite/002_seed_data.sql"),
-        },
-        Migration {
-            version: 3,
-            name: "appearance_config",
-            sql: include_str!("../../migrations/sqlite/003_appearance_config.sql"),
-        },
-        Migration {
-            version: 4,
-            name: "production_orders",
-            sql: include_str!("../../migrations/sqlite/004_production_orders.sql"),
-        },
-        Migration {
-            version: 5,
-            name: "drop_legacy_work_orders",
-            sql: include_str!("../../migrations/sqlite/005_drop_legacy_work_orders.sql"),
+            sql: include_str!("../../migrations/postgres/002_seed_data.sql"),
         },
     ]
 }
@@ -58,13 +43,13 @@ fn get_migrations() -> Vec<Migration> {
 /// 1. 创建 `schema_migrations` 版本跟踪表（如不存在）
 /// 2. 查询当前最大版本号
 /// 3. 依次执行未应用的迁移脚本
-pub async fn run_migrations(pool: &SqlitePool) -> Result<(), AppError> {
+pub async fn run_migrations(pool: &PgPool) -> Result<(), AppError> {
     // 创建版本跟踪表
     sqlx::raw_sql(
         "CREATE TABLE IF NOT EXISTS schema_migrations (
-            version    INTEGER PRIMARY KEY,
+            version    BIGINT PRIMARY KEY,
             name       TEXT NOT NULL,
-            applied_at TEXT DEFAULT (datetime('now'))
+            applied_at TIMESTAMP DEFAULT NOW()
         );",
     )
     .execute(pool)
@@ -88,7 +73,6 @@ pub async fn run_migrations(pool: &SqlitePool) -> Result<(), AppError> {
             log::info!("执行迁移 v{}: {}", migration.version, migration.name);
 
             // 按分号分割并逐条执行 SQL 语句
-            // 注意：跳过空语句和纯注释行
             for statement in split_sql_statements(migration.sql) {
                 if !statement.is_empty() {
                     sqlx::raw_sql(statement).execute(pool).await.map_err(|e| {
@@ -104,7 +88,7 @@ pub async fn run_migrations(pool: &SqlitePool) -> Result<(), AppError> {
             }
 
             // 记录迁移版本
-            sqlx::query("INSERT INTO schema_migrations (version, name) VALUES (?, ?)")
+            sqlx::query("INSERT INTO schema_migrations (version, name) VALUES ($1, $2)")
                 .bind(migration.version)
                 .bind(migration.name)
                 .execute(pool)
@@ -122,6 +106,7 @@ pub async fn run_migrations(pool: &SqlitePool) -> Result<(), AppError> {
 /// 按分号分割 SQL 语句
 ///
 /// 简单实现：按 `;` 分割，过滤空语句和纯注释。
+/// 注意：不处理函数体内的分号（PG 函数用 $$ 包裹时需要特殊处理）。
 fn split_sql_statements(sql: &str) -> Vec<&str> {
     sql.split(';')
         .map(|s| s.trim())
