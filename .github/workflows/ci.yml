@@ -64,6 +64,10 @@ jobs:
 
       - name: Cargo clippy
         working-directory: src-tauri
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Cargo fmt check
@@ -91,6 +95,10 @@ jobs:
 
       - name: Cargo test
         working-directory: src-tauri
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: cargo test --all-features
 
   build:
@@ -144,6 +152,9 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         with:
           # 在普通的 CI 流水线中，临时禁用 Updater 包生成，避免因为找不到私钥而构建失败
           args: >-
