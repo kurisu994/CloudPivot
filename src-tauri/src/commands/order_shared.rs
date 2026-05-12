@@ -37,7 +37,7 @@ pub async fn generate_order_no(
     let full_prefix = format!("{}-{}-", prefix, date_part);
 
     let sql = format!(
-        "SELECT {} FROM {} WHERE {} LIKE ? ORDER BY {} DESC LIMIT 1",
+        "SELECT {} FROM {} WHERE {} LIKE $1 ORDER BY {} DESC LIMIT 1",
         column, table, column, column
     );
 
@@ -106,15 +106,15 @@ pub async fn calculate_allocated_charges(
     if is_last_batch {
         // 最后一笔：倒挤法（总额 - 之前已分摊的 = 本次分摊）
         let sql_discount = format!(
-            "SELECT COALESCE(SUM(allocated_discount), 0) FROM {} WHERE {} = ? AND status = 'confirmed'",
+            "SELECT COALESCE(SUM(allocated_discount), 0) FROM {} WHERE {} = $1 AND status = 'confirmed'",
             prev_allocated_table, source_id_column
         );
         let sql_freight = format!(
-            "SELECT COALESCE(SUM(allocated_freight), 0) FROM {} WHERE {} = ? AND status = 'confirmed'",
+            "SELECT COALESCE(SUM(allocated_freight), 0) FROM {} WHERE {} = $1 AND status = 'confirmed'",
             prev_allocated_table, source_id_column
         );
         let sql_other = format!(
-            "SELECT COALESCE(SUM(allocated_other), 0) FROM {} WHERE {} = ? AND status = 'confirmed'",
+            "SELECT COALESCE(SUM(allocated_other), 0) FROM {} WHERE {} = $1 AND status = 'confirmed'",
             prev_allocated_table, source_id_column
         );
 
@@ -178,7 +178,7 @@ pub async fn update_order_status(
         SELECT
             COUNT(*) AS total_items,
             COUNT(CASE WHEN {} >= quantity THEN 1 END) AS done_items
-        FROM {} WHERE order_id = ?
+        FROM {} WHERE order_id = $1
         "#,
         done_column, items_table
     );
@@ -196,7 +196,7 @@ pub async fn update_order_status(
     };
 
     let update_sql = format!(
-        "UPDATE {} SET status = ?, updated_at = datetime('now') WHERE id = ?",
+        "UPDATE {} SET status = $1, updated_at = NOW() WHERE id = $2",
         order_table
     );
     sqlx::query(&update_sql)
@@ -229,7 +229,7 @@ pub async fn check_all_items_will_be_done(
     current_items: &[(i64, f64)],
 ) -> Result<bool, AppError> {
     let sql = format!(
-        "SELECT id, quantity, {} FROM {} WHERE order_id = ?",
+        "SELECT id, quantity, {} FROM {} WHERE order_id = $1",
         done_column, items_table
     );
 
@@ -478,9 +478,9 @@ pub async fn approve_order(
             status = 'approved',
             approved_by_user_id = 1,
             approved_by_name = 'admin',
-            approved_at = datetime('now'),
-            updated_at = datetime('now')
-        WHERE id = ? AND status = 'draft'
+            approved_at = NOW(),
+            updated_at = NOW()
+        WHERE id = $1 AND status = 'draft'
         "#,
         table
     );
@@ -501,7 +501,7 @@ pub async fn check_order_exists(
     id: i64,
     error_context: &str,
 ) -> Result<bool, AppError> {
-    let sql = format!("SELECT id FROM {} WHERE id = ?", table);
+    let sql = format!("SELECT id FROM {} WHERE id = $1", table);
     let exists: Option<(i64,)> = sqlx::query_as(&sql)
         .bind(id)
         .fetch_optional(pool)
@@ -525,9 +525,9 @@ pub async fn cancel_order(
             status = 'cancelled',
             cancelled_by_user_id = 1,
             cancelled_by_name = 'admin',
-            cancelled_at = datetime('now'),
-            updated_at = datetime('now')
-        WHERE id = ? AND status IN ('draft', 'approved')
+            cancelled_at = NOW(),
+            updated_at = NOW()
+        WHERE id = $1 AND status IN ('draft', 'approved')
         "#,
         table
     );
@@ -550,7 +550,7 @@ pub async fn delete_order(
     error_context: &str,
 ) -> Result<(), AppError> {
     // 校验状态
-    let status_sql = format!("SELECT status FROM {} WHERE id = ?", order_table);
+    let status_sql = format!("SELECT status FROM {} WHERE id = $1", order_table);
     let current: Option<(String,)> = sqlx::query_as(&status_sql)
         .bind(id)
         .fetch_optional(pool)
@@ -574,7 +574,7 @@ pub async fn delete_order(
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
     // 先删明细
-    let del_items_sql = format!("DELETE FROM {} WHERE order_id = ?", items_table);
+    let del_items_sql = format!("DELETE FROM {} WHERE order_id = $1", items_table);
     sqlx::query(&del_items_sql)
         .bind(id)
         .execute(&mut *tx)
@@ -582,7 +582,7 @@ pub async fn delete_order(
         .map_err(|e| AppError::Database(format!("删除{}明细失败: {}", error_context, e)))?;
 
     // 再删单头
-    let del_order_sql = format!("DELETE FROM {} WHERE id = ?", order_table);
+    let del_order_sql = format!("DELETE FROM {} WHERE id = $1", order_table);
     sqlx::query(&del_order_sql)
         .bind(id)
         .execute(&mut *tx)
@@ -598,7 +598,7 @@ pub async fn delete_order(
 
 /// 获取单据编号（用于操作日志）
 pub async fn get_order_no(pool: &sqlx::PgPool, table: &str, column: &str, id: i64) -> String {
-    let sql = format!("SELECT {} FROM {} WHERE id = ?", column, table);
+    let sql = format!("SELECT {} FROM {} WHERE id = $1", column, table);
     sqlx::query_scalar(&sql)
         .bind(id)
         .fetch_one(pool)

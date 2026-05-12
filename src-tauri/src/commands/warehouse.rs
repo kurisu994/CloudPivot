@@ -83,7 +83,7 @@ pub async fn generate_warehouse_code_internal(
 
     // 基于已有编码解析 MAX(seq) + 1
     let max_seq: Option<String> = sqlx::query_scalar(
-        "SELECT code FROM warehouses WHERE code LIKE ? ORDER BY code DESC LIMIT 1",
+        "SELECT code FROM warehouses WHERE code LIKE $1 ORDER BY code DESC LIMIT 1",
     )
     .bind(format!("{}%", prefix))
     .fetch_optional(pool)
@@ -104,7 +104,7 @@ pub async fn generate_warehouse_code_internal(
 
 /// 确认仓库存在的辅助函数
 async fn ensure_warehouse_exists(db: &State<'_, DbState>, id: i64) -> Result<(), AppError> {
-    let exists: Option<(i64,)> = sqlx::query_as("SELECT id FROM warehouses WHERE id = ?")
+    let exists: Option<(i64,)> = sqlx::query_as("SELECT id FROM warehouses WHERE id = $1")
         .bind(id)
         .fetch_optional(&db.pool)
         .await
@@ -151,7 +151,7 @@ pub async fn get_warehouses(
 #[tauri::command]
 pub async fn get_warehouse_by_id(db: State<'_, DbState>, id: i64) -> Result<Warehouse, AppError> {
     sqlx::query_as::<_, Warehouse>(
-        "SELECT id, code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at, updated_at FROM warehouses WHERE id = ?",
+        "SELECT id, code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at, updated_at FROM warehouses WHERE id = $1",
     )
     .bind(id)
     .fetch_one(&db.pool)
@@ -166,7 +166,7 @@ pub async fn save_warehouse(
     params: SaveWarehouseParams,
 ) -> Result<i64, AppError> {
     // 检查编码唯一性
-    let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM warehouses WHERE code = ?")
+    let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM warehouses WHERE code = $1")
         .bind(&params.code)
         .fetch_optional(&db.pool)
         .await
@@ -182,9 +182,9 @@ pub async fn save_warehouse(
         // 编辑模式：类型不可修改
         sqlx::query(
             "UPDATE warehouses SET
-                code = ?, name = ?, manager = ?, phone = ?, address = ?,
-                remark = ?, is_enabled = ?, updated_at = datetime('now')
-             WHERE id = ?",
+                code = $1, name = $2, manager = $3, phone = $4, address = $5,
+                remark = $6, is_enabled = $7, updated_at = NOW()
+             WHERE id = $8",
         )
         .bind(&params.code)
         .bind(&params.name)
@@ -207,7 +207,7 @@ pub async fn save_warehouse(
         // 新增模式
         let id: i64 = sqlx::query_scalar(
             "INSERT INTO warehouses (code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+             VALUES ($1, $2, $3, $4, $5, $6, $7, 1, NOW(), NOW())
              RETURNING id",
         )
         .bind(&params.code)
@@ -234,14 +234,14 @@ pub async fn delete_warehouse(db: State<'_, DbState>, id: i64) -> Result<(), App
     let related_count: i64 = sqlx::query_scalar(
         r#"
         SELECT
-            (SELECT COUNT(*) FROM inventory WHERE warehouse_id = ?)
-          + (SELECT COUNT(*) FROM purchase_orders WHERE warehouse_id = ?)
-          + (SELECT COUNT(*) FROM sales_orders WHERE warehouse_id = ?)
-          + (SELECT COUNT(*) FROM inbound_orders WHERE warehouse_id = ?)
-          + (SELECT COUNT(*) FROM outbound_orders WHERE warehouse_id = ?)
-          + (SELECT COUNT(*) FROM default_warehouses WHERE warehouse_id = ?)
-          + (SELECT COUNT(*) FROM transfers WHERE from_warehouse_id = ? OR to_warehouse_id = ?)
-          + (SELECT COUNT(*) FROM stock_checks WHERE warehouse_id = ?)
+            (SELECT COUNT(*) FROM inventory WHERE warehouse_id = $1)
+          + (SELECT COUNT(*) FROM purchase_orders WHERE warehouse_id = $2)
+          + (SELECT COUNT(*) FROM sales_orders WHERE warehouse_id = $3)
+          + (SELECT COUNT(*) FROM inbound_orders WHERE warehouse_id = $4)
+          + (SELECT COUNT(*) FROM outbound_orders WHERE warehouse_id = $5)
+          + (SELECT COUNT(*) FROM default_warehouses WHERE warehouse_id = $6)
+          + (SELECT COUNT(*) FROM transfers WHERE from_warehouse_id = $7 OR to_warehouse_id = $8)
+          + (SELECT COUNT(*) FROM stock_checks WHERE warehouse_id = $9)
         "#,
     )
     .bind(id)
@@ -261,7 +261,7 @@ pub async fn delete_warehouse(db: State<'_, DbState>, id: i64) -> Result<(), App
         return Err(AppError::Business("该仓库已被使用，无法删除".to_string()));
     }
 
-    sqlx::query("DELETE FROM warehouses WHERE id = ?")
+    sqlx::query("DELETE FROM warehouses WHERE id = $1")
         .bind(id)
         .execute(&db.pool)
         .await
@@ -279,7 +279,7 @@ pub async fn toggle_warehouse_status(db: State<'_, DbState>, id: i64) -> Result<
 
     // 获取当前状态
     let current_enabled: bool =
-        sqlx::query_scalar("SELECT is_enabled FROM warehouses WHERE id = ?")
+        sqlx::query_scalar("SELECT is_enabled FROM warehouses WHERE id = $1")
             .bind(id)
             .fetch_one(&db.pool)
             .await
@@ -289,13 +289,11 @@ pub async fn toggle_warehouse_status(db: State<'_, DbState>, id: i64) -> Result<
 
     if new_enabled {
         // 启用：直接更新
-        sqlx::query(
-            "UPDATE warehouses SET is_enabled = 1, updated_at = datetime('now') WHERE id = ?",
-        )
-        .bind(id)
-        .execute(&db.pool)
-        .await
-        .map_err(|e| AppError::Database(format!("启用仓库失败: {}", e)))?;
+        sqlx::query("UPDATE warehouses SET is_enabled = 1, updated_at = NOW() WHERE id = $1")
+            .bind(id)
+            .execute(&db.pool)
+            .await
+            .map_err(|e| AppError::Database(format!("启用仓库失败: {}", e)))?;
     } else {
         // 禁用：事务中同时清除默认仓映射
         let mut tx = db
@@ -304,16 +302,14 @@ pub async fn toggle_warehouse_status(db: State<'_, DbState>, id: i64) -> Result<
             .await
             .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
-        sqlx::query(
-            "UPDATE warehouses SET is_enabled = 0, updated_at = datetime('now') WHERE id = ?",
-        )
-        .bind(id)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| AppError::Database(format!("禁用仓库失败: {}", e)))?;
+        sqlx::query("UPDATE warehouses SET is_enabled = 0, updated_at = NOW() WHERE id = $1")
+            .bind(id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("禁用仓库失败: {}", e)))?;
 
         // 清除该仓库的默认仓映射
-        sqlx::query("DELETE FROM default_warehouses WHERE warehouse_id = ?")
+        sqlx::query("DELETE FROM default_warehouses WHERE warehouse_id = $1")
             .bind(id)
             .execute(&mut *tx)
             .await
@@ -356,7 +352,7 @@ pub async fn save_default_warehouses(
     // 校验每个仓库是否启用
     for mapping in &mappings {
         let enabled: Option<bool> =
-            sqlx::query_scalar("SELECT is_enabled FROM warehouses WHERE id = ?")
+            sqlx::query_scalar("SELECT is_enabled FROM warehouses WHERE id = $1")
                 .bind(mapping.warehouse_id)
                 .fetch_optional(&db.pool)
                 .await
@@ -384,8 +380,8 @@ pub async fn save_default_warehouses(
     for mapping in &mappings {
         sqlx::query(
             "INSERT INTO default_warehouses (material_type, warehouse_id, created_at, updated_at)
-             VALUES (?, ?, datetime('now'), datetime('now'))
-             ON CONFLICT(material_type) DO UPDATE SET warehouse_id = excluded.warehouse_id, updated_at = datetime('now')",
+             VALUES ($1, $2, NOW(), NOW())
+             ON CONFLICT(material_type) DO UPDATE SET warehouse_id = excluded.warehouse_id, updated_at = NOW()",
         )
         .bind(&mapping.material_type)
         .bind(mapping.warehouse_id)

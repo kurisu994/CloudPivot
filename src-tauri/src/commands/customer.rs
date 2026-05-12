@@ -248,7 +248,7 @@ async fn load_customer_base(db: &DbState, id: i64) -> Result<SaveCustomerParams,
                email, shipping_address, currency, credit_limit, settlement_type,
                credit_days, grade, default_discount, remark, is_enabled
         FROM customers
-        WHERE id = ?
+        WHERE id = $1
         "#,
     )
     .bind(id)
@@ -267,7 +267,7 @@ async fn load_recent_sales(
         r#"
         SELECT id, order_no, order_date, status, currency, total_amount
         FROM sales_orders
-        WHERE customer_id = ?
+        WHERE customer_id = $1
         ORDER BY order_date DESC, id DESC
         LIMIT 8
         "#,
@@ -288,11 +288,11 @@ async fn load_receivables_summary(
         SELECT
             COALESCE(SUM(unreceived_amount), 0) AS total_unpaid_amount,
             COALESCE(SUM(CASE
-                WHEN unreceived_amount > 0 AND due_date IS NOT NULL AND date(due_date) < date('now')
+                WHEN unreceived_amount > 0 AND due_date IS NOT NULL AND date(due_date) < CURRENT_DATE::TEXT
                 THEN 1 ELSE 0 END), 0) AS overdue_count,
             COALESCE(SUM(CASE WHEN unreceived_amount > 0 THEN 1 ELSE 0 END), 0) AS open_count
         FROM receivables
-        WHERE customer_id = ?
+        WHERE customer_id = $1
         "#,
     )
     .bind(customer_id)
@@ -305,7 +305,7 @@ async fn load_receivables_summary(
         SELECT id, order_no, receivable_date, due_date, currency,
                receivable_amount, received_amount, unreceived_amount, status
         FROM receivables
-        WHERE customer_id = ?
+        WHERE customer_id = $1
         ORDER BY receivable_date DESC, id DESC
         LIMIT 8
         "#,
@@ -325,7 +325,7 @@ async fn load_receivables_summary(
 
 /// 检查客户是否存在
 async fn ensure_customer_exists(db: &DbState, id: i64) -> Result<(), AppError> {
-    let exists: Option<i64> = sqlx::query_scalar("SELECT id FROM customers WHERE id = ?")
+    let exists: Option<i64> = sqlx::query_scalar("SELECT id FROM customers WHERE id = $1")
         .bind(id)
         .fetch_optional(&db.pool)
         .await
@@ -349,7 +349,7 @@ pub async fn generate_customer_code(db: State<'_, DbState>) -> Result<String, Ap
     let pattern = format!("CUS-{}-%", year);
 
     let max_code: Option<String> =
-        sqlx::query_scalar("SELECT MAX(code) FROM customers WHERE code LIKE ?")
+        sqlx::query_scalar("SELECT MAX(code) FROM customers WHERE code LIKE $1")
             .bind(&pattern)
             .fetch_one(&db.pool)
             .await
@@ -537,7 +537,7 @@ pub async fn save_customer(
     validate_save_customer_params(&params)?;
 
     // 编码唯一性检查
-    let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM customers WHERE code = ?")
+    let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM customers WHERE code = $1")
         .bind(&params.code)
         .fetch_optional(&db.pool)
         .await
@@ -554,13 +554,13 @@ pub async fn save_customer(
         sqlx::query(
             r#"
             UPDATE customers SET
-                code = ?, name = ?, customer_type = ?, country = ?,
-                contact_person = ?, contact_phone = ?, email = ?,
-                shipping_address = ?, currency = ?, credit_limit = ?,
-                settlement_type = ?, credit_days = ?, grade = ?,
-                default_discount = ?, remark = ?, is_enabled = ?,
-                updated_at = datetime('now')
-            WHERE id = ?
+                code = $1, name = $2, customer_type = $3, country = $4,
+                contact_person = $5, contact_phone = $6, email = $7,
+                shipping_address = $8, currency = $9, credit_limit = $10,
+                settlement_type = $11, credit_days = $12, grade = $13,
+                default_discount = $14, remark = $15, is_enabled = $16,
+                updated_at = NOW()
+            WHERE id = $17
             "#,
         )
         .bind(&params.code)
@@ -597,8 +597,8 @@ pub async fn save_customer(
                 default_discount, remark, is_enabled,
                 created_at, updated_at
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                datetime('now'), datetime('now')
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+                NOW(), NOW()
             ) RETURNING id
             "#,
         )
@@ -635,11 +635,11 @@ pub async fn delete_customer(db: State<'_, DbState>, id: i64) -> Result<(), AppE
     let related_count: i64 = sqlx::query_scalar(
         r#"
         SELECT
-            (SELECT COUNT(*) FROM sales_orders WHERE customer_id = ?)
-          + (SELECT COUNT(*) FROM outbound_orders WHERE customer_id = ?)
-          + (SELECT COUNT(*) FROM sales_returns WHERE customer_id = ?)
-          + (SELECT COUNT(*) FROM receivables WHERE customer_id = ?)
-          + (SELECT COUNT(*) FROM custom_orders WHERE customer_id = ?)
+            (SELECT COUNT(*) FROM sales_orders WHERE customer_id = $1)
+          + (SELECT COUNT(*) FROM outbound_orders WHERE customer_id = $2)
+          + (SELECT COUNT(*) FROM sales_returns WHERE customer_id = $3)
+          + (SELECT COUNT(*) FROM receivables WHERE customer_id = $4)
+          + (SELECT COUNT(*) FROM custom_orders WHERE customer_id = $5)
         "#,
     )
     .bind(id)
@@ -657,7 +657,7 @@ pub async fn delete_customer(db: State<'_, DbState>, id: i64) -> Result<(), AppE
         ));
     }
 
-    sqlx::query("DELETE FROM customers WHERE id = ?")
+    sqlx::query("DELETE FROM customers WHERE id = $1")
         .bind(id)
         .execute(&db.pool)
         .await
@@ -676,7 +676,7 @@ pub async fn toggle_customer_status(
     ensure_customer_exists(&db, id).await?;
 
     let val = if is_enabled { 1 } else { 0 };
-    sqlx::query("UPDATE customers SET is_enabled = ?, updated_at = datetime('now') WHERE id = ?")
+    sqlx::query("UPDATE customers SET is_enabled = $1, updated_at = NOW() WHERE id = $2")
         .bind(val)
         .bind(id)
         .execute(&db.pool)

@@ -50,7 +50,7 @@ pub async fn ensure_admin_exists(pool: &PgPool) -> Result<(), AppError> {
 
         sqlx::query(
             "INSERT INTO users (username, display_name, password_hash, role, must_change_password, session_version)
-             VALUES ('admin', '管理员', ?, 'admin', 1, 1)",
+             VALUES ('admin', '管理员', $1, 'admin', 1, 1)",
         )
         .bind(&password_hash)
         .execute(pool)
@@ -93,7 +93,7 @@ pub async fn login(
     >(
         "SELECT id, username, display_name, password_hash, role,
                 is_enabled, must_change_password, failed_login_count, locked_until
-         FROM users WHERE username = ?",
+         FROM users WHERE username = $1",
     )
     .bind(username)
     .fetch_optional(pool)
@@ -189,7 +189,7 @@ pub async fn login(
             let lock_str = lock_time.format("%Y-%m-%d %H:%M:%S").to_string();
 
             sqlx::query(
-                "UPDATE users SET failed_login_count = ?, locked_until = ?, updated_at = datetime('now') WHERE id = ?",
+                "UPDATE users SET failed_login_count = $1, locked_until = $2, updated_at = NOW() WHERE id = $3",
             )
             .bind(new_count)
             .bind(&lock_str)
@@ -222,7 +222,7 @@ pub async fn login(
             )));
         } else {
             sqlx::query(
-                "UPDATE users SET failed_login_count = ?, updated_at = datetime('now') WHERE id = ?",
+                "UPDATE users SET failed_login_count = $1, updated_at = NOW() WHERE id = $2",
             )
             .bind(new_count)
             .bind(id)
@@ -252,8 +252,8 @@ pub async fn login(
     // 登录成功：重置失败计数，更新最后登录时间
     sqlx::query(
         "UPDATE users SET failed_login_count = 0, locked_until = NULL,
-                last_login_at = datetime('now'), updated_at = datetime('now')
-         WHERE id = ?",
+                last_login_at = NOW(), updated_at = NOW()
+         WHERE id = $1",
     )
     .bind(id)
     .execute(pool)
@@ -261,11 +261,12 @@ pub async fn login(
     .map_err(|e| AppError::Database(format!("更新登录状态失败: {}", e)))?;
 
     // 获取最新 session_version
-    let session_version: i64 = sqlx::query_scalar("SELECT session_version FROM users WHERE id = ?")
-        .bind(id)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| AppError::Database(format!("查询会话版本失败: {}", e)))?;
+    let session_version: i64 =
+        sqlx::query_scalar("SELECT session_version FROM users WHERE id = $1")
+            .bind(id)
+            .fetch_one(pool)
+            .await
+            .map_err(|e| AppError::Database(format!("查询会话版本失败: {}", e)))?;
 
     let user = UserInfo {
         id,
@@ -322,7 +323,7 @@ pub async fn change_password(
     }
 
     // 查询当前密码哈希，校验新密码不能与旧密码相同
-    let current_hash: String = sqlx::query_scalar("SELECT password_hash FROM users WHERE id = ?")
+    let current_hash: String = sqlx::query_scalar("SELECT password_hash FROM users WHERE id = $1")
         .bind(user_id)
         .fetch_one(pool)
         .await
@@ -337,12 +338,12 @@ pub async fn change_password(
         .map_err(|e| AppError::Auth(format!("密码哈希失败: {}", e)))?;
 
     sqlx::query(
-        "UPDATE users SET password_hash = ?,
+        "UPDATE users SET password_hash = $1,
                 must_change_password = 0,
-                password_changed_at = datetime('now'),
+                password_changed_at = NOW(),
                 session_version = session_version + 1,
-                updated_at = datetime('now')
-         WHERE id = ?",
+                updated_at = NOW()
+         WHERE id = $2",
     )
     .bind(&new_hash)
     .bind(user_id)
@@ -352,7 +353,7 @@ pub async fn change_password(
 
     // 查询用户名用于日志
     let (username, display_name): (String, String) =
-        sqlx::query_as("SELECT username, display_name FROM users WHERE id = ?")
+        sqlx::query_as("SELECT username, display_name FROM users WHERE id = $1")
             .bind(user_id)
             .fetch_one(pool)
             .await
@@ -381,7 +382,7 @@ pub async fn change_password(
 pub async fn get_user_info(pool: &PgPool, user_id: i64) -> Result<UserInfo, AppError> {
     let row = sqlx::query_as::<_, (i64, String, String, String, i64, i64)>(
         "SELECT id, username, display_name, role, must_change_password, session_version
-         FROM users WHERE id = ? AND is_enabled = 1",
+         FROM users WHERE id = $1 AND is_enabled = 1",
     )
     .bind(user_id)
     .fetch_optional(pool)

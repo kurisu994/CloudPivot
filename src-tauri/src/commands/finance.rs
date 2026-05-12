@@ -191,7 +191,7 @@ pub async fn get_payables(
             COALESCE(SUM(CASE WHEN status = 'paid' AND adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0),
             COALESCE(SUM(CASE WHEN status = 'partial' AND adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0),
             COALESCE(SUM(CASE WHEN status != 'paid' AND adjustment_type = 'normal'
-                AND due_date IS NOT NULL AND due_date < date('now')
+                AND due_date IS NOT NULL AND due_date < CURRENT_DATE::TEXT
                 THEN (payable_amount - paid_amount) ELSE 0 END), 0)
         FROM payables
         "#,
@@ -350,7 +350,7 @@ pub async fn get_payment_records(
         SELECT id, payable_id, payment_date, payment_amount,
                currency, payment_method, remark, created_at
         FROM payment_records
-        WHERE payable_id = ?
+        WHERE payable_id = $1
         ORDER BY payment_date DESC, id DESC
         "#,
     )
@@ -389,7 +389,7 @@ pub async fn record_payment(
 
     // 查询当前应付记录
     let payable_info = sqlx::query_as::<_, (i64, i64, String)>(
-        "SELECT payable_amount, paid_amount, currency FROM payables WHERE id = ?",
+        "SELECT payable_amount, paid_amount, currency FROM payables WHERE id = $1",
     )
     .bind(params.payable_id)
     .fetch_optional(&mut *tx)
@@ -413,7 +413,7 @@ pub async fn record_payment(
         INSERT INTO payment_records (
             payable_id, payment_date, payment_amount,
             currency, payment_method, remark, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+        ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
         RETURNING id
         "#,
     )
@@ -436,7 +436,7 @@ pub async fn record_payment(
     };
 
     sqlx::query(
-        "UPDATE payables SET paid_amount = ?, status = ?, updated_at = datetime('now') WHERE id = ?",
+        "UPDATE payables SET paid_amount = $1, status = $2, updated_at = NOW() WHERE id = $3",
     )
     .bind(new_paid)
     .bind(new_status)
@@ -450,7 +450,7 @@ pub async fn record_payment(
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
     // 记录操作日志
-    let order_no: String = sqlx::query_scalar("SELECT order_no FROM payables WHERE id = ?")
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM payables WHERE id = $1")
         .bind(params.payable_id)
         .fetch_one(&db.pool)
         .await
@@ -494,7 +494,7 @@ pub async fn get_receivables(
             COALESCE(SUM(CASE WHEN status = 'paid' AND adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0),
             COALESCE(SUM(CASE WHEN status = 'partial' AND adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0),
             COALESCE(SUM(CASE WHEN status != 'paid' AND adjustment_type = 'normal'
-                AND due_date IS NOT NULL AND due_date < date('now')
+                AND due_date IS NOT NULL AND due_date < CURRENT_DATE::TEXT
                 THEN (receivable_amount - received_amount) ELSE 0 END), 0)
         FROM receivables
         "#,
@@ -653,7 +653,7 @@ pub async fn get_receipt_records(
         SELECT id, receivable_id, receipt_date, receipt_amount,
                currency, receipt_method, remark, created_at
         FROM receipt_records
-        WHERE receivable_id = ?
+        WHERE receivable_id = $1
         ORDER BY receipt_date DESC, id DESC
         "#,
     )
@@ -692,7 +692,7 @@ pub async fn record_receipt(
 
     // 查询当前应收记录
     let receivable_info = sqlx::query_as::<_, (i64, i64, String)>(
-        "SELECT receivable_amount, received_amount, currency FROM receivables WHERE id = ?",
+        "SELECT receivable_amount, received_amount, currency FROM receivables WHERE id = $1",
     )
     .bind(params.receivable_id)
     .fetch_optional(&mut *tx)
@@ -716,7 +716,7 @@ pub async fn record_receipt(
         INSERT INTO receipt_records (
             receivable_id, receipt_date, receipt_amount,
             currency, receipt_method, remark, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+        ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
         RETURNING id
         "#,
     )
@@ -739,7 +739,7 @@ pub async fn record_receipt(
     };
 
     sqlx::query(
-        "UPDATE receivables SET received_amount = ?, status = ?, updated_at = datetime('now') WHERE id = ?",
+        "UPDATE receivables SET received_amount = $1, status = $2, updated_at = NOW() WHERE id = $3",
     )
     .bind(new_received)
     .bind(new_status)
@@ -753,7 +753,7 @@ pub async fn record_receipt(
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
     // 记录操作日志
-    let order_no: String = sqlx::query_scalar("SELECT order_no FROM receivables WHERE id = ?")
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM receivables WHERE id = $1")
         .bind(params.receivable_id)
         .fetch_one(&db.pool)
         .await

@@ -66,7 +66,7 @@ pub async fn create_category(
     // 计算层级和路径
     let (level, parent_path) = if let Some(pid) = params.parent_id {
         let parent: Option<(i64, Option<String>)> =
-            sqlx::query_as("SELECT level, path FROM categories WHERE id = ?")
+            sqlx::query_as("SELECT level, path FROM categories WHERE id = $1")
                 .bind(pid)
                 .fetch_optional(&db.pool)
                 .await
@@ -85,7 +85,7 @@ pub async fn create_category(
     // 插入分类
     let id: i64 = sqlx::query_scalar(
         "INSERT INTO categories (parent_id, name, code, sort_order, level, path, remark, is_enabled, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 1, NOW(), NOW())
          RETURNING id",
     )
     .bind(params.parent_id)
@@ -105,7 +105,7 @@ pub async fn create_category(
         None => id.to_string(),
     };
 
-    sqlx::query("UPDATE categories SET path = ? WHERE id = ?")
+    sqlx::query("UPDATE categories SET path = $1 WHERE id = $2")
         .bind(&full_path)
         .bind(id)
         .execute(&db.pool)
@@ -141,7 +141,7 @@ pub async fn update_category(
     // 检查是否存在循环引用：parent_id 是否为当前分类的子节点
     if let Some(pid) = params.parent_id {
         let current_path: Option<(Option<String>,)> =
-            sqlx::query_as("SELECT path FROM categories WHERE id = ?")
+            sqlx::query_as("SELECT path FROM categories WHERE id = $1")
                 .bind(params.id)
                 .fetch_optional(&db.pool)
                 .await
@@ -150,7 +150,7 @@ pub async fn update_category(
         if let Some((Some(path),)) = current_path {
             // 查询目标父级的 path
             let target_path: Option<(Option<String>,)> =
-                sqlx::query_as("SELECT path FROM categories WHERE id = ?")
+                sqlx::query_as("SELECT path FROM categories WHERE id = $1")
                     .bind(pid)
                     .fetch_optional(&db.pool)
                     .await
@@ -168,7 +168,7 @@ pub async fn update_category(
     // 计算新的 level 和 path
     let (level, parent_path) = if let Some(pid) = params.parent_id {
         let parent: Option<(i64, Option<String>)> =
-            sqlx::query_as("SELECT level, path FROM categories WHERE id = ?")
+            sqlx::query_as("SELECT level, path FROM categories WHERE id = $1")
                 .bind(pid)
                 .fetch_optional(&db.pool)
                 .await
@@ -190,8 +190,8 @@ pub async fn update_category(
     let sort_order = params.sort_order.unwrap_or(0);
 
     sqlx::query(
-        "UPDATE categories SET name = ?, parent_id = ?, sort_order = ?, level = ?, path = ?, remark = ?, updated_at = datetime('now')
-         WHERE id = ?",
+        "UPDATE categories SET name = $1, parent_id = $2, sort_order = $3, level = $4, path = $5, remark = $6, updated_at = NOW()
+         WHERE id = $7",
     )
     .bind(&params.name)
     .bind(params.parent_id)
@@ -216,7 +216,7 @@ pub async fn update_category(
 pub async fn delete_category(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
     // 检查是否有关联物料
     let material_count: (i64,) =
-        sqlx::query_as("SELECT COUNT(*) FROM materials WHERE category_id = ?")
+        sqlx::query_as("SELECT COUNT(*) FROM materials WHERE category_id = $1")
             .bind(id)
             .fetch_one(&db.pool)
             .await
@@ -230,11 +230,12 @@ pub async fn delete_category(db: State<'_, DbState>, id: i64) -> Result<(), AppE
     }
 
     // 检查是否有子分类
-    let child_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM categories WHERE parent_id = ?")
-        .bind(id)
-        .fetch_one(&db.pool)
-        .await
-        .map_err(|e| AppError::Database(format!("检查子分类失败: {}", e)))?;
+    let child_count: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM categories WHERE parent_id = $1")
+            .bind(id)
+            .fetch_one(&db.pool)
+            .await
+            .map_err(|e| AppError::Database(format!("检查子分类失败: {}", e)))?;
 
     if child_count.0 > 0 {
         return Err(AppError::Business(format!(
@@ -243,7 +244,7 @@ pub async fn delete_category(db: State<'_, DbState>, id: i64) -> Result<(), AppE
         )));
     }
 
-    sqlx::query("DELETE FROM categories WHERE id = ?")
+    sqlx::query("DELETE FROM categories WHERE id = $1")
         .bind(id)
         .execute(&db.pool)
         .await
@@ -283,7 +284,7 @@ pub async fn update_category_order(
         // 计算 level 和 path
         let (level, full_path) = if let Some(pid) = item.parent_id {
             let parent: Option<(i64, Option<String>)> =
-                sqlx::query_as("SELECT level, path FROM categories WHERE id = ?")
+                sqlx::query_as("SELECT level, path FROM categories WHERE id = $1")
                     .bind(pid)
                     .fetch_optional(&mut *tx)
                     .await
@@ -304,7 +305,7 @@ pub async fn update_category_order(
         };
 
         sqlx::query(
-            "UPDATE categories SET parent_id = ?, sort_order = ?, level = ?, path = ?, updated_at = datetime('now') WHERE id = ?",
+            "UPDATE categories SET parent_id = $1, sort_order = $2, level = $3, path = $4, updated_at = NOW() WHERE id = $5",
         )
         .bind(item.parent_id)
         .bind(item.sort_order)

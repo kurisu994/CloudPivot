@@ -239,7 +239,7 @@ async fn generate_order_no(
     let prefix = format!("CO-{}-", date_part);
 
     let max_no: Option<String> = sqlx::query_scalar(
-        "SELECT order_no FROM custom_orders WHERE order_no LIKE ? ORDER BY order_no DESC LIMIT 1",
+        "SELECT order_no FROM custom_orders WHERE order_no LIKE $1 ORDER BY order_no DESC LIMIT 1",
     )
     .bind(format!("{}%", prefix))
     .fetch_optional(&mut *tx)
@@ -451,7 +451,7 @@ pub async fn get_custom_order_detail(
         JOIN customers c ON c.id = co.customer_id
         LEFT JOIN materials rm ON rm.id = co.ref_material_id
         LEFT JOIN sales_orders so ON so.id = co.sales_order_id
-        WHERE co.id = ?
+        WHERE co.id = $1
         "#,
     )
     .bind(id)
@@ -465,7 +465,7 @@ pub async fn get_custom_order_detail(
         r#"
         SELECT id, config_key, standard_value, custom_value, extra_charge, remark, sort_order
         FROM custom_order_items
-        WHERE order_id = ?
+        WHERE order_id = $1
         ORDER BY sort_order, id
         "#,
     )
@@ -495,7 +495,7 @@ pub async fn get_custom_order_detail(
                (SELECT COUNT(*) FROM bom_items WHERE bom_id = b.id) AS item_count
         FROM bom b
         LEFT JOIN materials m ON m.id = b.material_id
-        WHERE b.custom_order_id = ?
+        WHERE b.custom_order_id = $1
         LIMIT 1
         "#,
     )
@@ -523,7 +523,7 @@ pub async fn get_custom_order_detail(
         LEFT JOIN materials m ON m.id = ir.material_id
         LEFT JOIN units u ON m.base_unit_id = u.id
         LEFT JOIN warehouses w ON w.id = ir.warehouse_id
-        WHERE ir.source_type = 'custom_order' AND ir.source_id = ?
+        WHERE ir.source_type = 'custom_order' AND ir.source_id = $1
         ORDER BY ir.id
         "#,
     )
@@ -579,7 +579,7 @@ pub async fn save_custom_order(
 
     // 校验客户存在
     let customer_exists: Option<(i64,)> =
-        sqlx::query_as("SELECT id FROM customers WHERE id = ? AND is_enabled = 1")
+        sqlx::query_as("SELECT id FROM customers WHERE id = $1 AND is_enabled = 1")
             .bind(params.customer_id)
             .fetch_optional(&db.pool)
             .await
@@ -600,7 +600,7 @@ pub async fn save_custom_order(
     let order_id = if let Some(id) = params.id {
         // 编辑模式：校验状态
         let current_status: Option<(String,)> =
-            sqlx::query_as("SELECT status FROM custom_orders WHERE id = ?")
+            sqlx::query_as("SELECT status FROM custom_orders WHERE id = $1")
                 .bind(id)
                 .fetch_optional(&mut *tx)
                 .await
@@ -619,14 +619,14 @@ pub async fn save_custom_order(
         sqlx::query(
             r#"
             UPDATE custom_orders SET
-                customer_id = ?, order_date = ?, delivery_date = ?,
-                currency = ?, exchange_rate = ?,
-                custom_type = ?, priority = ?,
-                ref_material_id = ?, ref_bom_id = ?,
-                custom_desc = ?, quote_amount = ?, quote_amount_base = ?,
-                attachment_path = ?, remark = ?,
-                updated_at = datetime('now')
-            WHERE id = ?
+                customer_id = $1, order_date = $2, delivery_date = $3,
+                currency = $4, exchange_rate = $5,
+                custom_type = $6, priority = $7,
+                ref_material_id = $8, ref_bom_id = $9,
+                custom_desc = $10, quote_amount = $11, quote_amount_base = $12,
+                attachment_path = $13, remark = $14,
+                updated_at = NOW()
+            WHERE id = $15
             "#,
         )
         .bind(params.customer_id)
@@ -649,7 +649,7 @@ pub async fn save_custom_order(
         .map_err(|e| AppError::Database(format!("更新定制单失败: {}", e)))?;
 
         // 删除旧配置明细
-        sqlx::query("DELETE FROM custom_order_items WHERE order_id = ?")
+        sqlx::query("DELETE FROM custom_order_items WHERE order_id = $1")
             .bind(id)
             .execute(&mut *tx)
             .await
@@ -671,11 +671,11 @@ pub async fn save_custom_order(
                 created_by_user_id, created_by_name,
                 created_at, updated_at
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, 'quoting',
-                ?, ?, ?, ?, ?,
-                ?, ?,
-                ?, ?,
-                datetime('now'), datetime('now')
+                $1, $2, $3, $4, $5, $6, $7, $8, 'quoting',
+                $9, $10, $11, $12, $13,
+                $14, $15,
+                $16, $17,
+                NOW(), NOW()
             ) RETURNING id
             "#,
         )
@@ -710,7 +710,7 @@ pub async fn save_custom_order(
             INSERT INTO custom_order_items (
                 order_id, config_key, standard_value, custom_value,
                 extra_charge, remark, sort_order
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
             "#,
         )
         .bind(order_id)
@@ -735,7 +735,7 @@ pub async fn save_custom_order(
     } else {
         "create"
     };
-    let order_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = ?")
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = $1")
         .bind(order_id)
         .fetch_one(&db.pool)
         .await
@@ -774,7 +774,7 @@ pub async fn delete_custom_order(
     id: i64,
 ) -> Result<(), AppError> {
     let status: Option<String> =
-        sqlx::query_scalar("SELECT status FROM custom_orders WHERE id = ?")
+        sqlx::query_scalar("SELECT status FROM custom_orders WHERE id = $1")
             .bind(id)
             .fetch_optional(&db.pool)
             .await
@@ -791,7 +791,7 @@ pub async fn delete_custom_order(
     }
 
     // 提前获取单号用于日志
-    let order_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = ?")
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = $1")
         .bind(id)
         .fetch_one(&db.pool)
         .await
@@ -805,34 +805,34 @@ pub async fn delete_custom_order(
 
     // 删除关联的定制 BOM
     let custom_bom_ids: Vec<(i64,)> =
-        sqlx::query_as("SELECT id FROM bom WHERE custom_order_id = ?")
+        sqlx::query_as("SELECT id FROM bom WHERE custom_order_id = $1")
             .bind(id)
             .fetch_all(&mut *tx)
             .await
             .map_err(|e| AppError::Database(format!("查询定制 BOM 失败: {}", e)))?;
 
     for (bom_id,) in &custom_bom_ids {
-        sqlx::query("DELETE FROM bom_items WHERE bom_id = ?")
+        sqlx::query("DELETE FROM bom_items WHERE bom_id = $1")
             .bind(bom_id)
             .execute(&mut *tx)
             .await
             .map_err(|e| AppError::Database(format!("删除定制 BOM 明细失败: {}", e)))?;
     }
-    sqlx::query("DELETE FROM bom WHERE custom_order_id = ?")
+    sqlx::query("DELETE FROM bom WHERE custom_order_id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("删除定制 BOM 失败: {}", e)))?;
 
     // 删除配置明细
-    sqlx::query("DELETE FROM custom_order_items WHERE order_id = ?")
+    sqlx::query("DELETE FROM custom_order_items WHERE order_id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("删除配置明细失败: {}", e)))?;
 
     // 删除定制单头
-    sqlx::query("DELETE FROM custom_orders WHERE id = ?")
+    sqlx::query("DELETE FROM custom_orders WHERE id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await
@@ -869,7 +869,7 @@ pub async fn confirm_custom_order(
     id: i64,
 ) -> Result<(), AppError> {
     let order_info: Option<(String, i64)> =
-        sqlx::query_as("SELECT status, quote_amount FROM custom_orders WHERE id = ?")
+        sqlx::query_as("SELECT status, quote_amount FROM custom_orders WHERE id = $1")
             .bind(id)
             .fetch_optional(&db.pool)
             .await
@@ -899,7 +899,7 @@ pub async fn confirm_custom_order(
         SELECT bi.child_material_id, bi.standard_qty, bi.wastage_rate
         FROM bom_items bi
         JOIN bom b ON b.id = bi.bom_id
-        WHERE b.custom_order_id = ?
+        WHERE b.custom_order_id = $1
         "#,
     )
     .bind(id)
@@ -923,8 +923,8 @@ pub async fn confirm_custom_order(
         // 查询物料的仓库（使用默认仓或物料所在仓）
         let wh_id: i64 = sqlx::query_scalar(
             "SELECT COALESCE(
-                (SELECT warehouse_id FROM inventory WHERE material_id = ? LIMIT 1),
-                ?
+                (SELECT warehouse_id FROM inventory WHERE material_id = $1 LIMIT 1),
+                $2
             )",
         )
         .bind(material_id)
@@ -939,7 +939,7 @@ pub async fn confirm_custom_order(
             INSERT INTO inventory_reservations (
                 source_type, source_id, material_id, warehouse_id,
                 reserved_qty, status, created_at, updated_at
-            ) VALUES ('custom_order', ?, ?, ?, ?, 'active', datetime('now'), datetime('now'))
+            ) VALUES ('custom_order', $1, $2, $3, $4, 'active', NOW(), NOW())
             RETURNING id
             "#,
         )
@@ -955,9 +955,9 @@ pub async fn confirm_custom_order(
         sqlx::query(
             r#"
             UPDATE inventory SET
-                reserved_qty = reserved_qty + ?,
-                updated_at = datetime('now')
-            WHERE material_id = ? AND warehouse_id = ?
+                reserved_qty = reserved_qty + $1,
+                updated_at = NOW()
+            WHERE material_id = $2 AND warehouse_id = $3
             "#,
         )
         .bind(actual_qty)
@@ -969,7 +969,7 @@ pub async fn confirm_custom_order(
 
         // 如果是批次追踪物料，按 FIFO 分配具体批次
         let lot_mode: Option<String> = sqlx::query_scalar(
-            "SELECT COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = ?",
+            "SELECT COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = $1",
         )
         .bind(material_id)
         .fetch_optional(&mut *tx)
@@ -989,7 +989,7 @@ pub async fn confirm_custom_order(
                     r#"
                     INSERT INTO inventory_reservation_lots
                     (reservation_id, lot_id, reserved_qty, status, created_at, updated_at)
-                    VALUES (?, ?, ?, 'allocated', datetime('now'), datetime('now'))
+                    VALUES ($1, $2, $3, 'allocated', NOW(), NOW())
                     "#,
                 )
                 .bind(reservation_id)
@@ -1001,7 +1001,7 @@ pub async fn confirm_custom_order(
 
                 // 增加 inventory_lots.qty_reserved
                 sqlx::query(
-                    "UPDATE inventory_lots SET qty_reserved = qty_reserved + ? WHERE id = ?",
+                    "UPDATE inventory_lots SET qty_reserved = qty_reserved + $1 WHERE id = $2",
                 )
                 .bind(alloc)
                 .bind(lot_id)
@@ -1027,8 +1027,8 @@ pub async fn confirm_custom_order(
         UPDATE custom_orders SET
             status = 'confirmed',
             confirmed_by_user_id = 1, confirmed_by_name = 'admin',
-            confirmed_at = datetime('now'), updated_at = datetime('now')
-        WHERE id = ?
+            confirmed_at = NOW(), updated_at = NOW()
+        WHERE id = $1
         "#,
     )
     .bind(id)
@@ -1041,7 +1041,7 @@ pub async fn confirm_custom_order(
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
     // 记录操作日志
-    let order_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = ?")
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = $1")
         .bind(id)
         .fetch_one(&db.pool)
         .await
@@ -1072,7 +1072,7 @@ pub async fn cancel_custom_order(
     id: i64,
 ) -> Result<(), AppError> {
     let status: Option<String> =
-        sqlx::query_scalar("SELECT status FROM custom_orders WHERE id = ?")
+        sqlx::query_scalar("SELECT status FROM custom_orders WHERE id = $1")
             .bind(id)
             .fetch_optional(&db.pool)
             .await
@@ -1099,7 +1099,7 @@ pub async fn cancel_custom_order(
         r#"
         SELECT id, material_id, warehouse_id, reserved_qty
         FROM inventory_reservations
-        WHERE source_type = 'custom_order' AND source_id = ? AND status = 'active'
+        WHERE source_type = 'custom_order' AND source_id = $1 AND status = 'active'
         "#,
     )
     .bind(id)
@@ -1110,7 +1110,7 @@ pub async fn cancel_custom_order(
     for (res_id, material_id, warehouse_id, reserved_qty) in &active_reservations {
         // 取消预留记录
         sqlx::query(
-            "UPDATE inventory_reservations SET status = 'cancelled', released_qty = reserved_qty, updated_at = datetime('now') WHERE id = ?",
+            "UPDATE inventory_reservations SET status = 'cancelled', released_qty = reserved_qty, updated_at = NOW() WHERE id = $1",
         )
         .bind(res_id)
         .execute(&mut *tx)
@@ -1119,7 +1119,7 @@ pub async fn cancel_custom_order(
 
         // 取消预留批次分配
         sqlx::query(
-            "UPDATE inventory_reservation_lots SET status = 'cancelled', released_qty = reserved_qty, updated_at = datetime('now') WHERE reservation_id = ?",
+            "UPDATE inventory_reservation_lots SET status = 'cancelled', released_qty = reserved_qty, updated_at = NOW() WHERE reservation_id = $1",
         )
         .bind(res_id)
         .execute(&mut *tx)
@@ -1128,7 +1128,7 @@ pub async fn cancel_custom_order(
 
         // 恢复库存预留数量
         sqlx::query(
-            "UPDATE inventory SET reserved_qty = MAX(0, reserved_qty - ?), updated_at = datetime('now') WHERE material_id = ? AND warehouse_id = ?",
+            "UPDATE inventory SET reserved_qty = MAX(0, reserved_qty - $1), updated_at = NOW() WHERE material_id = $2 AND warehouse_id = $3",
         )
         .bind(reserved_qty)
         .bind(material_id)
@@ -1144,8 +1144,8 @@ pub async fn cancel_custom_order(
         UPDATE custom_orders SET
             status = 'cancelled',
             cancelled_by_user_id = 1, cancelled_by_name = 'admin',
-            cancelled_at = datetime('now'), updated_at = datetime('now')
-        WHERE id = ?
+            cancelled_at = NOW(), updated_at = NOW()
+        WHERE id = $1
         "#,
     )
     .bind(id)
@@ -1158,7 +1158,7 @@ pub async fn cancel_custom_order(
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
     // 记录操作日志
-    let order_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = ?")
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = $1")
         .bind(id)
         .fetch_one(&db.pool)
         .await
@@ -1190,7 +1190,7 @@ pub async fn create_custom_bom(
 ) -> Result<i64, AppError> {
     // 校验定制单状态
     let status: Option<String> =
-        sqlx::query_scalar("SELECT status FROM custom_orders WHERE id = ?")
+        sqlx::query_scalar("SELECT status FROM custom_orders WHERE id = $1")
             .bind(custom_order_id)
             .fetch_optional(&db.pool)
             .await
@@ -1207,7 +1207,7 @@ pub async fn create_custom_bom(
     }
 
     // 检查是否已有定制 BOM
-    let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM bom WHERE custom_order_id = ?")
+    let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM bom WHERE custom_order_id = $1")
         .bind(custom_order_id)
         .fetch_optional(&db.pool)
         .await
@@ -1227,7 +1227,7 @@ pub async fn create_custom_bom(
 
     // 读取源 BOM
     let source = sqlx::query_as::<_, (i64, i64, Option<String>)>(
-        "SELECT id, material_id, remark FROM bom WHERE id = ?",
+        "SELECT id, material_id, remark FROM bom WHERE id = $1",
     )
     .bind(source_bom_id)
     .fetch_optional(&mut *tx)
@@ -1242,7 +1242,7 @@ pub async fn create_custom_bom(
     let new_bom_id: i64 = sqlx::query_scalar(
         r#"
         INSERT INTO bom (bom_code, material_id, version, status, custom_order_id, remark, created_at, updated_at)
-        VALUES (?, ?, 'C1.0', 'draft', ?, ?, datetime('now'), datetime('now'))
+        VALUES ($1, $2, 'C1.0', 'draft', $3, $4, NOW(), NOW())
         RETURNING id
         "#,
     )
@@ -1260,10 +1260,10 @@ pub async fn create_custom_bom(
         INSERT INTO bom_items (bom_id, child_material_id, standard_qty, wastage_rate,
                                process_step, is_key_part, substitute_id, remark, sort_order,
                                created_at, updated_at)
-        SELECT ?, child_material_id, standard_qty, wastage_rate,
+        SELECT $1, child_material_id, standard_qty, wastage_rate,
                process_step, is_key_part, substitute_id, remark, sort_order,
-               datetime('now'), datetime('now')
-        FROM bom_items WHERE bom_id = ?
+               NOW(), NOW()
+        FROM bom_items WHERE bom_id = $2
         "#,
     )
     .bind(new_bom_id)
@@ -1274,7 +1274,7 @@ pub async fn create_custom_bom(
 
     // 复制标准成本
     sqlx::query(
-        "UPDATE bom SET total_standard_cost = (SELECT total_standard_cost FROM bom WHERE id = ?), updated_at = datetime('now') WHERE id = ?",
+        "UPDATE bom SET total_standard_cost = (SELECT total_standard_cost FROM bom WHERE id = $1), updated_at = NOW() WHERE id = $2",
     )
     .bind(source_bom_id)
     .bind(new_bom_id)
@@ -1283,14 +1283,14 @@ pub async fn create_custom_bom(
     .map_err(|e| AppError::Database(format!("复制标准成本失败: {}", e)))?;
 
     // 更新定制单的 ref_bom_id 和 cost_amount
-    let cost: Option<i64> = sqlx::query_scalar("SELECT total_standard_cost FROM bom WHERE id = ?")
+    let cost: Option<i64> = sqlx::query_scalar("SELECT total_standard_cost FROM bom WHERE id = $1")
         .bind(new_bom_id)
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("查询成本失败: {}", e)))?;
 
     sqlx::query(
-        "UPDATE custom_orders SET ref_bom_id = ?, cost_amount = ?, updated_at = datetime('now') WHERE id = ?",
+        "UPDATE custom_orders SET ref_bom_id = $1, cost_amount = $2, updated_at = NOW() WHERE id = $3",
     )
     .bind(new_bom_id)
     .bind(cost.unwrap_or(0))
@@ -1321,7 +1321,7 @@ pub async fn calculate_custom_cost(
         FROM bom_items bi
         JOIN bom b ON b.id = bi.bom_id
         LEFT JOIN materials m ON bi.child_material_id = m.id
-        WHERE b.custom_order_id = ?
+        WHERE b.custom_order_id = $1
         "#,
     )
     .bind(custom_order_id)
@@ -1332,17 +1332,15 @@ pub async fn calculate_custom_cost(
     let cost_amount = cost.unwrap_or(0);
 
     // 更新定制单和定制 BOM 的成本
-    sqlx::query(
-        "UPDATE custom_orders SET cost_amount = ?, updated_at = datetime('now') WHERE id = ?",
-    )
-    .bind(cost_amount)
-    .bind(custom_order_id)
-    .execute(&db.pool)
-    .await
-    .map_err(|e| AppError::Database(format!("更新定制单成本失败: {}", e)))?;
+    sqlx::query("UPDATE custom_orders SET cost_amount = $1, updated_at = NOW() WHERE id = $2")
+        .bind(cost_amount)
+        .bind(custom_order_id)
+        .execute(&db.pool)
+        .await
+        .map_err(|e| AppError::Database(format!("更新定制单成本失败: {}", e)))?;
 
     sqlx::query(
-        "UPDATE bom SET total_standard_cost = ?, updated_at = datetime('now') WHERE custom_order_id = ?",
+        "UPDATE bom SET total_standard_cost = $1, updated_at = NOW() WHERE custom_order_id = $2",
     )
     .bind(cost_amount)
     .bind(custom_order_id)
@@ -1375,7 +1373,7 @@ pub async fn convert_to_sales_order(
         r#"
             SELECT status, customer_id, currency, exchange_rate, delivery_date,
                    quote_amount, sales_order_id
-            FROM custom_orders WHERE id = ?
+            FROM custom_orders WHERE id = $1
             "#,
     )
     .bind(custom_order_id)
@@ -1414,7 +1412,7 @@ pub async fn convert_to_sales_order(
     let date_part = today.replace('-', "");
     let so_prefix = format!("SO-{}-", date_part);
     let max_no: Option<String> = sqlx::query_scalar(
-        "SELECT order_no FROM sales_orders WHERE order_no LIKE ? ORDER BY order_no DESC LIMIT 1",
+        "SELECT order_no FROM sales_orders WHERE order_no LIKE $1 ORDER BY order_no DESC LIMIT 1",
     )
     .bind(format!("{}%", so_prefix))
     .fetch_optional(&mut *tx)
@@ -1440,10 +1438,10 @@ pub async fn convert_to_sales_order(
             created_by_user_id, created_by_name,
             created_at, updated_at
         ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, 'draft',
-            ?, 0, ?, ?,
-            ?, ?,
-            datetime('now'), datetime('now')
+            $1, $2, $3, $4, $5, $6, $7, 'draft',
+            $8, 0, $9, $10,
+            $11, $12,
+            NOW(), NOW()
         ) RETURNING id
         "#,
     )
@@ -1464,21 +1462,19 @@ pub async fn convert_to_sales_order(
     .map_err(|e| AppError::Database(format!("创建销售单失败: {}", e)))?;
 
     // 更新定制单的关联销售单
-    sqlx::query(
-        "UPDATE custom_orders SET sales_order_id = ?, updated_at = datetime('now') WHERE id = ?",
-    )
-    .bind(sales_order_id)
-    .bind(custom_order_id)
-    .execute(&mut *tx)
-    .await
-    .map_err(|e| AppError::Database(format!("关联销售单失败: {}", e)))?;
+    sqlx::query("UPDATE custom_orders SET sales_order_id = $1, updated_at = NOW() WHERE id = $2")
+        .bind(sales_order_id)
+        .bind(custom_order_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("关联销售单失败: {}", e)))?;
 
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
     // 记录操作日志
-    let custom_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = ?")
+    let custom_no: String = sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = $1")
         .bind(custom_order_id)
         .fetch_one(&db.pool)
         .await
@@ -1518,7 +1514,7 @@ pub async fn start_production_from_custom_order(
         status: String,
     }
     let custom_order: CustomOrderInfo =
-        sqlx::query_as("SELECT status FROM custom_orders WHERE id = ?")
+        sqlx::query_as("SELECT status FROM custom_orders WHERE id = $1")
             .bind(custom_order_id)
             .fetch_optional(&db.pool)
             .await
@@ -1538,7 +1534,7 @@ pub async fn start_production_from_custom_order(
         material_id: i64,
     }
     let custom_bom: CustomBomInfo = sqlx::query_as(
-        "SELECT id, material_id FROM bom WHERE custom_order_id = ? AND status != 'cancelled' ORDER BY id DESC LIMIT 1",
+        "SELECT id, material_id FROM bom WHERE custom_order_id = $1 AND status != 'cancelled' ORDER BY id DESC LIMIT 1",
     )
     .bind(custom_order_id)
     .fetch_optional(&db.pool)
@@ -1557,7 +1553,7 @@ pub async fn start_production_from_custom_order(
     let date_part = today.replace('-', "");
     let prefix = format!("WO-{}-", date_part);
     let max_no: Option<String> = sqlx::query_scalar(
-        "SELECT order_no FROM production_orders WHERE order_no LIKE ? ORDER BY order_no DESC LIMIT 1",
+        "SELECT order_no FROM production_orders WHERE order_no LIKE $1 ORDER BY order_no DESC LIMIT 1",
     )
     .bind(format!("{}%", prefix))
     .fetch_optional(&mut *tx)
@@ -1581,11 +1577,11 @@ pub async fn start_production_from_custom_order(
             remark, created_by_user_id, created_by_name,
             created_at, updated_at
          ) VALUES (
-            ?, ?, ?, ?,
+            $1, $2, $3, $4,
             1, 'draft',
             NULL, NULL,
-            '由定制单自动创建', ?, ?,
-            datetime('now'), datetime('now')
+            '由定制单自动创建', $5, $6,
+            NOW(), NOW()
          ) RETURNING id",
     )
     .bind(&order_no)
@@ -1617,7 +1613,7 @@ pub async fn start_production_from_custom_order(
          FROM bom_items bi
          LEFT JOIN materials m ON bi.material_id = m.id
          LEFT JOIN units u ON m.base_unit_id = u.id
-         WHERE bi.bom_id = ?",
+         WHERE bi.bom_id = $1",
     )
     .bind(custom_bom.id)
     .fetch_all(&mut *tx)
@@ -1640,7 +1636,7 @@ pub async fn start_production_from_custom_order(
             "INSERT INTO production_order_materials (
                 production_order_id, material_id, material_name, material_code,
                 required_qty, picked_qty, returned_qty, unit_name, warehouse_id
-             ) VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?)",
+             ) VALUES ($1, $2, $3, $4, $5, 0, 0, $6, $7)",
         )
         .bind(production_order_id)
         .bind(item.material_id)
@@ -1655,13 +1651,11 @@ pub async fn start_production_from_custom_order(
     }
 
     // 更新定制单状态为 producing
-    sqlx::query(
-        "UPDATE custom_orders SET status = 'producing', updated_at = datetime('now') WHERE id = ?",
-    )
-    .bind(custom_order_id)
-    .execute(&mut *tx)
-    .await
-    .map_err(|e| AppError::Database(format!("更新定制单状态失败: {}", e)))?;
+    sqlx::query("UPDATE custom_orders SET status = 'producing', updated_at = NOW() WHERE id = $1")
+        .bind(custom_order_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("更新定制单状态失败: {}", e)))?;
 
     tx.commit()
         .await

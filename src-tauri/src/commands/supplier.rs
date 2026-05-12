@@ -407,7 +407,7 @@ async fn load_supplier_base(db: &DbState, id: i64) -> Result<SaveSupplierParams,
                bank_name, bank_account, tax_id, currency, settlement_type,
                credit_days, grade, remark, is_enabled
         FROM suppliers
-        WHERE id = ?
+        WHERE id = $1
         "#,
     )
     .bind(id)
@@ -430,7 +430,7 @@ async fn load_supplier_materials(
         FROM supplier_materials sm
         INNER JOIN materials m ON m.id = sm.material_id
         LEFT JOIN units u ON u.id = m.base_unit_id
-        WHERE sm.supplier_id = ?
+        WHERE sm.supplier_id = $1
         ORDER BY sm.is_preferred DESC, sm.updated_at DESC, sm.id DESC
         "#,
     )
@@ -448,7 +448,7 @@ async fn load_recent_purchases(
         r#"
         SELECT id, order_no, order_date, status, currency, total_amount
         FROM purchase_orders
-        WHERE supplier_id = ?
+        WHERE supplier_id = $1
         ORDER BY order_date DESC, id DESC
         LIMIT 8
         "#,
@@ -468,11 +468,11 @@ async fn load_payables_summary(
         SELECT
             COALESCE(SUM(unpaid_amount), 0) AS total_unpaid_amount,
             COALESCE(SUM(CASE
-                WHEN unpaid_amount > 0 AND due_date IS NOT NULL AND date(due_date) < date('now')
+                WHEN unpaid_amount > 0 AND due_date IS NOT NULL AND date(due_date) < CURRENT_DATE::TEXT
                 THEN 1 ELSE 0 END), 0) AS overdue_count,
             COALESCE(SUM(CASE WHEN unpaid_amount > 0 THEN 1 ELSE 0 END), 0) AS open_count
         FROM payables
-        WHERE supplier_id = ?
+        WHERE supplier_id = $1
         "#,
     )
     .bind(supplier_id)
@@ -485,7 +485,7 @@ async fn load_payables_summary(
         SELECT id, order_no, payable_date, due_date, currency,
                payable_amount, paid_amount, unpaid_amount, status
         FROM payables
-        WHERE supplier_id = ?
+        WHERE supplier_id = $1
         ORDER BY payable_date DESC, id DESC
         LIMIT 8
         "#,
@@ -504,7 +504,7 @@ async fn load_payables_summary(
 }
 
 async fn ensure_supplier_exists(db: &DbState, supplier_id: i64) -> Result<(), AppError> {
-    let exists: Option<i64> = sqlx::query_scalar("SELECT id FROM suppliers WHERE id = ?")
+    let exists: Option<i64> = sqlx::query_scalar("SELECT id FROM suppliers WHERE id = $1")
         .bind(supplier_id)
         .fetch_optional(&db.pool)
         .await
@@ -518,7 +518,7 @@ async fn ensure_supplier_exists(db: &DbState, supplier_id: i64) -> Result<(), Ap
 }
 
 async fn ensure_material_exists(db: &DbState, material_id: i64) -> Result<(), AppError> {
-    let exists: Option<i64> = sqlx::query_scalar("SELECT id FROM materials WHERE id = ?")
+    let exists: Option<i64> = sqlx::query_scalar("SELECT id FROM materials WHERE id = $1")
         .bind(material_id)
         .fetch_optional(&db.pool)
         .await
@@ -696,7 +696,7 @@ pub async fn save_supplier(
     let params = normalize_supplier_params(params);
     validate_save_supplier_params(&params)?;
 
-    let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM suppliers WHERE code = ?")
+    let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM suppliers WHERE code = $1")
         .bind(&params.code)
         .fetch_optional(&db.pool)
         .await
@@ -712,14 +712,14 @@ pub async fn save_supplier(
         sqlx::query(
             r#"
             UPDATE suppliers SET
-                code = ?, name = ?, short_name = ?, country = ?, contact_person = ?,
-                contact_phone = ?, email = ?, business_category = ?,
-                province = ?, city = ?, address = ?,
-                bank_name = ?, bank_account = ?, tax_id = ?,
-                currency = ?, settlement_type = ?, credit_days = ?,
-                grade = ?, remark = ?, is_enabled = ?,
-                updated_at = datetime('now')
-            WHERE id = ?
+                code = $1, name = $2, short_name = $3, country = $4, contact_person = $5,
+                contact_phone = $6, email = $7, business_category = $8,
+                province = $9, city = $10, address = $11,
+                bank_name = $12, bank_account = $13, tax_id = $14,
+                currency = $15, settlement_type = $16, credit_days = $17,
+                grade = $18, remark = $19, is_enabled = $20,
+                updated_at = NOW()
+            WHERE id = $21
             "#,
         )
         .bind(&params.code)
@@ -758,8 +758,8 @@ pub async fn save_supplier(
                 currency, settlement_type, credit_days, grade, remark, is_enabled,
                 created_at, updated_at
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                datetime('now'), datetime('now')
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+                NOW(), NOW()
             ) RETURNING id
             "#,
         )
@@ -799,10 +799,10 @@ pub async fn delete_supplier(db: State<'_, DbState>, id: i64) -> Result<(), AppE
     let related_count: i64 = sqlx::query_scalar(
         r#"
         SELECT
-            (SELECT COUNT(*) FROM purchase_orders WHERE supplier_id = ?)
-          + (SELECT COUNT(*) FROM inbound_orders WHERE supplier_id = ?)
-          + (SELECT COUNT(*) FROM purchase_returns WHERE supplier_id = ?)
-          + (SELECT COUNT(*) FROM payables WHERE supplier_id = ?)
+            (SELECT COUNT(*) FROM purchase_orders WHERE supplier_id = $1)
+          + (SELECT COUNT(*) FROM inbound_orders WHERE supplier_id = $2)
+          + (SELECT COUNT(*) FROM purchase_returns WHERE supplier_id = $3)
+          + (SELECT COUNT(*) FROM payables WHERE supplier_id = $4)
         "#,
     )
     .bind(id)
@@ -825,13 +825,13 @@ pub async fn delete_supplier(db: State<'_, DbState>, id: i64) -> Result<(), AppE
         .await
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
-    sqlx::query("DELETE FROM supplier_materials WHERE supplier_id = ?")
+    sqlx::query("DELETE FROM supplier_materials WHERE supplier_id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("删除供应商物料关联失败: {}", e)))?;
 
-    sqlx::query("DELETE FROM suppliers WHERE id = ?")
+    sqlx::query("DELETE FROM suppliers WHERE id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await
@@ -854,7 +854,7 @@ pub async fn toggle_supplier_status(
     ensure_supplier_exists(&db, id).await?;
 
     let val = if is_enabled { 1 } else { 0 };
-    sqlx::query("UPDATE suppliers SET is_enabled = ?, updated_at = datetime('now') WHERE id = ?")
+    sqlx::query("UPDATE suppliers SET is_enabled = $1, updated_at = NOW() WHERE id = $2")
         .bind(val)
         .bind(id)
         .execute(&db.pool)
@@ -871,7 +871,7 @@ pub async fn generate_supplier_code(db: State<'_, DbState>) -> Result<String, Ap
     let pattern = format!("SUP-{}-%", year);
 
     let max_code: Option<String> =
-        sqlx::query_scalar("SELECT MAX(code) FROM suppliers WHERE code LIKE ?")
+        sqlx::query_scalar("SELECT MAX(code) FROM suppliers WHERE code LIKE $1")
             .bind(&pattern)
             .fetch_one(&db.pool)
             .await
@@ -940,7 +940,7 @@ pub async fn save_supplier_material(
     ensure_material_exists(&db, params.material_id).await?;
 
     let existing: Option<(i64,)> = sqlx::query_as(
-        "SELECT id FROM supplier_materials WHERE supplier_id = ? AND material_id = ?",
+        "SELECT id FROM supplier_materials WHERE supplier_id = $1 AND material_id = $2",
     )
     .bind(params.supplier_id)
     .bind(params.material_id)
@@ -966,10 +966,10 @@ pub async fn save_supplier_material(
         sqlx::query(
             r#"
             UPDATE supplier_materials SET
-                material_id = ?, supply_price = ?, currency = ?, lead_days = ?,
-                min_order_qty = ?, valid_from = ?, valid_to = ?, is_preferred = ?,
-                remark = ?, updated_at = datetime('now')
-            WHERE id = ?
+                material_id = $1, supply_price = $2, currency = $3, lead_days = $4,
+                min_order_qty = $5, valid_from = $6, valid_to = $7, is_preferred = $8,
+                remark = $9, updated_at = NOW()
+            WHERE id = $10
             "#,
         )
         .bind(params.material_id)
@@ -995,7 +995,7 @@ pub async fn save_supplier_material(
                 min_order_qty, valid_from, valid_to, is_preferred, remark,
                 created_at, updated_at
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now')
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()
             ) RETURNING id
             "#,
         )
@@ -1016,7 +1016,7 @@ pub async fn save_supplier_material(
 
     if params.is_preferred {
         sqlx::query(
-            "UPDATE supplier_materials SET is_preferred = 0, updated_at = datetime('now') WHERE material_id = ? AND id != ?",
+            "UPDATE supplier_materials SET is_preferred = 0, updated_at = NOW() WHERE material_id = $1 AND id != $2",
         )
         .bind(params.material_id)
         .bind(saved_id)
@@ -1035,7 +1035,7 @@ pub async fn save_supplier_material(
 /// 删除供应物料报价
 #[tauri::command]
 pub async fn delete_supplier_material(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
-    sqlx::query("DELETE FROM supplier_materials WHERE id = ?")
+    sqlx::query("DELETE FROM supplier_materials WHERE id = $1")
         .bind(id)
         .execute(&db.pool)
         .await

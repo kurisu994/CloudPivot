@@ -261,7 +261,7 @@ pub async fn get_bom_detail(db: State<'_, DbState>, id: i64) -> Result<BomDetail
                   b.remark, b.created_at, b.updated_at
            FROM bom b
            LEFT JOIN materials m ON b.material_id = m.id
-           WHERE b.id = ?"#,
+           WHERE b.id = $1"#,
     )
     .bind(id)
     .fetch_one(&db.pool)
@@ -281,7 +281,7 @@ pub async fn get_bom_detail(db: State<'_, DbState>, id: i64) -> Result<BomDetail
            LEFT JOIN materials m ON bi.child_material_id = m.id
            LEFT JOIN units u ON m.base_unit_id = u.id
            LEFT JOIN materials sm ON bi.substitute_id = sm.id
-           WHERE bi.bom_id = ?
+           WHERE bi.bom_id = $1
            ORDER BY bi.sort_order ASC, bi.id ASC"#,
     )
     .bind(id)
@@ -324,9 +324,9 @@ pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i
         // 更新 BOM 头
         sqlx::query(
             r#"UPDATE bom SET
-                material_id = ?, version = ?, effective_date = ?,
-                status = ?, remark = ?, updated_at = datetime('now')
-               WHERE id = ?"#,
+                material_id = $1, version = $2, effective_date = $3,
+                status = $4, remark = $5, updated_at = NOW()
+               WHERE id = $6"#,
         )
         .bind(params.material_id)
         .bind(&params.version)
@@ -339,7 +339,7 @@ pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i
         .map_err(|e| AppError::Database(format!("更新 BOM 失败: {}", e)))?;
 
         // 删除旧明细
-        sqlx::query("DELETE FROM bom_items WHERE bom_id = ?")
+        sqlx::query("DELETE FROM bom_items WHERE bom_id = $1")
             .bind(id)
             .execute(&mut *tx)
             .await
@@ -353,7 +353,7 @@ pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i
         // 插入 BOM 头
         bom_id = sqlx::query_scalar(
             r#"INSERT INTO bom (bom_code, material_id, version, effective_date, status, remark, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+               VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
                RETURNING id"#,
         )
         .bind(&bom_code)
@@ -374,7 +374,7 @@ pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i
                 bom_id, child_material_id, standard_qty, wastage_rate,
                 process_step, is_key_part, substitute_id, remark, sort_order,
                 created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))"#,
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())"#,
         )
         .bind(bom_id)
         .bind(item.child_material_id)
@@ -397,21 +397,19 @@ pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i
            ) AS INTEGER)
            FROM bom_items bi
            LEFT JOIN materials m ON bi.child_material_id = m.id
-           WHERE bi.bom_id = ?"#,
+           WHERE bi.bom_id = $1"#,
     )
     .bind(bom_id)
     .fetch_one(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("计算标准成本失败: {}", e)))?;
 
-    sqlx::query(
-        "UPDATE bom SET total_standard_cost = ?, updated_at = datetime('now') WHERE id = ?",
-    )
-    .bind(total_cost.unwrap_or(0))
-    .bind(bom_id)
-    .execute(&mut *tx)
-    .await
-    .map_err(|e| AppError::Database(format!("更新标准成本失败: {}", e)))?;
+    sqlx::query("UPDATE bom SET total_standard_cost = $1, updated_at = NOW() WHERE id = $2")
+        .bind(total_cost.unwrap_or(0))
+        .bind(bom_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("更新标准成本失败: {}", e)))?;
 
     tx.commit()
         .await
@@ -424,7 +422,7 @@ pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i
 #[tauri::command]
 pub async fn delete_bom(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
     // 检查状态
-    let status: Option<String> = sqlx::query_scalar("SELECT status FROM bom WHERE id = ?")
+    let status: Option<String> = sqlx::query_scalar("SELECT status FROM bom WHERE id = $1")
         .bind(id)
         .fetch_optional(&db.pool)
         .await
@@ -450,13 +448,13 @@ pub async fn delete_bom(db: State<'_, DbState>, id: i64) -> Result<(), AppError>
         .await
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
-    sqlx::query("DELETE FROM bom_items WHERE bom_id = ?")
+    sqlx::query("DELETE FROM bom_items WHERE bom_id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("删除 BOM 明细失败: {}", e)))?;
 
-    sqlx::query("DELETE FROM bom WHERE id = ?")
+    sqlx::query("DELETE FROM bom WHERE id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await
@@ -489,14 +487,14 @@ pub async fn toggle_bom_status(
 
     // 如果要启用，先停用同一成品的其他生效版本
     if new_status == "active" {
-        let material_id: i64 = sqlx::query_scalar("SELECT material_id FROM bom WHERE id = ?")
+        let material_id: i64 = sqlx::query_scalar("SELECT material_id FROM bom WHERE id = $1")
             .bind(id)
             .fetch_one(&mut *tx)
             .await
             .map_err(|e| AppError::Database(format!("查询 BOM 失败: {}", e)))?;
 
         sqlx::query(
-            "UPDATE bom SET status = 'inactive', updated_at = datetime('now') WHERE material_id = ? AND status = 'active' AND id != ?",
+            "UPDATE bom SET status = 'inactive', updated_at = NOW() WHERE material_id = $1 AND status = 'active' AND id != $2",
         )
         .bind(material_id)
         .bind(id)
@@ -505,7 +503,7 @@ pub async fn toggle_bom_status(
         .map_err(|e| AppError::Database(format!("停用旧版本失败: {}", e)))?;
     }
 
-    sqlx::query("UPDATE bom SET status = ?, updated_at = datetime('now') WHERE id = ?")
+    sqlx::query("UPDATE bom SET status = $1, updated_at = NOW() WHERE id = $2")
         .bind(&new_status)
         .bind(id)
         .execute(&mut *tx)
@@ -534,7 +532,7 @@ pub async fn copy_bom(
 
     // 读取源 BOM
     let source = sqlx::query_as::<_, (i64, Option<String>)>(
-        "SELECT material_id, remark FROM bom WHERE id = ?",
+        "SELECT material_id, remark FROM bom WHERE id = $1",
     )
     .bind(source_id)
     .fetch_one(&mut *tx)
@@ -546,7 +544,7 @@ pub async fn copy_bom(
     // 创建新 BOM 头（草稿状态）
     let new_id: i64 = sqlx::query_scalar(
         r#"INSERT INTO bom (bom_code, material_id, version, status, remark, created_at, updated_at)
-           VALUES (?, ?, ?, 'draft', ?, datetime('now'), datetime('now'))
+           VALUES ($1, $2, $3, 'draft', $4, NOW(), NOW())
            RETURNING id"#,
     )
     .bind(&bom_code)
@@ -562,10 +560,10 @@ pub async fn copy_bom(
         r#"INSERT INTO bom_items (bom_id, child_material_id, standard_qty, wastage_rate,
                                    process_step, is_key_part, substitute_id, remark, sort_order,
                                    created_at, updated_at)
-           SELECT ?, child_material_id, standard_qty, wastage_rate,
+           SELECT $1, child_material_id, standard_qty, wastage_rate,
                   process_step, is_key_part, substitute_id, remark, sort_order,
-                  datetime('now'), datetime('now')
-           FROM bom_items WHERE bom_id = ?"#,
+                  NOW(), NOW()
+           FROM bom_items WHERE bom_id = $2"#,
     )
     .bind(new_id)
     .bind(source_id)
@@ -575,7 +573,7 @@ pub async fn copy_bom(
 
     // 复制标准成本
     sqlx::query(
-        "UPDATE bom SET total_standard_cost = (SELECT total_standard_cost FROM bom WHERE id = ?), updated_at = datetime('now') WHERE id = ?",
+        "UPDATE bom SET total_standard_cost = (SELECT total_standard_cost FROM bom WHERE id = $1), updated_at = NOW() WHERE id = $2",
     )
     .bind(source_id)
     .bind(new_id)
@@ -607,7 +605,7 @@ pub async fn reverse_lookup_material(
            LEFT JOIN materials pm ON b.material_id = pm.id
            LEFT JOIN materials cm ON bi.child_material_id = cm.id
            LEFT JOIN units u ON cm.base_unit_id = u.id
-           WHERE bi.child_material_id = ?
+           WHERE bi.child_material_id = $1
            ORDER BY b.material_id ASC, b.version DESC"#,
     )
     .bind(material_id)
@@ -633,7 +631,7 @@ pub async fn calculate_bom_demand(
            FROM bom_items bi
            LEFT JOIN materials m ON bi.child_material_id = m.id
            LEFT JOIN units u ON m.base_unit_id = u.id
-           WHERE bi.bom_id = ?
+           WHERE bi.bom_id = $1
            ORDER BY bi.sort_order ASC, bi.id ASC"#,
     )
     .bind(bom_id)
@@ -711,7 +709,7 @@ pub async fn get_bom_child_materials(
                           u.name as unit_name, m.ref_cost_price
                    FROM materials m
                    LEFT JOIN units u ON m.base_unit_id = u.id
-                   WHERE m.is_enabled = 1 AND (m.code LIKE ? OR m.name LIKE ?)
+                   WHERE m.is_enabled = 1 AND (m.code LIKE $1 OR m.name LIKE $2)
                    ORDER BY m.code ASC
                    LIMIT 50"#,
             )
@@ -759,7 +757,7 @@ pub(crate) async fn generate_bom_code_internal(pool: &sqlx::PgPool) -> Result<St
     let prefix = format!("BOM-{}-", today);
 
     let max_seq: Option<String> = sqlx::query_scalar(
-        "SELECT bom_code FROM bom WHERE bom_code LIKE ? ORDER BY bom_code DESC LIMIT 1",
+        "SELECT bom_code FROM bom WHERE bom_code LIKE $1 ORDER BY bom_code DESC LIMIT 1",
     )
     .bind(format!("{}%", prefix))
     .fetch_optional(pool)
@@ -778,13 +776,14 @@ pub(crate) async fn generate_bom_code_internal(pool: &sqlx::PgPool) -> Result<St
 
 /// 校验 BOM 未被业务单据引用
 async fn ensure_bom_not_referenced(pool: &PgPool, bom_id: i64) -> Result<(), AppError> {
-    let custom_order_count: (i64,) =
-        sqlx::query_as("SELECT COUNT(*) FROM custom_orders WHERE bom_id = ? OR custom_bom_id = ?")
-            .bind(bom_id)
-            .bind(bom_id)
-            .fetch_one(pool)
-            .await
-            .map_err(|e| AppError::Database(format!("检查定制单引用失败: {}", e)))?;
+    let custom_order_count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM custom_orders WHERE bom_id = $1 OR custom_bom_id = $2",
+    )
+    .bind(bom_id)
+    .bind(bom_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| AppError::Database(format!("检查定制单引用失败: {}", e)))?;
 
     if custom_order_count.0 > 0 {
         return Err(AppError::Business(
@@ -793,7 +792,7 @@ async fn ensure_bom_not_referenced(pool: &PgPool, bom_id: i64) -> Result<(), App
     }
 
     let production_order_count: (i64,) =
-        sqlx::query_as("SELECT COUNT(*) FROM production_orders WHERE bom_id = ?")
+        sqlx::query_as("SELECT COUNT(*) FROM production_orders WHERE bom_id = $1")
             .bind(bom_id)
             .fetch_one(pool)
             .await

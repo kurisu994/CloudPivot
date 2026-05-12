@@ -99,7 +99,7 @@ pub(crate) async fn ensure_material_core_fields_editable(
     next_lot_tracking_mode: Option<&str>,
 ) -> Result<(), AppError> {
     let current = sqlx::query_as::<_, MaterialCoreFields>(
-        "SELECT material_type, base_unit_id, lot_tracking_mode FROM materials WHERE id = ?",
+        "SELECT material_type, base_unit_id, lot_tracking_mode FROM materials WHERE id = $1",
     )
     .bind(material_id)
     .fetch_optional(pool)
@@ -296,7 +296,7 @@ pub async fn get_material_by_id(
             lot_tracking_mode, texture, color, surface_craft,
             length_mm, width_mm, height_mm, barcode, remark
         FROM materials 
-        WHERE id = ?
+        WHERE id = $1
         "#,
     )
     .bind(id)
@@ -337,7 +337,7 @@ pub async fn save_material(
     params: SaveMaterialParams,
 ) -> Result<i64, AppError> {
     // Check if code exists
-    let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM materials WHERE code = ?")
+    let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM materials WHERE code = $1")
         .bind(&params.code)
         .fetch_optional(&db.pool)
         .await
@@ -362,14 +362,14 @@ pub async fn save_material(
         // Update
         sqlx::query(
             "UPDATE materials SET
-                code = ?, name = ?, material_type = ?, category_id = ?, spec = ?,
-                base_unit_id = ?, aux_unit_id = ?, conversion_rate = ?, 
-                ref_cost_price = COALESCE(?, 0), sale_price = COALESCE(?, 0),
-                safety_stock = COALESCE(?, 0), max_stock = COALESCE(?, 0),
-                lot_tracking_mode = COALESCE(?, 'none'), texture = ?, color = ?,
-                surface_craft = ?, length_mm = ?, width_mm = ?, height_mm = ?,
-                barcode = ?, remark = ?, updated_at = datetime('now')
-             WHERE id = ?",
+                code = $1, name = $2, material_type = $3, category_id = $4, spec = $5,
+                base_unit_id = $6, aux_unit_id = $7, conversion_rate = $8, 
+                ref_cost_price = COALESCE($9, 0), sale_price = COALESCE($10, 0),
+                safety_stock = COALESCE($11, 0), max_stock = COALESCE($12, 0),
+                lot_tracking_mode = COALESCE($13, 'none'), texture = $14, color = $15,
+                surface_craft = $16, length_mm = $17, width_mm = $18, height_mm = $19,
+                barcode = $20, remark = $21, updated_at = NOW()
+             WHERE id = $22",
         )
         .bind(&params.code)
         .bind(&params.name)
@@ -409,9 +409,9 @@ pub async fn save_material(
                 length_mm, width_mm, height_mm, barcode, remark,
                 is_enabled, created_at, updated_at
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 0), COALESCE(?, 0),
-                COALESCE(?, 0), COALESCE(?, 0), COALESCE(?, 'none'), ?, ?, ?,
-                ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now')
+                $1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 0), COALESCE($10, 0),
+                COALESCE($11, 0), COALESCE($12, 0), COALESCE($13, 'none'), $14, $15, $16,
+                $17, $18, $19, $20, $21, 1, NOW(), NOW()
             ) RETURNING id",
         )
         .bind(&params.code)
@@ -450,7 +450,7 @@ pub async fn toggle_material_status(
     is_enabled: bool,
 ) -> Result<(), AppError> {
     let val = if is_enabled { 1 } else { 0 };
-    sqlx::query("UPDATE materials SET is_enabled = ?, updated_at = datetime('now') WHERE id = ?")
+    sqlx::query("UPDATE materials SET is_enabled = $1, updated_at = NOW() WHERE id = $2")
         .bind(val)
         .bind(id)
         .execute(&db.pool)
@@ -499,7 +499,7 @@ mod tests {
     async fn insert_material(pool: &sqlx::PgPool, id: i64) {
         sqlx::query(
             "INSERT INTO materials (id, material_type, base_unit_id, lot_tracking_mode)
-             VALUES (?, 'raw', 1, 'none')",
+             VALUES ($1, 'raw', 1, 'none')",
         )
         .bind(id)
         .execute(pool)

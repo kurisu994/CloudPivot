@@ -308,7 +308,7 @@ pub async fn get_production_order_detail(
                 planned_start_date, planned_end_date,
                 actual_start_date, actual_end_date,
                 remark, created_at
-         FROM production_orders WHERE id = ?",
+         FROM production_orders WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(&db.pool)
@@ -318,7 +318,7 @@ pub async fn get_production_order_detail(
 
     // BOM 名称
     let bom_name: String = sqlx::query_scalar(
-        "SELECT COALESCE(m.name, '') FROM bom b LEFT JOIN materials m ON b.material_id = m.id WHERE b.id = ?",
+        "SELECT COALESCE(m.name, '') FROM bom b LEFT JOIN materials m ON b.material_id = m.id WHERE b.id = $1",
     )
     .bind(header.bom_id)
     .fetch_optional(&db.pool)
@@ -328,7 +328,7 @@ pub async fn get_production_order_detail(
 
     // 定制单编号
     let custom_order_no: Option<String> = if let Some(co_id) = header.custom_order_id {
-        sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = ?")
+        sqlx::query_scalar("SELECT order_no FROM custom_orders WHERE id = $1")
             .bind(co_id)
             .fetch_optional(&db.pool)
             .await
@@ -339,7 +339,7 @@ pub async fn get_production_order_detail(
 
     // 产出物料名称
     let output_material_name: String =
-        sqlx::query_scalar("SELECT COALESCE(name, '') FROM materials WHERE id = ?")
+        sqlx::query_scalar("SELECT COALESCE(name, '') FROM materials WHERE id = $1")
             .bind(header.output_material_id)
             .fetch_optional(&db.pool)
             .await
@@ -351,7 +351,7 @@ pub async fn get_production_order_detail(
         "SELECT id, material_id, material_name, material_code,
                 required_qty, picked_qty, returned_qty, unit_name,
                 warehouse_id
-         FROM production_order_materials WHERE production_order_id = ?
+         FROM production_order_materials WHERE production_order_id = $1
          ORDER BY id ASC",
     )
     .bind(id)
@@ -366,7 +366,7 @@ pub async fn get_production_order_detail(
                 pc.unit_cost, pc.remark, pc.completed_at
          FROM production_completions pc
          LEFT JOIN warehouses w ON pc.warehouse_id = w.id
-         WHERE pc.production_order_id = ?
+         WHERE pc.production_order_id = $1
          ORDER BY pc.completed_at ASC",
     )
     .bind(id)
@@ -417,7 +417,7 @@ pub async fn save_production_order(
         material_id: i64,
         status: String,
     }
-    let bom: BomInfo = sqlx::query_as("SELECT material_id, status FROM bom WHERE id = ?")
+    let bom: BomInfo = sqlx::query_as("SELECT material_id, status FROM bom WHERE id = $1")
         .bind(input.bom_id)
         .fetch_optional(&db.pool)
         .await
@@ -439,7 +439,7 @@ pub async fn save_production_order(
     if let Some(existing_id) = input.id {
         // 编辑模式：仅草稿态可编辑
         let status: Option<String> =
-            sqlx::query_scalar("SELECT status FROM production_orders WHERE id = ?")
+            sqlx::query_scalar("SELECT status FROM production_orders WHERE id = $1")
                 .bind(existing_id)
                 .fetch_optional(&mut *tx)
                 .await
@@ -458,11 +458,11 @@ pub async fn save_production_order(
         // 更新头信息
         sqlx::query(
             "UPDATE production_orders SET
-                bom_id = ?, custom_order_id = ?, output_material_id = ?,
-                planned_qty = ?,
-                planned_start_date = ?, planned_end_date = ?,
-                remark = ?, updated_at = datetime('now')
-             WHERE id = ?",
+                bom_id = $1, custom_order_id = $2, output_material_id = $3,
+                planned_qty = $4,
+                planned_start_date = $5, planned_end_date = $6,
+                remark = $7, updated_at = NOW()
+             WHERE id = $8",
         )
         .bind(input.bom_id)
         .bind(input.custom_order_id)
@@ -477,7 +477,7 @@ pub async fn save_production_order(
         .map_err(|e| AppError::Database(format!("更新工单失败: {}", e)))?;
 
         // 删除旧物料需求，重新展算
-        sqlx::query("DELETE FROM production_order_materials WHERE production_order_id = ?")
+        sqlx::query("DELETE FROM production_order_materials WHERE production_order_id = $1")
             .bind(existing_id)
             .execute(&mut *tx)
             .await
@@ -490,7 +490,7 @@ pub async fn save_production_order(
         let date_part = today.replace('-', "");
         let prefix = format!("WO-{}-", date_part);
         let max_no: Option<String> = sqlx::query_scalar(
-            "SELECT order_no FROM production_orders WHERE order_no LIKE ? ORDER BY order_no DESC LIMIT 1",
+            "SELECT order_no FROM production_orders WHERE order_no LIKE $1 ORDER BY order_no DESC LIMIT 1",
         )
         .bind(format!("{}%", prefix))
         .fetch_optional(&mut *tx)
@@ -514,11 +514,11 @@ pub async fn save_production_order(
                 remark, created_by_user_id, created_by_name,
                 created_at, updated_at
              ) VALUES (
-                ?, ?, ?, ?,
-                ?, 'draft',
-                ?, ?,
-                ?, ?, ?,
-                datetime('now'), datetime('now')
+                $1, $2, $3, $4,
+                $5, 'draft',
+                $6, $7,
+                $8, $9, $10,
+                NOW(), NOW()
              ) RETURNING id",
         )
         .bind(&order_no)
@@ -555,7 +555,7 @@ pub async fn save_production_order(
          FROM bom_items bi
          LEFT JOIN materials m ON bi.material_id = m.id
          LEFT JOIN units u ON m.base_unit_id = u.id
-         WHERE bi.bom_id = ?",
+         WHERE bi.bom_id = $1",
     )
     .bind(input.bom_id)
     .fetch_all(&mut *tx)
@@ -580,7 +580,7 @@ pub async fn save_production_order(
             "INSERT INTO production_order_materials (
                 production_order_id, material_id, material_name, material_code,
                 required_qty, picked_qty, returned_qty, unit_name, warehouse_id
-             ) VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?)",
+             ) VALUES ($1, $2, $3, $4, $5, 0, 0, $6, $7)",
         )
         .bind(order_id)
         .bind(item.material_id)
@@ -605,7 +605,7 @@ pub async fn save_production_order(
         "create"
     };
     let order_no: String =
-        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = ?")
+        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = $1")
             .bind(order_id)
             .fetch_one(&db.pool)
             .await
@@ -647,7 +647,7 @@ pub async fn delete_production_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
-    let affected = sqlx::query("DELETE FROM production_orders WHERE id = ? AND status = 'draft'")
+    let affected = sqlx::query("DELETE FROM production_orders WHERE id = $1 AND status = 'draft'")
         .bind(id)
         .execute(&db.pool)
         .await
@@ -661,7 +661,7 @@ pub async fn delete_production_order(
     }
 
     // 清除关联物料需求
-    sqlx::query("DELETE FROM production_order_materials WHERE production_order_id = ?")
+    sqlx::query("DELETE FROM production_order_materials WHERE production_order_id = $1")
         .bind(id)
         .execute(&db.pool)
         .await
@@ -714,7 +714,7 @@ pub async fn pick_materials(
         custom_order_id: Option<i64>,
     }
     let order: OrderInfo =
-        sqlx::query_as("SELECT status, custom_order_id FROM production_orders WHERE id = ?")
+        sqlx::query_as("SELECT status, custom_order_id FROM production_orders WHERE id = $1")
             .bind(input.production_order_id)
             .fetch_optional(&db.pool)
             .await
@@ -742,7 +742,7 @@ pub async fn pick_materials(
         }
         let mat: MatInfo = sqlx::query_as(
             "SELECT required_qty, picked_qty FROM production_order_materials
-             WHERE production_order_id = ? AND material_id = ?",
+             WHERE production_order_id = $1 AND material_id = $2",
         )
         .bind(input.production_order_id)
         .bind(line.material_id)
@@ -774,8 +774,8 @@ pub async fn pick_materials(
             // 查询该物料的活跃预留
             let reservation: Option<(i64, f64, f64)> = sqlx::query_as(
                 "SELECT id, reserved_qty, consumed_qty FROM inventory_reservations
-                 WHERE source_type = 'custom_order' AND source_id = ?
-                   AND material_id = ? AND status = 'active'
+                 WHERE source_type = 'custom_order' AND source_id = $1
+                   AND material_id = $2 AND status = 'active'
                  LIMIT 1",
             )
             .bind(co_id)
@@ -794,7 +794,7 @@ pub async fn pick_materials(
                         "active"
                     };
                     sqlx::query(
-                        "UPDATE inventory_reservations SET consumed_qty = ?, status = ?, updated_at = datetime('now') WHERE id = ?",
+                        "UPDATE inventory_reservations SET consumed_qty = $1, status = $2, updated_at = NOW() WHERE id = $3",
                     )
                     .bind(new_consumed)
                     .bind(new_status)
@@ -805,7 +805,7 @@ pub async fn pick_materials(
 
                     // 减少 inventory 的 reserved_qty
                     sqlx::query(
-                        "UPDATE inventory SET reserved_qty = MAX(0, reserved_qty - ?) WHERE material_id = ? AND warehouse_id = ?",
+                        "UPDATE inventory SET reserved_qty = MAX(0, reserved_qty - $1) WHERE material_id = $2 AND warehouse_id = $3",
                     )
                     .bind(consume_qty)
                     .bind(line.material_id)
@@ -816,7 +816,7 @@ pub async fn pick_materials(
 
                     // 同步消耗 inventory_reservation_lots
                     let lot_items: Vec<(i64, f64)> = sqlx::query_as(
-                        "SELECT id, reserved_qty - consumed_qty AS available FROM inventory_reservation_lots WHERE reservation_id = ? AND status = 'allocated' ORDER BY id"
+                        "SELECT id, reserved_qty - consumed_qty AS available FROM inventory_reservation_lots WHERE reservation_id = $1 AND status = 'allocated' ORDER BY id"
                     )
                     .bind(res_id)
                     .fetch_all(&mut *tx)
@@ -830,7 +830,7 @@ pub async fn pick_materials(
                         }
                         let c = remaining_consume.min(avail);
                         sqlx::query(
-                            "UPDATE inventory_reservation_lots SET consumed_qty = consumed_qty + ?, status = CASE WHEN consumed_qty + ? >= reserved_qty THEN 'consumed' ELSE 'allocated' END, updated_at = datetime('now') WHERE id = ?"
+                            "UPDATE inventory_reservation_lots SET consumed_qty = consumed_qty + $1, status = CASE WHEN consumed_qty + $2 >= reserved_qty THEN 'consumed' ELSE 'allocated' END, updated_at = NOW() WHERE id = $3"
                         )
                         .bind(c)
                         .bind(c)
@@ -841,7 +841,7 @@ pub async fn pick_materials(
 
                         // 减少 inventory_lots.qty_reserved
                         let lot_id: i64 = sqlx::query_scalar(
-                            "SELECT lot_id FROM inventory_reservation_lots WHERE id = ?",
+                            "SELECT lot_id FROM inventory_reservation_lots WHERE id = $1",
                         )
                         .bind(lot_res_id)
                         .fetch_one(&mut *tx)
@@ -850,7 +850,7 @@ pub async fn pick_materials(
                             AppError::Database(format!("查询预留批次 lot_id 失败: {}", e))
                         })?;
                         sqlx::query(
-                            "UPDATE inventory_lots SET qty_reserved = MAX(0, qty_reserved - ?) WHERE id = ?"
+                            "UPDATE inventory_lots SET qty_reserved = MAX(0, qty_reserved - $1) WHERE id = $2"
                         )
                         .bind(c)
                         .bind(lot_id)
@@ -888,8 +888,8 @@ pub async fn pick_materials(
 
         // 更新工单物料已领料量
         sqlx::query(
-            "UPDATE production_order_materials SET picked_qty = picked_qty + ?
-             WHERE production_order_id = ? AND material_id = ?",
+            "UPDATE production_order_materials SET picked_qty = picked_qty + $1
+             WHERE production_order_id = $2 AND material_id = $3",
         )
         .bind(line.quantity)
         .bind(input.production_order_id)
@@ -902,7 +902,7 @@ pub async fn pick_materials(
     // 首次领料 → 切换到 picking，记录 actual_start_date
     if order.status == "draft" {
         sqlx::query(
-            "UPDATE production_orders SET status = 'picking', actual_start_date = ?, updated_at = datetime('now') WHERE id = ?",
+            "UPDATE production_orders SET status = 'picking', actual_start_date = $1, updated_at = NOW() WHERE id = $2",
         )
         .bind(&today)
         .bind(input.production_order_id)
@@ -917,7 +917,7 @@ pub async fn pick_materials(
 
     // 记录操作日志
     let order_no: String =
-        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = ?")
+        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = $1")
             .bind(input.production_order_id)
             .fetch_one(&db.pool)
             .await
@@ -965,7 +965,7 @@ pub async fn return_materials(
         custom_order_id: Option<i64>,
     }
     let order: ReturnOrderInfo =
-        sqlx::query_as("SELECT status, custom_order_id FROM production_orders WHERE id = ?")
+        sqlx::query_as("SELECT status, custom_order_id FROM production_orders WHERE id = $1")
             .bind(input.production_order_id)
             .fetch_optional(&db.pool)
             .await
@@ -993,7 +993,7 @@ pub async fn return_materials(
         // 校验退料量
         let (picked, returned): (f64, f64) = sqlx::query_as(
             "SELECT picked_qty, returned_qty FROM production_order_materials
-             WHERE production_order_id = ? AND material_id = ?",
+             WHERE production_order_id = $1 AND material_id = $2",
         )
         .bind(input.production_order_id)
         .bind(line.material_id)
@@ -1045,8 +1045,8 @@ pub async fn return_materials(
 
         // 更新退料量
         sqlx::query(
-            "UPDATE production_order_materials SET returned_qty = returned_qty + ?
-             WHERE production_order_id = ? AND material_id = ?",
+            "UPDATE production_order_materials SET returned_qty = returned_qty + $1
+             WHERE production_order_id = $2 AND material_id = $3",
         )
         .bind(line.quantity)
         .bind(input.production_order_id)
@@ -1059,8 +1059,8 @@ pub async fn return_materials(
         if let Some(co_id) = order.custom_order_id {
             let reservation: Option<(i64, f64, f64)> = sqlx::query_as(
                 "SELECT id, reserved_qty, consumed_qty FROM inventory_reservations
-                 WHERE source_type = 'custom_order' AND source_id = ?
-                   AND material_id = ? AND status IN ('active', 'consumed')
+                 WHERE source_type = 'custom_order' AND source_id = $1
+                   AND material_id = $2 AND status IN ('active', 'consumed')
                  LIMIT 1",
             )
             .bind(co_id)
@@ -1079,7 +1079,7 @@ pub async fn return_materials(
                         "consumed"
                     };
                     sqlx::query(
-                        "UPDATE inventory_reservations SET consumed_qty = ?, status = ?, updated_at = datetime('now') WHERE id = ?",
+                        "UPDATE inventory_reservations SET consumed_qty = $1, status = $2, updated_at = NOW() WHERE id = $3",
                     )
                     .bind(new_consumed)
                     .bind(new_status)
@@ -1090,7 +1090,7 @@ pub async fn return_materials(
 
                     // 恢复 inventory 的 reserved_qty
                     sqlx::query(
-                        "UPDATE inventory SET reserved_qty = reserved_qty + ? WHERE material_id = ? AND warehouse_id = ?",
+                        "UPDATE inventory SET reserved_qty = reserved_qty + $1 WHERE material_id = $2 AND warehouse_id = $3",
                     )
                     .bind(restore_qty)
                     .bind(line.material_id)
@@ -1101,7 +1101,7 @@ pub async fn return_materials(
 
                     // 恢复 inventory_reservation_lots
                     let lot_items: Vec<(i64, f64, f64)> = sqlx::query_as(
-                        "SELECT id, consumed_qty, reserved_qty FROM inventory_reservation_lots WHERE reservation_id = ? AND status = 'consumed' ORDER BY id DESC"
+                        "SELECT id, consumed_qty, reserved_qty FROM inventory_reservation_lots WHERE reservation_id = $1 AND status = 'consumed' ORDER BY id DESC"
                     )
                     .bind(res_id)
                     .fetch_all(&mut *tx)
@@ -1121,7 +1121,7 @@ pub async fn return_materials(
                             "consumed"
                         };
                         sqlx::query(
-                            "UPDATE inventory_reservation_lots SET consumed_qty = ?, status = ?, updated_at = datetime('now') WHERE id = ?"
+                            "UPDATE inventory_reservation_lots SET consumed_qty = $1, status = $2, updated_at = NOW() WHERE id = $3"
                         )
                         .bind(new_lot_consumed)
                         .bind(new_lot_status)
@@ -1132,7 +1132,7 @@ pub async fn return_materials(
 
                         // 恢复 inventory_lots.qty_reserved
                         let lot_id: i64 = sqlx::query_scalar(
-                            "SELECT lot_id FROM inventory_reservation_lots WHERE id = ?",
+                            "SELECT lot_id FROM inventory_reservation_lots WHERE id = $1",
                         )
                         .bind(lot_res_id)
                         .fetch_one(&mut *tx)
@@ -1141,7 +1141,7 @@ pub async fn return_materials(
                             AppError::Database(format!("查询预留批次 lot_id 失败: {}", e))
                         })?;
                         sqlx::query(
-                            "UPDATE inventory_lots SET qty_reserved = qty_reserved + ? WHERE id = ?"
+                            "UPDATE inventory_lots SET qty_reserved = qty_reserved + $1 WHERE id = $2"
                         )
                         .bind(r)
                         .bind(lot_id)
@@ -1162,7 +1162,7 @@ pub async fn return_materials(
 
     // 记录操作日志
     let order_no: String =
-        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = ?")
+        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = $1")
             .bind(input.production_order_id)
             .fetch_one(&db.pool)
             .await
@@ -1200,7 +1200,7 @@ pub async fn start_production(
 ) -> Result<(), AppError> {
     // 校验状态
     let status: Option<String> =
-        sqlx::query_scalar("SELECT status FROM production_orders WHERE id = ?")
+        sqlx::query_scalar("SELECT status FROM production_orders WHERE id = $1")
             .bind(id)
             .fetch_optional(&db.pool)
             .await
@@ -1218,7 +1218,7 @@ pub async fn start_production(
 
     // 校验至少有一笔领料
     let total_picked: f64 = sqlx::query_scalar(
-        "SELECT COALESCE(SUM(picked_qty), 0) FROM production_order_materials WHERE production_order_id = ?",
+        "SELECT COALESCE(SUM(picked_qty), 0) FROM production_order_materials WHERE production_order_id = $1",
     )
     .bind(id)
     .fetch_one(&db.pool)
@@ -1232,7 +1232,7 @@ pub async fn start_production(
     }
 
     sqlx::query(
-        "UPDATE production_orders SET status = 'producing', updated_at = datetime('now') WHERE id = ? AND status = 'picking'",
+        "UPDATE production_orders SET status = 'producing', updated_at = NOW() WHERE id = $1 AND status = 'picking'",
     )
     .bind(id)
     .execute(&db.pool)
@@ -1241,7 +1241,7 @@ pub async fn start_production(
 
     // 记录操作日志
     let order_no: String =
-        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = ?")
+        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = $1")
             .bind(id)
             .fetch_one(&db.pool)
             .await
@@ -1293,7 +1293,7 @@ pub async fn complete_production(
     }
     let order: OrderInfo = sqlx::query_as(
         "SELECT status, output_material_id, completed_qty
-         FROM production_orders WHERE id = ?",
+         FROM production_orders WHERE id = $1",
     )
     .bind(input.production_order_id)
     .fetch_optional(&db.pool)
@@ -1321,7 +1321,7 @@ pub async fn complete_production(
             COALESCE((SELECT avg_cost FROM inventory WHERE material_id = pom.material_id LIMIT 1), 0)
          ), 0)
          FROM production_order_materials pom
-         WHERE pom.production_order_id = ?",
+         WHERE pom.production_order_id = $1",
     )
     .bind(input.production_order_id)
     .fetch_one(&mut *tx)
@@ -1337,7 +1337,7 @@ pub async fn complete_production(
 
     // 生成完工记录编号
     let comp_count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM production_completions WHERE production_order_id = ?",
+        "SELECT COUNT(*) FROM production_completions WHERE production_order_id = $1",
     )
     .bind(input.production_order_id)
     .fetch_one(&mut *tx)
@@ -1351,7 +1351,7 @@ pub async fn complete_production(
         "INSERT INTO production_completions (
             production_order_id, completion_no, quantity,
             warehouse_id, unit_cost, remark, completed_at, created_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))",
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())",
     )
     .bind(input.production_order_id)
     .bind(&completion_no)
@@ -1399,7 +1399,7 @@ pub async fn complete_production(
 
     // 更新工单完工数量
     sqlx::query(
-        "UPDATE production_orders SET completed_qty = ?, updated_at = datetime('now') WHERE id = ?",
+        "UPDATE production_orders SET completed_qty = $1, updated_at = NOW() WHERE id = $2",
     )
     .bind(total_completed)
     .bind(input.production_order_id)
@@ -1413,7 +1413,7 @@ pub async fn complete_production(
 
     // 记录操作日志
     let order_no: String =
-        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = ?")
+        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = $1")
             .bind(input.production_order_id)
             .fetch_one(&db.pool)
             .await
@@ -1455,7 +1455,7 @@ pub async fn finish_production_order(
         completed_qty: f64,
     }
     let info: Info =
-        sqlx::query_as("SELECT status, completed_qty FROM production_orders WHERE id = ?")
+        sqlx::query_as("SELECT status, completed_qty FROM production_orders WHERE id = $1")
             .bind(id)
             .fetch_optional(&db.pool)
             .await
@@ -1474,8 +1474,8 @@ pub async fn finish_production_order(
     let today = chrono::Local::now().format("%Y-%m-%d").to_string();
 
     sqlx::query(
-        "UPDATE production_orders SET status = 'completed', actual_end_date = ?, updated_at = datetime('now')
-         WHERE id = ? AND status = 'producing'",
+        "UPDATE production_orders SET status = 'completed', actual_end_date = $1, updated_at = NOW()
+         WHERE id = $2 AND status = 'producing'",
     )
     .bind(&today)
     .bind(id)
@@ -1485,7 +1485,7 @@ pub async fn finish_production_order(
 
     // 记录操作日志
     let order_no: String =
-        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = ?")
+        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = $1")
             .bind(id)
             .fetch_one(&db.pool)
             .await
@@ -1522,7 +1522,7 @@ pub async fn cancel_production_order(
     id: i64,
 ) -> Result<(), AppError> {
     let status: Option<String> =
-        sqlx::query_scalar("SELECT status FROM production_orders WHERE id = ?")
+        sqlx::query_scalar("SELECT status FROM production_orders WHERE id = $1")
             .bind(id)
             .fetch_optional(&db.pool)
             .await
@@ -1544,8 +1544,8 @@ pub async fn cancel_production_order(
     }
 
     sqlx::query(
-        "UPDATE production_orders SET status = 'cancelled', updated_at = datetime('now')
-         WHERE id = ? AND status IN ('draft', 'picking', 'producing')",
+        "UPDATE production_orders SET status = 'cancelled', updated_at = NOW()
+         WHERE id = $1 AND status IN ('draft', 'picking', 'producing')",
     )
     .bind(id)
     .execute(&db.pool)
@@ -1554,7 +1554,7 @@ pub async fn cancel_production_order(
 
     // 记录操作日志
     let order_no: String =
-        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = ?")
+        sqlx::query_scalar("SELECT order_no FROM production_orders WHERE id = $1")
             .bind(id)
             .fetch_one(&db.pool)
             .await

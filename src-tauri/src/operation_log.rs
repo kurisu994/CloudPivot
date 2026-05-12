@@ -27,7 +27,7 @@ pub struct OperationLogEntry {
 pub async fn write_log(pool: &PgPool, entry: OperationLogEntry) {
     let result = sqlx::query(
         "INSERT INTO operation_logs (module, action, target_type, target_id, target_no, detail, operator_user_id, operator_name_snapshot)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
     )
     .bind(&entry.module)
     .bind(&entry.action)

@@ -197,8 +197,12 @@ pub async fn get_system_configs(
         return Ok(vec![]);
     }
 
-    // SQLite 不直接支持数组参数，动态构建 IN 子句
-    let placeholders: Vec<String> = keys.iter().map(|_| "?".to_string()).collect();
+    // PostgreSQL 使用 $1, $2, ... 参数占位符
+    let placeholders: Vec<String> = keys
+        .iter()
+        .enumerate()
+        .map(|(i, _)| format!("${}", i + 1))
+        .collect();
     let sql = format!(
         "SELECT key, value, remark FROM system_config WHERE key IN ({})",
         placeholders.join(", ")
@@ -231,8 +235,8 @@ pub async fn set_system_config(
 ) -> Result<(), AppError> {
     sqlx::query(
         "INSERT INTO system_config (key, value, updated_at)
-         VALUES (?, ?, datetime('now'))
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')",
+         VALUES ($1, $2, NOW())
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = NOW()",
     )
     .bind(&key)
     .bind(&value)
@@ -271,8 +275,8 @@ pub async fn set_system_configs(
     for config in configs {
         sqlx::query(
             "INSERT INTO system_config (key, value, updated_at)
-             VALUES (?, ?, datetime('now'))
-             ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')",
+             VALUES ($1, $2, NOW())
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = NOW()",
         )
         .bind(&config.key)
         .bind(&config.value)
@@ -332,7 +336,7 @@ pub async fn setup_create_warehouses(
         // 插入仓库
         let warehouse_id: i64 = sqlx::query_scalar(
             "INSERT INTO warehouses (code, name, warehouse_type, manager, is_enabled, created_at, updated_at)
-             VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+             VALUES ($1, $2, $3, $4, 1, NOW(), NOW())
              RETURNING id",
         )
         .bind(&code)
@@ -346,8 +350,8 @@ pub async fn setup_create_warehouses(
         // 插入默认仓映射（upsert — 若已存在则更新）
         sqlx::query(
             "INSERT INTO default_warehouses (material_type, warehouse_id, created_at, updated_at)
-             VALUES (?, ?, datetime('now'), datetime('now'))
-             ON CONFLICT(material_type) DO UPDATE SET warehouse_id = excluded.warehouse_id, updated_at = datetime('now')",
+             VALUES ($1, $2, NOW(), NOW())
+             ON CONFLICT(material_type) DO UPDATE SET warehouse_id = excluded.warehouse_id, updated_at = NOW()",
         )
         .bind(&item.warehouse_type)
         .bind(warehouse_id)
@@ -461,7 +465,7 @@ pub async fn get_operation_logs(
          FROM operation_logs
          {}
          ORDER BY created_at DESC
-         LIMIT ? OFFSET ?",
+         LIMIT $1 OFFSET $2",
         where_clause
     );
     let mut list_query = sqlx::query_as::<

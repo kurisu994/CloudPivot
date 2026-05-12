@@ -218,7 +218,7 @@ pub async fn ensure_replenishment_rules(db: State<'_, DbState>) -> Result<i64, A
     let result = sqlx::query(
         r#"
         INSERT INTO replenishment_rules (material_id, analysis_days, lead_days, safety_days, batch_multiple, is_enabled)
-        SELECT m.id, ?, ?, ?, 1, 1
+        SELECT m.id, $1, $2, $3, 1, 1
         FROM materials m
         WHERE m.is_enabled = 1
           AND m.id NOT IN (SELECT material_id FROM replenishment_rules)
@@ -343,7 +343,7 @@ pub async fn get_replenishment_suggestions(
         SELECT material_id, SUM(ABS(quantity)) AS total_out
         FROM inventory_transactions
         WHERE transaction_type IN ('sales_out', 'production_out')
-          AND created_at >= datetime('now', ? || ' days')
+          AND created_at >= datetime('now', $1 || ' days')
         GROUP BY material_id
         "#,
     )
@@ -388,9 +388,9 @@ pub async fn get_replenishment_suggestions(
                 r#"
                 SELECT COALESCE(SUM(ABS(quantity)), 0.0)
                 FROM inventory_transactions
-                WHERE material_id = ?
+                WHERE material_id = $1
                   AND transaction_type IN ('sales_out', 'production_out')
-                  AND created_at >= datetime('now', ? || ' days')
+                  AND created_at >= datetime('now', $2 || ' days')
                 "#,
             )
             .bind(row.material_id)
@@ -460,7 +460,7 @@ pub async fn get_replenishment_suggestions(
                     SELECT sm.supplier_id, s.name, sm.supply_price, sm.currency
                     FROM supplier_materials sm
                     JOIN suppliers s ON s.id = sm.supplier_id AND s.is_enabled = 1
-                    WHERE sm.material_id = ?
+                    WHERE sm.material_id = $1
                     ORDER BY sm.is_preferred DESC, sm.supply_price ASC
                     LIMIT 1
                     "#,
@@ -525,7 +525,7 @@ pub async fn get_replenishment_suggestions(
     for suggestion in &mut suggestions {
         // 先删除当天该物料已有的 pending 记录
         sqlx::query(
-            "DELETE FROM replenishment_logs WHERE material_id = ? AND suggestion_date = ? AND status = 'pending'",
+            "DELETE FROM replenishment_logs WHERE material_id = $1 AND suggestion_date = $2 AND status = 'pending'",
         )
         .bind(suggestion.material_id)
         .bind(&today)
@@ -540,7 +540,7 @@ pub async fn get_replenishment_suggestions(
                 material_id, suggestion_date, physical_qty, reserved_qty,
                 available_qty, safety_stock, daily_consumption, days_until_stockout,
                 suggested_qty, supplier_id, ref_price, ref_currency, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending')
             RETURNING id
             "#,
         )
@@ -661,10 +661,10 @@ pub async fn update_replenishment_rule(
     let result = sqlx::query(
         r#"
         UPDATE replenishment_rules SET
-            analysis_days = ?, lead_days = ?, safety_days = ?,
-            batch_multiple = ?, preferred_supplier_id = ?,
-            is_enabled = ?, updated_at = datetime('now')
-        WHERE id = ?
+            analysis_days = $1, lead_days = $2, safety_days = $3,
+            batch_multiple = $4, preferred_supplier_id = $5,
+            is_enabled = $6, updated_at = NOW()
+        WHERE id = $7
         "#,
     )
     .bind(params.analysis_days)
@@ -698,9 +698,9 @@ pub async fn get_consumption_trend(
         r#"
         SELECT date(created_at) AS d, SUM(ABS(quantity)) AS qty
         FROM inventory_transactions
-        WHERE material_id = ?
+        WHERE material_id = $1
           AND transaction_type IN ('sales_out', 'production_out')
-          AND created_at >= datetime('now', ? || ' days')
+          AND created_at >= datetime('now', $2 || ' days')
         GROUP BY date(created_at)
         ORDER BY d
         "#,
@@ -736,8 +736,12 @@ pub async fn create_purchase_orders_from_suggestions(
         return Err(AppError::Business("请至少选择一个物料".to_string()));
     }
 
-    // 1. 查询这些物料的最新建议数据（从 replenishment_logs 取最新 pending 记录）
-    let placeholders: Vec<String> = material_ids.iter().map(|_| "?".to_string()).collect();
+    // PostgreSQL 使用 $1, $2, ... 参数占位符
+    let placeholders: Vec<String> = material_ids
+        .iter()
+        .enumerate()
+        .map(|(i, _)| format!("${}", i + 1))
+        .collect();
     let sql = format!(
         r#"
         SELECT rl.id AS log_id, rl.material_id, rl.suggested_qty,
@@ -847,7 +851,7 @@ pub async fn create_purchase_orders_from_suggestions(
 
         // 查询供应商信息
         let supplier_info: Option<(String, i64)> =
-            sqlx::query_as("SELECT currency, is_enabled FROM suppliers WHERE id = ?")
+            sqlx::query_as("SELECT currency, is_enabled FROM suppliers WHERE id = $1")
                 .bind(sid)
                 .fetch_optional(&db.pool)
                 .await
@@ -881,7 +885,7 @@ pub async fn create_purchase_orders_from_suggestions(
             1.0
         } else {
             let rate: Option<(f64,)> = sqlx::query_as(
-                "SELECT rate FROM exchange_rates WHERE currency = ? ORDER BY effective_date DESC LIMIT 1",
+                "SELECT rate FROM exchange_rates WHERE currency = $1 ORDER BY effective_date DESC LIMIT 1",
             )
             .bind(&supplier_currency)
             .fetch_optional(&db.pool)
@@ -939,7 +943,7 @@ pub async fn create_purchase_orders_from_suggestions(
             let date_part = today.replace('-', "");
             let prefix = format!("PO-{}-", date_part);
             let max_no: Option<String> = sqlx::query_scalar(
-                "SELECT order_no FROM purchase_orders WHERE order_no LIKE ? ORDER BY order_no DESC LIMIT 1",
+                "SELECT order_no FROM purchase_orders WHERE order_no LIKE $1 ORDER BY order_no DESC LIMIT 1",
             )
             .bind(format!("{}%", prefix))
             .fetch_optional(&mut *tx)
@@ -992,10 +996,10 @@ pub async fn create_purchase_orders_from_suggestions(
                     remark, created_by_user_id, created_by_name,
                     created_at, updated_at
                 ) VALUES (
-                    ?, ?, ?, NULL, ?, ?, ?, 'draft',
-                    ?, ?, 0, 0, 0, ?,
-                    '由补货看板自动生成', ?, ?,
-                    datetime('now'), datetime('now')
+                    $1, $2, $3, NULL, $4, $5, $6, 'draft',
+                    $7, $8, 0, 0, 0, $9,
+                    '由补货看板自动生成', $10, $11,
+                    NOW(), NOW()
                 ) RETURNING id
                 "#,
             )
@@ -1038,7 +1042,7 @@ pub async fn create_purchase_orders_from_suggestions(
                         conversion_rate_snapshot, base_quantity, quantity,
                         unit_price, amount, received_qty, warehouse_id,
                         remark, sort_order
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, '补货建议自动生成', ?)
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0, $11, '补货建议自动生成', $12)
                     "#,
                 )
                 .bind(order_id)
@@ -1065,7 +1069,7 @@ pub async fn create_purchase_orders_from_suggestions(
 
                 // 更新补货日志状态
                 sqlx::query(
-                    "UPDATE replenishment_logs SET status = 'ordered', purchase_order_id = ? WHERE id = ?",
+                    "UPDATE replenishment_logs SET status = 'ordered', purchase_order_id = $1 WHERE id = $2",
                 )
                 .bind(order_id)
                 .bind(item.log_id)
@@ -1099,7 +1103,7 @@ pub async fn create_purchase_orders_from_suggestions(
 #[tauri::command]
 pub async fn ignore_suggestion(db: State<'_, DbState>, log_id: i64) -> Result<(), AppError> {
     let result = sqlx::query(
-        "UPDATE replenishment_logs SET status = 'ignored' WHERE id = ? AND status = 'pending'",
+        "UPDATE replenishment_logs SET status = 'ignored' WHERE id = $1 AND status = 'pending'",
     )
     .bind(log_id)
     .execute(&db.pool)

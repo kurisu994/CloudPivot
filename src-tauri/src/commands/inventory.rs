@@ -509,7 +509,7 @@ pub async fn get_inventory_detail(
 ) -> Result<InventoryDetail, AppError> {
     // 物料基本信息
     let mat = sqlx::query_as::<_, (String, String, Option<String>)>(
-        "SELECT code, name, spec FROM materials WHERE id = ?",
+        "SELECT code, name, spec FROM materials WHERE id = $1",
     )
     .bind(material_id)
     .fetch_optional(&db.pool)
@@ -527,7 +527,7 @@ pub async fn get_inventory_detail(
                inv.last_in_date, inv.last_out_date
         FROM inventory inv
         JOIN warehouses w ON w.id = inv.warehouse_id
-        WHERE inv.material_id = ?
+        WHERE inv.material_id = $1
         ORDER BY w.name
         "#,
     )
@@ -546,7 +546,7 @@ pub async fn get_inventory_detail(
                il.supplier_batch_no
         FROM inventory_lots il
         JOIN warehouses w ON w.id = il.warehouse_id
-        WHERE il.material_id = ? AND il.qty_on_hand > 0
+        WHERE il.material_id = $1 AND il.qty_on_hand > 0
         ORDER BY il.received_date
         "#,
     )
@@ -563,7 +563,7 @@ pub async fn get_inventory_detail(
                w.name AS warehouse_name, it.related_order_no
         FROM inventory_transactions it
         JOIN warehouses w ON w.id = it.warehouse_id
-        WHERE it.material_id = ?
+        WHERE it.material_id = $1
         ORDER BY it.id DESC
         LIMIT 10
         "#,
@@ -762,7 +762,7 @@ async fn generate_manual_movement_no(
     let prefix = format!("FM-{}-", date_part);
 
     let max_no: Option<String> = sqlx::query_scalar(
-        "SELECT related_order_no FROM inventory_transactions WHERE related_order_no LIKE ? ORDER BY related_order_no DESC LIMIT 1",
+        "SELECT related_order_no FROM inventory_transactions WHERE related_order_no LIKE $1 ORDER BY related_order_no DESC LIMIT 1",
     )
     .bind(format!("{}%", prefix))
     .fetch_optional(&mut *tx)
@@ -813,7 +813,7 @@ pub async fn create_manual_stock_movement(
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
     let (material_name, lot_tracking_mode): (String, String) = sqlx::query_as(
-        "SELECT name, COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = ? AND is_enabled = 1",
+        "SELECT name, COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = $1 AND is_enabled = 1",
     )
     .bind(params.material_id)
     .fetch_optional(&mut *tx)
@@ -822,7 +822,7 @@ pub async fn create_manual_stock_movement(
     .ok_or_else(|| AppError::Business("物料不存在或已停用".to_string()))?;
 
     let warehouse_exists: Option<(i64,)> =
-        sqlx::query_as("SELECT id FROM warehouses WHERE id = ? AND is_enabled = 1")
+        sqlx::query_as("SELECT id FROM warehouses WHERE id = $1 AND is_enabled = 1")
             .bind(params.warehouse_id)
             .fetch_optional(&mut *tx)
             .await
@@ -1012,7 +1012,7 @@ async fn generate_check_no(
     let date_part = check_date.replace('-', "");
     let prefix = format!("SC-{}-", date_part);
     let max_no: Option<String> = sqlx::query_scalar(
-        "SELECT check_no FROM stock_checks WHERE check_no LIKE ? ORDER BY check_no DESC LIMIT 1",
+        "SELECT check_no FROM stock_checks WHERE check_no LIKE $1 ORDER BY check_no DESC LIMIT 1",
     )
     .bind(format!("{}%", prefix))
     .fetch_optional(&mut *tx)
@@ -1172,7 +1172,7 @@ pub async fn get_stock_check_detail(
                sc.remark, sc.created_by_name, sc.confirmed_by_name, sc.confirmed_at, sc.created_at
         FROM stock_checks sc
         JOIN warehouses w ON w.id = sc.warehouse_id
-        WHERE sc.id = ?
+        WHERE sc.id = $1
         "#,
     )
     .bind(id)
@@ -1190,7 +1190,7 @@ pub async fn get_stock_check_detail(
         FROM stock_check_items sci
         JOIN materials m ON m.id = sci.material_id
         LEFT JOIN units u ON u.id = m.base_unit_id
-        WHERE sci.check_id = ?
+        WHERE sci.check_id = $1
         ORDER BY m.code
         "#,
     )
@@ -1245,7 +1245,7 @@ pub async fn create_stock_check(
         INSERT INTO stock_checks (
             check_no, warehouse_id, check_date, status, scope_type, scope_category_id,
             remark, created_by_user_id, created_by_name, created_at, updated_at
-        ) VALUES (?, ?, ?, 'draft', ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        ) VALUES ($1, $2, $3, 'draft', $4, $5, $6, $7, $8, NOW(), NOW())
         RETURNING id
         "#,
     )
@@ -1293,7 +1293,7 @@ pub async fn create_stock_check(
         sqlx::query(
             r#"
             INSERT INTO stock_check_items (check_id, material_id, system_qty, unit_price)
-            VALUES (?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4)
             "#,
         )
         .bind(check_id)
@@ -1339,7 +1339,7 @@ pub async fn create_stock_check(
         sqlx::query(
             r#"
             INSERT INTO stock_check_items (check_id, material_id, lot_id, lot_no_snapshot, system_qty, unit_price)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4, $5, $6)
             "#,
         )
         .bind(check_id)
@@ -1368,7 +1368,7 @@ pub async fn update_stock_check_items(
     items: Vec<UpdateStockCheckItemParams>,
 ) -> Result<(), AppError> {
     // 校验状态
-    let status: Option<(String,)> = sqlx::query_as("SELECT status FROM stock_checks WHERE id = ?")
+    let status: Option<(String,)> = sqlx::query_as("SELECT status FROM stock_checks WHERE id = $1")
         .bind(check_id)
         .fetch_optional(&db.pool)
         .await
@@ -1389,7 +1389,7 @@ pub async fn update_stock_check_items(
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
     // 更新状态为 checking
-    sqlx::query("UPDATE stock_checks SET status = 'checking', updated_at = datetime('now') WHERE id = ? AND status = 'draft'")
+    sqlx::query("UPDATE stock_checks SET status = 'checking', updated_at = NOW() WHERE id = $1 AND status = 'draft'")
         .bind(check_id)
         .execute(&mut *tx)
         .await
@@ -1397,7 +1397,7 @@ pub async fn update_stock_check_items(
 
     for item in &items {
         sqlx::query(
-            "UPDATE stock_check_items SET actual_qty = ?, remark = ? WHERE id = ? AND check_id = ?",
+            "UPDATE stock_check_items SET actual_qty = $1, remark = $2 WHERE id = $3 AND check_id = $4",
         )
         .bind(item.actual_qty)
         .bind(&item.remark)
@@ -1430,7 +1430,7 @@ pub async fn confirm_stock_check(
 
     // 获取盘点单头
     let head = sqlx::query_as::<_, (i64, String, String)>(
-        "SELECT warehouse_id, check_date, status FROM stock_checks WHERE id = ?",
+        "SELECT warehouse_id, check_date, status FROM stock_checks WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(&mut *tx)
@@ -1453,7 +1453,7 @@ pub async fn confirm_stock_check(
                COALESCE(actual_qty, system_qty) - system_qty AS diff,
                unit_price
         FROM stock_check_items
-        WHERE check_id = ? AND lot_id IS NULL AND actual_qty IS NOT NULL
+        WHERE check_id = $1 AND lot_id IS NULL AND actual_qty IS NOT NULL
               AND COALESCE(actual_qty, system_qty) != system_qty
         "#,
     )
@@ -1537,8 +1537,8 @@ pub async fn confirm_stock_check(
         UPDATE stock_checks SET
             status = 'confirmed',
             confirmed_by_user_id = 1, confirmed_by_name = 'admin',
-            confirmed_at = datetime('now'), updated_at = datetime('now')
-        WHERE id = ?
+            confirmed_at = NOW(), updated_at = NOW()
+        WHERE id = $1
         "#,
     )
     .bind(id)
@@ -1551,7 +1551,7 @@ pub async fn confirm_stock_check(
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
     // 记录操作日志
-    let check_no: String = sqlx::query_scalar("SELECT check_no FROM stock_checks WHERE id = ?")
+    let check_no: String = sqlx::query_scalar("SELECT check_no FROM stock_checks WHERE id = $1")
         .bind(id)
         .fetch_one(&db.pool)
         .await
@@ -1586,7 +1586,7 @@ async fn generate_transfer_no(
     let date_part = transfer_date.replace('-', "");
     let prefix = format!("TF-{}-", date_part);
     let max_no: Option<String> = sqlx::query_scalar(
-        "SELECT transfer_no FROM transfers WHERE transfer_no LIKE ? ORDER BY transfer_no DESC LIMIT 1",
+        "SELECT transfer_no FROM transfers WHERE transfer_no LIKE $1 ORDER BY transfer_no DESC LIMIT 1",
     )
     .bind(format!("{}%", prefix))
     .fetch_optional(&mut *tx)
@@ -1770,7 +1770,7 @@ pub async fn get_transfer_detail(
         FROM transfers t
         JOIN warehouses fw ON fw.id = t.from_warehouse_id
         JOIN warehouses tw ON tw.id = t.to_warehouse_id
-        WHERE t.id = ?
+        WHERE t.id = $1
         "#,
     )
     .bind(id)
@@ -1787,7 +1787,7 @@ pub async fn get_transfer_detail(
         FROM transfer_items ti
         JOIN materials m ON m.id = ti.material_id
         LEFT JOIN inventory_lots il ON il.id = ti.lot_id
-        WHERE ti.transfer_id = ?
+        WHERE ti.transfer_id = $1
         ORDER BY ti.id
         "#,
     )
@@ -1858,11 +1858,12 @@ pub async fn save_transfer(
 
     let transfer_id = if let Some(id) = params.id {
         // 编辑：校验草稿状态
-        let status: Option<(String,)> = sqlx::query_as("SELECT status FROM transfers WHERE id = ?")
-            .bind(id)
-            .fetch_optional(&mut *tx)
-            .await
-            .map_err(|e| AppError::Database(format!("查询调拨单失败: {}", e)))?;
+        let status: Option<(String,)> =
+            sqlx::query_as("SELECT status FROM transfers WHERE id = $1")
+                .bind(id)
+                .fetch_optional(&mut *tx)
+                .await
+                .map_err(|e| AppError::Database(format!("查询调拨单失败: {}", e)))?;
         match status {
             None => return Err(AppError::Business("调拨单不存在".to_string())),
             Some((s,)) if s != "draft" => {
@@ -1871,14 +1872,14 @@ pub async fn save_transfer(
             _ => {}
         }
         sqlx::query(
-            r#"UPDATE transfers SET from_warehouse_id=?, to_warehouse_id=?, transfer_date=?, remark=?, updated_at=datetime('now') WHERE id=?"#,
+            r#"UPDATE transfers SET from_warehouse_id=$1, to_warehouse_id=$2, transfer_date=$3, remark=$4, updated_at=NOW() WHERE id=$5"#,
         )
         .bind(params.from_warehouse_id).bind(params.to_warehouse_id)
         .bind(&params.transfer_date).bind(&params.remark).bind(id)
         .execute(&mut *tx).await
         .map_err(|e| AppError::Database(format!("更新调拨单失败: {}", e)))?;
 
-        sqlx::query("DELETE FROM transfer_items WHERE transfer_id = ?")
+        sqlx::query("DELETE FROM transfer_items WHERE transfer_id = $1")
             .bind(id)
             .execute(&mut *tx)
             .await
@@ -1890,7 +1891,7 @@ pub async fn save_transfer(
             r#"
             INSERT INTO transfers (transfer_no, from_warehouse_id, to_warehouse_id, transfer_date, status, remark,
                                    created_by_user_id, created_by_name, created_at, updated_at)
-            VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, datetime('now'), datetime('now'))
+            VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, NOW(), NOW())
             RETURNING id
             "#,
         )
@@ -1909,7 +1910,7 @@ pub async fn save_transfer(
             r#"
             INSERT INTO transfer_items (transfer_id, material_id, unit_id, unit_name_snapshot,
                                         conversion_rate_snapshot, quantity, base_quantity, lot_id, remark)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             "#,
         )
         .bind(transfer_id).bind(item.material_id).bind(item.unit_id)
@@ -1939,7 +1940,7 @@ pub async fn confirm_transfer(
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
     let head = sqlx::query_as::<_, (i64, i64, String, String, String)>(
-        "SELECT from_warehouse_id, to_warehouse_id, transfer_no, transfer_date, status FROM transfers WHERE id = ?",
+        "SELECT from_warehouse_id, to_warehouse_id, transfer_no, transfer_date, status FROM transfers WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(&mut *tx)
@@ -1958,7 +1959,7 @@ pub async fn confirm_transfer(
 
     // 查询明细行
     let items = sqlx::query_as::<_, (i64, i64, f64, Option<i64>)>(
-        "SELECT id, material_id, base_quantity, lot_id FROM transfer_items WHERE transfer_id = ?",
+        "SELECT id, material_id, base_quantity, lot_id FROM transfer_items WHERE transfer_id = $1",
     )
     .bind(id)
     .fetch_all(&mut *tx)
@@ -2038,19 +2039,29 @@ pub async fn confirm_transfer(
             // 更新批次的 warehouse_id（简化：直接搬仓）
             // 若批次库存为零则更新仓库指向目标仓
             let remaining: (f64,) =
-                sqlx::query_as("SELECT qty_on_hand FROM inventory_lots WHERE id = ?")
+                sqlx::query_as("SELECT qty_on_hand FROM inventory_lots WHERE id = $1")
                     .bind(lid)
                     .fetch_one(&mut *tx)
                     .await
                     .map_err(|e| AppError::Database(format!("查询批次库存失败: {}", e)))?;
             if remaining.0 <= 0.0 {
-                sqlx::query("UPDATE inventory_lots SET warehouse_id = ?, updated_at = datetime('now') WHERE id = ?")
-                    .bind(to_wh).bind(lid).execute(&mut *tx).await
-                    .map_err(|e| AppError::Database(format!("更新批次仓库失败: {}", e)))?;
+                sqlx::query(
+                    "UPDATE inventory_lots SET warehouse_id = $1, updated_at = NOW() WHERE id = $2",
+                )
+                .bind(to_wh)
+                .bind(lid)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| AppError::Database(format!("更新批次仓库失败: {}", e)))?;
                 // 恢复批次库存到目标仓
-                sqlx::query("UPDATE inventory_lots SET qty_on_hand = ?, updated_at = datetime('now') WHERE id = ?")
-                    .bind(base_qty).bind(lid).execute(&mut *tx).await
-                    .map_err(|e| AppError::Database(format!("恢复批次库存失败: {}", e)))?;
+                sqlx::query(
+                    "UPDATE inventory_lots SET qty_on_hand = $1, updated_at = NOW() WHERE id = $2",
+                )
+                .bind(base_qty)
+                .bind(lid)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| AppError::Database(format!("恢复批次库存失败: {}", e)))?;
             }
         }
     }
@@ -2058,7 +2069,7 @@ pub async fn confirm_transfer(
     // 更新调拨单状态
     sqlx::query(
         r#"UPDATE transfers SET status='confirmed', confirmed_by_user_id=1, confirmed_by_name='admin',
-           confirmed_at=datetime('now'), updated_at=datetime('now') WHERE id=?"#,
+           confirmed_at=NOW(), updated_at=NOW() WHERE id=$1"#,
     )
     .bind(id)
     .execute(&mut *tx)
@@ -2104,7 +2115,7 @@ pub async fn delete_transfer(
         .await
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
-    let result = sqlx::query("DELETE FROM transfers WHERE id = ? AND status = 'draft'")
+    let result = sqlx::query("DELETE FROM transfers WHERE id = $1 AND status = 'draft'")
         .bind(id)
         .execute(&mut *tx)
         .await
@@ -2114,7 +2125,7 @@ pub async fn delete_transfer(
         return Err(AppError::Business("调拨单不存在或非草稿状态".to_string()));
     }
 
-    sqlx::query("DELETE FROM transfer_items WHERE transfer_id = ?")
+    sqlx::query("DELETE FROM transfer_items WHERE transfer_id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await

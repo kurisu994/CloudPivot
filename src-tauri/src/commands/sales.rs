@@ -413,7 +413,7 @@ pub async fn get_sales_order_detail(
         FROM sales_orders so
         JOIN customers c ON c.id = so.customer_id
         JOIN warehouses w ON w.id = so.warehouse_id
-        WHERE so.id = ?
+        WHERE so.id = $1
         "#,
     )
     .bind(id)
@@ -430,7 +430,7 @@ pub async fn get_sales_order_detail(
                soi.shipped_qty, soi.warehouse_id, soi.remark, soi.sort_order
         FROM sales_order_items soi
         JOIN materials m ON m.id = soi.material_id
-        WHERE soi.order_id = ?
+        WHERE soi.order_id = $1
         ORDER BY soi.sort_order, soi.id
         "#,
     )
@@ -506,7 +506,7 @@ pub async fn save_sales_order(
 
     // 校验客户存在
     let customer_exists: Option<(i64,)> =
-        sqlx::query_as("SELECT id FROM customers WHERE id = ? AND is_enabled = 1")
+        sqlx::query_as("SELECT id FROM customers WHERE id = $1 AND is_enabled = 1")
             .bind(params.customer_id)
             .fetch_optional(&db.pool)
             .await
@@ -517,7 +517,7 @@ pub async fn save_sales_order(
 
     // 校验仓库存在
     let wh_exists: Option<(i64,)> =
-        sqlx::query_as("SELECT id FROM warehouses WHERE id = ? AND is_enabled = 1")
+        sqlx::query_as("SELECT id FROM warehouses WHERE id = $1 AND is_enabled = 1")
             .bind(params.warehouse_id)
             .fetch_optional(&db.pool)
             .await
@@ -538,7 +538,7 @@ pub async fn save_sales_order(
     let order_id = if let Some(id) = params.id {
         // 编辑模式：校验状态必须为草稿
         let current_status: Option<(String,)> =
-            sqlx::query_as("SELECT status FROM sales_orders WHERE id = ?")
+            sqlx::query_as("SELECT status FROM sales_orders WHERE id = $1")
                 .bind(id)
                 .fetch_optional(&mut *tx)
                 .await
@@ -555,14 +555,14 @@ pub async fn save_sales_order(
         sqlx::query(
             r#"
             UPDATE sales_orders SET
-                customer_id = ?, order_date = ?, delivery_date = ?,
-                warehouse_id = ?, currency = ?, exchange_rate = ?,
-                total_amount = ?, total_amount_base = ?,
-                discount_rate = ?, discount_amount = ?,
-                freight_amount = ?, other_charges = ?,
-                receivable_amount = ?, shipping_address = ?, remark = ?,
-                updated_at = datetime('now')
-            WHERE id = ?
+                customer_id = $1, order_date = $2, delivery_date = $3,
+                warehouse_id = $4, currency = $5, exchange_rate = $6,
+                total_amount = $7, total_amount_base = $8,
+                discount_rate = $9, discount_amount = $10,
+                freight_amount = $11, other_charges = $12,
+                receivable_amount = $13, shipping_address = $14, remark = $15,
+                updated_at = NOW()
+            WHERE id = $16
             "#,
         )
         .bind(params.customer_id)
@@ -586,7 +586,7 @@ pub async fn save_sales_order(
         .map_err(|e| AppError::Database(format!("更新销售单失败: {}", e)))?;
 
         // 删除旧明细（草稿状态无关联出库，安全删除）
-        sqlx::query("DELETE FROM sales_order_items WHERE order_id = ?")
+        sqlx::query("DELETE FROM sales_order_items WHERE order_id = $1")
             .bind(id)
             .execute(&mut *tx)
             .await
@@ -609,11 +609,11 @@ pub async fn save_sales_order(
                 created_by_user_id, created_by_name,
                 created_at, updated_at
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, 'draft',
-                ?, ?, ?, ?, ?, ?, ?,
-                ?, ?,
-                ?, ?,
-                datetime('now'), datetime('now')
+                $1, $2, $3, $4, $5, $6, $7, 'draft',
+                $8, $9, $10, $11, $12, $13, $14,
+                $15, $16,
+                $17, $18,
+                NOW(), NOW()
             ) RETURNING id
             "#,
         )
@@ -659,7 +659,7 @@ pub async fn save_sales_order(
                 conversion_rate_snapshot, base_quantity, quantity,
                 unit_price, discount_rate, amount, shipped_qty, warehouse_id,
                 remark, sort_order
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0, $12, $13, $14)
             "#,
         )
         .bind(order_id)
@@ -691,7 +691,7 @@ pub async fn save_sales_order(
     } else {
         "create"
     };
-    let order_no: String = sqlx::query_scalar("SELECT order_no FROM sales_orders WHERE id = ?")
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM sales_orders WHERE id = $1")
         .bind(order_id)
         .fetch_one(&db.pool)
         .await
@@ -733,7 +733,7 @@ pub async fn approve_sales_order(
 ) -> Result<Option<String>, AppError> {
     // 查询销售单信息用于信用额度检查
     let order_info: Option<(i64, i64, String)> = sqlx::query_as(
-        "SELECT customer_id, receivable_amount, status FROM sales_orders WHERE id = ?",
+        "SELECT customer_id, receivable_amount, status FROM sales_orders WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(&db.pool)
@@ -752,7 +752,7 @@ pub async fn approve_sales_order(
     // 信用额度检查
     let mut warning: Option<String> = None;
     let credit_info: Option<(i64, String)> =
-        sqlx::query_as("SELECT credit_limit, currency FROM customers WHERE id = ?")
+        sqlx::query_as("SELECT credit_limit, currency FROM customers WHERE id = $1")
             .bind(customer_id)
             .fetch_optional(&db.pool)
             .await
@@ -772,7 +772,7 @@ pub async fn approve_sales_order(
                         0
                     ) ELSE 0 END
                 ), 0)
-                FROM receivables r WHERE r.customer_id = ?
+                FROM receivables r WHERE r.customer_id = $1
                 "#,
             )
             .bind(customer_id)
@@ -799,9 +799,9 @@ pub async fn approve_sales_order(
             status = 'approved',
             approved_by_user_id = 1,
             approved_by_name = 'admin',
-            approved_at = datetime('now'),
-            updated_at = datetime('now')
-        WHERE id = ? AND status = 'draft'
+            approved_at = NOW(),
+            updated_at = NOW()
+        WHERE id = $1 AND status = 'draft'
         "#,
     )
     .bind(id)
@@ -816,7 +816,7 @@ pub async fn approve_sales_order(
     }
 
     // 记录操作日志
-    let order_no: String = sqlx::query_scalar("SELECT order_no FROM sales_orders WHERE id = ?")
+    let order_no: String = sqlx::query_scalar("SELECT order_no FROM sales_orders WHERE id = $1")
         .bind(id)
         .fetch_one(&db.pool)
         .await
@@ -850,7 +850,7 @@ pub async fn cancel_sales_order(
 
     // 检查是否有关联出库单
     let outbound_count: (i64,) =
-        sqlx::query_as("SELECT COUNT(*) FROM outbound_orders WHERE sales_id = ?")
+        sqlx::query_as("SELECT COUNT(*) FROM outbound_orders WHERE sales_id = $1")
             .bind(id)
             .fetch_one(&db.pool)
             .await
@@ -1032,7 +1032,7 @@ pub async fn get_pending_outbound_items(
             NULL AS suggested_lot_no
         FROM sales_order_items soi
         JOIN materials m ON m.id = soi.material_id
-        WHERE soi.order_id = ? AND soi.quantity > soi.shipped_qty
+        WHERE soi.order_id = $1 AND soi.quantity > soi.shipped_qty
         ORDER BY soi.sort_order, soi.id
         "#,
     )
@@ -1043,7 +1043,7 @@ pub async fn get_pending_outbound_items(
 
     // 获取销售单仓库 ID
     let warehouse_id: i64 =
-        sqlx::query_scalar("SELECT warehouse_id FROM sales_orders WHERE id = ?")
+        sqlx::query_scalar("SELECT warehouse_id FROM sales_orders WHERE id = $1")
             .bind(sales_id)
             .fetch_one(&db.pool)
             .await
@@ -1278,7 +1278,7 @@ pub async fn save_and_confirm_outbound(
                    total_amount, discount_rate, discount_amount,
                    freight_amount, other_charges,
                    warehouse_id, customer_id
-            FROM sales_orders WHERE id = ?
+            FROM sales_orders WHERE id = $1
             "#,
         )
         .bind(sales_id)
@@ -1306,7 +1306,7 @@ pub async fn save_and_confirm_outbound(
     let date_part = params.outbound_date.replace('-', "");
     let outbound_prefix = format!("SD-{}-", date_part);
     let max_outbound_no: Option<String> = sqlx::query_scalar(
-        "SELECT order_no FROM outbound_orders WHERE order_no LIKE ? ORDER BY order_no DESC LIMIT 1",
+        "SELECT order_no FROM outbound_orders WHERE order_no LIKE $1 ORDER BY order_no DESC LIMIT 1",
     )
     .bind(format!("{}%", outbound_prefix))
     .fetch_optional(&mut *tx)
@@ -1345,13 +1345,13 @@ pub async fn save_and_confirm_outbound(
             if all_items_done {
                 // 最后一笔：倒挤法
                 let prev_discount = sqlx::query_scalar::<_, i64>(
-                    "SELECT COALESCE(SUM(allocated_discount), 0) FROM outbound_orders WHERE sales_id = ? AND status = 'confirmed'",
+                    "SELECT COALESCE(SUM(allocated_discount), 0) FROM outbound_orders WHERE sales_id = $1 AND status = 'confirmed'",
                 ).bind(params.sales_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
                 let prev_freight = sqlx::query_scalar::<_, i64>(
-                    "SELECT COALESCE(SUM(allocated_freight), 0) FROM outbound_orders WHERE sales_id = ? AND status = 'confirmed'",
+                    "SELECT COALESCE(SUM(allocated_freight), 0) FROM outbound_orders WHERE sales_id = $1 AND status = 'confirmed'",
                 ).bind(params.sales_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
                 let prev_other = sqlx::query_scalar::<_, i64>(
-                    "SELECT COALESCE(SUM(allocated_other), 0) FROM outbound_orders WHERE sales_id = ? AND status = 'confirmed'",
+                    "SELECT COALESCE(SUM(allocated_other), 0) FROM outbound_orders WHERE sales_id = $1 AND status = 'confirmed'",
                 ).bind(params.sales_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
 
                 (so.5 - prev_discount, so.6 - prev_freight, so.7 - prev_other)
@@ -1395,13 +1395,13 @@ pub async fn save_and_confirm_outbound(
             confirmed_by_user_id, confirmed_by_name, confirmed_at,
             created_at, updated_at
         ) VALUES (
-            ?, ?, ?, ?, ?,
-            ?, ?, ?,
-            ?, ?, ?, ?, ?,
-            'confirmed', ?,
-            ?, ?,
-            ?, ?, datetime('now'),
-            datetime('now'), datetime('now')
+            $1, $2, $3, $4, $5,
+            $6, $7, $8,
+            $9, $10, $11, $12, $13,
+            'confirmed', $14,
+            $15, $16,
+            $17, $18, NOW(),
+            NOW(), NOW()
         ) RETURNING id
         "#,
     )
@@ -1435,7 +1435,7 @@ pub async fn save_and_confirm_outbound(
         // 出库数量校验（不超过销售单剩余可出库数量）
         if let Some(soi_id) = item.sales_order_item_id {
             let remaining: Option<(f64, f64)> =
-                sqlx::query_as("SELECT quantity, shipped_qty FROM sales_order_items WHERE id = ?")
+                sqlx::query_as("SELECT quantity, shipped_qty FROM sales_order_items WHERE id = $1")
                     .bind(soi_id)
                     .fetch_optional(&mut *tx)
                     .await
@@ -1456,7 +1456,7 @@ pub async fn save_and_confirm_outbound(
 
         // 查询当前库存可用量（强制拦截零库存）
         let available: Option<(f64,)> = sqlx::query_as(
-            "SELECT COALESCE(quantity, 0) FROM inventory WHERE material_id = ? AND warehouse_id = ?",
+            "SELECT COALESCE(quantity, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2",
         )
         .bind(item.material_id)
         .bind(params.warehouse_id)
@@ -1467,7 +1467,7 @@ pub async fn save_and_confirm_outbound(
         let current_qty = available.map(|a| a.0).unwrap_or(0.0);
         if current_qty < base_quantity {
             // 获取物料名称用于错误提示
-            let mat_name: String = sqlx::query_scalar("SELECT name FROM materials WHERE id = ?")
+            let mat_name: String = sqlx::query_scalar("SELECT name FROM materials WHERE id = $1")
                 .bind(item.material_id)
                 .fetch_one(&mut *tx)
                 .await
@@ -1481,7 +1481,7 @@ pub async fn save_and_confirm_outbound(
         // 自动 FIFO 批次分配
         let mut lot_id = item.lot_id;
         let lot_mode: Option<String> = sqlx::query_scalar(
-            "SELECT COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = ?",
+            "SELECT COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = $1",
         )
         .bind(item.material_id)
         .fetch_optional(&mut *tx)
@@ -1497,7 +1497,7 @@ pub async fn save_and_confirm_outbound(
             if let Some((lid, _, avail)) = lots.first() {
                 if *avail < base_quantity {
                     let mat_name: String =
-                        sqlx::query_scalar("SELECT name FROM materials WHERE id = ?")
+                        sqlx::query_scalar("SELECT name FROM materials WHERE id = $1")
                             .bind(item.material_id)
                             .fetch_one(&mut *tx)
                             .await
@@ -1510,7 +1510,7 @@ pub async fn save_and_confirm_outbound(
                 lot_id = Some(*lid);
             } else {
                 let mat_name: String =
-                    sqlx::query_scalar("SELECT name FROM materials WHERE id = ?")
+                    sqlx::query_scalar("SELECT name FROM materials WHERE id = $1")
                         .bind(item.material_id)
                         .fetch_one(&mut *tx)
                         .await
@@ -1521,7 +1521,7 @@ pub async fn save_and_confirm_outbound(
 
         // 获取实际成本快照（移动加权平均成本）
         let avg_cost: i64 = sqlx::query_scalar(
-            "SELECT COALESCE(avg_cost, 0) FROM inventory WHERE material_id = ? AND warehouse_id = ?",
+            "SELECT COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2",
         )
         .bind(item.material_id)
         .bind(params.warehouse_id)
@@ -1534,7 +1534,7 @@ pub async fn save_and_confirm_outbound(
             r#"
             SELECT b.id, b.version, b.total_standard_cost
             FROM bom b
-            WHERE b.material_id = ? AND b.status = 'active'
+            WHERE b.material_id = $1 AND b.status = 'active'
             ORDER BY b.id DESC LIMIT 1
             "#,
         )
@@ -1568,7 +1568,7 @@ pub async fn save_and_confirm_outbound(
                 standard_cost_bom_id, standard_cost_bom_version,
                 cost_unit_price, cost_amount,
                 remark, sort_order
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
             "#,
         )
         .bind(outbound_id)
@@ -1633,12 +1633,14 @@ pub async fn save_and_confirm_outbound(
 
         // 更新销售单明细行已出库数量
         if let Some(soi_id) = item.sales_order_item_id {
-            sqlx::query("UPDATE sales_order_items SET shipped_qty = shipped_qty + ? WHERE id = ?")
-                .bind(item.quantity)
-                .bind(soi_id)
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| AppError::Database(format!("更新销售单已出库数量失败: {}", e)))?;
+            sqlx::query(
+                "UPDATE sales_order_items SET shipped_qty = shipped_qty + $1 WHERE id = $2",
+            )
+            .bind(item.quantity)
+            .bind(soi_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("更新销售单已出库数量失败: {}", e)))?;
         }
     }
 
@@ -1658,8 +1660,8 @@ pub async fn save_and_confirm_outbound(
                     receivable_amount, received_amount, status,
                     due_date, remark,
                     created_at, updated_at
-                ) VALUES (?, ?, 'normal', ?, ?, ?, ?, ?, 0, 'unpaid', NULL, NULL,
-                    datetime('now'), datetime('now'))
+                ) VALUES ($1, $2, 'normal', $3, $4, $5, $6, $7, 0, 'unpaid', NULL, NULL,
+                    NOW(), NOW())
                 "#,
             )
             .bind(cid)
@@ -1862,7 +1864,7 @@ pub async fn get_returnable_outbound_items(
         FROM outbound_order_items ooi
         JOIN materials m ON m.id = ooi.material_id
         LEFT JOIN inventory_lots il ON il.id = ooi.lot_id
-        WHERE ooi.outbound_id = ?
+        WHERE ooi.outbound_id = $1
         HAVING returnable_qty > 0
         ORDER BY ooi.sort_order, ooi.id
         "#,
@@ -1968,7 +1970,7 @@ pub async fn save_and_confirm_sales_return(
 
     // 加载原出库单信息
     let outbound_info = sqlx::query_as::<_, (i64, String, f64, i64)>(
-        "SELECT customer_id, currency, exchange_rate, warehouse_id FROM outbound_orders WHERE id = ? AND status = 'confirmed'",
+        "SELECT customer_id, currency, exchange_rate, warehouse_id FROM outbound_orders WHERE id = $1 AND status = 'confirmed'",
     )
     .bind(params.outbound_id)
     .fetch_optional(&db.pool)
@@ -1988,7 +1990,7 @@ pub async fn save_and_confirm_sales_return(
     let date_part = params.return_date.replace('-', "");
     let prefix = format!("SR-{}-", date_part);
     let max_no: Option<String> = sqlx::query_scalar(
-        "SELECT return_no FROM sales_returns WHERE return_no LIKE ? ORDER BY return_no DESC LIMIT 1",
+        "SELECT return_no FROM sales_returns WHERE return_no LIKE $1 ORDER BY return_no DESC LIMIT 1",
     )
     .bind(format!("{}%", prefix))
     .fetch_optional(&mut *tx)
@@ -2021,13 +2023,13 @@ pub async fn save_and_confirm_sales_return(
             confirmed_by_user_id, confirmed_by_name, confirmed_at,
             created_at, updated_at
         ) VALUES (
-            ?, ?, ?, ?,
-            ?, ?, ?,
-            ?, ?,
-            'confirmed', ?,
-            ?, ?,
-            ?, ?, datetime('now'),
-            datetime('now'), datetime('now')
+            $1, $2, $3, $4,
+            $5, $6, $7,
+            $8, $9,
+            'confirmed', $10,
+            $11, $12,
+            $13, $14, NOW(),
+            NOW(), NOW()
         ) RETURNING id
         "#,
     )
@@ -2060,7 +2062,7 @@ pub async fn save_and_confirm_sales_return(
             SELECT COALESCE(SUM(sri.quantity), 0)
             FROM sales_return_items sri
             JOIN sales_returns sr ON sr.id = sri.return_id
-            WHERE sri.source_outbound_item_id = ? AND sr.status = 'confirmed'
+            WHERE sri.source_outbound_item_id = $1 AND sr.status = 'confirmed'
             "#,
         )
         .bind(item.source_outbound_item_id)
@@ -2069,7 +2071,7 @@ pub async fn save_and_confirm_sales_return(
         .unwrap_or(0.0);
 
         let outbound_qty: f64 =
-            sqlx::query_scalar("SELECT quantity FROM outbound_order_items WHERE id = ?")
+            sqlx::query_scalar("SELECT quantity FROM outbound_order_items WHERE id = $1")
                 .bind(item.source_outbound_item_id)
                 .fetch_one(&mut *tx)
                 .await
@@ -2092,7 +2094,7 @@ pub async fn save_and_confirm_sales_return(
                 return_id, source_outbound_item_id, lot_id,
                 material_id, unit_id, unit_name_snapshot, conversion_rate_snapshot,
                 base_quantity, quantity, unit_price, amount, remark
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             "#,
         )
         .bind(return_id)
@@ -2113,7 +2115,7 @@ pub async fn save_and_confirm_sales_return(
 
         // 获取原出库时的实际成本单价（用于成本回调）
         let original_cost: i64 = sqlx::query_scalar(
-            "SELECT COALESCE(cost_unit_price, 0) FROM outbound_order_items WHERE id = ?",
+            "SELECT COALESCE(cost_unit_price, 0) FROM outbound_order_items WHERE id = $1",
         )
         .bind(item.source_outbound_item_id)
         .fetch_one(&mut *tx)
@@ -2135,7 +2137,7 @@ pub async fn save_and_confirm_sales_return(
         // 增加批次库存
         if let Some(lid) = item.lot_id {
             sqlx::query(
-                "UPDATE inventory_lots SET qty_on_hand = qty_on_hand + ?, updated_at = datetime('now') WHERE id = ?",
+                "UPDATE inventory_lots SET qty_on_hand = qty_on_hand + $1, updated_at = NOW() WHERE id = $2",
             )
             .bind(base_quantity)
             .bind(lid)
@@ -2177,8 +2179,8 @@ pub async fn save_and_confirm_sales_return(
                 receivable_amount, received_amount, status,
                 due_date, remark,
                 created_at, updated_at
-            ) VALUES (?, ?, 'return_offset', ?, ?, ?, ?, ?, 0, 'unpaid', NULL, ?,
-                datetime('now'), datetime('now'))
+            ) VALUES ($1, $2, 'return_offset', $3, $4, $5, $6, $7, 0, 'unpaid', NULL, $8,
+                NOW(), NOW())
             "#,
         )
         .bind(customer_id)

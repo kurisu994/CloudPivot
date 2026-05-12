@@ -28,7 +28,7 @@ pub async fn increase_inventory(
 ) -> Result<(f64, f64), AppError> {
     // 查询当前库存
     let current = sqlx::query_as::<_, (f64, i64)>(
-        "SELECT COALESCE(quantity, 0), COALESCE(avg_cost, 0) FROM inventory WHERE material_id = ? AND warehouse_id = ?",
+        "SELECT COALESCE(quantity, 0), COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2",
     )
     .bind(material_id)
     .bind(warehouse_id)
@@ -54,12 +54,12 @@ pub async fn increase_inventory(
     sqlx::query(
         r#"
         INSERT INTO inventory (material_id, warehouse_id, quantity, avg_cost, last_in_date, updated_at)
-        VALUES (?, ?, ?, ?, ?, datetime('now'))
+        VALUES ($1, $2, $3, $4, $5, NOW())
         ON CONFLICT(material_id, warehouse_id) DO UPDATE SET
-            quantity = ?,
-            avg_cost = ?,
-            last_in_date = ?,
-            updated_at = datetime('now')
+            quantity = $6,
+            avg_cost = $7,
+            last_in_date = $8,
+            updated_at = NOW()
         "#,
     )
     .bind(material_id)
@@ -106,7 +106,7 @@ pub async fn create_inventory_lot(
             supplier_id, received_date, supplier_batch_no, trace_attrs_json,
             qty_on_hand, receipt_unit_cost,
             created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
         RETURNING id
         "#,
     )
@@ -144,7 +144,7 @@ pub async fn generate_transaction_no(tx: &mut PgConnection) -> Result<String, Ap
     let prefix = format!("IT-{}-", now.0);
 
     let max_no: Option<String> = sqlx::query_scalar(
-        "SELECT transaction_no FROM inventory_transactions WHERE transaction_no LIKE ? ORDER BY transaction_no DESC LIMIT 1",
+        "SELECT transaction_no FROM inventory_transactions WHERE transaction_no LIKE $1 ORDER BY transaction_no DESC LIMIT 1",
     )
     .bind(format!("{}%", prefix))
     .fetch_optional(&mut *tx)
@@ -193,7 +193,7 @@ pub async fn record_transaction(
             source_type, source_id, source_item_id, related_order_no,
             operator_user_id, operator_name, remark,
             created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW())
         RETURNING id
         "#,
     )
@@ -231,7 +231,7 @@ pub async fn generate_lot_no(tx: &mut PgConnection, date: &str) -> Result<String
     let prefix = format!("LOT-{}-", date_part);
 
     let max_no: Option<String> = sqlx::query_scalar(
-        "SELECT lot_no FROM inventory_lots WHERE lot_no LIKE ? ORDER BY lot_no DESC LIMIT 1",
+        "SELECT lot_no FROM inventory_lots WHERE lot_no LIKE $1 ORDER BY lot_no DESC LIMIT 1",
     )
     .bind(format!("{}%", prefix))
     .fetch_optional(&mut *tx)
@@ -295,7 +295,7 @@ pub async fn decrease_inventory(
     out_date: &str,
 ) -> Result<(f64, f64, i64), AppError> {
     let current = sqlx::query_as::<_, (f64, i64)>(
-        "SELECT COALESCE(quantity, 0), COALESCE(avg_cost, 0) FROM inventory WHERE material_id = ? AND warehouse_id = ?",
+        "SELECT COALESCE(quantity, 0), COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2",
     )
     .bind(material_id)
     .bind(warehouse_id)
@@ -317,10 +317,10 @@ pub async fn decrease_inventory(
     sqlx::query(
         r#"
         UPDATE inventory SET
-            quantity = ?,
-            last_out_date = ?,
-            updated_at = datetime('now')
-        WHERE material_id = ? AND warehouse_id = ?
+            quantity = $1,
+            last_out_date = $2,
+            updated_at = NOW()
+        WHERE material_id = $3 AND warehouse_id = $4
         "#,
     )
     .bind(new_qty)
@@ -346,7 +346,7 @@ pub async fn recalc_avg_cost_after_return(
     return_unit_cost: i64,
 ) -> Result<(), AppError> {
     let current = sqlx::query_as::<_, (f64, i64)>(
-        "SELECT COALESCE(quantity, 0), COALESCE(avg_cost, 0) FROM inventory WHERE material_id = ? AND warehouse_id = ?",
+        "SELECT COALESCE(quantity, 0), COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2",
     )
     .bind(material_id)
     .bind(warehouse_id)
@@ -373,7 +373,7 @@ pub async fn recalc_avg_cost_after_return(
     let new_cost = new_cost.max(0);
 
     sqlx::query(
-        "UPDATE inventory SET avg_cost = ?, updated_at = datetime('now') WHERE material_id = ? AND warehouse_id = ?",
+        "UPDATE inventory SET avg_cost = $1, updated_at = NOW() WHERE material_id = $2 AND warehouse_id = $3",
     )
     .bind(new_cost)
     .bind(material_id)
@@ -398,7 +398,7 @@ pub async fn get_available_lots(
         r#"
         SELECT id, lot_no, qty_on_hand - qty_reserved AS available_qty
         FROM inventory_lots
-        WHERE material_id = ? AND warehouse_id = ? AND qty_on_hand > qty_reserved
+        WHERE material_id = $1 AND warehouse_id = $2 AND qty_on_hand > qty_reserved
         ORDER BY received_date ASC, id ASC
         "#,
     )
@@ -418,7 +418,7 @@ pub async fn decrease_lot_inventory(
     quantity: f64,
 ) -> Result<(), AppError> {
     let current: Option<(f64,)> =
-        sqlx::query_as("SELECT qty_on_hand FROM inventory_lots WHERE id = ?")
+        sqlx::query_as("SELECT qty_on_hand FROM inventory_lots WHERE id = $1")
             .bind(lot_id)
             .fetch_optional(&mut *tx)
             .await
@@ -433,7 +433,7 @@ pub async fn decrease_lot_inventory(
     }
 
     sqlx::query(
-        "UPDATE inventory_lots SET qty_on_hand = qty_on_hand - ?, updated_at = datetime('now') WHERE id = ?",
+        "UPDATE inventory_lots SET qty_on_hand = qty_on_hand - $1, updated_at = NOW() WHERE id = $2",
     )
     .bind(quantity)
     .bind(lot_id)

@@ -265,7 +265,7 @@ async fn resolve_category_id(
         .map(|v| v.trim())
         .filter(|v| !v.is_empty())
     {
-        let id = sqlx::query_scalar::<_, i64>("SELECT id FROM categories WHERE code = ?")
+        let id = sqlx::query_scalar::<_, i64>("SELECT id FROM categories WHERE code = $1")
             .bind(code)
             .fetch_optional(pool)
             .await
@@ -281,7 +281,7 @@ async fn resolve_category_id(
         .map(|v| v.trim())
         .filter(|v| !v.is_empty())
     {
-        let id = sqlx::query_scalar::<_, i64>("SELECT id FROM categories WHERE name = ?")
+        let id = sqlx::query_scalar::<_, i64>("SELECT id FROM categories WHERE name = $1")
             .bind(name)
             .fetch_optional(pool)
             .await
@@ -301,7 +301,7 @@ async fn resolve_unit_id(pool: &PgPool, unit_name: &str) -> Result<i64, AppError
         return Err(AppError::Business("基础单位不能为空".to_string()));
     }
 
-    sqlx::query_scalar::<_, i64>("SELECT id FROM units WHERE name = ? OR symbol = ?")
+    sqlx::query_scalar::<_, i64>("SELECT id FROM units WHERE name = $1 OR symbol = $2")
         .bind(unit_name)
         .bind(unit_name)
         .fetch_optional(pool)
@@ -500,7 +500,7 @@ pub async fn import_materials(
             }
         };
 
-        let existing_id = sqlx::query_scalar::<_, i64>("SELECT id FROM materials WHERE code = ?")
+        let existing_id = sqlx::query_scalar::<_, i64>("SELECT id FROM materials WHERE code = $1")
             .bind(row.code.trim())
             .fetch_optional(&db.pool)
             .await
@@ -550,7 +550,7 @@ pub async fn import_materials(
             None
         };
 
-        let existing_id = sqlx::query_scalar::<_, i64>("SELECT id FROM materials WHERE code = ?")
+        let existing_id = sqlx::query_scalar::<_, i64>("SELECT id FROM materials WHERE code = $1")
             .bind(row.code.trim())
             .fetch_optional(&mut *tx)
             .await
@@ -560,14 +560,14 @@ pub async fn import_materials(
             sqlx::query(
                 r#"
                 UPDATE materials SET
-                    name = ?, material_type = ?, category_id = ?, spec = ?,
-                    base_unit_id = ?, aux_unit_id = ?, conversion_rate = ?,
-                    ref_cost_price = COALESCE(?, 0), sale_price = COALESCE(?, 0),
-                    safety_stock = COALESCE(?, 0), max_stock = COALESCE(?, 0),
-                    lot_tracking_mode = ?, texture = ?, color = ?, surface_craft = ?,
-                    length_mm = ?, width_mm = ?, height_mm = ?, barcode = ?, remark = ?,
-                    updated_at = datetime('now')
-                WHERE id = ?
+                    name = $1, material_type = $2, category_id = $3, spec = $4,
+                    base_unit_id = $5, aux_unit_id = $6, conversion_rate = $7,
+                    ref_cost_price = COALESCE($8, 0), sale_price = COALESCE($9, 0),
+                    safety_stock = COALESCE($10, 0), max_stock = COALESCE($11, 0),
+                    lot_tracking_mode = $12, texture = $13, color = $14, surface_craft = $15,
+                    length_mm = $16, width_mm = $17, height_mm = $18, barcode = $19, remark = $20,
+                    updated_at = NOW()
+                WHERE id = $21
                 "#,
             )
             .bind(row.name.trim())
@@ -603,9 +603,9 @@ pub async fn import_materials(
                     conversion_rate, ref_cost_price, sale_price, safety_stock, max_stock,
                     lot_tracking_mode, texture, color, surface_craft, length_mm, width_mm,
                     height_mm, barcode, remark, is_enabled, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 0), COALESCE(?, 0),
-                          COALESCE(?, 0), COALESCE(?, 0), ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                          1, datetime('now'), datetime('now'))
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 0), COALESCE($10, 0),
+                          COALESCE($11, 0), COALESCE($12, 0), $13, $14, $15, $16, $17, $18, $19, $20, $21,
+                          1, NOW(), NOW())
                 "#,
             )
             .bind(row.code.trim())
@@ -714,8 +714,8 @@ pub async fn import_initial_inventory(
             r#"
             SELECT m.id AS material_id, w.id AS warehouse_id, m.lot_tracking_mode
             FROM materials m
-            JOIN warehouses w ON w.code = ?
-            WHERE m.code = ?
+            JOIN warehouses w ON w.code = $1
+            WHERE m.code = $2
             "#,
         )
         .bind(row.warehouse_code.trim())

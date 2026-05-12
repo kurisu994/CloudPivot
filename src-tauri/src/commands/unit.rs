@@ -43,7 +43,7 @@ pub struct SaveUnitParams {
 
 /// 确认单位存在的辅助函数
 async fn ensure_unit_exists(db: &State<'_, DbState>, id: i64) -> Result<(), AppError> {
-    let exists: Option<(i64,)> = sqlx::query_as("SELECT id FROM units WHERE id = ?")
+    let exists: Option<(i64,)> = sqlx::query_as("SELECT id FROM units WHERE id = $1")
         .bind(id)
         .fetch_optional(&db.pool)
         .await
@@ -81,7 +81,7 @@ pub async fn get_all_units(
 #[tauri::command]
 pub async fn get_unit_by_id(db: State<'_, DbState>, id: i64) -> Result<Unit, AppError> {
     sqlx::query_as::<_, Unit>(
-        "SELECT id, name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at, updated_at FROM units WHERE id = ?",
+        "SELECT id, name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at, updated_at FROM units WHERE id = $1",
     )
     .bind(id)
     .fetch_one(&db.pool)
@@ -93,7 +93,7 @@ pub async fn get_unit_by_id(db: State<'_, DbState>, id: i64) -> Result<Unit, App
 #[tauri::command]
 pub async fn save_unit(db: State<'_, DbState>, params: SaveUnitParams) -> Result<i64, AppError> {
     // 检查名称唯一性
-    let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM units WHERE name = ?")
+    let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM units WHERE name = $1")
         .bind(&params.name)
         .fetch_optional(&db.pool)
         .await
@@ -109,10 +109,10 @@ pub async fn save_unit(db: State<'_, DbState>, params: SaveUnitParams) -> Result
         // 编辑模式
         sqlx::query(
             "UPDATE units SET
-                name = ?, name_en = ?, name_vi = ?, symbol = ?,
-                decimal_places = ?, sort_order = ?, is_enabled = ?,
-                updated_at = datetime('now')
-             WHERE id = ?",
+                name = $1, name_en = $2, name_vi = $3, symbol = $4,
+                decimal_places = $5, sort_order = $6, is_enabled = $7,
+                updated_at = NOW()
+             WHERE id = $8",
         )
         .bind(&params.name)
         .bind(&params.name_en)
@@ -135,7 +135,7 @@ pub async fn save_unit(db: State<'_, DbState>, params: SaveUnitParams) -> Result
         // 新增模式
         let id: i64 = sqlx::query_scalar(
             "INSERT INTO units (name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+             VALUES ($1, $2, $3, $4, $5, $6, 1, NOW(), NOW())
              RETURNING id",
         )
         .bind(&params.name)
@@ -161,8 +161,8 @@ pub async fn delete_unit(db: State<'_, DbState>, id: i64) -> Result<(), AppError
     let related_count: i64 = sqlx::query_scalar(
         r#"
         SELECT
-            (SELECT COUNT(*) FROM materials WHERE base_unit_id = ?)
-          + (SELECT COUNT(*) FROM materials WHERE aux_unit_id = ?)
+            (SELECT COUNT(*) FROM materials WHERE base_unit_id = $1)
+          + (SELECT COUNT(*) FROM materials WHERE aux_unit_id = $2)
         "#,
     )
     .bind(id)
@@ -177,7 +177,7 @@ pub async fn delete_unit(db: State<'_, DbState>, id: i64) -> Result<(), AppError
         ));
     }
 
-    sqlx::query("DELETE FROM units WHERE id = ?")
+    sqlx::query("DELETE FROM units WHERE id = $1")
         .bind(id)
         .execute(&db.pool)
         .await
@@ -191,7 +191,7 @@ pub async fn delete_unit(db: State<'_, DbState>, id: i64) -> Result<(), AppError
 pub async fn toggle_unit_status(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
     ensure_unit_exists(&db, id).await?;
 
-    let current_enabled: bool = sqlx::query_scalar("SELECT is_enabled FROM units WHERE id = ?")
+    let current_enabled: bool = sqlx::query_scalar("SELECT is_enabled FROM units WHERE id = $1")
         .bind(id)
         .fetch_one(&db.pool)
         .await
@@ -199,7 +199,7 @@ pub async fn toggle_unit_status(db: State<'_, DbState>, id: i64) -> Result<(), A
 
     let new_val = if current_enabled { 0 } else { 1 };
 
-    sqlx::query("UPDATE units SET is_enabled = ?, updated_at = datetime('now') WHERE id = ?")
+    sqlx::query("UPDATE units SET is_enabled = $1, updated_at = NOW() WHERE id = $2")
         .bind(new_val)
         .bind(id)
         .execute(&db.pool)
