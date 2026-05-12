@@ -181,7 +181,7 @@ pub async fn get_bom_list(
                   m.code as material_code, m.name as material_name, m.spec as material_spec,
                   b.version, b.status, b.effective_date, b.total_standard_cost,
                   (SELECT COUNT(*) FROM bom_items bi WHERE bi.bom_id = b.id) as item_count,
-                  b.remark, b.created_at, b.updated_at
+                  b.remark, b.created_at::TEXT, b.updated_at::TEXT
            {}"#,
         base_from
     ));
@@ -266,7 +266,7 @@ pub async fn get_bom_detail(db: State<'_, DbState>, id: i64) -> Result<BomDetail
         r#"SELECT b.id, b.bom_code, b.material_id,
                   m.code as material_code, m.name as material_name, m.spec as material_spec,
                   b.version, b.status, b.effective_date, b.total_standard_cost,
-                  b.remark, b.created_at, b.updated_at
+                  b.remark, b.created_at::TEXT, b.updated_at::TEXT
            FROM bom b
            LEFT JOIN materials m ON b.material_id = m.id
            WHERE b.id = $1"#,

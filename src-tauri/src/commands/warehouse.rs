@@ -140,9 +140,9 @@ pub async fn get_warehouses(
     include_disabled: bool,
 ) -> Result<Vec<Warehouse>, AppError> {
     let sql = if include_disabled {
-        "SELECT id, code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at, updated_at FROM warehouses ORDER BY warehouse_type ASC, code ASC"
+        "SELECT id, code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at::TEXT, updated_at::TEXT FROM warehouses ORDER BY warehouse_type ASC, code ASC"
     } else {
-        "SELECT id, code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at, updated_at FROM warehouses WHERE is_enabled = TRUE ORDER BY warehouse_type ASC, code ASC"
+        "SELECT id, code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at::TEXT, updated_at::TEXT FROM warehouses WHERE is_enabled = TRUE ORDER BY warehouse_type ASC, code ASC"
     };
 
     sqlx::query_as::<_, Warehouse>(sql)
@@ -155,7 +155,7 @@ pub async fn get_warehouses(
 #[tauri::command]
 pub async fn get_warehouse_by_id(db: State<'_, DbState>, id: i64) -> Result<Warehouse, AppError> {
     sqlx::query_as::<_, Warehouse>(
-        "SELECT id, code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at, updated_at FROM warehouses WHERE id = $1",
+        "SELECT id, code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at::TEXT, updated_at::TEXT FROM warehouses WHERE id = $1",
     )
     .bind(id)
     .fetch_one(&db.pool)

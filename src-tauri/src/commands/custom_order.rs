@@ -303,7 +303,7 @@ pub async fn get_custom_orders(
                rm.name AS ref_material_name,
                co.quote_amount, co.cost_amount,
                (SELECT COUNT(*) FROM custom_order_items WHERE order_id = co.id) AS item_count,
-               co.created_at
+               co.created_at::TEXT
         {}"#,
         base_from
     ));
@@ -452,9 +452,9 @@ pub async fn get_custom_order_detail(
                co.attachment_path, co.sales_order_id,
                so.order_no AS sales_order_no,
                co.remark, co.created_by_name,
-               co.confirmed_by_name, co.confirmed_at,
-               co.cancelled_by_name, co.cancelled_at,
-               co.created_at, co.updated_at
+               co.confirmed_by_name, co.confirmed_at::TEXT,
+               co.cancelled_by_name, co.cancelled_at::TEXT,
+               co.created_at::TEXT, co.updated_at::TEXT
         FROM custom_orders co
         JOIN customers c ON c.id = co.customer_id
         LEFT JOIN materials rm ON rm.id = co.ref_material_id

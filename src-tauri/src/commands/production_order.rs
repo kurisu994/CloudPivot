@@ -183,7 +183,7 @@ pub async fn get_production_orders(
                 COALESCE(m.name, '') AS output_material_name,
                 po.planned_qty, po.completed_qty, po.status,
                 po.planned_start_date, po.planned_end_date,
-                po.actual_start_date, po.created_at
+                po.actual_start_date, po.created_at::TEXT
          FROM production_orders po
          LEFT JOIN materials m ON po.output_material_id = m.id
          LEFT JOIN custom_orders co ON po.custom_order_id = co.id",
@@ -318,7 +318,7 @@ pub async fn get_production_order_detail(
                 planned_qty, completed_qty, status,
                 planned_start_date, planned_end_date,
                 actual_start_date, actual_end_date,
-                remark, created_at
+                remark, created_at::TEXT
          FROM production_orders WHERE id = $1",
     )
     .bind(id)
@@ -374,7 +374,7 @@ pub async fn get_production_order_detail(
     let completions: Vec<ProductionCompletionItem> = sqlx::query_as(
         "SELECT pc.id, pc.completion_no, pc.quantity, pc.warehouse_id,
                 w.name AS warehouse_name,
-                pc.unit_cost, pc.remark, pc.completed_at
+                pc.unit_cost, pc.remark, pc.completed_at::TEXT
          FROM production_completions pc
          LEFT JOIN warehouses w ON pc.warehouse_id = w.id
          WHERE pc.production_order_id = $1

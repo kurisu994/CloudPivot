@@ -231,7 +231,7 @@ pub async fn get_payables(
                p.inbound_id, p.return_id, p.adjustment_type,
                p.order_no, p.payable_date, p.currency, p.exchange_rate,
                p.payable_amount, p.paid_amount, p.unpaid_amount,
-               p.due_date, p.status, p.remark, p.created_at
+               p.due_date, p.status, p.remark, p.created_at::TEXT
         {}
         "#,
         base_from
@@ -358,7 +358,7 @@ pub async fn get_payment_records(
     let records = sqlx::query_as::<_, PaymentRecordItem>(
         r#"
         SELECT id, payable_id, payment_date, payment_amount,
-               currency, payment_method, remark, created_at
+               currency, payment_method, remark, created_at::TEXT
         FROM payment_records
         WHERE payable_id = $1
         ORDER BY payment_date DESC, id DESC
@@ -534,7 +534,7 @@ pub async fn get_receivables(
                r.outbound_id, r.return_id, r.adjustment_type,
                r.order_no, r.receivable_date, r.currency, r.exchange_rate,
                r.receivable_amount, r.received_amount, r.unreceived_amount,
-               r.due_date, r.status, r.remark, r.created_at
+               r.due_date, r.status, r.remark, r.created_at::TEXT
         {}
         "#,
         base_from
@@ -661,7 +661,7 @@ pub async fn get_receipt_records(
     let records = sqlx::query_as::<_, ReceiptRecordItem>(
         r#"
         SELECT id, receivable_id, receipt_date, receipt_amount,
-               currency, receipt_method, remark, created_at
+               currency, receipt_method, remark, created_at::TEXT
         FROM receipt_records
         WHERE receivable_id = $1
         ORDER BY receipt_date DESC, id DESC

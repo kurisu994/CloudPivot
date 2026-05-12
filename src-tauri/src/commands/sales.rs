@@ -301,7 +301,7 @@ pub async fn get_sales_orders(
                so.currency, so.status, so.total_amount, so.receivable_amount,
                (SELECT COUNT(*) FROM sales_order_items WHERE order_id = so.id) AS item_count,
                (SELECT COUNT(*) FROM sales_order_items WHERE order_id = so.id AND shipped_qty >= quantity) AS shipped_item_count,
-               so.created_by_name, so.created_at
+               so.created_by_name, so.created_at::TEXT
         FROM sales_orders so
         JOIN customers c ON c.id = so.customer_id
         JOIN warehouses w ON w.id = so.warehouse_id
@@ -413,9 +413,9 @@ pub async fn get_sales_order_detail(
                so.freight_amount, so.other_charges, so.receivable_amount,
                so.shipping_address, so.remark,
                so.created_by_user_id, so.created_by_name,
-               so.approved_by_name, so.approved_at,
-               so.cancelled_by_name, so.cancelled_at,
-               so.created_at, so.updated_at
+               so.approved_by_name, so.approved_at::TEXT,
+               so.cancelled_by_name, so.cancelled_at::TEXT,
+               so.created_at::TEXT, so.updated_at::TEXT
         FROM sales_orders so
         JOIN customers c ON c.id = so.customer_id
         JOIN warehouses w ON w.id = so.warehouse_id
@@ -1098,7 +1098,7 @@ pub async fn get_outbound_orders(
                oo.customer_id, c.name AS customer_name,
                oo.outbound_date, oo.warehouse_id, w.name AS warehouse_name,
                oo.outbound_type, oo.currency, oo.total_amount, oo.receivable_amount,
-               oo.status, oo.created_by_name, oo.created_at
+               oo.status, oo.created_by_name, oo.created_at::TEXT
         FROM outbound_orders oo
         LEFT JOIN customers c ON c.id = oo.customer_id
         LEFT JOIN sales_orders so ON so.id = oo.sales_id
@@ -1910,7 +1910,7 @@ pub async fn get_sales_returns(
                sr.customer_id, c.name AS customer_name,
                sr.return_date, sr.currency, sr.total_amount,
                sr.return_reason, sr.status,
-               sr.created_by_name, sr.created_at
+               sr.created_by_name, sr.created_at::TEXT
         FROM sales_returns sr
         JOIN outbound_orders oo ON oo.id = sr.outbound_id
         JOIN customers c ON c.id = sr.customer_id

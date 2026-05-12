@@ -188,7 +188,7 @@ pub async fn get_materials(
         "SELECT m.id, m.code, m.name, m.material_type, m.category_id, 
                 c.name as category_name, m.spec, m.base_unit_id, u.name as unit_name,
                 m.ref_cost_price, m.sale_price, m.safety_stock, m.max_stock,
-                m.is_enabled, m.created_at
+                m.is_enabled, m.created_at::TEXT
          FROM materials m
          LEFT JOIN categories c ON m.category_id = c.id
          LEFT JOIN units u ON m.base_unit_id = u.id",

@@ -271,7 +271,7 @@ pub async fn get_purchase_orders(
                po.currency, po.status, po.total_amount, po.payable_amount,
                (SELECT COUNT(*) FROM purchase_order_items WHERE order_id = po.id) AS item_count,
                (SELECT COUNT(*) FROM purchase_order_items WHERE order_id = po.id AND received_qty >= quantity) AS received_item_count,
-               po.created_by_name, po.created_at
+               po.created_by_name, po.created_at::TEXT
         FROM purchase_orders po
         JOIN suppliers s ON s.id = po.supplier_id
         JOIN warehouses w ON w.id = po.warehouse_id
@@ -379,9 +379,9 @@ pub async fn get_purchase_order_detail(
                po.total_amount, po.total_amount_base,
                po.discount_amount, po.freight_amount, po.other_charges, po.payable_amount,
                po.remark, po.created_by_user_id, po.created_by_name,
-               po.approved_by_name, po.approved_at,
-               po.cancelled_by_name, po.cancelled_at,
-               po.created_at, po.updated_at
+               po.approved_by_name, po.approved_at::TEXT,
+               po.cancelled_by_name, po.cancelled_at::TEXT,
+               po.created_at::TEXT, po.updated_at::TEXT
         FROM purchase_orders po
         JOIN suppliers s ON s.id = po.supplier_id
         JOIN warehouses w ON w.id = po.warehouse_id
@@ -999,7 +999,7 @@ pub async fn get_inbound_orders(
                io.supplier_id, s.name AS supplier_name,
                io.inbound_date, io.warehouse_id, w.name AS warehouse_name,
                io.inbound_type, io.currency, io.total_amount, io.payable_amount,
-               io.status, io.created_by_name, io.created_at
+               io.status, io.created_by_name, io.created_at::TEXT
         FROM inbound_orders io
         LEFT JOIN suppliers s ON s.id = io.supplier_id
         LEFT JOIN purchase_orders po ON po.id = io.purchase_id
@@ -1767,7 +1767,7 @@ pub async fn get_purchase_returns(
                pr.supplier_id, s.name AS supplier_name,
                pr.return_date, pr.currency, pr.total_amount,
                pr.return_reason, pr.status,
-               pr.created_by_name, pr.created_at
+               pr.created_by_name, pr.created_at::TEXT
         FROM purchase_returns pr
         JOIN inbound_orders io ON io.id = pr.inbound_id
         JOIN suppliers s ON s.id = pr.supplier_id

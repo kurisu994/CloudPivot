@@ -466,7 +466,7 @@ pub async fn get_operation_logs(
     // 查询列表
     let list_sql = format!(
         "SELECT id, module, action, target_type, target_id, target_no,
-                detail, operator_user_id, operator_name_snapshot, created_at
+                detail, operator_user_id, operator_name_snapshot, created_at::TEXT
          FROM operation_logs
          {}
          ORDER BY created_at DESC

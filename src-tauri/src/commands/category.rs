@@ -34,7 +34,7 @@ pub struct CategoryNode {
 pub async fn get_category_tree(db: State<'_, DbState>) -> Result<Vec<CategoryNode>, AppError> {
     sqlx::query_as::<_, CategoryNode>(
         "SELECT id, parent_id, name, code, sort_order, level, path, remark,
-                is_enabled, created_at, updated_at
+                is_enabled, created_at::TEXT, updated_at::TEXT
          FROM categories
          ORDER BY sort_order ASC, id ASC",
     )

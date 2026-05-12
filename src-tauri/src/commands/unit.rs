@@ -68,9 +68,9 @@ pub async fn get_all_units(
     include_disabled: bool,
 ) -> Result<Vec<Unit>, AppError> {
     let sql = if include_disabled {
-        "SELECT id, name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at, updated_at FROM units ORDER BY sort_order ASC, id ASC"
+        "SELECT id, name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at::TEXT, updated_at::TEXT FROM units ORDER BY sort_order ASC, id ASC"
     } else {
-        "SELECT id, name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at, updated_at FROM units WHERE is_enabled = TRUE ORDER BY sort_order ASC, id ASC"
+        "SELECT id, name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at::TEXT, updated_at::TEXT FROM units WHERE is_enabled = TRUE ORDER BY sort_order ASC, id ASC"
     };
 
     sqlx::query_as::<_, Unit>(sql)
@@ -83,7 +83,7 @@ pub async fn get_all_units(
 #[tauri::command]
 pub async fn get_unit_by_id(db: State<'_, DbState>, id: i64) -> Result<Unit, AppError> {
     sqlx::query_as::<_, Unit>(
-        "SELECT id, name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at, updated_at FROM units WHERE id = $1",
+        "SELECT id, name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at::TEXT, updated_at::TEXT FROM units WHERE id = $1",
     )
     .bind(id)
     .fetch_one(&db.pool)

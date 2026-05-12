@@ -629,7 +629,7 @@ pub async fn get_inventory_transactions(
                il.lot_no AS lot_no,
                it.transaction_type, it.quantity, it.before_qty, it.after_qty,
                it.unit_cost, it.related_order_no, it.operator_name,
-               it.remark, it.created_at
+               it.remark, it.created_at::TEXT
         {}
         "#,
         base_from
@@ -1059,7 +1059,7 @@ pub async fn get_stock_checks(
                sc.check_date, sc.status, sc.scope_type,
                (SELECT COUNT(*) FROM stock_check_items WHERE check_id = sc.id) AS item_count,
                (SELECT COUNT(*) FROM stock_check_items WHERE check_id = sc.id AND actual_qty IS NOT NULL AND actual_qty != system_qty) AS diff_count,
-               sc.created_by_name, sc.created_at
+               sc.created_by_name, sc.created_at::TEXT
         {}
         "#,
         base_from
@@ -1181,7 +1181,7 @@ pub async fn get_stock_check_detail(
         r#"
         SELECT sc.id, sc.check_no, sc.warehouse_id, w.name AS warehouse_name,
                sc.check_date, sc.status, sc.scope_type, sc.scope_category_id,
-               sc.remark, sc.created_by_name, sc.confirmed_by_name, sc.confirmed_at, sc.created_at
+               sc.remark, sc.created_by_name, sc.confirmed_by_name, sc.confirmed_at::TEXT, sc.created_at::TEXT
         FROM stock_checks sc
         JOIN warehouses w ON w.id = sc.warehouse_id
         WHERE sc.id = $1
@@ -1633,7 +1633,7 @@ pub async fn get_transfers(
         SELECT t.id, t.transfer_no, fw.name AS from_warehouse_name, tw.name AS to_warehouse_name,
                t.transfer_date, t.status,
                (SELECT COUNT(*) FROM transfer_items WHERE transfer_id = t.id) AS item_count,
-               t.created_by_name, t.created_at
+               t.created_by_name, t.created_at::TEXT
         {}
         "#,
         base_from
@@ -1778,7 +1778,7 @@ pub async fn get_transfer_detail(
         r#"
         SELECT t.id, t.transfer_no, t.from_warehouse_id, fw.name, t.to_warehouse_id, tw.name,
                t.transfer_date, t.status, t.remark, t.created_by_name,
-               t.confirmed_by_name, t.confirmed_at, t.created_at
+               t.confirmed_by_name, t.confirmed_at::TEXT, t.created_at::TEXT
         FROM transfers t
         JOIN warehouses fw ON fw.id = t.from_warehouse_id
         JOIN warehouses tw ON tw.id = t.to_warehouse_id
