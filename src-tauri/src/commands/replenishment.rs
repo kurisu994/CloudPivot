@@ -979,7 +979,7 @@ pub async fn create_purchase_orders_from_suggestions(
                 .get(&group_items[0].material_type)
                 .copied()
                 .or(fallback_wh_id)
-                .unwrap();
+                .ok_or_else(|| AppError::Business("未配置默认仓库，无法生成采购单".to_string()))?;
 
             // 插入采购单头
             let order_id: i64 = sqlx::query_scalar(
@@ -1026,7 +1026,10 @@ pub async fn create_purchase_orders_from_suggestions(
                     .get(&item.material_type)
                     .copied()
                     .or(fallback_wh_id)
-                    .unwrap();
+                    .ok_or_else(|| AppError::Business(format!(
+                        "物料 {} 未配置默认仓库，无法生成采购单明细",
+                        item.material_name
+                    )))?;
 
                 sqlx::query(
                     r#"
