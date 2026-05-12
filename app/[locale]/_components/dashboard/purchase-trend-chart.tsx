@@ -31,7 +31,8 @@ export function PurchaseTrendChart({ className }: { className?: string }) {
           value: p.amount,
         }))
         setData(points)
-      } catch {
+      } catch (e) {
+        console.error('[Dashboard] 采购趋势查询失败:', e)
         setError(true)
       }
     })()

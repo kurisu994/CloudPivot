@@ -259,6 +259,11 @@ pub async fn get_purchase_orders(
     db: State<'_, DbState>,
     filter: PurchaseOrderFilter,
 ) -> Result<PaginatedResponse<PurchaseOrderListItem>, AppError> {
+    log::info!(
+        "采购查询: get_purchase_orders, 状态={:?}, 页码={}",
+        filter.status,
+        filter.page
+    );
     use super::order_shared::{self, ListFilterParams, ListQueryConfig};
 
     let mut count_query = QueryBuilder::<'_, Postgres>::new(

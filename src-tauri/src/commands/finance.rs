@@ -193,6 +193,11 @@ pub async fn get_payables(
     db: State<'_, DbState>,
     filter: PayablesFilter,
 ) -> Result<PayablesResponse, AppError> {
+    log::info!(
+        "财务查询: get_payables, 页码={}, 每页={}",
+        filter.page,
+        filter.page_size
+    );
     // 计算 KPI 概览（只针对 adjustment_type='normal' 的正向记录统计）
     let summary = sqlx::query_as::<_, (i64, i64, i64, i64)>(
         r#"
@@ -496,6 +501,11 @@ pub async fn get_receivables(
     db: State<'_, DbState>,
     filter: ReceivablesFilter,
 ) -> Result<ReceivablesResponse, AppError> {
+    log::info!(
+        "财务查询: get_receivables, 页码={}, 每页={}",
+        filter.page,
+        filter.page_size
+    );
     // 计算 KPI 概览
     let summary = sqlx::query_as::<_, (i64, i64, i64, i64)>(
         r#"

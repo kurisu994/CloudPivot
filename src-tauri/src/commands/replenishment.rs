@@ -219,6 +219,7 @@ fn determine_urgency(
 /// 在首次访问补货页面时调用。
 #[tauri::command]
 pub async fn ensure_replenishment_rules(db: State<'_, DbState>) -> Result<i64, AppError> {
+    log::info!("补货: ensure_replenishment_rules 开始");
     let (analysis_days, lead_days, safety_days) = get_default_params(&db.pool).await;
 
     let result = sqlx::query(
@@ -249,6 +250,11 @@ pub async fn get_replenishment_suggestions(
     db: State<'_, DbState>,
     filter: SuggestionFilter,
 ) -> Result<Vec<ReplenishmentSuggestion>, AppError> {
+    log::info!(
+        "补货查询: get_replenishment_suggestions, 分类={:?}, 紧急度={:?}",
+        filter.category_id,
+        filter.urgency
+    );
     let (default_analysis, default_lead, default_safety) = get_default_params(&db.pool).await;
 
     // 获取当天日期（用于排除已处理的物料）
@@ -573,6 +579,10 @@ pub async fn get_replenishment_suggestions(
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
+    log::info!(
+        "get_replenishment_suggestions 完成, 建议数={}",
+        suggestions.len()
+    );
     Ok(suggestions)
 }
 

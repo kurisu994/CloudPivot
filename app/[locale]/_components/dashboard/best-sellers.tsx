@@ -36,7 +36,8 @@ export function BestSellers({ className }: { className?: string }) {
           percent: maxAmount > 0 ? Math.round((item.amount / maxAmount) * 100) : 0,
         }))
         setProducts(mapped)
-      } catch {
+      } catch (e) {
+        console.error('[Dashboard] 热销产品查询失败:', e)
         setProducts([])
         setError(true)
       }

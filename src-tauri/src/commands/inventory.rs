@@ -378,6 +378,14 @@ pub async fn get_inventory_list(
     db: State<'_, DbState>,
     filter: InventoryFilter,
 ) -> Result<PaginatedResponse<InventoryListItem>, AppError> {
+    log::info!(
+        "库存查询: get_inventory_list, 页码={}, 每页={}, 仓库={:?}, 分类={:?}, 预警={:?}",
+        filter.page,
+        filter.page_size,
+        filter.warehouse_id,
+        filter.category_id,
+        filter.alert_status
+    );
     let base_from = r#"
         FROM inventory inv
         JOIN materials m ON m.id = inv.material_id
@@ -394,7 +402,7 @@ pub async fn get_inventory_list(
                inv.warehouse_id, w.name AS warehouse_name,
                inv.quantity, inv.reserved_qty, inv.available_qty,
                inv.avg_cost,
-               CAST(ROUND(inv.quantity * inv.avg_cost, 0) AS INTEGER) AS inventory_value,
+               CAST(ROUND((inv.quantity * inv.avg_cost)::numeric, 0) AS INTEGER) AS inventory_value,
                m.safety_stock, m.max_stock,
                CASE
                    WHEN m.safety_stock IS NOT NULL AND inv.available_qty < m.safety_stock THEN 'low'
@@ -503,8 +511,16 @@ pub async fn get_inventory_list(
         .build_query_as::<InventoryListItem>()
         .fetch_all(&db.pool)
         .await
-        .map_err(|e| AppError::Database(format!("查询库存列表失败: {}", e)))?;
+        .map_err(|e| {
+            log::error!("get_inventory_list 查询失败: {}", e);
+            AppError::Database(format!("查询库存列表失败: {}", e))
+        })?;
 
+    log::info!(
+        "get_inventory_list 完成, 总数={}, 返回={}",
+        total.0,
+        items.len()
+    );
     Ok(PaginatedResponse {
         total: total.0,
         items,
@@ -535,7 +551,7 @@ pub async fn get_inventory_detail(
         SELECT inv.warehouse_id, w.name AS warehouse_name,
                inv.quantity, inv.reserved_qty, inv.available_qty,
                inv.avg_cost,
-               CAST(ROUND(inv.quantity * inv.avg_cost, 0) AS INTEGER) AS inventory_value,
+               CAST(ROUND((inv.quantity * inv.avg_cost)::numeric, 0) AS INTEGER) AS inventory_value,
                inv.last_in_date, inv.last_out_date
         FROM inventory inv
         JOIN warehouses w ON w.id = inv.warehouse_id

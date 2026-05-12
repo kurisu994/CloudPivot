@@ -1088,6 +1088,11 @@ pub async fn get_outbound_orders(
     db: State<'_, DbState>,
     filter: OutboundOrderFilter,
 ) -> Result<PaginatedResponse<OutboundOrderListItem>, AppError> {
+    log::info!(
+        "销售查询: get_outbound_orders, 状态={:?}, 页码={}",
+        filter.status,
+        filter.page
+    );
     let mut count_query = QueryBuilder::<'_, Postgres>::new(
         "SELECT COUNT(*) FROM outbound_orders oo LEFT JOIN customers c ON c.id = oo.customer_id JOIN warehouses w ON w.id = oo.warehouse_id",
     );

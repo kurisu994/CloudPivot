@@ -368,7 +368,7 @@ pub async fn get_inventory_report_summary(
             SELECT material_id,
                    SUM(quantity) AS total_qty,
                    CASE WHEN SUM(quantity) = 0 THEN 0
-                        ELSE CAST(ROUND(SUM(quantity * avg_cost) * 1.0 / SUM(quantity), 0) AS INTEGER)
+                        ELSE CAST(ROUND((SUM(quantity * avg_cost) * 1.0 / SUM(quantity))::numeric, 0) AS INTEGER)
                    END AS weighted_avg_cost
             FROM inventory
             WHERE ($11 IS NULL OR warehouse_id = $21)
@@ -395,9 +395,9 @@ pub async fn get_inventory_report_summary(
         SELECT
             material_id,
             SUM(CASE WHEN quantity > 0 THEN quantity ELSE 0 END) AS inbound_qty,
-            SUM(CASE WHEN quantity > 0 THEN CAST(ROUND(quantity * unit_cost, 0) AS INTEGER) ELSE 0 END) AS inbound_value,
+            SUM(CASE WHEN quantity > 0 THEN CAST(ROUND((quantity * unit_cost)::numeric, 0) AS INTEGER) ELSE 0 END) AS inbound_value,
             SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) AS outbound_qty,
-            SUM(CASE WHEN quantity < 0 THEN CAST(ROUND(ABS(quantity) * unit_cost, 0) AS INTEGER) ELSE 0 END) AS outbound_value
+            SUM(CASE WHEN quantity < 0 THEN CAST(ROUND((ABS(quantity) * unit_cost)::numeric, 0) AS INTEGER) ELSE 0 END) AS outbound_value
         FROM inventory_transactions
         WHERE transaction_date BETWEEN $11 AND $22
           AND ($33 IS NULL OR warehouse_id = $43)
@@ -572,7 +572,7 @@ pub async fn get_inventory_aging_analysis(
             CAST(julianday('now') - julianday(il.received_date) AS INTEGER) AS days_in_stock,
             il.qty_on_hand,
             il.receipt_unit_cost AS unit_cost,
-            CAST(ROUND(il.qty_on_hand * il.receipt_unit_cost, 0) AS INTEGER) AS value
+            CAST(ROUND((il.qty_on_hand * il.receipt_unit_cost)::numeric, 0) AS INTEGER) AS value
         FROM inventory_lots il
         JOIN materials m ON m.id = il.material_id
         WHERE il.qty_on_hand > 0
@@ -746,7 +746,7 @@ pub async fn get_inventory_trend(
         r#"
         SELECT
             COALESCE(SUM(quantity), 0),
-            COALESCE(SUM(CAST(ROUND(quantity * avg_cost, 0) AS INTEGER)), 0)
+            COALESCE(SUM(CAST(ROUND((quantity * avg_cost)::numeric, 0) AS INTEGER)), 0)
         FROM inventory
         WHERE ($11 IS NULL OR warehouse_id = $21)
         "#,
@@ -764,9 +764,9 @@ pub async fn get_inventory_trend(
         SELECT
             transaction_date AS date,
             SUM(CASE WHEN quantity > 0 THEN quantity ELSE 0 END) AS inbound_qty,
-            SUM(CASE WHEN quantity > 0 THEN CAST(ROUND(quantity * unit_cost, 0) AS INTEGER) ELSE 0 END) AS inbound_value,
+            SUM(CASE WHEN quantity > 0 THEN CAST(ROUND((quantity * unit_cost)::numeric, 0) AS INTEGER) ELSE 0 END) AS inbound_value,
             SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) AS outbound_qty,
-            SUM(CASE WHEN quantity < 0 THEN CAST(ROUND(ABS(quantity) * unit_cost, 0) AS INTEGER) ELSE 0 END) AS outbound_value
+            SUM(CASE WHEN quantity < 0 THEN CAST(ROUND((ABS(quantity) * unit_cost)::numeric, 0) AS INTEGER) ELSE 0 END) AS outbound_value
         FROM inventory_transactions
         WHERE transaction_date >= date('now', '-' || $11 || ' days')
           AND ($22 IS NULL OR warehouse_id = $32)
@@ -856,8 +856,8 @@ async fn purchase_stats(
         r#"
         SELECT
             COALESCE(SUM(CASE WHEN currency = 'USD' THEN payable_amount
-                              WHEN currency = 'VND' THEN CAST(ROUND(payable_amount * 100.0 / exchange_rate, 0) AS INTEGER)
-                              ELSE CAST(ROUND(payable_amount * 1.0 / exchange_rate, 0) AS INTEGER) END), 0) AS total_amount,
+                              WHEN currency = 'VND' THEN CAST(ROUND((payable_amount * 100.0 / exchange_rate)::numeric, 0) AS INTEGER)
+                              ELSE CAST(ROUND((payable_amount * 1.0 / exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS total_amount,
             COUNT(DISTINCT id) AS order_count,
             COUNT(DISTINCT supplier_id) AS partner_count,
             COALESCE((
@@ -902,8 +902,8 @@ async fn sales_stats(
         r#"
         SELECT
             COALESCE(SUM(CASE WHEN currency = 'USD' THEN receivable_amount
-                              WHEN currency = 'VND' THEN CAST(ROUND(receivable_amount * 100.0 / exchange_rate, 0) AS INTEGER)
-                              ELSE CAST(ROUND(receivable_amount * 1.0 / exchange_rate, 0) AS INTEGER) END), 0) AS total_amount,
+                              WHEN currency = 'VND' THEN CAST(ROUND((receivable_amount * 100.0 / exchange_rate)::numeric, 0) AS INTEGER)
+                              ELSE CAST(ROUND((receivable_amount * 1.0 / exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS total_amount,
             COUNT(DISTINCT id) AS order_count,
             COUNT(DISTINCT customer_id) AS partner_count,
             COALESCE((
@@ -943,16 +943,28 @@ pub async fn get_purchase_report_summary(
     db: State<'_, DbState>,
     filter: PurchaseReportFilter,
 ) -> Result<BusinessReportResponse<BusinessTrendPoint>, AppError> {
+    log::info!(
+        "报表查询: get_purchase_report_summary, 日期={:?}~{:?}, 供应商={:?}, 仓库={:?}",
+        filter.start_date,
+        filter.end_date,
+        filter.supplier_id,
+        filter.warehouse_id
+    );
     let (start_date, end_date) =
         default_report_dates(filter.start_date.as_deref(), filter.end_date.as_deref());
-    let stats = purchase_stats(&db.pool, &filter, &start_date, &end_date).await?;
+    let stats = purchase_stats(&db.pool, &filter, &start_date, &end_date)
+        .await
+        .map_err(|e| {
+            log::error!("get_purchase_report_summary 统计查询失败: {}", e);
+            e
+        })?;
     let trend: Vec<BusinessTrendPoint> = sqlx::query_as(
         r#"
         SELECT
             inbound_date AS date,
             COALESCE(SUM(CASE WHEN currency = 'USD' THEN payable_amount
-                              WHEN currency = 'VND' THEN CAST(ROUND(payable_amount * 100.0 / exchange_rate, 0) AS INTEGER)
-                              ELSE CAST(ROUND(payable_amount * 1.0 / exchange_rate, 0) AS INTEGER) END), 0) AS amount,
+                              WHEN currency = 'VND' THEN CAST(ROUND((payable_amount * 100.0 / exchange_rate)::numeric, 0) AS INTEGER)
+                              ELSE CAST(ROUND((payable_amount * 1.0 / exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS amount,
             COUNT(DISTINCT id) AS order_count
         FROM inbound_orders io
         WHERE io.status = 'confirmed' AND io.inbound_type = 'purchase'
@@ -976,6 +988,7 @@ pub async fn get_purchase_report_summary(
     .await
     .map_err(|e| AppError::Database(format!("查询采购趋势失败: {}", e)))?;
     let total = trend.len() as i64;
+    log::info!("get_purchase_report_summary 完成, 趋势数据点={}", total);
     Ok(BusinessReportResponse {
         generated_at: now_iso8601(),
         stats,
@@ -992,16 +1005,28 @@ pub async fn get_sales_report_summary(
     db: State<'_, DbState>,
     filter: SalesReportFilter,
 ) -> Result<BusinessReportResponse<BusinessTrendPoint>, AppError> {
+    log::info!(
+        "报表查询: get_sales_report_summary, 日期={:?}~{:?}, 客户={:?}, 仓库={:?}",
+        filter.start_date,
+        filter.end_date,
+        filter.customer_id,
+        filter.warehouse_id
+    );
     let (start_date, end_date) =
         default_report_dates(filter.start_date.as_deref(), filter.end_date.as_deref());
-    let stats = sales_stats(&db.pool, &filter, &start_date, &end_date).await?;
+    let stats = sales_stats(&db.pool, &filter, &start_date, &end_date)
+        .await
+        .map_err(|e| {
+            log::error!("get_sales_report_summary 统计查询失败: {}", e);
+            e
+        })?;
     let trend: Vec<BusinessTrendPoint> = sqlx::query_as(
         r#"
         SELECT
             outbound_date AS date,
             COALESCE(SUM(CASE WHEN currency = 'USD' THEN receivable_amount
-                              WHEN currency = 'VND' THEN CAST(ROUND(receivable_amount * 100.0 / exchange_rate, 0) AS INTEGER)
-                              ELSE CAST(ROUND(receivable_amount * 1.0 / exchange_rate, 0) AS INTEGER) END), 0) AS amount,
+                              WHEN currency = 'VND' THEN CAST(ROUND((receivable_amount * 100.0 / exchange_rate)::numeric, 0) AS INTEGER)
+                              ELSE CAST(ROUND((receivable_amount * 1.0 / exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS amount,
             COUNT(DISTINCT id) AS order_count
         FROM outbound_orders oo
         WHERE oo.status = 'confirmed' AND oo.outbound_type = 'sales'
@@ -1025,6 +1050,7 @@ pub async fn get_sales_report_summary(
     .await
     .map_err(|e| AppError::Database(format!("查询销售趋势失败: {}", e)))?;
     let total = trend.len() as i64;
+    log::info!("get_sales_report_summary 完成, 趋势数据点={}", total);
     Ok(BusinessReportResponse {
         generated_at: now_iso8601(),
         stats,
@@ -1078,12 +1104,12 @@ pub async fn get_purchase_supplier_ranking(
             s.code AS partner_code,
             s.name AS partner_name,
             COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN io.payable_amount
-                              WHEN io.currency = 'VND' THEN CAST(ROUND(io.payable_amount * 100.0 / io.exchange_rate, 0) AS INTEGER)
-                              ELSE CAST(ROUND(io.payable_amount * 1.0 / io.exchange_rate, 0) AS INTEGER) END), 0) AS amount,
+                              WHEN io.currency = 'VND' THEN CAST(ROUND((io.payable_amount * 100.0 / io.exchange_rate)::numeric, 0) AS INTEGER)
+                              ELSE CAST(ROUND((io.payable_amount * 1.0 / io.exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS amount,
             COUNT(DISTINCT io.id) AS order_count,
             CASE WHEN $16 = 0 THEN 0 ELSE COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN io.payable_amount
-                              WHEN io.currency = 'VND' THEN CAST(ROUND(io.payable_amount * 100.0 / io.exchange_rate, 0) AS INTEGER)
-                              ELSE CAST(ROUND(io.payable_amount * 1.0 / io.exchange_rate, 0) AS INTEGER) END), 0) * 100.0 / $26 END AS ratio
+                              WHEN io.currency = 'VND' THEN CAST(ROUND((io.payable_amount * 100.0 / io.exchange_rate)::numeric, 0) AS INTEGER)
+                              ELSE CAST(ROUND((io.payable_amount * 1.0 / io.exchange_rate)::numeric, 0) AS INTEGER) END), 0) * 100.0 / $26 END AS ratio
         FROM inbound_orders io
         JOIN suppliers s ON s.id = io.supplier_id
         WHERE io.status = 'confirmed' AND io.inbound_type = 'purchase'
@@ -1164,12 +1190,12 @@ pub async fn get_sales_customer_ranking(
             c.code AS partner_code,
             c.name AS partner_name,
             COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN oo.receivable_amount
-                              WHEN oo.currency = 'VND' THEN CAST(ROUND(oo.receivable_amount * 100.0 / oo.exchange_rate, 0) AS INTEGER)
-                              ELSE CAST(ROUND(oo.receivable_amount * 1.0 / oo.exchange_rate, 0) AS INTEGER) END), 0) AS amount,
+                              WHEN oo.currency = 'VND' THEN CAST(ROUND((oo.receivable_amount * 100.0 / oo.exchange_rate)::numeric, 0) AS INTEGER)
+                              ELSE CAST(ROUND((oo.receivable_amount * 1.0 / oo.exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS amount,
             COUNT(DISTINCT oo.id) AS order_count,
             CASE WHEN $16 = 0 THEN 0 ELSE COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN oo.receivable_amount
-                              WHEN oo.currency = 'VND' THEN CAST(ROUND(oo.receivable_amount * 100.0 / oo.exchange_rate, 0) AS INTEGER)
-                              ELSE CAST(ROUND(oo.receivable_amount * 1.0 / oo.exchange_rate, 0) AS INTEGER) END), 0) * 100.0 / $26 END AS ratio
+                              WHEN oo.currency = 'VND' THEN CAST(ROUND((oo.receivable_amount * 100.0 / oo.exchange_rate)::numeric, 0) AS INTEGER)
+                              ELSE CAST(ROUND((oo.receivable_amount * 1.0 / oo.exchange_rate)::numeric, 0) AS INTEGER) END), 0) * 100.0 / $26 END AS ratio
         FROM outbound_orders oo
         JOIN customers c ON c.id = oo.customer_id
         WHERE oo.status = 'confirmed' AND oo.outbound_type = 'sales'
@@ -1246,11 +1272,11 @@ pub async fn get_purchase_material_detail(
             MAX(ioi.unit_name_snapshot) AS unit_name,
             COALESCE(SUM(ioi.quantity), 0) AS quantity,
             COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN ioi.amount
-                              WHEN io.currency = 'VND' THEN CAST(ROUND(ioi.amount * 100.0 / io.exchange_rate, 0) AS INTEGER)
-                              ELSE CAST(ROUND(ioi.amount * 1.0 / io.exchange_rate, 0) AS INTEGER) END), 0) AS amount,
-            CASE WHEN SUM(ioi.quantity) = 0 THEN 0 ELSE CAST(ROUND(COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN ioi.amount
-                              WHEN io.currency = 'VND' THEN CAST(ROUND(ioi.amount * 100.0 / io.exchange_rate, 0) AS INTEGER)
-                              ELSE CAST(ROUND(ioi.amount * 1.0 / io.exchange_rate, 0) AS INTEGER) END), 0) * 1.0 / SUM(ioi.quantity), 0) AS INTEGER) END AS avg_price
+                              WHEN io.currency = 'VND' THEN CAST(ROUND((ioi.amount * 100.0 / io.exchange_rate)::numeric, 0) AS INTEGER)
+                              ELSE CAST(ROUND((ioi.amount * 1.0 / io.exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS amount,
+            CASE WHEN SUM(ioi.quantity) = 0 THEN 0 ELSE CAST(ROUND((COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN ioi.amount
+                              WHEN io.currency = 'VND' THEN CAST(ROUND((ioi.amount * 100.0 / io.exchange_rate)::numeric, 0) AS INTEGER)
+                              ELSE CAST(ROUND((ioi.amount * 1.0 / io.exchange_rate)::numeric, 0) AS INTEGER) END), 0) * 1.0 / SUM(ioi.quantity))::numeric, 0) AS INTEGER) END AS avg_price
         FROM inbound_orders io
         JOIN inbound_order_items ioi ON ioi.inbound_id = io.id
         JOIN materials m ON m.id = ioi.material_id
@@ -1284,6 +1310,11 @@ pub async fn get_sales_material_detail(
     db: State<'_, DbState>,
     filter: SalesReportFilter,
 ) -> Result<BusinessReportResponse<MaterialReportItem>, AppError> {
+    log::info!(
+        "报表查询: get_sales_material_detail, 日期={:?}~{:?}",
+        filter.start_date,
+        filter.end_date
+    );
     let (start_date, end_date) =
         default_report_dates(filter.start_date.as_deref(), filter.end_date.as_deref());
     let (page, page_size, offset) = page_offset(filter.page, filter.page_size);
@@ -1317,11 +1348,11 @@ pub async fn get_sales_material_detail(
             MAX(ooi.unit_name_snapshot) AS unit_name,
             COALESCE(SUM(ooi.quantity), 0) AS quantity,
             COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN ooi.amount
-                              WHEN oo.currency = 'VND' THEN CAST(ROUND(ooi.amount * 100.0 / oo.exchange_rate, 0) AS INTEGER)
-                              ELSE CAST(ROUND(ooi.amount * 1.0 / oo.exchange_rate, 0) AS INTEGER) END), 0) AS amount,
-            CASE WHEN SUM(ooi.quantity) = 0 THEN 0 ELSE CAST(ROUND(COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN ooi.amount
-                              WHEN oo.currency = 'VND' THEN CAST(ROUND(ooi.amount * 100.0 / oo.exchange_rate, 0) AS INTEGER)
-                              ELSE CAST(ROUND(ooi.amount * 1.0 / oo.exchange_rate, 0) AS INTEGER) END), 0) * 1.0 / SUM(ooi.quantity), 0) AS INTEGER) END AS avg_price
+                              WHEN oo.currency = 'VND' THEN CAST(ROUND((ooi.amount * 100.0 / oo.exchange_rate)::numeric, 0) AS INTEGER)
+                              ELSE CAST(ROUND((ooi.amount * 1.0 / oo.exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS amount,
+            CASE WHEN SUM(ooi.quantity) = 0 THEN 0 ELSE CAST(ROUND((COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN ooi.amount
+                              WHEN oo.currency = 'VND' THEN CAST(ROUND((ooi.amount * 100.0 / oo.exchange_rate)::numeric, 0) AS INTEGER)
+                              ELSE CAST(ROUND((ooi.amount * 1.0 / oo.exchange_rate)::numeric, 0) AS INTEGER) END), 0) * 1.0 / SUM(ooi.quantity))::numeric, 0) AS INTEGER) END AS avg_price
         FROM outbound_orders oo
         JOIN outbound_order_items ooi ON ooi.outbound_id = oo.id
         JOIN materials m ON m.id = ooi.material_id

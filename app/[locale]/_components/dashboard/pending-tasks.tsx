@@ -43,7 +43,8 @@ export function PendingTasks({ className }: { className?: string }) {
         setPendingOutboundCount(outboundRes.total)
         setOverdueReceivableCount(overdueItems.length)
         setMaxOverdueDays(overdueDays.length > 0 ? Math.max(...overdueDays) : 0)
-      } catch {
+      } catch (e) {
+        console.error('[Dashboard] 待办事项查询失败:', e)
         setError(true)
       }
     })()

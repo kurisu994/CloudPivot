@@ -31,7 +31,8 @@ export function SalesTrendChart({ className }: { className?: string }) {
           current: p.amount,
         }))
         setData(points)
-      } catch {
+      } catch (e) {
+        console.error('[Dashboard] 销售趋势查询失败:', e)
         setError(true)
       }
     })()

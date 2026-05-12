@@ -104,8 +104,8 @@ export function MetricsCards() {
         const suggestions = await getReplenishmentSuggestions({})
         setReplenishmentCount(suggestions.length)
         setUrgentDelta(suggestions.filter(s => s.urgency === 'urgent').length)
-      } catch {
-        // 非 Tauri 环境下降级为 0
+      } catch (e) {
+        console.error('[Dashboard] 补货建议查询失败:', e)
         setError(true)
       }
     })()
@@ -159,8 +159,8 @@ export function MetricsCards() {
         setLowStockCount(inventoryLowRes.total)
         setReceivables(receivablesRes.summary.totalOverdue)
         setPayables(payablesRes.summary.totalOverdue)
-      } catch {
-        // 非 Tauri 环境下降级为 0
+      } catch (e) {
+        console.error('[Dashboard] KPI 指标查询失败:', e)
         setError(true)
       }
     })()

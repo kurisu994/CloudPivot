@@ -42,7 +42,8 @@ export function InventoryDonut({ className }: { className?: string }) {
         }))
         setData(mapped)
         setTotalValue(mapped.reduce((sum, d) => sum + d.value, 0))
-      } catch {
+      } catch (e) {
+        console.error('[Dashboard] 库存分布查询失败:', e)
         setData([])
         setTotalValue(0)
         setError(true)

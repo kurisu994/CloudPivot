@@ -122,6 +122,7 @@ export async function invoke<T>(command: string, args?: Record<string, unknown>)
     // Tauri 2 将后端 Err 序列化后作为 rejected value 传递
     // 新的结构化格式为 { code, message, details? }
     // 直接抛出，前端使用 getErrorMessage() 解析
+    console.error(`[Tauri IPC] 命令 "${command}" 调用失败:`, error)
     throw error as AppErrorResponse
   }
 }
