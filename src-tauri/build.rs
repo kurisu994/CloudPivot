@@ -22,9 +22,9 @@ fn main() {
         panic!("DB_PASSWORD 未设置！请在 .env 文件或环境变量中配置数据库密码。")
     });
 
-    // 拼接完整连接地址：用户名和数据库名固定为 cloudpivot
+    // 拼接完整连接地址：用户名固定为 postgres，数据库名固定为 cloudpivot
     let database_url = format!(
-        "postgres://cloudpivot:{}@{}:{}/cloudpivot",
+        "postgres://postgres:{}@{}:{}/cloudpivot",
         password, host, port
     );
 
