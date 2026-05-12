@@ -120,11 +120,6 @@ struct InitialInventoryResolvedRow {
     lot_tracking_mode: String,
 }
 
-/// 构建备份文件名
-fn build_backup_file_name(timestamp: &str) -> String {
-    format!("cloudpivot-backup-{}.db", timestamp)
-}
-
 /// 校验导入数量
 fn validate_import_quantity(quantity: f64) -> Result<(), AppError> {
     if quantity <= 0.0 {
@@ -133,21 +128,17 @@ fn validate_import_quantity(quantity: f64) -> Result<(), AppError> {
     Ok(())
 }
 
-/// 获取当前 SQLite 主库文件路径
-async fn get_db_path(pool: &PgPool) -> Result<PathBuf, AppError> {
-    let db_path: String =
-        sqlx::query_scalar("SELECT file FROM pragma_database_list WHERE name = 'main'")
-            .fetch_one(pool)
-            .await
-            .map_err(|e| AppError::Database(format!("获取数据库路径失败: {}", e)))?;
-
-    if db_path.trim().is_empty() {
-        return Err(AppError::Database(
-            "数据库路径为空，无法执行数据管理操作".to_string(),
-        ));
+/// 获取数据库连接信息（替代原 SQLite 文件路径）
+fn get_db_info() -> String {
+    // 编译时注入的数据库地址（隐藏密码部分）
+    let url = env!("DATABASE_URL");
+    // 隐藏密码：postgres://user:***@host:port/db
+    if let Some(at_pos) = url.find('@') {
+        if let Some(colon_pos) = url[..at_pos].rfind(':') {
+            return format!("{}:***{}", &url[..colon_pos], &url[at_pos..]);
+        }
     }
-
-    Ok(PathBuf::from(db_path))
+    url.to_string()
 }
 
 /// 获取备份目录
@@ -176,7 +167,7 @@ fn list_backup_files(backup_dir: &Path) -> Result<Vec<BackupFileInfo>, AppError>
     for entry in fs::read_dir(backup_dir)? {
         let entry = entry?;
         let path = entry.path();
-        if path.extension().and_then(|ext| ext.to_str()) != Some("db") {
+        if path.extension().and_then(|ext| ext.to_str()) != Some("sql") {
             continue;
         }
 
@@ -201,7 +192,7 @@ fn list_backup_files(backup_dir: &Path) -> Result<Vec<BackupFileInfo>, AppError>
 
 /// 校验备份文件名，避免路径穿越
 fn resolve_backup_file(backup_dir: &Path, file_name: &str) -> Result<PathBuf, AppError> {
-    if file_name.contains('/') || file_name.contains('\\') || !file_name.ends_with(".db") {
+    if file_name.contains('/') || file_name.contains('\\') || !file_name.ends_with(".sql") {
         return Err(AppError::Business("备份文件名不合法".to_string()));
     }
 
@@ -210,25 +201,6 @@ fn resolve_backup_file(backup_dir: &Path, file_name: &str) -> Result<PathBuf, Ap
         return Err(AppError::Business("备份文件不存在".to_string()));
     }
     Ok(path)
-}
-
-/// 删除 SQLite WAL/SHM 辅助文件，避免恢复后旧日志重新参与打开
-fn remove_sqlite_sidecar_files(db_path: &Path) -> Result<(), AppError> {
-    for suffix in ["-wal", "-shm"] {
-        let sidecar_path = PathBuf::from(format!("{}{}", db_path.display(), suffix));
-        if sidecar_path.exists() {
-            fs::remove_file(sidecar_path)?;
-        }
-    }
-    Ok(())
-}
-
-/// 使用备份文件替换主库文件
-fn replace_database_file(source: &Path, db_path: &Path) -> Result<(), AppError> {
-    remove_sqlite_sidecar_files(db_path)?;
-    fs::copy(source, db_path).map_err(AppError::Io)?;
-    remove_sqlite_sidecar_files(db_path)?;
-    Ok(())
 }
 
 /// 解析物料类型
@@ -316,26 +288,28 @@ pub async fn get_data_management_status(
     app: AppHandle,
     db: State<'_, DbState>,
 ) -> Result<DataManagementStatus, AppError> {
-    let db_path = get_db_path(&db.pool).await?;
     let backup_dir = get_backup_dir(&app)?;
     fs::create_dir_all(&backup_dir)?;
 
     let backups = list_backup_files(&backup_dir)?;
     let last_backup_at = backups.first().map(|item| item.created_at.clone());
-    let db_size_bytes = fs::metadata(&db_path)
-        .map(|metadata| metadata.len())
+
+    // 查询 PostgreSQL 数据库大小
+    let db_size_bytes: i64 = sqlx::query_scalar("SELECT pg_database_size(current_database())")
+        .fetch_one(&db.pool)
+        .await
         .unwrap_or(0);
 
     Ok(DataManagementStatus {
-        db_path: db_path.display().to_string(),
-        db_size_bytes,
+        db_path: get_db_info(),
+        db_size_bytes: db_size_bytes as u64,
         backup_dir: backup_dir.display().to_string(),
         last_backup_at,
         backups,
     })
 }
 
-/// 创建数据库备份
+/// 创建数据库备份（导出全部业务数据为 SQL 文件）
 #[tauri::command]
 pub async fn create_database_backup(
     app: AppHandle,
@@ -345,20 +319,50 @@ pub async fn create_database_backup(
     let backup_dir = get_backup_dir(&app)?;
     fs::create_dir_all(&backup_dir)?;
 
-    sqlx::raw_sql("PRAGMA wal_checkpoint(FULL)")
-        .execute(&db.pool)
-        .await
-        .map_err(|e| AppError::Database(format!("执行 WAL 检查点失败: {}", e)))?;
-
     let timestamp = Local::now().format("%Y%m%d%H%M%S").to_string();
-    let backup_path = backup_dir.join(build_backup_file_name(&timestamp));
-    let backup_path_text = backup_path.display().to_string();
+    let file_name = format!("cloudpivot-backup-{}.sql", timestamp);
+    let backup_path = backup_dir.join(&file_name);
 
-    sqlx::query("VACUUM main INTO ?")
-        .bind(&backup_path_text)
-        .execute(&db.pool)
-        .await
-        .map_err(|e| AppError::Database(format!("创建数据库备份失败: {}", e)))?;
+    // 获取所有业务表名
+    let tables: Vec<String> = sqlx::query_scalar::<_, String>(
+        "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename != 'schema_migrations'"
+    )
+    .fetch_all(&db.pool)
+    .await
+    .map_err(|e| AppError::Database(format!("查询表列表失败: {}", e)))?;
+
+    // 逐表导出为 INSERT 语句
+    let mut sql_content = String::new();
+    sql_content.push_str("-- CloudPivot IMS 数据库备份\n");
+    sql_content.push_str(&format!(
+        "-- 备份时间: {}\n\n",
+        Local::now().format("%Y-%m-%d %H:%M:%S")
+    ));
+
+    for table in &tables {
+        // 使用 COPY TO STDOUT 格式导出数据
+        let rows: Vec<(String,)> =
+            sqlx::query_as(&format!("SELECT row_to_json(t)::TEXT FROM {} t", table))
+                .fetch_all(&db.pool)
+                .await
+                .unwrap_or_default();
+
+        if !rows.is_empty() {
+            sql_content.push_str(&format!("-- Table: {} ({} rows)\n", table, rows.len()));
+            sql_content.push_str(&format!("DELETE FROM {};\n", table));
+            for row in &rows {
+                sql_content.push_str(&format!(
+                    "INSERT INTO {} SELECT * FROM json_populate_record(NULL::{}, '{}');\n",
+                    table,
+                    table,
+                    row.0.replace('\'', "''")
+                ));
+            }
+            sql_content.push('\n');
+        }
+    }
+
+    fs::write(&backup_path, &sql_content).map_err(AppError::Io)?;
 
     write_log(
         &db.pool,
@@ -367,7 +371,7 @@ pub async fn create_database_backup(
             action: "backup".to_string(),
             target_type: Some("database".to_string()),
             target_id: None,
-            target_no: Some(backup_path_text.clone()),
+            target_no: Some(file_name.clone()),
             detail: "创建数据库备份".to_string(),
             operator_user_id: Some(current_user.user_id()),
             operator_name: Some(current_user.display_name()),
@@ -377,18 +381,14 @@ pub async fn create_database_backup(
 
     let metadata = fs::metadata(&backup_path)?;
     Ok(BackupFileInfo {
-        file_name: backup_path
-            .file_name()
-            .and_then(|name| name.to_str())
-            .unwrap_or_default()
-            .to_string(),
-        file_path: backup_path_text,
+        file_name,
+        file_path: backup_path.display().to_string(),
         size_bytes: metadata.len(),
         created_at: format_modified_time(&backup_path)?,
     })
 }
 
-/// 恢复数据库备份
+/// 恢复数据库备份（从 SQL 文件恢复）
 #[tauri::command]
 pub async fn restore_database_backup(
     app: AppHandle,
@@ -397,17 +397,33 @@ pub async fn restore_database_backup(
 ) -> Result<(), AppError> {
     let backup_dir = get_backup_dir(&app)?;
     let source = resolve_backup_file(&backup_dir, &file_name)?;
-    let db_path = get_db_path(&db.pool).await?;
 
-    sqlx::raw_sql("PRAGMA wal_checkpoint(FULL)")
-        .execute(&db.pool)
-        .await
-        .map_err(|e| AppError::Database(format!("恢复前执行 WAL 检查点失败: {}", e)))?;
+    let sql_content = fs::read_to_string(&source).map_err(AppError::Io)?;
 
-    db.pool.close().await;
-    replace_database_file(&source, &db_path)?;
-    app.request_restart();
+    // 逐条执行 SQL 语句
+    for statement in sql_content.split(';') {
+        let stmt = statement.trim();
+        if stmt.is_empty() || stmt.starts_with("--") {
+            continue;
+        }
+        // 跳过纯注释行
+        if stmt.lines().all(|line| {
+            let trimmed = line.trim();
+            trimmed.is_empty() || trimmed.starts_with("--")
+        }) {
+            continue;
+        }
 
+        sqlx::raw_sql(stmt).execute(&db.pool).await.map_err(|e| {
+            AppError::Database(format!(
+                "恢复备份执行失败: {}\nSQL: {}",
+                e,
+                &stmt[..stmt.len().min(100)]
+            ))
+        })?;
+    }
+
+    log::info!("数据库备份恢复完成: {}", file_name);
     Ok(())
 }
 
@@ -823,50 +839,12 @@ pub async fn import_initial_inventory(
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-
-    use super::{build_backup_file_name, replace_database_file, validate_import_quantity};
-
-    #[test]
-    fn build_backup_file_name_keeps_stable_prefix_and_extension() {
-        let file_name = build_backup_file_name("20260429153045");
-
-        assert_eq!(file_name, "cloudpivot-backup-20260429153045.db");
-    }
+    use super::validate_import_quantity;
 
     #[test]
     fn validate_import_quantity_rejects_zero_and_negative_values() {
         assert!(validate_import_quantity(1.0).is_ok());
         assert!(validate_import_quantity(0.0).is_err());
         assert!(validate_import_quantity(-1.0).is_err());
-    }
-
-    #[test]
-    fn replace_database_file_removes_sidecar_files_and_copies_backup() {
-        let test_dir = std::env::temp_dir().join(format!(
-            "cloudpivot-restore-test-{}",
-            chrono::Local::now()
-                .timestamp_nanos_opt()
-                .unwrap_or_default()
-        ));
-        fs::create_dir_all(&test_dir).expect("创建恢复测试目录失败");
-
-        let backup_path = test_dir.join("backup.db");
-        let db_path = test_dir.join("main.db");
-        let wal_path = test_dir.join("main.db-wal");
-        let shm_path = test_dir.join("main.db-shm");
-
-        fs::write(&backup_path, b"backup").expect("写入备份测试文件失败");
-        fs::write(&db_path, b"current").expect("写入主库测试文件失败");
-        fs::write(&wal_path, b"wal").expect("写入 WAL 测试文件失败");
-        fs::write(&shm_path, b"shm").expect("写入 SHM 测试文件失败");
-
-        replace_database_file(&backup_path, &db_path).expect("替换数据库文件失败");
-
-        assert_eq!(fs::read(&db_path).expect("读取主库测试文件失败"), b"backup");
-        assert!(!wal_path.exists());
-        assert!(!shm_path.exists());
-
-        fs::remove_dir_all(&test_dir).expect("清理恢复测试目录失败");
     }
 }
