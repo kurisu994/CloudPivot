@@ -133,7 +133,7 @@ fn validate_import_quantity(quantity: f64) -> Result<(), AppError> {
     Ok(())
 }
 
-/// 获取数据库连接信息（替代原 SQLite 文件路径）
+/// 获取数据库连接信息
 fn get_db_info() -> String {
     // 编译时注入的数据库地址（隐藏密码部分）
     let url = env!("DATABASE_URL");

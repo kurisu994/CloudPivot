@@ -119,7 +119,7 @@ gantt
 | 1.2   | 配置 Next.js 16 + TypeScript + Tailwind CSS 4                                                                                                                                                        | 0.5d | 构建配置                                 | ✅ 已完成                                                                            |
 | 1.3   | 安装 shadcn/ui + lucide-react                                                                                                                                                                        | 0.5d | UI 组件基础                              | ✅ 已完成                                                                            |
 | 1.4   | 配置 ESLint + Prettier（代码规范）                                                                                                                                                                   | 0.5d | .eslintrc / .prettierrc                  | ✅ 已完成                                                                            |
-| 1.5   | Rust 端集成 sqlx + SQLite 驱动 + **Repository trait 抽象层**                                                                                                                                         | 1.5d | Cargo.toml / db 模块 / repository traits | 🔶 部分完成（sqlx+SQLite+WAL 连接池已完成，Repository trait 未实现）                 |
+| 1.5   | Rust 端集成 sqlx + PostgreSQL 驱动                                                                                                                                                                   | 1.5d | Cargo.toml / db 模块                     | ✅ 已完成（sqlx+PostgreSQL 连接池，从 SQLite 迁移完成）                              |
 | 1.6   | 编写数据库迁移脚本（全部 DDL + `inventory_lots` + `inventory_reservation_lots` + `default_warehouses` + `session_version` 等新结构）                                                                 | 2d   | migrations/\*.sql                        | ✅ 已完成（001_init.sql 1078 行 45 张表 + 002_seed_data.sql 93 行）                  |
 | 1.7   | 实现数据库初始化与迁移逻辑                                                                                                                                                                           | 1d   | db/migration.rs                          | ✅ 已完成（db/mod.rs + db/migration.rs，WAL+PRAGMA 配置）                            |
 | 1.8   | **i18n 框架搭建** — next-intl + `[locale]` 路由                                                                                                                                                      | 1.5d | i18n 配置 + zh.json 骨架                 | ✅ 已完成                                                                            |
@@ -141,7 +141,7 @@ gantt
 #### 验收标准
 
 - [x] 项目可通过 `pnpm tauri dev` 正常启动
-- [x] SQLite 数据库自动创建并完成迁移（含 45 张表 + 种子数据）
+- [x] PostgreSQL 数据库连接成功并完成迁移（含 45 张表 + 种子数据）
 - [x] 前端页面布局正常渲染，侧边栏可折叠
 - [x] **i18n 框架工作正常**，顶栏可切换语言（UI 文案通过 `t()` 函数获取）
 - [ ] **多币种格式化正常**（₫29,250,000 / ¥280.00 / $1,200.00）
@@ -408,7 +408,7 @@ gantt
 
 | 风险                         | 影响                     | 概率 | 对策                                                                                                          |
 | ---------------------------- | ------------------------ | ---- | ------------------------------------------------------------------------------------------------------------- |
-| SQLite 并发写入冲突          | 数据一致性               | 低   | 单机单进程桌面应用（v1.0），通过 Mutex 控制写入顺序；v2.0 迁移 PostgreSQL 后原生支持并发                      |
+| SQLite 并发写入冲突          | 数据一致性               | 低   | ✅ 已解决：已迁移至 PostgreSQL，原生支持并发                                                                   |
 | Tauri IPC 序列化性能         | 大数据列表卡顿           | 中   | 服务端分页，前端虚拟滚动（@tanstack/react-virtual）                                                           |
 | i18n 翻译完整性              | 部分文案缺失显示 key     | 中   | 建立翻译 checklist，CI 检查 key 完整性                                                                        |
 | 越南语字符渲染               | 特殊字符显示异常         | 低   | 使用 Noto Sans Vietnamese 字体，确保 Unicode 支持                                                             |
@@ -417,10 +417,10 @@ gantt
 | 批次追溯与多批次分配         | 出库/退货/库龄链路复杂   | 中   | 采用轻量 lot 模型；批次追踪物料在入库时落 lot，出库/退货/盘点统一回指批次                                     |
 | 库存预留与可用库存不同步     | 补货、预警、出库结果失真 | 中   | 预留动作统一落库到 reservation 表，库存查询/补货/看板统一按可用库存口径计算                                   |
 | `v1.0` 单头仓库升级到多仓    | 后续扩展返工             | 低   | 当前保留明细行仓库快照字段，未来按仓自动拆执行单，避免推翻现有单据结构                                        |
-| SQLite→PostgreSQL 迁移兼容性 | v2.0 迁移成本            | 中   | v1.0 通过 Repository trait 抽象数据访问、SQL 方言隔离在 adapter 层、迁移脚本预留 postgres 版本                |
-| SQLite WAL 模式              | 备份数据不完整           | 低   | 启用 WAL 模式提升并发性能；备份前执行 `PRAGMA wal_checkpoint(TRUNCATE)` 确保数据一致性                        |
+| SQLite→PostgreSQL 迁移兼容性 | v2.0 迁移成本            | 中   | ✅ 已解决：已完成迁移至 PostgreSQL                                                                            |
+| SQLite WAL 模式              | 备份数据不完整           | 低   | ✅ 已解决：已迁移至 PostgreSQL，无 WAL 问题                                                                    |
 | 跨平台样式差异               | UI 表现不一致            | 中   | Windows/macOS 分别测试，使用 Inter + Noto Sans 系列 Web Font，不依赖系统字体栈                                |
-| SQLite GENERATED 列兼容性    | 老版本 SQLite 不支持     | 低   | Tauri 内置 SQLite 版本足够新；或退化为触发器计算                                                              |
+| SQLite GENERATED 列兼容性    | 老版本 SQLite 不支持     | 低   | ✅ 已解决：PostgreSQL 原生支持 GENERATED 列                                                                    |
 | 打印排版差异                 | 不同打印机/纸张效果不同  | 中   | 提供打印预览，支持自定义边距                                                                                  |
 | Rust 编译时间长              | 开发效率                 | 中   | 开发阶段使用 `cargo check`，CI 使用缓存                                                                       |
 | 智能补货计算精度             | 建议不合理               | 中   | 提供策略参数配置，允许人工调整建议量                                                                          |
@@ -486,11 +486,11 @@ src-tauri/src/
 │   ├── supplier.rs # 供应商 CRUD：get_suppliers / get_supplier_by_id / get_supplier_detail / save_supplier / delete_supplier / toggle_supplier_status / generate_supplier_code / get_supplier_categories / get_material_reference_options / save_supplier_material / delete_supplier_material
 │   └── customer.rs # 客户 CRUD：get_customers / get_customer_by_id / get_customer_detail / save_customer / delete_customer / toggle_customer_status / generate_customer_code
 ├── db/             # 数据访问层 — 连接池 + 迁移
-│   ├── mod.rs      # SQLite 连接池初始化 + PRAGMA 配置（WAL 模式）
+│   ├── mod.rs      # PostgreSQL 连接池初始化（PgPool）
 │   └── migration.rs# 自管理迁移框架（include_str! 内嵌 SQL，版本化执行）
-├── migrations/sqlite/
-│   ├── 001_init.sql      # 45 张表 DDL（1078 行）
-│   └── 002_seed_data.sql # 种子数据（93 行，50+ 系统配置项）
+├── migrations/postgres/
+│   ├── 001_init.sql      # 45 张表 DDL
+│   └── 002_seed_data.sql # 种子数据（50+ 系统配置项）
 └── utils/          # 工具函数（待实现）
 ```
 
@@ -542,7 +542,7 @@ messages/           # i18n 翻译文件（按域拆分 20 个文件/语言，覆
 | Rust               | stable (1.88+)         | Tauri 后端       |
 | Tauri CLI          | 2.x                    | 项目脚手架和打包 |
 | VS Code / WebStorm | 最新                   | IDE              |
-| SQLite 工具        | DB Browser / Beekeeper | 数据库调试       |
+| PostgreSQL 工具    | pgAdmin / DBeaver      | 数据库调试       |
 
 ### 5.2 部署与分发
 
@@ -607,7 +607,7 @@ jobs:
 | P1     | **多帐号 + 角色权限** | v2.0 启用多帐号支持，实现管理员/操作员角色差异权限，页面级/按钮级权限控制；含用户管理页面 |
 | P1     | 条码/二维码扫描       | 接入扫码枪，出入库扫码操作                                                                |
 | P1     | 高级生产管理          | 在 v1.0 最简工单基础上扩展：排产计划、工序路线、报工管理、产能管理、质检集成              |
-| P1     | **PostgreSQL 迁移**   | 数据库从 SQLite 迁移至 PostgreSQL，支持局域网多终端同时访问；提供一键数据迁移工具         |
+| ~~P1~~ | ~~**PostgreSQL 迁移**~~ | ✅ 已完成：数据库已从 SQLite 迁移至 PostgreSQL，支持局域网多终端同时访问                                      |
 | P2     | 多终端访问            | 基于 PostgreSQL 实现局域网内多台电脑同时使用系统，替代 v1.0 单机单帐号模式                |
 | P2     | 移动端查询            | 手机端查看库存、单据（可选 Tauri Mobile 或 PWA）                                          |
 | P2     | 自动更新检查          | 应用内检测新版本并提示下载                                                                |
