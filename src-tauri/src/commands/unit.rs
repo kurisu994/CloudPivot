@@ -21,8 +21,8 @@ pub struct Unit {
     pub name_en: Option<String>,
     pub name_vi: Option<String>,
     pub symbol: Option<String>,
-    pub decimal_places: i64,
-    pub sort_order: i64,
+    pub decimal_places: i32,
+    pub sort_order: i32,
     pub is_enabled: bool,
     pub created_at: Option<String>,
     pub updated_at: Option<String>,
@@ -36,8 +36,8 @@ pub struct SaveUnitParams {
     pub name_en: Option<String>,
     pub name_vi: Option<String>,
     pub symbol: Option<String>,
-    pub decimal_places: i64,
-    pub sort_order: Option<i64>,
+    pub decimal_places: i32,
+    pub sort_order: Option<i32>,
     pub is_enabled: Option<bool>,
 }
 

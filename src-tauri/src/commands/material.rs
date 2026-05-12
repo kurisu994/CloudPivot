@@ -22,7 +22,7 @@ pub struct UnitOption {
     pub name_en: Option<String>,
     pub name_vi: Option<String>,
     pub symbol: Option<String>,
-    pub decimal_places: i64,
+    pub decimal_places: i32,
 }
 
 /// 物料核心字段快照

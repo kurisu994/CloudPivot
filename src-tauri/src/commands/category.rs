@@ -16,8 +16,8 @@ pub struct CategoryNode {
     pub parent_id: Option<i64>,
     pub name: String,
     pub code: String,
-    pub sort_order: i64,
-    pub level: i64,
+    pub sort_order: i32,
+    pub level: i32,
     pub path: Option<String>,
     pub remark: Option<String>,
     pub is_enabled: bool,
@@ -47,7 +47,7 @@ pub async fn get_category_tree(db: State<'_, DbState>) -> Result<Vec<CategoryNod
 pub struct CreateCategoryParams {
     pub name: String,
     pub parent_id: Option<i64>,
-    pub sort_order: Option<i64>,
+    pub sort_order: Option<i32>,
     pub remark: Option<String>,
 }
 
@@ -121,7 +121,7 @@ pub struct UpdateCategoryParams {
     pub id: i64,
     pub name: String,
     pub parent_id: Option<i64>,
-    pub sort_order: Option<i64>,
+    pub sort_order: Option<i32>,
     pub remark: Option<String>,
 }
 
@@ -258,7 +258,7 @@ pub async fn delete_category(db: State<'_, DbState>, id: i64) -> Result<(), AppE
 pub struct CategorySortItem {
     pub id: i64,
     pub parent_id: Option<i64>,
-    pub sort_order: i64,
+    pub sort_order: i32,
 }
 
 /// 批量更新分类排序和层级

@@ -57,7 +57,7 @@ pub struct BomItemDetail {
     pub substitute_id: Option<i64>,
     pub substitute_name: Option<String>,
     pub remark: Option<String>,
-    pub sort_order: i64,
+    pub sort_order: i32,
 }
 
 /// BOM 详情（头 + 明细）
@@ -119,7 +119,7 @@ pub struct SaveBomItemParams {
     pub is_key_part: bool,
     pub substitute_id: Option<i64>,
     pub remark: Option<String>,
-    pub sort_order: i64,
+    pub sort_order: i32,
 }
 
 /// 物料反查结果

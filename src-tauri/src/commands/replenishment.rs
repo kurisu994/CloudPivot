@@ -52,9 +52,9 @@ pub struct ReplenishmentRule {
     pub material_code: String,
     pub material_name: String,
     pub spec: Option<String>,
-    pub analysis_days: i64,
-    pub lead_days: i64,
-    pub safety_days: i64,
+    pub analysis_days: i32,
+    pub lead_days: i32,
+    pub safety_days: i32,
     pub batch_multiple: f64,
     pub preferred_supplier_id: Option<i64>,
     pub supplier_name: Option<String>,
@@ -94,9 +94,9 @@ pub struct RuleFilter {
 /// 策略更新参数
 #[derive(Debug, Deserialize)]
 pub struct UpdateRuleParams {
-    pub analysis_days: i64,
-    pub lead_days: i64,
-    pub safety_days: i64,
+    pub analysis_days: i32,
+    pub lead_days: i32,
+    pub safety_days: i32,
     pub batch_multiple: f64,
     pub preferred_supplier_id: Option<i64>,
     pub is_enabled: bool,
@@ -120,9 +120,9 @@ struct MaterialInventoryRow {
     reserved_qty: f64,
     // 策略配置
     rule_id: Option<i64>,
-    analysis_days: Option<i64>,
-    lead_days: Option<i64>,
-    safety_days: Option<i64>,
+    analysis_days: Option<i32>,
+    lead_days: Option<i32>,
+    safety_days: Option<i32>,
     batch_multiple: Option<f64>,
     preferred_supplier_id: Option<i64>,
     // 首选供应商信息
@@ -136,7 +136,7 @@ struct MaterialInventoryRow {
 // ================================================================
 
 /// 获取全局默认参数（从 system_config 读取，fallback 到硬编码值）
-async fn get_default_params(pool: &sqlx::PgPool) -> (i64, i64, i64) {
+async fn get_default_params(pool: &sqlx::PgPool) -> (i32, i32, i32) {
     let rows: Vec<(String, String)> = sqlx::query_as(
         "SELECT key, value FROM system_config WHERE key IN (
             'replenishment_default_analysis_days',
@@ -148,12 +148,12 @@ async fn get_default_params(pool: &sqlx::PgPool) -> (i64, i64, i64) {
     .await
     .unwrap_or_default();
 
-    let mut analysis_days: i64 = 90;
-    let mut lead_days: i64 = 7;
-    let mut safety_days: i64 = 3;
+    let mut analysis_days: i32 = 90;
+    let mut lead_days: i32 = 7;
+    let mut safety_days: i32 = 3;
 
     for (key, value) in rows {
-        if let Ok(v) = value.parse::<i64>() {
+        if let Ok(v) = value.parse::<i32>() {
             match key.as_str() {
                 "replenishment_default_analysis_days" => analysis_days = v,
                 "replenishment_default_lead_days" => lead_days = v,
@@ -171,8 +171,8 @@ fn calculate_suggested_qty(
     available_qty: f64,
     safety_stock: f64,
     daily_consumption: f64,
-    lead_days: i64,
-    safety_days: i64,
+    lead_days: i32,
+    safety_days: i32,
     batch_multiple: f64,
 ) -> f64 {
     let base_qty =
@@ -190,7 +190,7 @@ fn calculate_suggested_qty(
 /// 判定紧急程度
 fn determine_urgency(
     days_until_stockout: f64,
-    lead_days: i64,
+    lead_days: i32,
     available_qty: f64,
     safety_stock: f64,
 ) -> String {
