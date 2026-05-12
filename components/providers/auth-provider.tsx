@@ -22,8 +22,8 @@ interface AuthState {
 
 /** 认证上下文接口 */
 interface AuthContextValue extends AuthState {
-  /** 登录 */
-  login: (username: string, password: string) => Promise<LoginResult>
+  /** 登录（rememberMe=true 时持久化会话，7天未使用过期） */
+  login: (username: string, password: string, rememberMe?: boolean) => Promise<LoginResult>
   /** 修改密码 */
   changePassword: (newPassword: string) => Promise<void>
   /** 登出 */
@@ -43,7 +43,14 @@ interface LoginResult {
 interface AuthStorage {
   userId: number
   sessionVersion: number
+  /** 会话过期时间（Unix 时间戳 ms），超过此时间需重新登录 */
+  expiresAt: number
+  /** 是否为"记住我"会话 */
+  rememberMe: boolean
 }
+
+/** "记住我"会话有效期：7天（毫秒） */
+const REMEMBER_ME_DURATION_MS = 7 * 24 * 60 * 60 * 1000
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
@@ -65,10 +72,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAuthRoute = authRoutes.includes(pathname)
 
   /** 保存认证信息到系统钥匙串（Tauri）或 localStorage（Web 调试模式） */
-  const saveAuth = useCallback(async (userInfo: UserInfo) => {
+  const saveAuth = useCallback(async (userInfo: UserInfo, rememberMe: boolean) => {
     const data: AuthStorage = {
       userId: userInfo.id,
       sessionVersion: userInfo.session_version,
+      expiresAt: Date.now() + REMEMBER_ME_DURATION_MS,
+      rememberMe,
     }
     try {
       await tauriApi.saveAuthKeychain(JSON.stringify(data))
@@ -107,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** 登录 */
   const login = useCallback(
-    async (username: string, password: string): Promise<LoginResult> => {
+    async (username: string, password: string, rememberMe = false): Promise<LoginResult> => {
       if (!isTauriEnv()) {
         // 非 Tauri 环境：模拟登录（开发模式）
         const mockUser: UserInfo = {
@@ -119,7 +128,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           session_version: 1,
         }
         setUser(mockUser)
-        await saveAuth(mockUser)
+        // 开发模式下始终持久化，方便调试
+        await saveAuth(mockUser, true)
         // 模拟环境也要检查向导状态
         await checkSetupCompleted()
         return { success: true, mustChangePassword: false }
@@ -128,7 +138,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const response = await tauriApi.login(username, password)
         setUser(response.user)
-        await saveAuth(response.user)
+
+        if (rememberMe) {
+          // 勾选"记住我"：持久化会话到钥匙串，7天有效
+          await saveAuth(response.user, true)
+        } else {
+          // 未勾选：清除之前可能残留的持久化数据，仅内存保持登录
+          await clearAuth()
+        }
 
         // 不需要改密时检查向导状态
         if (!response.must_change_password) {
@@ -147,7 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [saveAuth, checkSetupCompleted],
+    [saveAuth, clearAuth, checkSetupCompleted],
   )
 
   /** 修改密码 */
@@ -168,7 +185,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setUser(updated)
         try {
-          await saveAuth(updated)
+          // 改密后保持之前的 rememberMe 状态
+          const stored = await tauriApi.readAuthKeychain()
+          const wasRemembered = stored ? (JSON.parse(stored) as AuthStorage).rememberMe : false
+          if (wasRemembered) {
+            await saveAuth(updated, true)
+          }
         } catch (error) {
           console.warn('[Auth] 改密成功后保存认证信息失败', error)
         }
@@ -176,7 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // 非 Tauri 环境：模拟改密
         const updated = { ...user, must_change_password: false }
         setUser(updated)
-        await saveAuth(updated)
+        await saveAuth(updated, true)
       }
     },
     [user, saveAuth],
@@ -205,6 +227,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const data: AuthStorage = JSON.parse(stored)
+
+        // 检查会话是否已过期（7天未使用）
+        if (data.expiresAt && Date.now() > data.expiresAt) {
+          await clearAuth()
+          setIsLoading(false)
+          return
+        }
+
         let restoredUser: UserInfo | null = null
 
         if (isTauriEnv()) {
@@ -230,6 +260,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (restoredUser) {
           setUser(restoredUser)
+          // 恢复成功 → 刷新过期时间（用户活跃，重新计时7天）
+          if (data.rememberMe) {
+            await saveAuth(restoredUser, true)
+          }
           // 已登录且不需要改密 → 检查是否需要向导
           if (!restoredUser.must_change_password) {
             await checkSetupCompleted()
@@ -243,7 +277,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     restoreAuth()
-  }, [clearAuth, checkSetupCompleted])
+  }, [clearAuth, checkSetupCompleted, saveAuth])
 
   /** 路由守卫
    *

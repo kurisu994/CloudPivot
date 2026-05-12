@@ -46,7 +46,7 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const result = await login(username, password)
+      const result = await login(username, password, rememberMe)
 
       if (result.success) {
         if (result.mustChangePassword) {
