@@ -225,7 +225,7 @@ pub async fn ensure_replenishment_rules(db: State<'_, DbState>) -> Result<i64, A
     let result = sqlx::query(
         r#"
         INSERT INTO replenishment_rules (material_id, analysis_days, lead_days, safety_days, batch_multiple, is_enabled)
-        SELECT m.id, $1, $2, $3, 1, 1
+        SELECT m.id, $1, $2, $3, 1, TRUE
         FROM materials m
         WHERE m.is_enabled = TRUE
           AND m.id NOT IN (SELECT material_id FROM replenishment_rules)
@@ -355,7 +355,7 @@ pub async fn get_replenishment_suggestions(
         SELECT material_id, SUM(ABS(quantity)) AS total_out
         FROM inventory_transactions
         WHERE transaction_type IN ('sales_out', 'production_out')
-          AND created_at >= datetime('now', $1 || ' days')
+          AND created_at >= NOW() + ($1 || ' days')::INTERVAL
         GROUP BY material_id
         "#,
     )
@@ -402,7 +402,7 @@ pub async fn get_replenishment_suggestions(
                 FROM inventory_transactions
                 WHERE material_id = $1
                   AND transaction_type IN ('sales_out', 'production_out')
-                  AND created_at >= datetime('now', $2 || ' days')
+                  AND created_at >= NOW() + ($2 || ' days')::INTERVAL
                 "#,
             )
             .bind(row.material_id)
@@ -712,12 +712,12 @@ pub async fn get_consumption_trend(
 
     let rows: Vec<(String, f64)> = sqlx::query_as(
         r#"
-        SELECT date(created_at) AS d, SUM(ABS(quantity)) AS qty
+        SELECT created_at::DATE::TEXT AS d, SUM(ABS(quantity)) AS qty
         FROM inventory_transactions
         WHERE material_id = $1
           AND transaction_type IN ('sales_out', 'production_out')
-          AND created_at >= datetime('now', $2 || ' days')
-        GROUP BY date(created_at)
+          AND created_at >= NOW() + ($2 || ' days')::INTERVAL
+        GROUP BY created_at::DATE
         ORDER BY d
         "#,
     )

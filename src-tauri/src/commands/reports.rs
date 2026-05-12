@@ -543,8 +543,8 @@ pub async fn get_inventory_aging_analysis(
           AND COALESCE(m.lot_tracking_mode, 'none') IN ('optional', 'required')
           AND ($1 IS NULL OR il.warehouse_id = $1)
           AND ($2 IS NULL OR m.category_id = $2)
-          AND ($3 IS NULL OR CAST(julianday('now') - julianday(il.received_date) AS INTEGER) >= $3)
-          AND ($4 IS NULL OR CAST(julianday('now') - julianday(il.received_date) AS INTEGER) <= $4)
+          AND ($3 IS NULL OR (CURRENT_DATE - il.received_date::DATE) >= $3)
+          AND ($4 IS NULL OR (CURRENT_DATE - il.received_date::DATE) <= $4)
           AND ($5 IS NULL OR m.name LIKE '%' || $5 || '%' OR m.code LIKE '%' || $5 || '%')
         "#,
     )
@@ -569,7 +569,7 @@ pub async fn get_inventory_aging_analysis(
             m.name AS material_name,
             il.lot_no,
             il.received_date,
-            CAST(julianday('now') - julianday(il.received_date) AS INTEGER) AS days_in_stock,
+            (CURRENT_DATE - il.received_date::DATE) AS days_in_stock,
             il.qty_on_hand,
             il.receipt_unit_cost AS unit_cost,
             CAST(ROUND((il.qty_on_hand * il.receipt_unit_cost)::numeric, 0) AS INTEGER) AS value
@@ -579,8 +579,8 @@ pub async fn get_inventory_aging_analysis(
           AND COALESCE(m.lot_tracking_mode, 'none') IN ('optional', 'required')
           AND ($1 IS NULL OR il.warehouse_id = $1)
           AND ($2 IS NULL OR m.category_id = $2)
-          AND ($3 IS NULL OR CAST(julianday('now') - julianday(il.received_date) AS INTEGER) >= $3)
-          AND ($4 IS NULL OR CAST(julianday('now') - julianday(il.received_date) AS INTEGER) <= $4)
+          AND ($3 IS NULL OR (CURRENT_DATE - il.received_date::DATE) >= $3)
+          AND ($4 IS NULL OR (CURRENT_DATE - il.received_date::DATE) <= $4)
           AND ($5 IS NULL OR m.name LIKE '%' || $5 || '%' OR m.code LIKE '%' || $5 || '%')
         ORDER BY days_in_stock DESC
         LIMIT $6 OFFSET $7
@@ -642,7 +642,7 @@ pub async fn get_inventory_slow_moving(
         WHERE m.is_enabled = TRUE
           AND COALESCE(i_agg.total_qty, 0) > 0
           AND (i_agg.last_out_date IS NULL
-               OR CAST(julianday('now') - julianday(i_agg.last_out_date) AS INTEGER) > $1)
+               OR (CURRENT_DATE - i_agg.last_out_date::DATE) > $1)
           AND ($3 IS NULL OR m.category_id = $3)
         "#,
     )
@@ -668,14 +668,14 @@ pub async fn get_inventory_slow_moving(
             i_agg.last_out_date,
             CASE
                 WHEN i_agg.last_out_date IS NULL THEN 9999
-                ELSE CAST(julianday('now') - julianday(i_agg.last_out_date) AS INTEGER)
+                ELSE (CURRENT_DATE - i_agg.last_out_date::DATE)
             END AS days_since_last_out,
             COALESCE(
-                (SELECT (SUM(ABS(quantity)) / MAX(CAST(julianday('now') - julianday(MIN(transaction_date)) AS REAL), 1.0)) * 30.0
+                (SELECT (SUM(ABS(quantity)) / GREATEST((CURRENT_DATE - MIN(transaction_date)::DATE)::FLOAT8, 1.0)) * 30.0
                  FROM inventory_transactions
                  WHERE material_id = m.id
                    AND transaction_type IN ('sales_out', 'production_out')
-                   AND transaction_date >= date('now', '-90 days')
+                   AND transaction_date >= CURRENT_DATE - INTERVAL '90 days'
                  GROUP BY material_id),
                 0
             ) AS avg_monthly_outbound
@@ -692,7 +692,7 @@ pub async fn get_inventory_slow_moving(
         WHERE m.is_enabled = TRUE
           AND COALESCE(i_agg.total_qty, 0) > 0
           AND (i_agg.last_out_date IS NULL
-               OR CAST(julianday('now') - julianday(i_agg.last_out_date) AS INTEGER) > $1)
+               OR (CURRENT_DATE - i_agg.last_out_date::DATE) > $1)
           AND ($3 IS NULL OR m.category_id = $3)
         ORDER BY days_since_last_out DESC
         LIMIT $4 OFFSET $5
@@ -768,7 +768,7 @@ pub async fn get_inventory_trend(
             SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) AS outbound_qty,
             SUM(CASE WHEN quantity < 0 THEN CAST(ROUND((ABS(quantity) * unit_cost)::numeric, 0) AS INTEGER) ELSE 0 END) AS outbound_value
         FROM inventory_transactions
-        WHERE transaction_date >= date('now', '-' || $1 || ' days')
+        WHERE transaction_date >= CURRENT_DATE - ($1 || ' days')::INTERVAL
           AND ($2 IS NULL OR warehouse_id = $2)
         GROUP BY transaction_date
         ORDER BY transaction_date
@@ -855,9 +855,9 @@ async fn purchase_stats(
     sqlx::query_as(
         r#"
         SELECT
-            COALESCE(SUM(CASE WHEN currency = 'USD' THEN payable_amount
-                              WHEN currency = 'VND' THEN CAST(ROUND((payable_amount * 100.0 / exchange_rate)::numeric, 0) AS INTEGER)
-                              ELSE CAST(ROUND((payable_amount * 1.0 / exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS total_amount,
+            CAST(COALESCE(SUM(CASE WHEN currency = 'USD' THEN payable_amount
+                              WHEN currency = 'VND' THEN CAST(ROUND((payable_amount * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                              ELSE CAST(ROUND((payable_amount * 1.0 / exchange_rate)::numeric, 0) AS BIGINT) END), 0) AS BIGINT) AS total_amount,
             COUNT(DISTINCT id) AS order_count,
             COUNT(DISTINCT supplier_id) AS partner_count,
             COALESCE((
@@ -901,9 +901,9 @@ async fn sales_stats(
     sqlx::query_as(
         r#"
         SELECT
-            COALESCE(SUM(CASE WHEN currency = 'USD' THEN receivable_amount
-                              WHEN currency = 'VND' THEN CAST(ROUND((receivable_amount * 100.0 / exchange_rate)::numeric, 0) AS INTEGER)
-                              ELSE CAST(ROUND((receivable_amount * 1.0 / exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS total_amount,
+            CAST(COALESCE(SUM(CASE WHEN currency = 'USD' THEN receivable_amount
+                              WHEN currency = 'VND' THEN CAST(ROUND((receivable_amount * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                              ELSE CAST(ROUND((receivable_amount * 1.0 / exchange_rate)::numeric, 0) AS BIGINT) END), 0) AS BIGINT) AS total_amount,
             COUNT(DISTINCT id) AS order_count,
             COUNT(DISTINCT customer_id) AS partner_count,
             COALESCE((
@@ -962,9 +962,9 @@ pub async fn get_purchase_report_summary(
         r#"
         SELECT
             inbound_date AS date,
-            COALESCE(SUM(CASE WHEN currency = 'USD' THEN payable_amount
-                              WHEN currency = 'VND' THEN CAST(ROUND((payable_amount * 100.0 / exchange_rate)::numeric, 0) AS INTEGER)
-                              ELSE CAST(ROUND((payable_amount * 1.0 / exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS amount,
+            CAST(COALESCE(SUM(CASE WHEN currency = 'USD' THEN payable_amount
+                              WHEN currency = 'VND' THEN CAST(ROUND((payable_amount * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                              ELSE CAST(ROUND((payable_amount * 1.0 / exchange_rate)::numeric, 0) AS BIGINT) END), 0) AS BIGINT) AS amount,
             COUNT(DISTINCT id) AS order_count
         FROM inbound_orders io
         WHERE io.status = 'confirmed' AND io.inbound_type = 'purchase'
@@ -1024,9 +1024,9 @@ pub async fn get_sales_report_summary(
         r#"
         SELECT
             outbound_date AS date,
-            COALESCE(SUM(CASE WHEN currency = 'USD' THEN receivable_amount
-                              WHEN currency = 'VND' THEN CAST(ROUND((receivable_amount * 100.0 / exchange_rate)::numeric, 0) AS INTEGER)
-                              ELSE CAST(ROUND((receivable_amount * 1.0 / exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS amount,
+            CAST(COALESCE(SUM(CASE WHEN currency = 'USD' THEN receivable_amount
+                              WHEN currency = 'VND' THEN CAST(ROUND((receivable_amount * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                              ELSE CAST(ROUND((receivable_amount * 1.0 / exchange_rate)::numeric, 0) AS BIGINT) END), 0) AS BIGINT) AS amount,
             COUNT(DISTINCT id) AS order_count
         FROM outbound_orders oo
         WHERE oo.status = 'confirmed' AND oo.outbound_type = 'sales'
@@ -1103,13 +1103,13 @@ pub async fn get_purchase_supplier_ranking(
             s.id AS partner_id,
             s.code AS partner_code,
             s.name AS partner_name,
-            COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN io.payable_amount
-                              WHEN io.currency = 'VND' THEN CAST(ROUND((io.payable_amount * 100.0 / io.exchange_rate)::numeric, 0) AS INTEGER)
-                              ELSE CAST(ROUND((io.payable_amount * 1.0 / io.exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS amount,
+            CAST(COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN io.payable_amount
+                              WHEN io.currency = 'VND' THEN CAST(ROUND((io.payable_amount * 100.0 / io.exchange_rate)::numeric, 0) AS BIGINT)
+                              ELSE CAST(ROUND((io.payable_amount * 1.0 / io.exchange_rate)::numeric, 0) AS BIGINT) END), 0) AS BIGINT) AS amount,
             COUNT(DISTINCT io.id) AS order_count,
-            CASE WHEN $6 = 0 THEN 0 ELSE COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN io.payable_amount
-                              WHEN io.currency = 'VND' THEN CAST(ROUND((io.payable_amount * 100.0 / io.exchange_rate)::numeric, 0) AS INTEGER)
-                              ELSE CAST(ROUND((io.payable_amount * 1.0 / io.exchange_rate)::numeric, 0) AS INTEGER) END), 0) * 100.0 / $6 END AS ratio
+            CASE WHEN $6 = 0 THEN 0.0 ELSE CAST(COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN io.payable_amount
+                              WHEN io.currency = 'VND' THEN CAST(ROUND((io.payable_amount * 100.0 / io.exchange_rate)::numeric, 0) AS BIGINT)
+                              ELSE CAST(ROUND((io.payable_amount * 1.0 / io.exchange_rate)::numeric, 0) AS BIGINT) END), 0) AS FLOAT8) * 100.0 / $6 END AS ratio
         FROM inbound_orders io
         JOIN suppliers s ON s.id = io.supplier_id
         WHERE io.status = 'confirmed' AND io.inbound_type = 'purchase'
@@ -1189,13 +1189,13 @@ pub async fn get_sales_customer_ranking(
             c.id AS partner_id,
             c.code AS partner_code,
             c.name AS partner_name,
-            COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN oo.receivable_amount
-                              WHEN oo.currency = 'VND' THEN CAST(ROUND((oo.receivable_amount * 100.0 / oo.exchange_rate)::numeric, 0) AS INTEGER)
-                              ELSE CAST(ROUND((oo.receivable_amount * 1.0 / oo.exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS amount,
+            CAST(COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN oo.receivable_amount
+                              WHEN oo.currency = 'VND' THEN CAST(ROUND((oo.receivable_amount * 100.0 / oo.exchange_rate)::numeric, 0) AS BIGINT)
+                              ELSE CAST(ROUND((oo.receivable_amount * 1.0 / oo.exchange_rate)::numeric, 0) AS BIGINT) END), 0) AS BIGINT) AS amount,
             COUNT(DISTINCT oo.id) AS order_count,
-            CASE WHEN $6 = 0 THEN 0 ELSE COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN oo.receivable_amount
-                              WHEN oo.currency = 'VND' THEN CAST(ROUND((oo.receivable_amount * 100.0 / oo.exchange_rate)::numeric, 0) AS INTEGER)
-                              ELSE CAST(ROUND((oo.receivable_amount * 1.0 / oo.exchange_rate)::numeric, 0) AS INTEGER) END), 0) * 100.0 / $6 END AS ratio
+            CASE WHEN $6 = 0 THEN 0.0 ELSE CAST(COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN oo.receivable_amount
+                              WHEN oo.currency = 'VND' THEN CAST(ROUND((oo.receivable_amount * 100.0 / oo.exchange_rate)::numeric, 0) AS BIGINT)
+                              ELSE CAST(ROUND((oo.receivable_amount * 1.0 / oo.exchange_rate)::numeric, 0) AS BIGINT) END), 0) AS FLOAT8) * 100.0 / $6 END AS ratio
         FROM outbound_orders oo
         JOIN customers c ON c.id = oo.customer_id
         WHERE oo.status = 'confirmed' AND oo.outbound_type = 'sales'
@@ -1271,12 +1271,12 @@ pub async fn get_purchase_material_detail(
             m.spec,
             MAX(ioi.unit_name_snapshot) AS unit_name,
             COALESCE(SUM(ioi.quantity), 0) AS quantity,
-            COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN ioi.amount
-                              WHEN io.currency = 'VND' THEN CAST(ROUND((ioi.amount * 100.0 / io.exchange_rate)::numeric, 0) AS INTEGER)
-                              ELSE CAST(ROUND((ioi.amount * 1.0 / io.exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS amount,
-            CASE WHEN SUM(ioi.quantity) = 0 THEN 0 ELSE CAST(ROUND((COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN ioi.amount
-                              WHEN io.currency = 'VND' THEN CAST(ROUND((ioi.amount * 100.0 / io.exchange_rate)::numeric, 0) AS INTEGER)
-                              ELSE CAST(ROUND((ioi.amount * 1.0 / io.exchange_rate)::numeric, 0) AS INTEGER) END), 0) * 1.0 / SUM(ioi.quantity))::numeric, 0) AS INTEGER) END AS avg_price
+            CAST(COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN ioi.amount
+                              WHEN io.currency = 'VND' THEN CAST(ROUND((ioi.amount * 100.0 / io.exchange_rate)::numeric, 0) AS BIGINT)
+                              ELSE CAST(ROUND((ioi.amount * 1.0 / io.exchange_rate)::numeric, 0) AS BIGINT) END), 0) AS BIGINT) AS amount,
+            CASE WHEN SUM(ioi.quantity) = 0 THEN 0::BIGINT ELSE CAST(ROUND((COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN ioi.amount
+                              WHEN io.currency = 'VND' THEN CAST(ROUND((ioi.amount * 100.0 / io.exchange_rate)::numeric, 0) AS BIGINT)
+                              ELSE CAST(ROUND((ioi.amount * 1.0 / io.exchange_rate)::numeric, 0) AS BIGINT) END), 0) * 1.0 / SUM(ioi.quantity))::numeric, 0) AS BIGINT) END AS avg_price
         FROM inbound_orders io
         JOIN inbound_order_items ioi ON ioi.inbound_id = io.id
         JOIN materials m ON m.id = ioi.material_id
@@ -1347,12 +1347,12 @@ pub async fn get_sales_material_detail(
             m.spec,
             MAX(ooi.unit_name_snapshot) AS unit_name,
             COALESCE(SUM(ooi.quantity), 0) AS quantity,
-            COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN ooi.amount
-                              WHEN oo.currency = 'VND' THEN CAST(ROUND((ooi.amount * 100.0 / oo.exchange_rate)::numeric, 0) AS INTEGER)
-                              ELSE CAST(ROUND((ooi.amount * 1.0 / oo.exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS amount,
-            CASE WHEN SUM(ooi.quantity) = 0 THEN 0 ELSE CAST(ROUND((COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN ooi.amount
-                              WHEN oo.currency = 'VND' THEN CAST(ROUND((ooi.amount * 100.0 / oo.exchange_rate)::numeric, 0) AS INTEGER)
-                              ELSE CAST(ROUND((ooi.amount * 1.0 / oo.exchange_rate)::numeric, 0) AS INTEGER) END), 0) * 1.0 / SUM(ooi.quantity))::numeric, 0) AS INTEGER) END AS avg_price
+            CAST(COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN ooi.amount
+                              WHEN oo.currency = 'VND' THEN CAST(ROUND((ooi.amount * 100.0 / oo.exchange_rate)::numeric, 0) AS BIGINT)
+                              ELSE CAST(ROUND((ooi.amount * 1.0 / oo.exchange_rate)::numeric, 0) AS BIGINT) END), 0) AS BIGINT) AS amount,
+            CASE WHEN SUM(ooi.quantity) = 0 THEN 0::BIGINT ELSE CAST(ROUND((COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN ooi.amount
+                              WHEN oo.currency = 'VND' THEN CAST(ROUND((ooi.amount * 100.0 / oo.exchange_rate)::numeric, 0) AS BIGINT)
+                              ELSE CAST(ROUND((ooi.amount * 1.0 / oo.exchange_rate)::numeric, 0) AS BIGINT) END), 0) * 1.0 / SUM(ooi.quantity))::numeric, 0) AS BIGINT) END AS avg_price
         FROM outbound_orders oo
         JOIN outbound_order_items ooi ON ooi.outbound_id = oo.id
         JOIN materials m ON m.id = ooi.material_id

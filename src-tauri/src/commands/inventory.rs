@@ -570,7 +570,7 @@ pub async fn get_inventory_detail(
         SELECT il.id, il.lot_no, w.name AS warehouse_name,
                il.qty_on_hand, il.qty_reserved, il.available_qty,
                il.receipt_unit_cost, il.received_date,
-               CAST(julianday('now') - julianday(il.received_date) AS INTEGER) AS age_days,
+               (CURRENT_DATE - il.received_date::DATE) AS age_days,
                il.supplier_batch_no
         FROM inventory_lots il
         JOIN warehouses w ON w.id = il.warehouse_id
