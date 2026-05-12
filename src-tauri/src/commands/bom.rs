@@ -823,12 +823,23 @@ mod tests {
 
     use super::ensure_bom_not_referenced;
 
+    /// 创建隔离的测试 schema，避免并发测试表名冲突
     async fn setup_bom_reference_pool() -> sqlx::PgPool {
         let pool = PgPoolOptions::new()
             .max_connections(1)
             .connect("postgres://test@localhost/test")
             .await
             .expect("创建测试数据库失败");
+
+        let schema = format!("test_bom_{}", uuid::Uuid::new_v4().simple());
+        sqlx::query(&format!("CREATE SCHEMA {schema}"))
+            .execute(&pool)
+            .await
+            .expect("创建测试 schema 失败");
+        sqlx::query(&format!("SET search_path TO {schema}"))
+            .execute(&pool)
+            .await
+            .expect("设置 search_path 失败");
 
         sqlx::query(
             "CREATE TABLE custom_orders (
