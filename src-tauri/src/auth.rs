@@ -31,7 +31,7 @@ pub struct LoginResponse {
 const DEFAULT_ADMIN_PASSWORD: &str = "admin123";
 
 /// 连续失败锁定阈值
-const MAX_FAILED_ATTEMPTS: i64 = 5;
+const MAX_FAILED_ATTEMPTS: i32 = 5;
 /// 锁定时长（分钟）
 const LOCK_DURATION_MINUTES: i64 = 15;
 
@@ -87,7 +87,7 @@ pub async fn login(
             String,
             bool,
             bool,
-            i64,
+            i32,
             Option<String>,
         ),
     >(
