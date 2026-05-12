@@ -202,12 +202,12 @@ pub async fn get_payables(
     let summary = sqlx::query_as::<_, (i64, i64, i64, i64)>(
         r#"
         SELECT
-            COALESCE(SUM(CASE WHEN adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0),
-            COALESCE(SUM(CASE WHEN status = 'paid' AND adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0),
-            COALESCE(SUM(CASE WHEN status = 'partial' AND adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0),
+            COALESCE(SUM(CASE WHEN adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0)::BIGINT,
+            COALESCE(SUM(CASE WHEN status = 'paid' AND adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0)::BIGINT,
+            COALESCE(SUM(CASE WHEN status = 'partial' AND adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0)::BIGINT,
             COALESCE(SUM(CASE WHEN status != 'paid' AND adjustment_type = 'normal'
                 AND due_date IS NOT NULL AND due_date < CURRENT_DATE::TEXT
-                THEN (payable_amount - paid_amount) ELSE 0 END), 0)
+                THEN (payable_amount - paid_amount) ELSE 0 END), 0)::BIGINT
         FROM payables
         "#,
     )
@@ -510,12 +510,12 @@ pub async fn get_receivables(
     let summary = sqlx::query_as::<_, (i64, i64, i64, i64)>(
         r#"
         SELECT
-            COALESCE(SUM(CASE WHEN adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0),
-            COALESCE(SUM(CASE WHEN status = 'paid' AND adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0),
-            COALESCE(SUM(CASE WHEN status = 'partial' AND adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0),
+            COALESCE(SUM(CASE WHEN adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0)::BIGINT,
+            COALESCE(SUM(CASE WHEN status = 'paid' AND adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0)::BIGINT,
+            COALESCE(SUM(CASE WHEN status = 'partial' AND adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0)::BIGINT,
             COALESCE(SUM(CASE WHEN status != 'paid' AND adjustment_type = 'normal'
                 AND due_date IS NOT NULL AND due_date < CURRENT_DATE::TEXT
-                THEN (receivable_amount - received_amount) ELSE 0 END), 0)
+                THEN (receivable_amount - received_amount) ELSE 0 END), 0)::BIGINT
         FROM receivables
         "#,
     )

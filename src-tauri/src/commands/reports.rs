@@ -371,13 +371,13 @@ pub async fn get_inventory_report_summary(
                         ELSE CAST(ROUND((SUM(quantity * avg_cost) * 1.0 / SUM(quantity))::numeric, 0) AS INTEGER)
                    END AS weighted_avg_cost
             FROM inventory
-            WHERE ($11 IS NULL OR warehouse_id = $21)
+            WHERE ($1 IS NULL OR warehouse_id = $1)
             GROUP BY material_id
         ) i_agg ON i_agg.material_id = m.id
         WHERE m.is_enabled = TRUE
-          AND ($32 IS NULL OR m.category_id = $42)
-          AND ($53 IS NULL OR m.material_type = $63)
-          AND ($74 IS NULL OR m.name LIKE '%' || $84 || '%' OR m.code LIKE '%' || $94 || '%')
+          AND ($2 IS NULL OR m.category_id = $2)
+          AND ($3 IS NULL OR m.material_type = $3)
+          AND ($4 IS NULL OR m.name LIKE '%' || $4 || '%' OR m.code LIKE '%' || $4 || '%')
         ORDER BY m.code
         "#,
     )
@@ -399,8 +399,8 @@ pub async fn get_inventory_report_summary(
             SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) AS outbound_qty,
             SUM(CASE WHEN quantity < 0 THEN CAST(ROUND((ABS(quantity) * unit_cost)::numeric, 0) AS INTEGER) ELSE 0 END) AS outbound_value
         FROM inventory_transactions
-        WHERE transaction_date BETWEEN $11 AND $22
-          AND ($33 IS NULL OR warehouse_id = $43)
+        WHERE transaction_date BETWEEN $1 AND $2
+          AND ($3 IS NULL OR warehouse_id = $3)
         GROUP BY material_id
         "#,
     )
@@ -419,8 +419,8 @@ pub async fn get_inventory_report_summary(
             SUM(CASE WHEN quantity > 0 THEN quantity ELSE 0 END) AS total_inbound,
             SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) AS total_outbound
         FROM inventory_transactions
-        WHERE transaction_date >= $11
-          AND ($22 IS NULL OR warehouse_id = $32)
+        WHERE transaction_date >= $1
+          AND ($2 IS NULL OR warehouse_id = $2)
         GROUP BY material_id
         "#,
     )
@@ -541,11 +541,11 @@ pub async fn get_inventory_aging_analysis(
         JOIN materials m ON m.id = il.material_id
         WHERE il.qty_on_hand > 0
           AND COALESCE(m.lot_tracking_mode, 'none') IN ('optional', 'required')
-          AND ($11 IS NULL OR il.warehouse_id = $21)
-          AND ($32 IS NULL OR m.category_id = $42)
-          AND ($53 IS NULL OR CAST(julianday('now') - julianday(il.received_date) AS INTEGER) >= $63)
-          AND ($74 IS NULL OR CAST(julianday('now') - julianday(il.received_date) AS INTEGER) <= $84)
-          AND ($95 IS NULL OR m.name LIKE '%' || $105 || '%' OR m.code LIKE '%' || $115 || '%')
+          AND ($1 IS NULL OR il.warehouse_id = $1)
+          AND ($2 IS NULL OR m.category_id = $2)
+          AND ($3 IS NULL OR CAST(julianday('now') - julianday(il.received_date) AS INTEGER) >= $3)
+          AND ($4 IS NULL OR CAST(julianday('now') - julianday(il.received_date) AS INTEGER) <= $4)
+          AND ($5 IS NULL OR m.name LIKE '%' || $5 || '%' OR m.code LIKE '%' || $5 || '%')
         "#,
     )
     .bind(filter.warehouse_id)
@@ -577,13 +577,13 @@ pub async fn get_inventory_aging_analysis(
         JOIN materials m ON m.id = il.material_id
         WHERE il.qty_on_hand > 0
           AND COALESCE(m.lot_tracking_mode, 'none') IN ('optional', 'required')
-          AND ($11 IS NULL OR il.warehouse_id = $21)
-          AND ($32 IS NULL OR m.category_id = $42)
-          AND ($53 IS NULL OR CAST(julianday('now') - julianday(il.received_date) AS INTEGER) >= $63)
-          AND ($74 IS NULL OR CAST(julianday('now') - julianday(il.received_date) AS INTEGER) <= $84)
-          AND ($95 IS NULL OR m.name LIKE '%' || $105 || '%' OR m.code LIKE '%' || $115 || '%')
+          AND ($1 IS NULL OR il.warehouse_id = $1)
+          AND ($2 IS NULL OR m.category_id = $2)
+          AND ($3 IS NULL OR CAST(julianday('now') - julianday(il.received_date) AS INTEGER) >= $3)
+          AND ($4 IS NULL OR CAST(julianday('now') - julianday(il.received_date) AS INTEGER) <= $4)
+          AND ($5 IS NULL OR m.name LIKE '%' || $5 || '%' OR m.code LIKE '%' || $5 || '%')
         ORDER BY days_in_stock DESC
-        LIMIT $126 OFFSET $137
+        LIMIT $6 OFFSET $7
         "#,
     )
     .bind(filter.warehouse_id)
@@ -636,14 +636,14 @@ pub async fn get_inventory_slow_moving(
                    SUM(quantity) AS total_qty,
                    MAX(last_out_date) AS last_out_date
             FROM inventory
-            WHERE ($12 IS NULL OR warehouse_id = $22)
+            WHERE ($2 IS NULL OR warehouse_id = $2)
             GROUP BY material_id
         ) i_agg ON i_agg.material_id = m.id
         WHERE m.is_enabled = TRUE
           AND COALESCE(i_agg.total_qty, 0) > 0
           AND (i_agg.last_out_date IS NULL
-               OR CAST(julianday('now') - julianday(i_agg.last_out_date) AS INTEGER) > $31)
-          AND ($43 IS NULL OR m.category_id = $53)
+               OR CAST(julianday('now') - julianday(i_agg.last_out_date) AS INTEGER) > $1)
+          AND ($3 IS NULL OR m.category_id = $3)
         "#,
     )
     .bind(filter.days_threshold)
@@ -686,16 +686,16 @@ pub async fn get_inventory_slow_moving(
                    SUM(quantity) AS total_qty,
                    MAX(last_out_date) AS last_out_date
             FROM inventory
-            WHERE ($12 IS NULL OR warehouse_id = $22)
+            WHERE ($2 IS NULL OR warehouse_id = $2)
             GROUP BY material_id
         ) i_agg ON i_agg.material_id = m.id
         WHERE m.is_enabled = TRUE
           AND COALESCE(i_agg.total_qty, 0) > 0
           AND (i_agg.last_out_date IS NULL
-               OR CAST(julianday('now') - julianday(i_agg.last_out_date) AS INTEGER) > $31)
-          AND ($43 IS NULL OR m.category_id = $53)
+               OR CAST(julianday('now') - julianday(i_agg.last_out_date) AS INTEGER) > $1)
+          AND ($3 IS NULL OR m.category_id = $3)
         ORDER BY days_since_last_out DESC
-        LIMIT $64 OFFSET $75
+        LIMIT $4 OFFSET $5
         "#,
     )
     .bind(filter.days_threshold)
@@ -748,7 +748,7 @@ pub async fn get_inventory_trend(
             COALESCE(SUM(quantity), 0),
             COALESCE(SUM(CAST(ROUND((quantity * avg_cost)::numeric, 0) AS INTEGER)), 0)
         FROM inventory
-        WHERE ($11 IS NULL OR warehouse_id = $21)
+        WHERE ($1 IS NULL OR warehouse_id = $1)
         "#,
     )
     .bind(filter.warehouse_id)
@@ -768,8 +768,8 @@ pub async fn get_inventory_trend(
             SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) AS outbound_qty,
             SUM(CASE WHEN quantity < 0 THEN CAST(ROUND((ABS(quantity) * unit_cost)::numeric, 0) AS INTEGER) ELSE 0 END) AS outbound_value
         FROM inventory_transactions
-        WHERE transaction_date >= date('now', '-' || $11 || ' days')
-          AND ($22 IS NULL OR warehouse_id = $32)
+        WHERE transaction_date >= date('now', '-' || $1 || ' days')
+          AND ($2 IS NULL OR warehouse_id = $2)
         GROUP BY transaction_date
         ORDER BY transaction_date
         "#,
@@ -866,19 +866,19 @@ async fn purchase_stats(
                 JOIN inbound_order_items ioi ON ioi.inbound_id = io2.id
                 LEFT JOIN materials m ON m.id = ioi.material_id
                 WHERE io2.status = 'confirmed' AND io2.inbound_type = 'purchase'
-                  AND io2.inbound_date BETWEEN $11 AND $22
-                  AND ($33 IS NULL OR io2.supplier_id = $43)
-                  AND ($54 IS NULL OR io2.warehouse_id = $64)
-                  AND ($75 IS NULL OR io2.order_no LIKE '%' || $85 || '%' OR m.code LIKE '%' || $95 || '%' OR m.name LIKE '%' || $105 || '%')
+                  AND io2.inbound_date BETWEEN $1 AND $2
+                  AND ($3 IS NULL OR io2.supplier_id = $3)
+                  AND ($4 IS NULL OR io2.warehouse_id = $4)
+                  AND ($5 IS NULL OR io2.order_no LIKE '%' || $5 || '%' OR m.code LIKE '%' || $5 || '%' OR m.name LIKE '%' || $5 || '%')
             ), 0) AS material_count
         FROM inbound_orders io
         WHERE io.status = 'confirmed' AND io.inbound_type = 'purchase'
-          AND io.inbound_date BETWEEN $111 AND $122
-          AND ($133 IS NULL OR io.supplier_id = $143)
-          AND ($154 IS NULL OR io.warehouse_id = $164)
-          AND ($175 IS NULL OR io.order_no LIKE '%' || $185 || '%' OR EXISTS (
+          AND io.inbound_date BETWEEN $1 AND $2
+          AND ($3 IS NULL OR io.supplier_id = $3)
+          AND ($4 IS NULL OR io.warehouse_id = $4)
+          AND ($5 IS NULL OR io.order_no LIKE '%' || $5 || '%' OR EXISTS (
               SELECT 1 FROM inbound_order_items ioi JOIN materials m ON m.id = ioi.material_id
-              WHERE ioi.inbound_id = io.id AND (m.code LIKE '%' || $195 || '%' OR m.name LIKE '%' || $205 || '%')
+              WHERE ioi.inbound_id = io.id AND (m.code LIKE '%' || $5 || '%' OR m.name LIKE '%' || $5 || '%')
           ))
         "#,
     )
@@ -912,19 +912,19 @@ async fn sales_stats(
                 JOIN outbound_order_items ooi ON ooi.outbound_id = oo2.id
                 LEFT JOIN materials m ON m.id = ooi.material_id
                 WHERE oo2.status = 'confirmed' AND oo2.outbound_type = 'sales'
-                  AND oo2.outbound_date BETWEEN $11 AND $22
-                  AND ($33 IS NULL OR oo2.customer_id = $43)
-                  AND ($54 IS NULL OR oo2.warehouse_id = $64)
-                  AND ($75 IS NULL OR oo2.order_no LIKE '%' || $85 || '%' OR m.code LIKE '%' || $95 || '%' OR m.name LIKE '%' || $105 || '%')
+                  AND oo2.outbound_date BETWEEN $1 AND $2
+                  AND ($3 IS NULL OR oo2.customer_id = $3)
+                  AND ($4 IS NULL OR oo2.warehouse_id = $4)
+                  AND ($5 IS NULL OR oo2.order_no LIKE '%' || $5 || '%' OR m.code LIKE '%' || $5 || '%' OR m.name LIKE '%' || $5 || '%')
             ), 0) AS material_count
         FROM outbound_orders oo
         WHERE oo.status = 'confirmed' AND oo.outbound_type = 'sales'
-          AND oo.outbound_date BETWEEN $111 AND $122
-          AND ($133 IS NULL OR oo.customer_id = $143)
-          AND ($154 IS NULL OR oo.warehouse_id = $164)
-          AND ($175 IS NULL OR oo.order_no LIKE '%' || $185 || '%' OR EXISTS (
+          AND oo.outbound_date BETWEEN $1 AND $2
+          AND ($3 IS NULL OR oo.customer_id = $3)
+          AND ($4 IS NULL OR oo.warehouse_id = $4)
+          AND ($5 IS NULL OR oo.order_no LIKE '%' || $5 || '%' OR EXISTS (
               SELECT 1 FROM outbound_order_items ooi JOIN materials m ON m.id = ooi.material_id
-              WHERE ooi.outbound_id = oo.id AND (m.code LIKE '%' || $195 || '%' OR m.name LIKE '%' || $205 || '%')
+              WHERE ooi.outbound_id = oo.id AND (m.code LIKE '%' || $5 || '%' OR m.name LIKE '%' || $5 || '%')
           ))
         "#,
     )
@@ -968,12 +968,12 @@ pub async fn get_purchase_report_summary(
             COUNT(DISTINCT id) AS order_count
         FROM inbound_orders io
         WHERE io.status = 'confirmed' AND io.inbound_type = 'purchase'
-          AND io.inbound_date BETWEEN $11 AND $22
-          AND ($33 IS NULL OR io.supplier_id = $43)
-          AND ($54 IS NULL OR io.warehouse_id = $64)
-          AND ($75 IS NULL OR io.order_no LIKE '%' || $85 || '%' OR EXISTS (
+          AND io.inbound_date BETWEEN $1 AND $2
+          AND ($3 IS NULL OR io.supplier_id = $3)
+          AND ($4 IS NULL OR io.warehouse_id = $4)
+          AND ($5 IS NULL OR io.order_no LIKE '%' || $5 || '%' OR EXISTS (
               SELECT 1 FROM inbound_order_items ioi JOIN materials m ON m.id = ioi.material_id
-              WHERE ioi.inbound_id = io.id AND (m.code LIKE '%' || $95 || '%' OR m.name LIKE '%' || $105 || '%')
+              WHERE ioi.inbound_id = io.id AND (m.code LIKE '%' || $5 || '%' OR m.name LIKE '%' || $5 || '%')
           ))
         GROUP BY inbound_date
         ORDER BY inbound_date
@@ -1030,12 +1030,12 @@ pub async fn get_sales_report_summary(
             COUNT(DISTINCT id) AS order_count
         FROM outbound_orders oo
         WHERE oo.status = 'confirmed' AND oo.outbound_type = 'sales'
-          AND oo.outbound_date BETWEEN $11 AND $22
-          AND ($33 IS NULL OR oo.customer_id = $43)
-          AND ($54 IS NULL OR oo.warehouse_id = $64)
-          AND ($75 IS NULL OR oo.order_no LIKE '%' || $85 || '%' OR EXISTS (
+          AND oo.outbound_date BETWEEN $1 AND $2
+          AND ($3 IS NULL OR oo.customer_id = $3)
+          AND ($4 IS NULL OR oo.warehouse_id = $4)
+          AND ($5 IS NULL OR oo.order_no LIKE '%' || $5 || '%' OR EXISTS (
               SELECT 1 FROM outbound_order_items ooi JOIN materials m ON m.id = ooi.material_id
-              WHERE ooi.outbound_id = oo.id AND (m.code LIKE '%' || $95 || '%' OR m.name LIKE '%' || $105 || '%')
+              WHERE ooi.outbound_id = oo.id AND (m.code LIKE '%' || $5 || '%' OR m.name LIKE '%' || $5 || '%')
           ))
         GROUP BY outbound_date
         ORDER BY outbound_date
@@ -1077,12 +1077,12 @@ pub async fn get_purchase_supplier_ranking(
             SELECT io.supplier_id
             FROM inbound_orders io
             WHERE io.status = 'confirmed' AND io.inbound_type = 'purchase'
-              AND io.inbound_date BETWEEN $11 AND $22
-              AND ($33 IS NULL OR io.supplier_id = $43)
-              AND ($54 IS NULL OR io.warehouse_id = $64)
-              AND ($75 IS NULL OR io.order_no LIKE '%' || $85 || '%' OR EXISTS (
+              AND io.inbound_date BETWEEN $1 AND $2
+              AND ($3 IS NULL OR io.supplier_id = $3)
+              AND ($4 IS NULL OR io.warehouse_id = $4)
+              AND ($5 IS NULL OR io.order_no LIKE '%' || $5 || '%' OR EXISTS (
                   SELECT 1 FROM inbound_order_items ioi JOIN materials m ON m.id = ioi.material_id
-                  WHERE ioi.inbound_id = io.id AND (m.code LIKE '%' || $95 || '%' OR m.name LIKE '%' || $105 || '%')
+                  WHERE ioi.inbound_id = io.id AND (m.code LIKE '%' || $5 || '%' OR m.name LIKE '%' || $5 || '%')
               ))
             GROUP BY io.supplier_id
         )
@@ -1107,22 +1107,22 @@ pub async fn get_purchase_supplier_ranking(
                               WHEN io.currency = 'VND' THEN CAST(ROUND((io.payable_amount * 100.0 / io.exchange_rate)::numeric, 0) AS INTEGER)
                               ELSE CAST(ROUND((io.payable_amount * 1.0 / io.exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS amount,
             COUNT(DISTINCT io.id) AS order_count,
-            CASE WHEN $16 = 0 THEN 0 ELSE COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN io.payable_amount
+            CASE WHEN $6 = 0 THEN 0 ELSE COALESCE(SUM(CASE WHEN io.currency = 'USD' THEN io.payable_amount
                               WHEN io.currency = 'VND' THEN CAST(ROUND((io.payable_amount * 100.0 / io.exchange_rate)::numeric, 0) AS INTEGER)
-                              ELSE CAST(ROUND((io.payable_amount * 1.0 / io.exchange_rate)::numeric, 0) AS INTEGER) END), 0) * 100.0 / $26 END AS ratio
+                              ELSE CAST(ROUND((io.payable_amount * 1.0 / io.exchange_rate)::numeric, 0) AS INTEGER) END), 0) * 100.0 / $6 END AS ratio
         FROM inbound_orders io
         JOIN suppliers s ON s.id = io.supplier_id
         WHERE io.status = 'confirmed' AND io.inbound_type = 'purchase'
-          AND io.inbound_date BETWEEN $31 AND $42
-          AND ($53 IS NULL OR io.supplier_id = $63)
-          AND ($74 IS NULL OR io.warehouse_id = $84)
-          AND ($95 IS NULL OR io.order_no LIKE '%' || $105 || '%' OR EXISTS (
+          AND io.inbound_date BETWEEN $1 AND $2
+          AND ($3 IS NULL OR io.supplier_id = $3)
+          AND ($4 IS NULL OR io.warehouse_id = $4)
+          AND ($5 IS NULL OR io.order_no LIKE '%' || $5 || '%' OR EXISTS (
               SELECT 1 FROM inbound_order_items ioi JOIN materials m ON m.id = ioi.material_id
-              WHERE ioi.inbound_id = io.id AND (m.code LIKE '%' || $115 || '%' OR m.name LIKE '%' || $125 || '%')
+              WHERE ioi.inbound_id = io.id AND (m.code LIKE '%' || $5 || '%' OR m.name LIKE '%' || $5 || '%')
           ))
         GROUP BY s.id, s.code, s.name
         ORDER BY amount DESC
-        LIMIT $137 OFFSET $148
+        LIMIT $7 OFFSET $8
         "#,
     )
     .bind(&start_date)
@@ -1163,12 +1163,12 @@ pub async fn get_sales_customer_ranking(
             SELECT oo.customer_id
             FROM outbound_orders oo
             WHERE oo.status = 'confirmed' AND oo.outbound_type = 'sales'
-              AND oo.outbound_date BETWEEN $11 AND $22
-              AND ($33 IS NULL OR oo.customer_id = $43)
-              AND ($54 IS NULL OR oo.warehouse_id = $64)
-              AND ($75 IS NULL OR oo.order_no LIKE '%' || $85 || '%' OR EXISTS (
+              AND oo.outbound_date BETWEEN $1 AND $2
+              AND ($3 IS NULL OR oo.customer_id = $3)
+              AND ($4 IS NULL OR oo.warehouse_id = $4)
+              AND ($5 IS NULL OR oo.order_no LIKE '%' || $5 || '%' OR EXISTS (
                   SELECT 1 FROM outbound_order_items ooi JOIN materials m ON m.id = ooi.material_id
-                  WHERE ooi.outbound_id = oo.id AND (m.code LIKE '%' || $95 || '%' OR m.name LIKE '%' || $105 || '%')
+                  WHERE ooi.outbound_id = oo.id AND (m.code LIKE '%' || $5 || '%' OR m.name LIKE '%' || $5 || '%')
               ))
             GROUP BY oo.customer_id
         )
@@ -1193,22 +1193,22 @@ pub async fn get_sales_customer_ranking(
                               WHEN oo.currency = 'VND' THEN CAST(ROUND((oo.receivable_amount * 100.0 / oo.exchange_rate)::numeric, 0) AS INTEGER)
                               ELSE CAST(ROUND((oo.receivable_amount * 1.0 / oo.exchange_rate)::numeric, 0) AS INTEGER) END), 0) AS amount,
             COUNT(DISTINCT oo.id) AS order_count,
-            CASE WHEN $16 = 0 THEN 0 ELSE COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN oo.receivable_amount
+            CASE WHEN $6 = 0 THEN 0 ELSE COALESCE(SUM(CASE WHEN oo.currency = 'USD' THEN oo.receivable_amount
                               WHEN oo.currency = 'VND' THEN CAST(ROUND((oo.receivable_amount * 100.0 / oo.exchange_rate)::numeric, 0) AS INTEGER)
-                              ELSE CAST(ROUND((oo.receivable_amount * 1.0 / oo.exchange_rate)::numeric, 0) AS INTEGER) END), 0) * 100.0 / $26 END AS ratio
+                              ELSE CAST(ROUND((oo.receivable_amount * 1.0 / oo.exchange_rate)::numeric, 0) AS INTEGER) END), 0) * 100.0 / $6 END AS ratio
         FROM outbound_orders oo
         JOIN customers c ON c.id = oo.customer_id
         WHERE oo.status = 'confirmed' AND oo.outbound_type = 'sales'
-          AND oo.outbound_date BETWEEN $31 AND $42
-          AND ($53 IS NULL OR oo.customer_id = $63)
-          AND ($74 IS NULL OR oo.warehouse_id = $84)
-          AND ($95 IS NULL OR oo.order_no LIKE '%' || $105 || '%' OR EXISTS (
+          AND oo.outbound_date BETWEEN $1 AND $2
+          AND ($3 IS NULL OR oo.customer_id = $3)
+          AND ($4 IS NULL OR oo.warehouse_id = $4)
+          AND ($5 IS NULL OR oo.order_no LIKE '%' || $5 || '%' OR EXISTS (
               SELECT 1 FROM outbound_order_items ooi JOIN materials m ON m.id = ooi.material_id
-              WHERE ooi.outbound_id = oo.id AND (m.code LIKE '%' || $115 || '%' OR m.name LIKE '%' || $125 || '%')
+              WHERE ooi.outbound_id = oo.id AND (m.code LIKE '%' || $5 || '%' OR m.name LIKE '%' || $5 || '%')
           ))
         GROUP BY c.id, c.code, c.name
         ORDER BY amount DESC
-        LIMIT $137 OFFSET $148
+        LIMIT $7 OFFSET $8
         "#,
     )
     .bind(&start_date)
@@ -1251,10 +1251,10 @@ pub async fn get_purchase_material_detail(
             JOIN inbound_order_items ioi ON ioi.inbound_id = io.id
             JOIN materials m ON m.id = ioi.material_id
             WHERE io.status = 'confirmed' AND io.inbound_type = 'purchase'
-              AND io.inbound_date BETWEEN $11 AND $22
-              AND ($33 IS NULL OR io.supplier_id = $43)
-              AND ($54 IS NULL OR io.warehouse_id = $64)
-              AND ($75 IS NULL OR io.order_no LIKE '%' || $85 || '%' OR m.code LIKE '%' || $95 || '%' OR m.name LIKE '%' || $105 || '%')
+              AND io.inbound_date BETWEEN $1 AND $2
+              AND ($3 IS NULL OR io.supplier_id = $3)
+              AND ($4 IS NULL OR io.warehouse_id = $4)
+              AND ($5 IS NULL OR io.order_no LIKE '%' || $5 || '%' OR m.code LIKE '%' || $5 || '%' OR m.name LIKE '%' || $5 || '%')
             GROUP BY ioi.material_id
         )
         "#,
@@ -1281,13 +1281,13 @@ pub async fn get_purchase_material_detail(
         JOIN inbound_order_items ioi ON ioi.inbound_id = io.id
         JOIN materials m ON m.id = ioi.material_id
         WHERE io.status = 'confirmed' AND io.inbound_type = 'purchase'
-          AND io.inbound_date BETWEEN $11 AND $22
-          AND ($33 IS NULL OR io.supplier_id = $43)
-          AND ($54 IS NULL OR io.warehouse_id = $64)
-          AND ($75 IS NULL OR io.order_no LIKE '%' || $85 || '%' OR m.code LIKE '%' || $95 || '%' OR m.name LIKE '%' || $105 || '%')
+          AND io.inbound_date BETWEEN $1 AND $2
+          AND ($3 IS NULL OR io.supplier_id = $3)
+          AND ($4 IS NULL OR io.warehouse_id = $4)
+          AND ($5 IS NULL OR io.order_no LIKE '%' || $5 || '%' OR m.code LIKE '%' || $5 || '%' OR m.name LIKE '%' || $5 || '%')
         GROUP BY m.id, m.code, m.name, m.spec
         ORDER BY amount DESC
-        LIMIT $116 OFFSET $127
+        LIMIT $6 OFFSET $7
         "#,
     )
     .bind(&start_date).bind(&end_date).bind(filter.supplier_id).bind(filter.warehouse_id).bind(&filter.keyword)
@@ -1327,10 +1327,10 @@ pub async fn get_sales_material_detail(
             JOIN outbound_order_items ooi ON ooi.outbound_id = oo.id
             JOIN materials m ON m.id = ooi.material_id
             WHERE oo.status = 'confirmed' AND oo.outbound_type = 'sales'
-              AND oo.outbound_date BETWEEN $11 AND $22
-              AND ($33 IS NULL OR oo.customer_id = $43)
-              AND ($54 IS NULL OR oo.warehouse_id = $64)
-              AND ($75 IS NULL OR oo.order_no LIKE '%' || $85 || '%' OR m.code LIKE '%' || $95 || '%' OR m.name LIKE '%' || $105 || '%')
+              AND oo.outbound_date BETWEEN $1 AND $2
+              AND ($3 IS NULL OR oo.customer_id = $3)
+              AND ($4 IS NULL OR oo.warehouse_id = $4)
+              AND ($5 IS NULL OR oo.order_no LIKE '%' || $5 || '%' OR m.code LIKE '%' || $5 || '%' OR m.name LIKE '%' || $5 || '%')
             GROUP BY ooi.material_id
         )
         "#,
@@ -1357,13 +1357,13 @@ pub async fn get_sales_material_detail(
         JOIN outbound_order_items ooi ON ooi.outbound_id = oo.id
         JOIN materials m ON m.id = ooi.material_id
         WHERE oo.status = 'confirmed' AND oo.outbound_type = 'sales'
-          AND oo.outbound_date BETWEEN $11 AND $22
-          AND ($33 IS NULL OR oo.customer_id = $43)
-          AND ($54 IS NULL OR oo.warehouse_id = $64)
-          AND ($75 IS NULL OR oo.order_no LIKE '%' || $85 || '%' OR m.code LIKE '%' || $95 || '%' OR m.name LIKE '%' || $105 || '%')
+          AND oo.outbound_date BETWEEN $1 AND $2
+          AND ($3 IS NULL OR oo.customer_id = $3)
+          AND ($4 IS NULL OR oo.warehouse_id = $4)
+          AND ($5 IS NULL OR oo.order_no LIKE '%' || $5 || '%' OR m.code LIKE '%' || $5 || '%' OR m.name LIKE '%' || $5 || '%')
         GROUP BY m.id, m.code, m.name, m.spec
         ORDER BY amount DESC
-        LIMIT $116 OFFSET $127
+        LIMIT $6 OFFSET $7
         "#,
     )
     .bind(&start_date).bind(&end_date).bind(filter.customer_id).bind(filter.warehouse_id).bind(&filter.keyword)
