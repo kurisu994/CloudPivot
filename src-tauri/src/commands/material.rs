@@ -80,7 +80,7 @@ async fn has_material_core_references(pool: &PgPool, material_id: i64) -> Result
             .push_bind(material_id);
     }
 
-    query.push(")");
+    query.push(") AS t");
 
     let count: (i64,) = query
         .build_query_as()
@@ -490,9 +490,9 @@ mod tests {
 
         sqlx::query(
             "CREATE TABLE materials (
-                id INTEGER PRIMARY KEY,
+                id BIGINT PRIMARY KEY,
                 material_type TEXT NOT NULL,
-                base_unit_id INTEGER NOT NULL,
+                base_unit_id BIGINT NOT NULL,
                 lot_tracking_mode TEXT NOT NULL
             )",
         )
@@ -501,7 +501,7 @@ mod tests {
         .expect("创建物料测试表失败");
 
         for (table, column) in MATERIAL_CORE_REFERENCE_TABLES {
-            let sql = format!("CREATE TABLE {table} (id INTEGER PRIMARY KEY, {column} INTEGER)");
+            let sql = format!("CREATE TABLE {table} (id BIGINT PRIMARY KEY, {column} BIGINT)");
             sqlx::query(&sql)
                 .execute(&pool)
                 .await
