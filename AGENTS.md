@@ -34,6 +34,7 @@ src-tauri/src/
   operation_log.rs         # 操作日志公共模块（统一写入能力）
   db/{mod,migration}.rs    # SQLite 连接池（WAL）+ 自管理迁移框架
   commands/                # IPC 命令模块（156 个命令，详见下方）
+    order_shared.rs        # 采购/销售共享抽象（编号生成、列表查询、审核/作废/删除、状态更新）
   migrations/sqlite/       # 5 个迁移文件（001_init ~ 005_drop_legacy）
 docs/                      # 设计文档（实现功能前必读）
   01-requirements.md       # 需求规格：12 大模块
