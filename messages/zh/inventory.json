@@ -39,6 +39,9 @@
   },
   "manualStockMovements": {
     "title": "自由出入库",
+    "subtitle": "其他入库 / 其他出库",
+    "formTitle": "过账信息",
+    "formDescription": "物料、仓库、数量、批次",
     "movementType": "变动类型",
     "inbound": "自由入库",
     "outbound": "自由出库",
@@ -63,7 +66,15 @@
     "remarkPlaceholder": "记录自由出入库原因",
     "loadOptionsFailed": "加载物料或仓库失败",
     "saveSuccess": "已生成 {movementNo}",
-    "saveFailed": "自由出入库保存失败"
+    "saveFailed": "自由出入库保存失败",
+    "previewTitle": "过账预览",
+    "previewDescription": "当前表单",
+    "requiredTitle": "必要信息",
+    "requiredDescription": "保存状态",
+    "notSelected": "未选择",
+    "notEntered": "未填写",
+    "ready": "已填写",
+    "pending": "待填写"
   },
   "stockMovements": {
     "title": "出入库流水",

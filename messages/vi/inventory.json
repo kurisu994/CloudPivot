@@ -39,6 +39,9 @@
   },
   "manualStockMovements": {
     "title": "Xuất nhập tự do",
+    "subtitle": "Nhập khác / Xuất khác",
+    "formTitle": "Thông tin ghi sổ",
+    "formDescription": "Vật tư, kho, số lượng, lô",
     "movementType": "Loại biến động",
     "inbound": "Nhập tự do",
     "outbound": "Xuất tự do",
@@ -63,7 +66,15 @@
     "remarkPlaceholder": "Ghi lý do xuất nhập tự do",
     "loadOptionsFailed": "Tải vật tư hoặc kho thất bại",
     "saveSuccess": "Đã tạo {movementNo}",
-    "saveFailed": "Lưu xuất nhập tự do thất bại"
+    "saveFailed": "Lưu xuất nhập tự do thất bại",
+    "previewTitle": "Xem trước ghi sổ",
+    "previewDescription": "Biểu mẫu hiện tại",
+    "requiredTitle": "Thông tin bắt buộc",
+    "requiredDescription": "Trạng thái lưu",
+    "notSelected": "Chưa chọn",
+    "notEntered": "Chưa nhập",
+    "ready": "Đã nhập",
+    "pending": "Còn thiếu"
   },
   "stockMovements": {
     "title": "Lịch sử xuất nhập",

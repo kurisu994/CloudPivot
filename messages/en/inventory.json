@@ -39,6 +39,9 @@
   },
   "manualStockMovements": {
     "title": "Manual Stock Movement",
+    "subtitle": "Other Inbound / Other Outbound",
+    "formTitle": "Posting Information",
+    "formDescription": "Material, warehouse, quantity, lot",
     "movementType": "Movement Type",
     "inbound": "Manual In",
     "outbound": "Manual Out",
@@ -63,7 +66,15 @@
     "remarkPlaceholder": "Record the reason for this movement",
     "loadOptionsFailed": "Failed to load materials or warehouses",
     "saveSuccess": "Generated {movementNo}",
-    "saveFailed": "Failed to save manual movement"
+    "saveFailed": "Failed to save manual movement",
+    "previewTitle": "Posting Preview",
+    "previewDescription": "Current form",
+    "requiredTitle": "Required Fields",
+    "requiredDescription": "Save status",
+    "notSelected": "Not selected",
+    "notEntered": "Not entered",
+    "ready": "Ready",
+    "pending": "Pending"
   },
   "stockMovements": {
     "title": "Stock Movements",
