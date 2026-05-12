@@ -261,21 +261,21 @@ export function InventoryListPage() {
             items.map(item => (
               <TableRow
                 key={item.id}
-                className={`group ${item.alert_status === 'low' ? 'bg-red-50/50 dark:bg-red-950/20' : item.alert_status === 'high' ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`}
+                className={`group ${item.alertStatus === 'low' ? 'bg-red-50/50 dark:bg-red-950/20' : item.alertStatus === 'high' ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`}
               >
-                <TableCell className={`${BUSINESS_LIST_STICKY_CELL_CLASS} font-mono text-sm`}>{item.material_code}</TableCell>
-                <TableCell>{item.material_name}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.category_name || '-'}</TableCell>
-                <TableCell>{item.warehouse_name}</TableCell>
+                <TableCell className={`${BUSINESS_LIST_STICKY_CELL_CLASS} font-mono text-sm`}>{item.materialCode}</TableCell>
+                <TableCell>{item.materialName}</TableCell>
+                <TableCell className="text-muted-foreground text-sm">{item.categoryName || '-'}</TableCell>
+                <TableCell>{item.warehouseName}</TableCell>
                 <TableCell className="text-right font-mono">{item.quantity}</TableCell>
-                <TableCell className="text-right font-mono">{item.reserved_qty}</TableCell>
-                <TableCell className="text-right font-mono">{item.available_qty}</TableCell>
-                <TableCell className="text-right font-mono text-sm">{formatAmount(item.inventory_value, 'USD')}</TableCell>
-                <TableCell>{alertBadge(item.alert_status)}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.last_in_date || '-'}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.last_out_date || '-'}</TableCell>
+                <TableCell className="text-right font-mono">{item.reservedQty}</TableCell>
+                <TableCell className="text-right font-mono">{item.availableQty}</TableCell>
+                <TableCell className="text-right font-mono text-sm">{formatAmount(item.inventoryValue, 'USD')}</TableCell>
+                <TableCell>{alertBadge(item.alertStatus)}</TableCell>
+                <TableCell className="text-muted-foreground text-sm">{item.lastInDate || '-'}</TableCell>
+                <TableCell className="text-muted-foreground text-sm">{item.lastOutDate || '-'}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm" onClick={() => handleViewDetail(item.material_id)}>
+                  <Button variant="ghost" size="sm" onClick={() => handleViewDetail(item.materialId)}>
                     <Eye className="size-4" />
                   </Button>
                 </TableCell>
@@ -290,7 +290,7 @@ export function InventoryListPage() {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {t('detail')} — {detail?.material_code} {detail?.material_name}
+              {t('detail')} — {detail?.materialCode} {detail?.materialName}
             </DialogTitle>
           </DialogHeader>
           {detailLoading ? (
@@ -315,12 +315,12 @@ export function InventoryListPage() {
                   </TableHeader>
                   <TableBody>
                     {detail.warehouses.map(w => (
-                      <TableRow key={w.warehouse_id}>
-                        <TableCell>{w.warehouse_name}</TableCell>
+                      <TableRow key={w.warehouseId}>
+                        <TableCell>{w.warehouseName}</TableCell>
                         <TableCell className="text-right font-mono">{w.quantity}</TableCell>
-                        <TableCell className="text-right font-mono">{w.reserved_qty}</TableCell>
-                        <TableCell className="text-right font-mono">{w.available_qty}</TableCell>
-                        <TableCell className="text-right font-mono">{formatAmount(w.inventory_value, 'USD')}</TableCell>
+                        <TableCell className="text-right font-mono">{w.reservedQty}</TableCell>
+                        <TableCell className="text-right font-mono">{w.availableQty}</TableCell>
+                        <TableCell className="text-right font-mono">{formatAmount(w.inventoryValue, 'USD')}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -347,11 +347,11 @@ export function InventoryListPage() {
                     ) : (
                       detail.lots.map(l => (
                         <TableRow key={l.id}>
-                          <TableCell className="font-mono text-sm">{l.lot_no}</TableCell>
-                          <TableCell>{l.warehouse_name}</TableCell>
-                          <TableCell className="text-right font-mono">{l.qty_on_hand}</TableCell>
-                          <TableCell className="text-right font-mono">{formatAmount(l.receipt_unit_cost, 'USD')}</TableCell>
-                          <TableCell className="text-right">{l.age_days}</TableCell>
+                          <TableCell className="font-mono text-sm">{l.lotNo}</TableCell>
+                          <TableCell>{l.warehouseName}</TableCell>
+                          <TableCell className="text-right font-mono">{l.qtyOnHand}</TableCell>
+                          <TableCell className="text-right font-mono">{formatAmount(l.receiptUnitCost, 'USD')}</TableCell>
+                          <TableCell className="text-right">{l.ageDays}</TableCell>
                         </TableRow>
                       ))
                     )}
@@ -370,26 +370,26 @@ export function InventoryListPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {detail.recent_transactions.length === 0 ? (
+                    {detail.recentTransactions.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                           {tc('noData')}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      detail.recent_transactions.map(tx => (
+                      detail.recentTransactions.map(tx => (
                         <TableRow key={tx.id}>
                           <TableCell>
-                            <div className="text-sm">{tx.transaction_type}</div>
-                            <div className="text-muted-foreground text-xs">{tx.transaction_date}</div>
+                            <div className="text-sm">{tx.transactionType}</div>
+                            <div className="text-muted-foreground text-xs">{tx.transactionDate}</div>
                           </TableCell>
-                          <TableCell>{tx.warehouse_name}</TableCell>
+                          <TableCell>{tx.warehouseName}</TableCell>
                           <TableCell className={`text-right font-mono ${tx.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {tx.quantity > 0 ? '+' : ''}
                             {tx.quantity}
                           </TableCell>
-                          <TableCell className="text-right font-mono text-sm">{tx.before_qty}</TableCell>
-                          <TableCell className="text-right font-mono text-sm">{tx.after_qty}</TableCell>
+                          <TableCell className="text-right font-mono text-sm">{tx.beforeQty}</TableCell>
+                          <TableCell className="text-right font-mono text-sm">{tx.afterQty}</TableCell>
                         </TableRow>
                       ))
                     )}

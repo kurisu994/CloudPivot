@@ -35,7 +35,7 @@ export function DefaultWarehouseMapping({ warehouses, refreshKey }: DefaultWareh
   const [saving, setSaving] = useState(false)
 
   // 仅启用的仓库可选
-  const enabledWarehouses = useMemo(() => warehouses.filter(w => w.is_enabled), [warehouses])
+  const enabledWarehouses = useMemo(() => warehouses.filter(w => w.isEnabled), [warehouses])
 
   /** 加载默认仓映射 */
   const loadMappings = useCallback(async () => {
@@ -44,7 +44,7 @@ export function DefaultWarehouseMapping({ warehouses, refreshKey }: DefaultWareh
       const result = await getDefaultWarehouses()
       const map: Record<string, string> = { raw: '', semi: '', finished: '' }
       for (const item of result) {
-        map[item.material_type] = String(item.warehouse_id)
+        map[item.materialType] = String(item.warehouseId)
       }
       setMappings(map)
     } catch (error) {
@@ -62,8 +62,8 @@ export function DefaultWarehouseMapping({ warehouses, refreshKey }: DefaultWareh
   const handleSave = async () => {
     // 构建非空映射
     const toSave = MATERIAL_TYPES.filter(type => mappings[type]).map(type => ({
-      material_type: type,
-      warehouse_id: Number(mappings[type]),
+      materialType: type,
+      warehouseId: Number(mappings[type]),
     }))
 
     setSaving(true)

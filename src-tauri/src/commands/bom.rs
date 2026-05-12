@@ -12,6 +12,7 @@ use crate::error::AppError;
 
 /// BOM 列表项
 #[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct BomListItem {
     pub id: i64,
     pub bom_code: String,
@@ -31,6 +32,7 @@ pub struct BomListItem {
 
 /// BOM 筛选参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BomFilter {
     pub keyword: Option<String>,
     pub status: Option<String>,
@@ -40,6 +42,7 @@ pub struct BomFilter {
 
 /// BOM 明细项（含物料信息）
 #[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct BomItemDetail {
     pub id: i64,
     pub bom_id: i64,
@@ -62,6 +65,7 @@ pub struct BomItemDetail {
 
 /// BOM 详情（头 + 明细）
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BomDetail {
     pub id: i64,
     pub bom_code: String,
@@ -99,6 +103,7 @@ struct BomHeaderRow {
 
 /// 保存 BOM 参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveBomParams {
     pub id: Option<i64>,
     pub material_id: i64,
@@ -111,6 +116,7 @@ pub struct SaveBomParams {
 
 /// 保存 BOM 明细参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveBomItemParams {
     pub child_material_id: i64,
     pub standard_qty: f64,
@@ -124,6 +130,7 @@ pub struct SaveBomItemParams {
 
 /// 物料反查结果
 #[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct MaterialReverseLookupItem {
     pub bom_id: i64,
     pub bom_code: String,
@@ -140,6 +147,7 @@ pub struct MaterialReverseLookupItem {
 
 /// 需求计算结果项
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DemandCalcItem {
     pub material_id: i64,
     pub material_code: Option<String>,
@@ -687,6 +695,7 @@ pub async fn get_bom_parent_materials(
 
 /// 父项物料选项
 #[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct BomParentMaterialOption {
     pub id: i64,
     pub code: String,
@@ -737,6 +746,7 @@ pub async fn get_bom_child_materials(
 
 /// 子物料选项
 #[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct BomChildMaterialOption {
     pub id: i64,
     pub code: String,

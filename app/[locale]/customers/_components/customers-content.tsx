@@ -150,7 +150,7 @@ export function CustomersContent() {
   const handleToggleStatus = async (customer: CustomerListItem) => {
     try {
       const args = buildToggleCustomerStatusArgs(customer.id, customer.isEnabled)
-      await toggleCustomerStatus(args.id, args.is_enabled)
+      await toggleCustomerStatus(args.id, args.isEnabled)
       toast.success(t('toast.toggleSuccess'))
       await loadCustomers()
     } catch (error) {

@@ -84,12 +84,12 @@ export function WarehouseDialog({ open, onOpenChange, warehouseId, onSuccess }: 
         setForm({
           code: wh.code,
           name: wh.name,
-          warehouseType: wh.warehouse_type,
+          warehouseType: wh.warehouseType,
           manager: wh.manager ?? '',
           phone: wh.phone ?? '',
           address: wh.address ?? '',
           remark: wh.remark ?? '',
-          isEnabled: wh.is_enabled,
+          isEnabled: wh.isEnabled,
         })
       } catch (e) {
         toast.error(String(e))
@@ -146,12 +146,12 @@ export function WarehouseDialog({ open, onOpenChange, warehouseId, onSuccess }: 
         id: warehouseId,
         code: form.code.trim(),
         name: form.name.trim(),
-        warehouse_type: form.warehouseType,
+        warehouseType: form.warehouseType,
         manager: form.manager.trim() || null,
         phone: form.phone.trim() || null,
         address: form.address.trim() || null,
         remark: form.remark.trim() || null,
-        is_enabled: form.isEnabled,
+        isEnabled: form.isEnabled,
       })
       onSuccess()
     } catch (error) {

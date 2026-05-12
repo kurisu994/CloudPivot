@@ -131,34 +131,34 @@ export function MetricsCards() {
           receivablesRes,
           payablesRes,
         ] = await Promise.all([
-          getSalesReportSummary({ start_date: today, end_date: today, page: 1, page_size: 1 }),
-          getSalesReportSummary({ start_date: yesterday, end_date: yesterday, page: 1, page_size: 1 }),
-          getSalesReportSummary({ start_date: monthStart, end_date: today, page: 1, page_size: 1 }),
+          getSalesReportSummary({ startDate: today, endDate: today, page: 1, pageSize: 1 }),
+          getSalesReportSummary({ startDate: yesterday, endDate: yesterday, page: 1, pageSize: 1 }),
+          getSalesReportSummary({ startDate: monthStart, endDate: today, page: 1, pageSize: 1 }),
           getSalesReportSummary({
-            start_date: previousMonthToDate.start,
-            end_date: previousMonthToDate.end,
+            startDate: previousMonthToDate.start,
+            endDate: previousMonthToDate.end,
             page: 1,
-            page_size: 1,
+            pageSize: 1,
           }),
-          getPurchaseReportSummary({ start_date: today, end_date: today, page: 1, page_size: 1 }),
-          getPurchaseReportSummary({ start_date: yesterday, end_date: yesterday, page: 1, page_size: 1 }),
+          getPurchaseReportSummary({ startDate: today, endDate: today, page: 1, pageSize: 1 }),
+          getPurchaseReportSummary({ startDate: yesterday, endDate: yesterday, page: 1, pageSize: 1 }),
           getInventoryList({ page: 1, pageSize: 1, alertStatus: 'low' }),
-          getReceivables({ page: 1, page_size: 1 }),
-          getPayables({ page: 1, page_size: 1 }),
+          getReceivables({ page: 1, pageSize: 1 }),
+          getPayables({ page: 1, pageSize: 1 }),
         ])
 
-        setTodaySales(salesTodayRes.stats.total_amount)
-        setYesterdaySales(salesYesterdayRes.stats.total_amount)
-        setMonthSales(salesMonthRes.stats.total_amount)
-        setPreviousMonthSales(salesPreviousMonthRes.stats.total_amount)
-        setTodayPurchase(purchaseTodayRes.stats.total_amount)
-        setYesterdayPurchase(purchaseYesterdayRes.stats.total_amount)
-        setTodaySalesDelta(calculateDelta(salesTodayRes.stats.total_amount, salesYesterdayRes.stats.total_amount))
-        setMonthSalesDelta(calculateDelta(salesMonthRes.stats.total_amount, salesPreviousMonthRes.stats.total_amount))
-        setTodayPurchaseDelta(calculateDelta(purchaseTodayRes.stats.total_amount, purchaseYesterdayRes.stats.total_amount))
+        setTodaySales(salesTodayRes.stats.totalAmount)
+        setYesterdaySales(salesYesterdayRes.stats.totalAmount)
+        setMonthSales(salesMonthRes.stats.totalAmount)
+        setPreviousMonthSales(salesPreviousMonthRes.stats.totalAmount)
+        setTodayPurchase(purchaseTodayRes.stats.totalAmount)
+        setYesterdayPurchase(purchaseYesterdayRes.stats.totalAmount)
+        setTodaySalesDelta(calculateDelta(salesTodayRes.stats.totalAmount, salesYesterdayRes.stats.totalAmount))
+        setMonthSalesDelta(calculateDelta(salesMonthRes.stats.totalAmount, salesPreviousMonthRes.stats.totalAmount))
+        setTodayPurchaseDelta(calculateDelta(purchaseTodayRes.stats.totalAmount, purchaseYesterdayRes.stats.totalAmount))
         setLowStockCount(inventoryLowRes.total)
-        setReceivables(receivablesRes.summary.total_overdue)
-        setPayables(payablesRes.summary.total_overdue)
+        setReceivables(receivablesRes.summary.totalOverdue)
+        setPayables(payablesRes.summary.totalOverdue)
       } catch {
         // 非 Tauri 环境下降级为 0
         setError(true)

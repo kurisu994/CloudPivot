@@ -392,7 +392,7 @@ export async function getSuppliers(filter: SupplierFilter): Promise<PaginatedRes
     total: filtered.length,
     items: filtered.slice(start, start + filter.pageSize),
     page: filter.page,
-    page_size: filter.pageSize,
+    pageSize: filter.pageSize,
   }
 }
 
@@ -532,7 +532,7 @@ export async function deleteSupplier(id: number): Promise<void> {
  */
 export async function toggleSupplierStatus(id: number, isEnabled: boolean): Promise<void> {
   if (isTauriEnv()) {
-    return invoke<void>('toggle_supplier_status', { id, is_enabled: isEnabled })
+    return invoke<void>('toggle_supplier_status', { id, isEnabled })
   }
   const listItem = MOCK_SUPPLIERS.find(item => item.id === id)
   if (listItem) {

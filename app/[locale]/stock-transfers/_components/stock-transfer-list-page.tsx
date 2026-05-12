@@ -211,10 +211,10 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
           ) : (
             items.map(item => (
               <TableRow key={item.id} className="group">
-                <TableCell className="font-mono text-sm">{item.transfer_no}</TableCell>
-                <TableCell>{item.from_warehouse_name}</TableCell>
-                <TableCell>{item.to_warehouse_name}</TableCell>
-                <TableCell className="text-sm">{item.transfer_date}</TableCell>
+                <TableCell className="font-mono text-sm">{item.transferNo}</TableCell>
+                <TableCell>{item.fromWarehouseName}</TableCell>
+                <TableCell>{item.toWarehouseName}</TableCell>
+                <TableCell className="text-sm">{item.transferDate}</TableCell>
                 <TableCell>
                   {item.status === 'draft' ? (
                     <Badge variant="outline">{t('statusDraft')}</Badge>
@@ -222,9 +222,9 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
                     <Badge variant="default">{t('statusConfirmed')}</Badge>
                   )}
                 </TableCell>
-                <TableCell className="text-right">{item.item_count}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.created_by_name || '-'}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.created_at?.split('T')[0] || '-'}</TableCell>
+                <TableCell className="text-right">{item.itemCount}</TableCell>
+                <TableCell className="text-muted-foreground text-sm">{item.createdByName || '-'}</TableCell>
+                <TableCell className="text-muted-foreground text-sm">{item.createdAt?.split('T')[0] || '-'}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="sm" onClick={() => onEdit(item.id)}>

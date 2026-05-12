@@ -157,7 +157,7 @@ export function SuppliersContent() {
   const handleToggleStatus = async (supplier: SupplierListItem) => {
     try {
       const args = buildToggleSupplierStatusArgs(supplier.id, supplier.isEnabled)
-      await toggleSupplierStatus(args.id, args.is_enabled)
+      await toggleSupplierStatus(args.id, args.isEnabled)
       toast.success(t('statusChangeSuccess'))
       await loadSuppliers()
     } catch (error) {

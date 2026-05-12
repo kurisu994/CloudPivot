@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 /** 工单列表项 */
 interface ProductionOrderListItem {
   id: number
-  order_no: string
+  orderNo: string
   custom_order_no: string | null
   output_material_name: string
   planned_qty: number
@@ -71,7 +71,7 @@ export function ProductionOrderTable({ items, loading, onEdit, onDelete }: Props
         ) : (
           items.map(item => (
             <tr key={item.id} className="hover:bg-muted/50 border-b transition-colors">
-              <td className="bg-background sticky left-0 z-10 px-3 py-2.5 text-sm font-medium">{item.order_no}</td>
+              <td className="bg-background sticky left-0 z-10 px-3 py-2.5 text-sm font-medium">{item.orderNo}</td>
               <td className="px-3 py-2.5 text-sm">{item.output_material_name}</td>
               <td className="px-3 py-2.5 text-right text-sm">{item.planned_qty}</td>
               <td className="px-3 py-2.5 text-right text-sm">

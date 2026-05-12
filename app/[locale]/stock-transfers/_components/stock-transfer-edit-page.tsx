@@ -61,22 +61,22 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
     try {
       const d = await getTransferDetail(transferId)
       setDetail(d)
-      setFromWarehouseId(String(d.from_warehouse_id))
-      setToWarehouseId(String(d.to_warehouse_id))
-      setTransferDate(d.transfer_date)
+      setFromWarehouseId(String(d.fromWarehouseId))
+      setToWarehouseId(String(d.toWarehouseId))
+      setTransferDate(d.transferDate)
       setRemark(d.remark || '')
       setLines(
         d.items.map(item => ({
           key: `existing-${item.id}`,
-          materialId: item.material_id,
-          materialCode: item.material_code || '',
-          materialName: item.material_name || '',
+          materialId: item.materialId,
+          materialCode: item.materialCode || '',
+          materialName: item.materialName || '',
           spec: item.spec,
-          unitId: item.unit_id,
-          unitName: item.unit_name_snapshot,
-          conversionRate: item.conversion_rate_snapshot,
+          unitId: item.unitId,
+          unitName: item.unitNameSnapshot,
+          conversionRate: item.conversionRateSnapshot,
           quantity: item.quantity,
-          lotId: item.lot_id,
+          lotId: item.lotId,
           remark: item.remark || '',
         })),
       )
@@ -218,7 +218,7 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
           <ArrowLeft className="size-4" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-foreground text-2xl font-bold">{detail ? `${t('transferNo')}: ${detail.transfer_no}` : t('createTransfer')}</h1>
+          <h1 className="text-foreground text-2xl font-bold">{detail ? `${t('transferNo')}: ${detail.transferNo}` : t('createTransfer')}</h1>
           {detail && (
             <div className="flex items-center gap-2 mt-1">
               {detail.status === 'draft' ? (
@@ -268,7 +268,7 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
                     </SelectContent>
                   </Select>
                 ) : (
-                  <span className="text-sm">{detail?.from_warehouse_name}</span>
+                  <span className="text-sm">{detail?.fromWarehouseName}</span>
                 )}
               </div>
               <div>
@@ -287,7 +287,7 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
                     </SelectContent>
                   </Select>
                 ) : (
-                  <span className="text-sm">{detail?.to_warehouse_name}</span>
+                  <span className="text-sm">{detail?.toWarehouseName}</span>
                 )}
               </div>
               <div>
@@ -295,7 +295,7 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
                 {isEditable ? (
                   <Input type="date" value={transferDate} onChange={e => setTransferDate(e.target.value)} />
                 ) : (
-                  <span className="text-sm">{detail?.transfer_date}</span>
+                  <span className="text-sm">{detail?.transferDate}</span>
                 )}
               </div>
               <div>

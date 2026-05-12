@@ -23,15 +23,15 @@ export function BestSellers({ className }: { className?: string }) {
       try {
         const end = new Date().toISOString().slice(0, 10)
         const start = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
-        const res = await getSalesMaterialDetail({ start_date: start, end_date: end, page: 1, page_size: 5 })
+        const res = await getSalesMaterialDetail({ startDate: start, endDate: end, page: 1, pageSize: 5 })
         if (res.items.length === 0) {
           setProducts([])
           return
         }
         const maxAmount = Math.max(...res.items.map(i => i.amount))
         const mapped = res.items.map(item => ({
-          name: item.material_name,
-          unitName: item.unit_name,
+          name: item.materialName,
+          unitName: item.unitName,
           units: Math.round(item.quantity),
           percent: maxAmount > 0 ? Math.round((item.amount / maxAmount) * 100) : 0,
         }))

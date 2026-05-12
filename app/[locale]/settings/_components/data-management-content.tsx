@@ -104,7 +104,7 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
               variant="outline"
               disabled={!status?.backups.length}
               className="rounded-lg px-4 py-2 text-sm font-bold"
-              onClick={() => status?.backups[0] && handleRestore(status.backups[0].file_name)}
+              onClick={() => status?.backups[0] && handleRestore(status.backups[0].fileName)}
             >
               {t('restoreBackup')}
             </Button>
@@ -114,22 +114,22 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
         <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
             <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('dbLocation')}</div>
-            <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{status?.db_path ?? '-'}</div>
+            <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{status?.dbPath ?? '-'}</div>
           </div>
           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
             <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('dbSize')}</div>
-            <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{formatBytes(status?.db_size_bytes ?? 0)}</div>
+            <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{formatBytes(status?.dbSizeBytes ?? 0)}</div>
           </div>
           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
             <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('lastBackupTime')}</div>
-            <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{status?.last_backup_at ?? '-'}</div>
+            <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{status?.lastBackupAt ?? '-'}</div>
           </div>
         </div>
 
         <div className="space-y-6">
           <div className="flex flex-col gap-2">
             <Label className="text-sm font-bold text-slate-600 dark:text-slate-300">{t('backupPath')}</Label>
-            <Input readOnly value={status?.backup_dir ?? '-'} className="flex-1 bg-slate-50 dark:bg-slate-900/50" />
+            <Input readOnly value={status?.backupDir ?? '-'} className="flex-1 bg-slate-50 dark:bg-slate-900/50" />
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -180,14 +180,14 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
             </thead>
             <tbody className="divide-y divide-slate-50 text-sm font-medium dark:divide-slate-800/50">
               {(status?.backups ?? []).map(item => (
-                <tr key={item.file_name} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                  <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">{item.created_at}</td>
-                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{formatBytes(item.size_bytes)}</td>
+                <tr key={item.fileName} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                  <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">{item.createdAt}</td>
+                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{formatBytes(item.sizeBytes)}</td>
                   <td className="flex justify-end gap-2 px-6 py-4 text-right">
-                    <Button variant="outline" size="sm" disabled={busyFile === item.file_name} onClick={() => handleRestore(item.file_name)}>
+                    <Button variant="outline" size="sm" disabled={busyFile === item.fileName} onClick={() => handleRestore(item.fileName)}>
                       {t('restore')}
                     </Button>
-                    <Button variant="outline" size="sm" disabled={busyFile === item.file_name} onClick={() => handleDelete(item.file_name)}>
+                    <Button variant="outline" size="sm" disabled={busyFile === item.fileName} onClick={() => handleDelete(item.fileName)}>
                       <Trash2 className="size-4" />
                     </Button>
                   </td>
@@ -222,13 +222,13 @@ function DataImportExportSection({ onRefresh }: { onRefresh: () => Promise<void>
     const nextErrors: string[] = []
     items.forEach((item, index) => {
       const line = index + 2
-      if (!item.material_code?.trim()) nextErrors.push(t('initialImport.errors.materialRequired', { line }))
-      if (!item.warehouse_code?.trim()) nextErrors.push(t('initialImport.errors.warehouseRequired', { line }))
+      if (!item.materialCode?.trim()) nextErrors.push(t('initialImport.errors.materialRequired', { line }))
+      if (!item.warehouseCode?.trim()) nextErrors.push(t('initialImport.errors.warehouseRequired', { line }))
       if (!item.quantity || item.quantity <= 0) nextErrors.push(t('initialImport.errors.quantityRequired', { line }))
-      if (item.unit_cost_usd === null || item.unit_cost_usd === undefined || item.unit_cost_usd < 0) {
+      if (item.unitCostUsd === null || item.unitCostUsd === undefined || item.unitCostUsd < 0) {
         nextErrors.push(t('initialImport.errors.costRequired', { line }))
       }
-      if (!item.received_date?.trim()) nextErrors.push(t('initialImport.errors.dateRequired', { line }))
+      if (!item.receivedDate?.trim()) nextErrors.push(t('initialImport.errors.dateRequired', { line }))
     })
     return nextErrors
   }
@@ -241,7 +241,7 @@ function DataImportExportSection({ onRefresh }: { onRefresh: () => Promise<void>
 
     try {
       const parsedRows = await readBusinessExcelRows<InitialInventoryImportRow>(file, initialInventoryExcelColumns)
-      const filteredRows = parsedRows.filter(row => row.material_code || row.warehouse_code)
+      const filteredRows = parsedRows.filter(row => row.materialCode || row.warehouseCode)
       setRows(filteredRows)
       setErrors(validateRows(filteredRows))
       setDialogOpen(true)
@@ -369,11 +369,11 @@ function DataImportExportSection({ onRefresh }: { onRefresh: () => Promise<void>
                 </thead>
                 <tbody>
                   {rows.slice(0, 20).map((row, index) => (
-                    <tr key={`${row.material_code}-${row.warehouse_code}-${index}`} className="border-t">
-                      <td className="px-3 py-2">{row.material_code}</td>
-                      <td className="px-3 py-2">{row.warehouse_code}</td>
+                    <tr key={`${row.materialCode}-${row.warehouseCode}-${index}`} className="border-t">
+                      <td className="px-3 py-2">{row.materialCode}</td>
+                      <td className="px-3 py-2">{row.warehouseCode}</td>
                       <td className="px-3 py-2">{row.quantity}</td>
-                      <td className="px-3 py-2">{row.received_date}</td>
+                      <td className="px-3 py-2">{row.receivedDate}</td>
                     </tr>
                   ))}
                 </tbody>

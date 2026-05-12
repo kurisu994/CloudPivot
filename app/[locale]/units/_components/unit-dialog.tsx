@@ -80,12 +80,12 @@ export function UnitDialog({ open, onOpenChange, unitId, onSuccess }: UnitDialog
         const unit = await getUnitById(unitId)
         setForm({
           name: unit.name,
-          nameEn: unit.name_en ?? '',
-          nameVi: unit.name_vi ?? '',
+          nameEn: unit.nameEn ?? '',
+          nameVi: unit.nameVi ?? '',
           symbol: unit.symbol ?? '',
-          decimalPlaces: String(unit.decimal_places),
-          sortOrder: String(unit.sort_order),
-          isEnabled: unit.is_enabled,
+          decimalPlaces: String(unit.decimalPlaces),
+          sortOrder: String(unit.sortOrder),
+          isEnabled: unit.isEnabled,
         })
       } catch (e) {
         toast.error(String(e))
@@ -117,12 +117,12 @@ export function UnitDialog({ open, onOpenChange, unitId, onSuccess }: UnitDialog
       await saveUnit({
         id: unitId,
         name: form.name.trim(),
-        name_en: form.nameEn.trim() || null,
-        name_vi: form.nameVi.trim() || null,
+        nameEn: form.nameEn.trim() || null,
+        nameVi: form.nameVi.trim() || null,
         symbol: form.symbol.trim() || null,
-        decimal_places: Number(form.decimalPlaces),
-        sort_order: Number(form.sortOrder) || 0,
-        is_enabled: form.isEnabled,
+        decimalPlaces: Number(form.decimalPlaces),
+        sortOrder: Number(form.sortOrder) || 0,
+        isEnabled: form.isEnabled,
       })
       onSuccess()
     } catch (error) {

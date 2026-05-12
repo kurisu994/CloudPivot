@@ -101,12 +101,12 @@ export function SetupWizardContent() {
       const warehouses: WarehouseSetupItem[] = [
         {
           name: rawName,
-          warehouse_type: 'raw' as const,
+          warehouseType: 'raw' as const,
           manager: step2Data.rawManager.trim() || undefined,
         },
         {
           name: finishedName,
-          warehouse_type: 'finished' as const,
+          warehouseType: 'finished' as const,
           manager: step2Data.finishedManager.trim() || undefined,
         },
       ]
@@ -116,7 +116,7 @@ export function SetupWizardContent() {
       if (semiName) {
         warehouses.push({
           name: semiName,
-          warehouse_type: 'semi' as const,
+          warehouseType: 'semi' as const,
           manager: step2Data.semiManager.trim() || undefined,
         })
       }

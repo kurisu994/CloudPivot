@@ -31,8 +31,8 @@ export function InventoryDonut({ className }: { className?: string }) {
         // 按分类聚合库存价值
         const map = new Map<string, number>()
         for (const item of res.items) {
-          const cat = item.category_name ?? t('uncategorized')
-          map.set(cat, (map.get(cat) ?? 0) + (item.inventory_value ?? 0))
+          const cat = item.categoryName ?? t('uncategorized')
+          map.set(cat, (map.get(cat) ?? 0) + (item.inventoryValue ?? 0))
         }
         const sorted = [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6)
         const mapped = sorted.map(([name, value], idx) => ({

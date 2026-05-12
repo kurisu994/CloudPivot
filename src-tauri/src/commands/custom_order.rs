@@ -20,6 +20,7 @@ use super::{CurrentUser, PaginatedResponse};
 
 /// 定制单列表项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct CustomOrderListItem {
     pub id: i64,
     pub order_no: String,
@@ -40,6 +41,7 @@ pub struct CustomOrderListItem {
 
 /// 定制单筛选参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CustomOrderFilter {
     pub keyword: Option<String>,
     pub customer_id: Option<i64>,
@@ -53,6 +55,7 @@ pub struct CustomOrderFilter {
 
 /// 定制配置明细数据
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct CustomOrderItemData {
     pub id: Option<i64>,
     pub config_key: String,
@@ -65,6 +68,7 @@ pub struct CustomOrderItemData {
 
 /// 定制 BOM 摘要
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CustomBomSummary {
     pub bom_id: i64,
     pub bom_code: String,
@@ -75,6 +79,7 @@ pub struct CustomBomSummary {
 
 /// 预留状态项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct ReservationStatusItem {
     pub material_id: i64,
     pub material_code: Option<String>,
@@ -88,6 +93,7 @@ pub struct ReservationStatusItem {
 
 /// 定制单详情（含配置明细 + 定制 BOM + 预留状态）
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CustomOrderDetail {
     pub id: i64,
     pub order_no: String,
@@ -171,6 +177,7 @@ struct CustomOrderItemRow {
 
 /// 保存定制单参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveCustomOrderParams {
     pub id: Option<i64>,
     pub customer_id: i64,
@@ -191,6 +198,7 @@ pub struct SaveCustomOrderParams {
 
 /// 保存定制配置明细参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveCustomOrderItemParams {
     pub config_key: String,
     pub standard_value: Option<String>,

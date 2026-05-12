@@ -22,6 +22,7 @@ use super::{CurrentUser, PaginatedResponse};
 
 /// 销售单列表项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct SalesOrderListItem {
     pub id: i64,
     pub order_no: String,
@@ -45,6 +46,7 @@ pub struct SalesOrderListItem {
 
 /// 销售单明细项
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct SalesOrderItemData {
     pub id: Option<i64>,
     pub material_id: i64,
@@ -67,6 +69,7 @@ pub struct SalesOrderItemData {
 
 /// 销售单详情（含明细）
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SalesOrderDetail {
     pub id: i64,
     pub order_no: String,
@@ -101,6 +104,7 @@ pub struct SalesOrderDetail {
 
 /// 保存销售单参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveSalesOrderParams {
     pub id: Option<i64>,
     pub customer_id: i64,
@@ -119,6 +123,7 @@ pub struct SaveSalesOrderParams {
 
 /// 保存销售单明细参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveSalesOrderItemParams {
     #[allow(dead_code)]
     pub id: Option<i64>,
@@ -136,6 +141,7 @@ pub struct SaveSalesOrderItemParams {
 
 /// 销售单列表筛选参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SalesOrderFilter {
     pub keyword: Option<String>,
     pub customer_id: Option<i64>,
@@ -923,6 +929,7 @@ pub async fn delete_sales_order(
 
 /// 出库单列表项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct OutboundOrderListItem {
     pub id: i64,
     pub order_no: String,
@@ -944,6 +951,7 @@ pub struct OutboundOrderListItem {
 
 /// 出库单列表筛选
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct OutboundOrderFilter {
     pub keyword: Option<String>,
     pub sales_id: Option<i64>,
@@ -958,6 +966,7 @@ pub struct OutboundOrderFilter {
 
 /// 保存出库单明细参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveOutboundItemParams {
     /// 关联销售单明细行 ID
     pub sales_order_item_id: Option<i64>,
@@ -974,6 +983,7 @@ pub struct SaveOutboundItemParams {
 
 /// 保存出库单参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveOutboundOrderParams {
     #[allow(dead_code)]
     pub id: Option<i64>,
@@ -989,6 +999,7 @@ pub struct SaveOutboundOrderParams {
 
 /// 销售单待出库明细
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct PendingOutboundItem {
     pub sales_order_item_id: i64,
     pub material_id: i64,
@@ -1752,6 +1763,7 @@ async fn update_sales_order_status(
 
 /// 销售退货列表项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct SalesReturnListItem {
     pub id: i64,
     pub return_no: String,
@@ -1770,6 +1782,7 @@ pub struct SalesReturnListItem {
 
 /// 销售退货列表筛选
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SalesReturnFilter {
     pub keyword: Option<String>,
     pub customer_id: Option<i64>,
@@ -1782,6 +1795,7 @@ pub struct SalesReturnFilter {
 
 /// 出库单可退明细
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct ReturnableOutboundItem {
     pub outbound_item_id: i64,
     pub material_id: i64,
@@ -1803,6 +1817,7 @@ pub struct ReturnableOutboundItem {
 
 /// 保存销售退货明细参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveSalesReturnItemParams {
     pub source_outbound_item_id: i64,
     pub lot_id: Option<i64>,
@@ -1817,6 +1832,7 @@ pub struct SaveSalesReturnItemParams {
 
 /// 保存销售退货单参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveSalesReturnParams {
     #[allow(dead_code)]
     pub id: Option<i64>,

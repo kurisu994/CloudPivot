@@ -1,7 +1,7 @@
 /** 切换客户状态的参数类型 */
 export interface ToggleCustomerStatusArgs extends Record<string, unknown> {
   id: number
-  is_enabled: boolean
+  isEnabled: boolean
 }
 
 /** 客户表单校验输入 */
@@ -23,7 +23,7 @@ export type CustomerValidationErrorKey = 'nameRequired' | 'contactPersonRequired
 export function buildToggleCustomerStatusArgs(id: number, currentEnabled: boolean): ToggleCustomerStatusArgs {
   return {
     id,
-    is_enabled: !currentEnabled,
+    isEnabled: !currentEnabled,
   }
 }
 

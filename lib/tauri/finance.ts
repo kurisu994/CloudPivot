@@ -7,31 +7,31 @@ import { invoke, isTauriEnv } from './core'
 
 /** 应付账款概览 KPI */
 export interface PayablesSummary {
-  total_payable: number
-  total_paid: number
-  total_partial: number
-  total_overdue: number
+  totalPayable: number
+  totalPaid: number
+  totalPartial: number
+  totalOverdue: number
 }
 
 /** 应付账款列表项 */
 export interface PayableListItem {
   id: number
-  supplier_id: number
-  supplier_name: string
-  inbound_id: number | null
-  return_id: number | null
-  adjustment_type: string
-  order_no: string | null
-  payable_date: string
+  supplierId: number
+  supplierName: string
+  inboundId: number | null
+  returnId: number | null
+  adjustmentType: string
+  orderNo: string | null
+  payableDate: string
   currency: string
-  exchange_rate: number
-  payable_amount: number
-  paid_amount: number
-  unpaid_amount: number
-  due_date: string | null
+  exchangeRate: number
+  payableAmount: number
+  paidAmount: number
+  unpaidAmount: number
+  dueDate: string | null
   status: string
   remark: string | null
-  created_at: string | null
+  createdAt: string | null
 }
 
 /** 应付账款列表响应 */
@@ -43,62 +43,62 @@ export interface PayablesResponse {
 /** 应付账款筛选参数 */
 export interface PayablesFilter {
   keyword?: string
-  supplier_id?: number
+  supplierId?: number
   status?: string
-  date_from?: string
-  date_to?: string
+  dateFrom?: string
+  dateTo?: string
   page: number
-  page_size: number
+  pageSize: number
 }
 
 /** 付款记录项 */
 export interface PaymentRecordItem {
   id: number
-  payable_id: number
-  payment_date: string
-  payment_amount: number
+  payableId: number
+  paymentDate: string
+  paymentAmount: number
   currency: string
-  payment_method: string | null
+  paymentMethod: string | null
   remark: string | null
-  created_at: string | null
+  createdAt: string | null
 }
 
 /** 登记付款参数 */
 export interface RecordPaymentParams {
-  payable_id: number
-  payment_date: string
-  payment_amount: number
-  payment_method?: string | null
+  payableId: number
+  paymentDate: string
+  paymentAmount: number
+  paymentMethod?: string | null
   remark?: string | null
 }
 
 /** 应收账款概览 KPI */
 export interface ReceivablesSummary {
-  total_receivable: number
-  total_received: number
-  total_partial: number
-  total_overdue: number
+  totalReceivable: number
+  totalReceived: number
+  totalPartial: number
+  totalOverdue: number
 }
 
 /** 应收账款列表项 */
 export interface ReceivableListItem {
   id: number
-  customer_id: number
-  customer_name: string
-  outbound_id: number | null
-  return_id: number | null
-  adjustment_type: string
-  order_no: string | null
-  receivable_date: string
+  customerId: number
+  customerName: string
+  outboundId: number | null
+  returnId: number | null
+  adjustmentType: string
+  orderNo: string | null
+  receivableDate: string
   currency: string
-  exchange_rate: number
-  receivable_amount: number
-  received_amount: number
-  unreceived_amount: number
-  due_date: string | null
+  exchangeRate: number
+  receivableAmount: number
+  receivedAmount: number
+  unreceivedAmount: number
+  dueDate: string | null
   status: string
   remark: string | null
-  created_at: string | null
+  createdAt: string | null
 }
 
 /** 应收账款列表响应 */
@@ -110,32 +110,32 @@ export interface ReceivablesResponse {
 /** 应收账款筛选参数 */
 export interface ReceivablesFilter {
   keyword?: string
-  customer_id?: number
+  customerId?: number
   status?: string
-  date_from?: string
-  date_to?: string
+  dateFrom?: string
+  dateTo?: string
   page: number
-  page_size: number
+  pageSize: number
 }
 
 /** 收款记录项 */
 export interface ReceiptRecordItem {
   id: number
-  receivable_id: number
-  receipt_date: string
-  receipt_amount: number
+  receivableId: number
+  receiptDate: string
+  receiptAmount: number
   currency: string
-  receipt_method: string | null
+  receiptMethod: string | null
   remark: string | null
-  created_at: string | null
+  createdAt: string | null
 }
 
 /** 登记收款参数 */
 export interface RecordReceiptParams {
-  receivable_id: number
-  receipt_date: string
-  receipt_amount: number
-  receipt_method?: string | null
+  receivableId: number
+  receiptDate: string
+  receiptAmount: number
+  receiptMethod?: string | null
   remark?: string | null
 }
 
@@ -145,8 +145,8 @@ export interface RecordReceiptParams {
 export async function getPayables(filter: PayablesFilter): Promise<PayablesResponse> {
   if (!isTauriEnv()) {
     return {
-      summary: { total_payable: 0, total_paid: 0, total_partial: 0, total_overdue: 0 },
-      list: { total: 0, items: [], page: filter.page, page_size: filter.page_size },
+      summary: { totalPayable: 0, totalPaid: 0, totalPartial: 0, totalOverdue: 0 },
+      list: { total: 0, items: [], page: filter.page, pageSize: filter.pageSize },
     }
   }
   return invoke<PayablesResponse>('get_payables', { filter })
@@ -169,8 +169,8 @@ export async function recordPayment(params: RecordPaymentParams): Promise<number
 export async function getReceivables(filter: ReceivablesFilter): Promise<ReceivablesResponse> {
   if (!isTauriEnv()) {
     return {
-      summary: { total_receivable: 0, total_received: 0, total_partial: 0, total_overdue: 0 },
-      list: { total: 0, items: [], page: filter.page, page_size: filter.page_size },
+      summary: { totalReceivable: 0, totalReceived: 0, totalPartial: 0, totalOverdue: 0 },
+      list: { total: 0, items: [], page: filter.page, pageSize: filter.pageSize },
     }
   }
   return invoke<ReceivablesResponse>('get_receivables', { filter })

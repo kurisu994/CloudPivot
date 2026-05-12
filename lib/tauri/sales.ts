@@ -109,7 +109,7 @@ export async function getOutboundOrders(filter: OutboundOrderFilter): Promise<Pa
   if (isTauriEnv()) {
     return invoke<PaginatedResponse<OutboundOrderListItem>>('get_outbound_orders', { filter })
   }
-  return { total: 0, items: [], page: filter.page, page_size: filter.pageSize }
+  return { total: 0, items: [], page: filter.page, pageSize: filter.pageSize }
 }
 
 /** 保存并确认出库单 */
@@ -206,7 +206,7 @@ export async function getSalesReturns(filter: SalesReturnFilter): Promise<Pagina
   if (isTauriEnv()) {
     return invoke<PaginatedResponse<SalesReturnListItem>>('get_sales_returns', { filter })
   }
-  return { total: 0, items: [], page: filter.page, page_size: filter.pageSize }
+  return { total: 0, items: [], page: filter.page, pageSize: filter.pageSize }
 }
 
 /** 保存并确认销售退货 */

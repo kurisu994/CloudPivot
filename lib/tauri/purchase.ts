@@ -140,7 +140,7 @@ export async function getPurchaseOrders(filter: PurchaseOrderFilter): Promise<Pa
     return invoke<PaginatedResponse<PurchaseOrderListItem>>('get_purchase_orders', { filter })
   }
   // Web mock：返回空列表
-  return { total: 0, items: [], page: filter.page, page_size: filter.pageSize }
+  return { total: 0, items: [], page: filter.page, pageSize: filter.pageSize }
 }
 
 /** 获取采购单详情 */
@@ -284,7 +284,7 @@ export async function getInboundOrders(filter: InboundOrderFilter): Promise<Pagi
   if (isTauriEnv()) {
     return invoke<PaginatedResponse<InboundOrderListItem>>('get_inbound_orders', { filter })
   }
-  return { total: 0, items: [], page: filter.page, page_size: filter.pageSize }
+  return { total: 0, items: [], page: filter.page, pageSize: filter.pageSize }
 }
 
 /** 保存并确认入库单 */
@@ -381,7 +381,7 @@ export async function getPurchaseReturns(filter: PurchaseReturnFilter): Promise<
   if (isTauriEnv()) {
     return invoke<PaginatedResponse<PurchaseReturnListItem>>('get_purchase_returns', { filter })
   }
-  return { total: 0, items: [], page: filter.page, page_size: filter.pageSize }
+  return { total: 0, items: [], page: filter.page, pageSize: filter.pageSize }
 }
 
 /** 保存并确认采购退货 */

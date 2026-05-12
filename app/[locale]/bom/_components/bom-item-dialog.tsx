@@ -23,8 +23,8 @@ interface ChildMaterialOption {
   code: string
   name: string
   spec: string | null
-  material_type: string
-  unit_name: string | null
+  materialType: string
+  unitName: string | null
   ref_cost_price: number
 }
 
@@ -33,13 +33,13 @@ interface ChildMaterialOption {
 /* ------------------------------------------------------------------ */
 
 const MOCK_CHILD_MATERIALS: ChildMaterialOption[] = [
-  { id: 1, code: 'M-0001', name: '白橡实木板', spec: '2440×1220', material_type: 'raw', unit_name: '张', ref_cost_price: 28000 },
-  { id: 2, code: 'M-0002', name: '不锈钢铰链', spec: '40mm', material_type: 'raw', unit_name: '个', ref_cost_price: 48 },
-  { id: 7, code: 'M-0007', name: '木方', spec: '40×40', material_type: 'raw', unit_name: '根', ref_cost_price: 1200 },
-  { id: 8, code: 'M-0008', name: '不锈钢腿', spec: '710mm', material_type: 'raw', unit_name: '个', ref_cost_price: 3500 },
-  { id: 9, code: 'M-0009', name: '螺丝M6', spec: '30mm', material_type: 'raw', unit_name: '个', ref_cost_price: 15 },
-  { id: 10, code: 'M-0010', name: '木蜡油', spec: null, material_type: 'raw', unit_name: '千克', ref_cost_price: 6800 },
-  { id: 11, code: 'M-0011', name: '包装纸箱', spec: '特大', material_type: 'raw', unit_name: '个', ref_cost_price: 2200 },
+  { id: 1, code: 'M-0001', name: '白橡实木板', spec: '2440×1220', materialType: 'raw', unitName: '张', ref_cost_price: 28000 },
+  { id: 2, code: 'M-0002', name: '不锈钢铰链', spec: '40mm', materialType: 'raw', unitName: '个', ref_cost_price: 48 },
+  { id: 7, code: 'M-0007', name: '木方', spec: '40×40', materialType: 'raw', unitName: '根', ref_cost_price: 1200 },
+  { id: 8, code: 'M-0008', name: '不锈钢腿', spec: '710mm', materialType: 'raw', unitName: '个', ref_cost_price: 3500 },
+  { id: 9, code: 'M-0009', name: '螺丝M6', spec: '30mm', materialType: 'raw', unitName: '个', ref_cost_price: 15 },
+  { id: 10, code: 'M-0010', name: '木蜡油', spec: null, materialType: 'raw', unitName: '千克', ref_cost_price: 6800 },
+  { id: 11, code: 'M-0011', name: '包装纸箱', spec: '特大', materialType: 'raw', unitName: '个', ref_cost_price: 2200 },
 ]
 
 /* ------------------------------------------------------------------ */
@@ -111,11 +111,11 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
     if (editingItem) {
       setSelectedMaterial({
         id: editingItem.child_material_id,
-        code: editingItem.material_code ?? '',
-        name: editingItem.material_name ?? '',
+        code: editingItem.materialCode ?? '',
+        name: editingItem.materialName ?? '',
         spec: editingItem.material_spec ?? null,
-        material_type: 'raw',
-        unit_name: editingItem.unit_name ?? null,
+        materialType: 'raw',
+        unitName: editingItem.unitName ?? null,
         ref_cost_price: editingItem.ref_cost_price ?? 0,
       })
       setStandardQty(editingItem.standard_qty.toString())
@@ -142,10 +142,10 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
 
     onSave({
       child_material_id: selectedMaterial.id,
-      material_code: selectedMaterial.code,
-      material_name: selectedMaterial.name,
+      materialCode: selectedMaterial.code,
+      materialName: selectedMaterial.name,
       material_spec: selectedMaterial.spec,
-      unit_name: selectedMaterial.unit_name,
+      unitName: selectedMaterial.unitName,
       ref_cost_price: selectedMaterial.ref_cost_price,
       standard_qty: qty,
       wastage_rate: wastage,
@@ -198,7 +198,7 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
                       <span className="font-medium">{m.name}</span>
                       <span className="text-muted-foreground text-xs">{m.code}</span>
                       {m.spec && <span className="text-muted-foreground text-xs">({m.spec})</span>}
-                      <span className="text-muted-foreground ml-auto text-xs">{m.unit_name}</span>
+                      <span className="text-muted-foreground ml-auto text-xs">{m.unitName}</span>
                     </button>
                   ))}
                 </div>

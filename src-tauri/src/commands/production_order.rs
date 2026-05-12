@@ -20,6 +20,7 @@ use super::{CurrentUser, PaginatedResponse};
 
 /// 工单列表项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct ProductionOrderListItem {
     pub id: i64,
     pub order_no: String,
@@ -39,6 +40,7 @@ pub struct ProductionOrderListItem {
 
 /// 工单筛选参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProductionOrderFilter {
     pub keyword: Option<String>,
     pub status: Option<String>,
@@ -50,6 +52,7 @@ pub struct ProductionOrderFilter {
 
 /// 工单详情
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProductionOrderDetail {
     pub id: i64,
     pub order_no: String,
@@ -74,6 +77,7 @@ pub struct ProductionOrderDetail {
 
 /// 工单物料需求行
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct ProductionMaterialItem {
     pub id: i64,
     pub material_id: i64,
@@ -88,6 +92,7 @@ pub struct ProductionMaterialItem {
 
 /// 完工入库记录
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct ProductionCompletionItem {
     pub id: i64,
     pub completion_no: String,
@@ -101,6 +106,7 @@ pub struct ProductionCompletionItem {
 
 /// 新建/编辑工单参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveProductionOrderInput {
     pub id: Option<i64>,
     pub bom_id: i64,
@@ -113,6 +119,7 @@ pub struct SaveProductionOrderInput {
 
 /// 领料参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PickMaterialInput {
     pub production_order_id: i64,
     pub items: Vec<PickMaterialLine>,
@@ -120,6 +127,7 @@ pub struct PickMaterialInput {
 
 /// 领料行
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PickMaterialLine {
     pub material_id: i64,
     pub quantity: f64,
@@ -128,6 +136,7 @@ pub struct PickMaterialLine {
 
 /// 退料参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ReturnMaterialInput {
     pub production_order_id: i64,
     pub items: Vec<ReturnMaterialLine>,
@@ -135,6 +144,7 @@ pub struct ReturnMaterialInput {
 
 /// 退料行
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ReturnMaterialLine {
     pub material_id: i64,
     pub quantity: f64,
@@ -143,6 +153,7 @@ pub struct ReturnMaterialLine {
 
 /// 完工入库参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CompleteProductionInput {
     pub production_order_id: i64,
     pub quantity: f64,

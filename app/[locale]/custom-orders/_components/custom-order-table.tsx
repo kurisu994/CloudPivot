@@ -20,10 +20,10 @@ import { formatAmount } from '@/lib/currency'
 /** 定制单列表项 */
 export interface CustomOrderListItem {
   id: number
-  order_no: string
-  customer_id: number
-  customer_name: string
-  order_date: string
+  orderNo: string
+  customerId: number
+  customerName: string
+  orderDate: string
   delivery_date: string | null
   currency: string
   custom_type: string
@@ -199,11 +199,11 @@ export function CustomOrderTable({
           orders.map(order => (
             <TableRow key={order.id} className="group">
               {/* 定制单号（固定首列） */}
-              <TableCell className={`font-mono text-xs font-medium ${BUSINESS_LIST_STICKY_CELL_CLASS}`}>{order.order_no}</TableCell>
+              <TableCell className={`font-mono text-xs font-medium ${BUSINESS_LIST_STICKY_CELL_CLASS}`}>{order.orderNo}</TableCell>
 
               {/* 客户 */}
               <TableCell>
-                <div className="truncate font-medium">{order.customer_name}</div>
+                <div className="truncate font-medium">{order.customerName}</div>
               </TableCell>
 
               {/* 定制类型 */}
@@ -236,7 +236,7 @@ export function CustomOrderTable({
               </TableCell>
 
               {/* 日期 */}
-              <TableCell className="text-sm">{order.order_date}</TableCell>
+              <TableCell className="text-sm">{order.orderDate}</TableCell>
 
               {/* 操作 */}
               <TableCell className="text-right">{renderActions(order)}</TableCell>

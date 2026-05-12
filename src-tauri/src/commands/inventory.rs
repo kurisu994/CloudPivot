@@ -21,6 +21,7 @@ use super::{CurrentUser, PaginatedResponse};
 
 /// 库存列表项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct InventoryListItem {
     pub id: i64,
     pub material_id: i64,
@@ -58,6 +59,7 @@ pub struct InventoryFilter {
 
 /// 库存详情 — 分仓汇总项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct InventoryWarehouseSummary {
     pub warehouse_id: i64,
     pub warehouse_name: String,
@@ -72,6 +74,7 @@ pub struct InventoryWarehouseSummary {
 
 /// 库存详情 — 批次明细
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct InventoryLotDetail {
     pub id: i64,
     pub lot_no: String,
@@ -87,6 +90,7 @@ pub struct InventoryLotDetail {
 
 /// 库存详情 — 近期流水
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct RecentTransaction {
     pub id: i64,
     pub transaction_no: String,
@@ -101,6 +105,7 @@ pub struct RecentTransaction {
 
 /// 库存详情（聚合）
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InventoryDetail {
     pub material_id: i64,
     pub material_code: String,
@@ -120,6 +125,7 @@ pub struct InventoryDetail {
 
 /// 流水列表项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct TransactionListItem {
     pub id: i64,
     pub transaction_no: String,
@@ -161,6 +167,7 @@ pub struct TransactionFilter {
 
 /// 盘点单列表项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct StockCheckListItem {
     pub id: i64,
     pub check_no: String,
@@ -189,6 +196,7 @@ pub struct StockCheckFilter {
 
 /// 盘点单明细项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct StockCheckItemData {
     pub id: i64,
     pub material_id: i64,
@@ -208,6 +216,7 @@ pub struct StockCheckItemData {
 
 /// 盘点单详情
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StockCheckDetail {
     pub id: i64,
     pub check_no: String,
@@ -251,6 +260,7 @@ pub struct UpdateStockCheckItemParams {
 
 /// 调拨单列表项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct TransferListItem {
     pub id: i64,
     pub transfer_no: String,
@@ -277,6 +287,7 @@ pub struct TransferFilter {
 
 /// 调拨单明细
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct TransferItemData {
     pub id: Option<i64>,
     pub material_id: i64,
@@ -295,6 +306,7 @@ pub struct TransferItemData {
 
 /// 调拨单详情
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TransferDetail {
     pub id: i64,
     pub transfer_no: String,

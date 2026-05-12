@@ -78,13 +78,13 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
       const result = await invoke<{ total: number; items: CustomOrderListItem[] }>('get_custom_orders', {
         filter: {
           keyword: filters.keyword || null,
-          customer_id: filters.customerId || null,
+          customerId: filters.customerId || null,
           status: filters.status || null,
           custom_type: filters.customType || null,
-          date_from: filters.dateFrom || null,
-          date_to: filters.dateTo || null,
+          dateFrom: filters.dateFrom || null,
+          dateTo: filters.dateTo || null,
           page: currentPage,
-          page_size: pageSize,
+          pageSize: pageSize,
         },
       })
       setItems(result.items)

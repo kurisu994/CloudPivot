@@ -144,13 +144,13 @@ export function UnitsContent() {
                 items.map(item => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>{item.name_en ?? '—'}</TableCell>
-                    <TableCell>{item.name_vi ?? '—'}</TableCell>
+                    <TableCell>{item.nameEn ?? '—'}</TableCell>
+                    <TableCell>{item.nameVi ?? '—'}</TableCell>
                     <TableCell>{item.symbol ?? '—'}</TableCell>
-                    <TableCell>{item.decimal_places}</TableCell>
+                    <TableCell>{item.decimalPlaces}</TableCell>
                     <TableCell>
-                      <Badge variant={item.is_enabled ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => handleToggleStatus(item)}>
-                        {item.is_enabled ? t('enabled') : t('disabled')}
+                      <Badge variant={item.isEnabled ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => handleToggleStatus(item)}>
+                        {item.isEnabled ? t('enabled') : t('disabled')}
                       </Badge>
                     </TableCell>
                     <TableCell>

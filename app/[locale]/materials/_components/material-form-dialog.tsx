@@ -22,8 +22,8 @@ interface MaterialFormData {
   id: number | null
   code: string
   name: string
-  material_type: string
-  category_id: number | null
+  materialType: string
+  categoryId: number | null
   spec: string
   base_unit_id: number | null
   aux_unit_id: number | null
@@ -47,8 +47,8 @@ const EMPTY_FORM: MaterialFormData = {
   id: null,
   code: '',
   name: '',
-  material_type: 'raw',
-  category_id: null,
+  materialType: 'raw',
+  categoryId: null,
   spec: '',
   base_unit_id: null,
   aux_unit_id: null,
@@ -125,7 +125,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
           id: materialId,
           code: 'M-0001',
           name: '测试物料',
-          material_type: 'raw',
+          materialType: 'raw',
         })
         setInitializing(false)
         return
@@ -160,8 +160,8 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
   const validate = (): boolean => {
     const errs: Record<string, string> = {}
     if (!form.name.trim()) errs.name = t('validation.nameRequired')
-    if (!form.material_type) errs.material_type = t('validation.typeRequired')
-    if (!form.category_id) errs.category_id = t('validation.categoryRequired')
+    if (!form.materialType) errs.materialType = t('validation.typeRequired')
+    if (!form.categoryId) errs.categoryId = t('validation.categoryRequired')
     if (!form.base_unit_id) errs.base_unit_id = t('validation.baseUnitRequired')
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -241,11 +241,11 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
 
                 <div className="grid grid-cols-4 gap-4">
                   {/* 物料类型 * */}
-                  <Field data-invalid={!!errors.material_type || undefined}>
+                  <Field data-invalid={!!errors.materialType || undefined}>
                     <FieldLabel>
                       {t('form.type')} <span className="text-destructive">*</span>
                     </FieldLabel>
-                    <RadioGroup value={form.material_type} onValueChange={v => setField('material_type', v)} className="flex gap-4 pt-1">
+                    <RadioGroup value={form.materialType} onValueChange={v => setField('materialType', v)} className="flex gap-4 pt-1">
                       <label className="flex items-center gap-1.5 text-sm">
                         <RadioGroupItem value="raw" />
                         {t('filters.type.raw')}
@@ -262,16 +262,16 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                   </Field>
 
                   {/* 所属分类 * */}
-                  <Field data-invalid={!!errors.category_id || undefined}>
+                  <Field data-invalid={!!errors.categoryId || undefined}>
                     <FieldLabel>
                       {t('form.category')} <span className="text-destructive">*</span>
                     </FieldLabel>
                     <Select
-                      value={form.category_id?.toString() ?? ''}
-                      onValueChange={v => setField('category_id', v ? parseInt(v) : null)}
+                      value={form.categoryId?.toString() ?? ''}
+                      onValueChange={v => setField('categoryId', v ? parseInt(v) : null)}
                       items={categoryItems}
                     >
-                      <SelectTrigger aria-invalid={!!errors.category_id || undefined}>
+                      <SelectTrigger aria-invalid={!!errors.categoryId || undefined}>
                         <SelectValue placeholder={t('form.categoryPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
@@ -282,7 +282,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.category_id && <FieldError>{errors.category_id}</FieldError>}
+                    {errors.categoryId && <FieldError>{errors.categoryId}</FieldError>}
                   </Field>
 
                   {/* 规格型号 */}

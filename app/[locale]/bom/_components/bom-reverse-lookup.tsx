@@ -13,17 +13,17 @@ import { invoke, isTauriEnv } from '@/lib/tauri'
 
 /** 物料反查结果项 */
 interface ReverseLookupItem {
-  bom_id: number
+  bomId: number
   bom_code: string
-  material_id: number
-  material_name: string | null
-  material_code: string | null
+  materialId: number
+  materialName: string | null
+  materialCode: string | null
   version: string
   status: string
   standard_qty: number
   wastage_rate: number
   actual_qty: number | null
-  unit_name: string | null
+  unitName: string | null
 }
 
 /** 物料搜索结果 */
@@ -53,30 +53,30 @@ export function BomReverseLookup() {
       // Mock 数据
       setResults([
         {
-          bom_id: 1,
+          bomId: 1,
           bom_code: 'BOM-20260401-001',
-          material_id: 4,
-          material_name: '实木餐椅',
-          material_code: 'FP-001',
+          materialId: 4,
+          materialName: '实木餐椅',
+          materialCode: 'FP-001',
           version: 'V2.0',
           status: 'active',
           standard_qty: 4,
           wastage_rate: 5,
           actual_qty: 4.2,
-          unit_name: '张',
+          unitName: '张',
         },
         {
-          bom_id: 3,
+          bomId: 3,
           bom_code: 'BOM-20260401-003',
-          material_id: 5,
-          material_name: '橡木茶几',
-          material_code: 'FP-002',
+          materialId: 5,
+          materialName: '橡木茶几',
+          materialCode: 'FP-002',
           version: 'V1.0',
           status: 'draft',
           standard_qty: 6,
           wastage_rate: 3,
           actual_qty: 6.18,
-          unit_name: '张',
+          unitName: '张',
         },
       ])
       setLoading(false)
@@ -145,17 +145,17 @@ export function BomReverseLookup() {
                 </TableRow>
               ) : (
                 results.map(item => (
-                  <TableRow key={`${item.bom_id}-${item.material_id}`}>
+                  <TableRow key={`${item.bomId}-${item.materialId}`}>
                     <TableCell className="font-mono text-sm">{item.bom_code}</TableCell>
                     <TableCell>
-                      <span>{item.material_name}</span>
-                      <span className="text-muted-foreground ml-1 text-xs">({item.material_code})</span>
+                      <span>{item.materialName}</span>
+                      <span className="text-muted-foreground ml-1 text-xs">({item.materialCode})</span>
                     </TableCell>
                     <TableCell>
                       <Badge variant={item.status === 'active' ? 'default' : 'outline'}>{item.version}</Badge>
                     </TableCell>
                     <TableCell>
-                      {item.actual_qty?.toFixed(2) ?? item.standard_qty.toFixed(2)} {item.unit_name}
+                      {item.actual_qty?.toFixed(2) ?? item.standard_qty.toFixed(2)} {item.unitName}
                     </TableCell>
                   </TableRow>
                 ))

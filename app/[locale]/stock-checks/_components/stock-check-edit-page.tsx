@@ -43,7 +43,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
       // 初始化编辑值
       const vals: Record<number, string> = {}
       for (const item of d.items) {
-        vals[item.id] = item.actual_qty !== null ? String(item.actual_qty) : ''
+        vals[item.id] = item.actualQty !== null ? String(item.actualQty) : ''
       }
       setEditValues(vals)
     } catch (error) {
@@ -116,19 +116,19 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
           <ArrowLeft className="size-4" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-foreground text-2xl font-bold">{detail ? `${t('checkNo')}: ${detail.check_no}` : t('title')}</h1>
+          <h1 className="text-foreground text-2xl font-bold">{detail ? `${t('checkNo')}: ${detail.checkNo}` : t('title')}</h1>
           {detail && (
             <div className="flex items-center gap-3 mt-1 text-muted-foreground text-sm">
               {statusBadge(detail.status)}
               <span>
-                {t('warehouse')}: {detail.warehouse_name}
+                {t('warehouse')}: {detail.warehouseName}
               </span>
               <span>
-                {t('checkDate')}: {detail.check_date}
+                {t('checkDate')}: {detail.checkDate}
               </span>
-              {detail.created_by_name && (
+              {detail.createdByName && (
                 <span>
-                  {t('createdBy')}: {detail.created_by_name}
+                  {t('createdBy')}: {detail.createdByName}
                 </span>
               )}
             </div>
@@ -177,17 +177,17 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
                 detail.items.map(item => {
                   const actualVal = editValues[item.id] ?? ''
                   const actualQty = actualVal !== '' ? Number(actualVal) : null
-                  const diff = actualQty !== null ? actualQty - item.system_qty : 0
+                  const diff = actualQty !== null ? actualQty - item.systemQty : 0
                   return (
                     <TableRow
                       key={item.id}
                       className={diff !== 0 ? (diff > 0 ? 'bg-green-50/50 dark:bg-green-950/20' : 'bg-red-50/50 dark:bg-red-950/20') : ''}
                     >
-                      <TableCell className="font-mono text-sm">{item.material_code}</TableCell>
-                      <TableCell>{item.material_name}</TableCell>
+                      <TableCell className="font-mono text-sm">{item.materialCode}</TableCell>
+                      <TableCell>{item.materialName}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{item.spec || '-'}</TableCell>
-                      <TableCell>{item.unit_name}</TableCell>
-                      <TableCell className="text-right font-mono">{item.system_qty}</TableCell>
+                      <TableCell>{item.unitName}</TableCell>
+                      <TableCell className="text-right font-mono">{item.systemQty}</TableCell>
                       <TableCell className="text-right">
                         {isEditable ? (
                           <Input
@@ -198,16 +198,16 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
                             placeholder={t('inputActualQty')}
                           />
                         ) : (
-                          <span className="font-mono">{item.actual_qty ?? '-'}</span>
+                          <span className="font-mono">{item.actualQty ?? '-'}</span>
                         )}
                       </TableCell>
                       <TableCell className={`text-right font-mono ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : ''}`}>
                         {actualQty !== null ? (diff > 0 ? '+' : '') + diff : '-'}
                       </TableCell>
                       <TableCell
-                        className={`text-right font-mono text-sm ${item.diff_amount > 0 ? 'text-green-600' : item.diff_amount < 0 ? 'text-red-600' : ''}`}
+                        className={`text-right font-mono text-sm ${item.diffAmount > 0 ? 'text-green-600' : item.diffAmount < 0 ? 'text-red-600' : ''}`}
                       >
-                        {item.actual_qty !== null ? item.diff_amount.toFixed(2) : '-'}
+                        {item.actualQty !== null ? item.diffAmount.toFixed(2) : '-'}
                       </TableCell>
                     </TableRow>
                   )

@@ -25,7 +25,7 @@ export function SalesTrendChart({ className }: { className?: string }) {
       try {
         const end = new Date().toISOString().slice(0, 10)
         const start = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
-        const res = await getSalesReportSummary({ start_date: start, end_date: end, page: 1, page_size: 1 })
+        const res = await getSalesReportSummary({ startDate: start, endDate: end, page: 1, pageSize: 1 })
         const points = res.trend.map(p => ({
           label: p.date.slice(5),
           current: p.amount,

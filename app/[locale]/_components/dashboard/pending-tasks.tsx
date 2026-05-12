@@ -34,10 +34,10 @@ export function PendingTasks({ className }: { className?: string }) {
           getInventoryList({ page: 1, pageSize: 1, alertStatus: 'low' }),
           getPurchaseOrders({ status: 'draft', page: 1, pageSize: 1 }),
           getOutboundOrders({ status: 'draft', page: 1, pageSize: 1 }),
-          getReceivables({ page: 1, page_size: 1000 }),
+          getReceivables({ page: 1, pageSize: 1000 }),
         ])
-        const overdueItems = receivableRes.list.items.filter(item => item.status !== 'paid' && item.due_date && item.due_date < today)
-        const overdueDays = overdueItems.map(item => getOverdueDays(item.due_date!, today))
+        const overdueItems = receivableRes.list.items.filter(item => item.status !== 'paid' && item.dueDate && item.dueDate < today)
+        const overdueDays = overdueItems.map(item => getOverdueDays(item.dueDate!, today))
         setLowStockCount(lowStockRes.total)
         setPendingPurchaseCount(purchaseRes.total)
         setPendingOutboundCount(outboundRes.total)

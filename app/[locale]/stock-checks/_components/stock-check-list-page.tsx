@@ -249,16 +249,16 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
           ) : (
             items.map(item => (
               <TableRow key={item.id} className="group">
-                <TableCell className="font-mono text-sm">{item.check_no}</TableCell>
-                <TableCell>{item.warehouse_name}</TableCell>
-                <TableCell className="text-sm">{item.check_date}</TableCell>
+                <TableCell className="font-mono text-sm">{item.checkNo}</TableCell>
+                <TableCell>{item.warehouseName}</TableCell>
+                <TableCell className="text-sm">{item.checkDate}</TableCell>
                 <TableCell>{statusBadge(item.status)}</TableCell>
-                <TableCell className="text-sm">{item.scope_type === 'all' ? t('scopeWarehouse') : t('scopeCategory')}</TableCell>
-                <TableCell className="text-right">{item.item_count}</TableCell>
+                <TableCell className="text-sm">{item.scopeType === 'all' ? t('scopeWarehouse') : t('scopeCategory')}</TableCell>
+                <TableCell className="text-right">{item.itemCount}</TableCell>
                 <TableCell className="text-right">
-                  {item.diff_count > 0 ? <span className="text-amber-600 font-medium">{item.diff_count}</span> : 0}
+                  {item.diffCount > 0 ? <span className="text-amber-600 font-medium">{item.diffCount}</span> : 0}
                 </TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.created_by_name || '-'}</TableCell>
+                <TableCell className="text-muted-foreground text-sm">{item.createdByName || '-'}</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="sm" onClick={() => onEdit(item.id)}>
                     <Eye className="size-4" />

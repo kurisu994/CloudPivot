@@ -166,19 +166,19 @@ export function MaterialTable({ data, loading, total, page, pageSize, onPageChan
 
               {/* 类型 */}
               <TableCell>
-                <Badge variant="outline" className={TYPE_COLORS[row.material_type] ?? ''}>
-                  {t(`filters.type.${row.material_type}` as 'filters.type.raw' | 'filters.type.semi' | 'filters.type.finished')}
+                <Badge variant="outline" className={TYPE_COLORS[row.materialType] ?? ''}>
+                  {t(`filters.type.${row.materialType}` as 'filters.type.raw' | 'filters.type.semi' | 'filters.type.finished')}
                 </Badge>
               </TableCell>
 
               {/* 分类 */}
-              <TableCell>{row.category_name || '—'}</TableCell>
+              <TableCell>{row.categoryName || '—'}</TableCell>
 
               {/* 规格 */}
               <TableCell className="text-muted-foreground">{row.spec || '—'}</TableCell>
 
               {/* 单位 */}
-              <TableCell className="text-center">{row.unit_name || '—'}</TableCell>
+              <TableCell className="text-center">{row.unitName || '—'}</TableCell>
 
               {/* 进价 */}
               <TableCell className="text-right">
@@ -203,7 +203,7 @@ export function MaterialTable({ data, loading, total, page, pageSize, onPageChan
 
               {/* 状态 */}
               <TableCell className="text-center">
-                {row.is_enabled ? (
+                {row.isEnabled ? (
                   <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                     <span className="size-2 rounded-full bg-emerald-500" />
                     {t('table.active')}
@@ -221,7 +221,7 @@ export function MaterialTable({ data, loading, total, page, pageSize, onPageChan
                 <Button variant="link" size="sm" className="text-primary h-auto p-0 font-bold" onClick={() => onEdit(row.id)}>
                   {t('actions.edit')}
                 </Button>
-                {row.material_type === 'finished' || row.material_type === 'semi' ? (
+                {row.materialType === 'finished' || row.materialType === 'semi' ? (
                   <Button variant="link" size="sm" className="ml-3 h-auto p-0 font-bold text-amber-600 dark:text-amber-400">
                     {t('actions.bom')}
                   </Button>
@@ -230,9 +230,9 @@ export function MaterialTable({ data, loading, total, page, pageSize, onPageChan
                     variant="link"
                     size="sm"
                     className="text-muted-foreground hover:text-destructive ml-3 h-auto p-0 font-bold"
-                    onClick={() => onToggleStatus(row.id, row.is_enabled)}
+                    onClick={() => onToggleStatus(row.id, row.isEnabled)}
                   >
-                    {row.is_enabled ? t('actions.disable') : t('actions.enable')}
+                    {row.isEnabled ? t('actions.disable') : t('actions.enable')}
                   </Button>
                 )}
               </TableCell>

@@ -95,12 +95,12 @@ export function ReplenishmentPage() {
   const [editRuleOpen, setEditRuleOpen] = useState(false)
   const [editingRule, setEditingRule] = useState<ReplenishmentRule | null>(null)
   const [editForm, setEditForm] = useState<UpdateRuleParams>({
-    analysis_days: 90,
-    lead_days: 7,
-    safety_days: 3,
-    batch_multiple: 1,
-    preferred_supplier_id: null,
-    is_enabled: true,
+    analysisDays: 90,
+    leadDays: 7,
+    safetyDays: 3,
+    batchMultiple: 1,
+    preferredSupplierId: null,
+    isEnabled: true,
   })
 
   // 供应商选项（策略编辑用）
@@ -114,7 +114,7 @@ export function ReplenishmentPage() {
       await ensureReplenishmentRules()
       const data = await getReplenishmentSuggestions({
         urgency: urgency || undefined,
-        category_id: categoryId,
+        categoryId: categoryId,
         keyword: keyword || undefined,
       })
       setSuggestions(data)
@@ -172,7 +172,7 @@ export function ReplenishmentPage() {
     if (allSelected) {
       setSelectedIds(new Set())
     } else {
-      setSelectedIds(new Set(suggestions.map(s => s.material_id)))
+      setSelectedIds(new Set(suggestions.map(s => s.materialId)))
     }
   }
   const toggleSelect = (id: number) => {
@@ -192,9 +192,9 @@ export function ReplenishmentPage() {
     try {
       const result = await createPurchaseOrdersFromSuggestions(ids, user?.id, user?.display_name)
       if (result.errors.length === 0) {
-        toast.success(t('createPoSuccess', { count: result.created_orders.length }))
+        toast.success(t('createPoSuccess', { count: result.createdOrders.length }))
       } else {
-        toast.warning(t('createPoPartial', { count: result.created_orders.length, errorCount: result.errors.length }))
+        toast.warning(t('createPoPartial', { count: result.createdOrders.length, errorCount: result.errors.length }))
         for (const err of result.errors) {
           toast.error(err)
         }
@@ -207,11 +207,11 @@ export function ReplenishmentPage() {
 
   // 查看消耗趋势
   const handleViewTrend = async (item: ReplenishmentSuggestion) => {
-    setTrendMaterial({ id: item.material_id, code: item.material_code, name: item.material_name })
+    setTrendMaterial({ id: item.materialId, code: item.materialCode, name: item.materialName })
     setTrendDialogOpen(true)
     setTrendLoading(true)
     try {
-      const data = await getConsumptionTrend(item.material_id, 90)
+      const data = await getConsumptionTrend(item.materialId, 90)
       setTrendData(data)
     } catch (error) {
       console.error('加载消耗趋势失败', error)
@@ -266,7 +266,7 @@ export function ReplenishmentPage() {
   const loadRules = useCallback(async () => {
     setRulesLoading(true)
     try {
-      const filter: RuleFilter = { page: rulesPage, page_size: 20, keyword: ruleKeyword || undefined }
+      const filter: RuleFilter = { page: rulesPage, pageSize: 20, keyword: ruleKeyword || undefined }
       const result = await getReplenishmentRules(filter)
       setRules(result.items)
       setRulesTotal(result.total)
@@ -285,12 +285,12 @@ export function ReplenishmentPage() {
   const handleEditRule = (rule: ReplenishmentRule) => {
     setEditingRule(rule)
     setEditForm({
-      analysis_days: rule.analysis_days,
-      lead_days: rule.lead_days,
-      safety_days: rule.safety_days,
-      batch_multiple: rule.batch_multiple,
-      preferred_supplier_id: rule.preferred_supplier_id,
-      is_enabled: rule.is_enabled,
+      analysisDays: rule.analysisDays,
+      leadDays: rule.leadDays,
+      safetyDays: rule.safetyDays,
+      batchMultiple: rule.batchMultiple,
+      preferredSupplierId: rule.preferredSupplierId,
+      isEnabled: rule.isEnabled,
     })
     // 加载供应商选项
     if (supplierOptions.length === 0) {
@@ -440,7 +440,7 @@ export function ReplenishmentPage() {
           ) : (
             suggestions.map(item => (
               <TableRow
-                key={item.material_id}
+                key={item.materialId}
                 className={`group ${
                   item.urgency === 'urgent'
                     ? 'bg-red-50/50 dark:bg-red-950/20'
@@ -450,33 +450,33 @@ export function ReplenishmentPage() {
                 }`}
               >
                 <TableCell className={BUSINESS_LIST_STICKY_CELL_CLASS}>
-                  <Checkbox checked={selectedIds.has(item.material_id)} onCheckedChange={() => toggleSelect(item.material_id)} />
+                  <Checkbox checked={selectedIds.has(item.materialId)} onCheckedChange={() => toggleSelect(item.materialId)} />
                 </TableCell>
-                <TableCell className="font-mono text-sm">{item.material_code}</TableCell>
+                <TableCell className="font-mono text-sm">{item.materialCode}</TableCell>
                 <TableCell>
-                  <div>{item.material_name}</div>
+                  <div>{item.materialName}</div>
                   {item.spec && <div className="text-muted-foreground text-xs">{item.spec}</div>}
                 </TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.category_name || '-'}</TableCell>
-                <TableCell className="text-right font-mono">{item.available_qty.toFixed(1)}</TableCell>
-                <TableCell className="text-right font-mono">{item.safety_stock.toFixed(1)}</TableCell>
-                <TableCell className={`text-right font-mono ${item.gap_qty > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-                  {item.gap_qty > 0 ? `-${item.gap_qty.toFixed(1)}` : '0'}
+                <TableCell className="text-muted-foreground text-sm">{item.categoryName || '-'}</TableCell>
+                <TableCell className="text-right font-mono">{item.availableQty.toFixed(1)}</TableCell>
+                <TableCell className="text-right font-mono">{item.safetyStock.toFixed(1)}</TableCell>
+                <TableCell className={`text-right font-mono ${item.gapQty > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                  {item.gapQty > 0 ? `-${item.gapQty.toFixed(1)}` : '0'}
                 </TableCell>
-                <TableCell className="text-right font-mono text-sm">{item.daily_consumption.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-mono text-sm">{item.dailyConsumption.toFixed(2)}</TableCell>
                 <TableCell className="text-right font-mono">
-                  <span className={item.days_until_stockout < 7 ? 'text-red-600 font-semibold dark:text-red-400' : ''}>
-                    {item.days_until_stockout >= 999 ? '∞' : `${item.days_until_stockout.toFixed(0)}${t('daysUnit')}`}
+                  <span className={item.daysUntilStockout < 7 ? 'text-red-600 font-semibold dark:text-red-400' : ''}>
+                    {item.daysUntilStockout >= 999 ? '∞' : `${item.daysUntilStockout.toFixed(0)}${t('daysUnit')}`}
                   </span>
                 </TableCell>
-                <TableCell className="text-right font-mono font-semibold">{item.suggested_qty.toFixed(1)}</TableCell>
+                <TableCell className="text-right font-mono font-semibold">{item.suggestedQty.toFixed(1)}</TableCell>
                 <TableCell className="text-sm">
-                  {item.supplier_name ? (
+                  {item.supplierName ? (
                     <div>
-                      <div className="truncate">{item.supplier_name}</div>
-                      {item.ref_price != null && item.ref_price > 0 && (
+                      <div className="truncate">{item.supplierName}</div>
+                      {item.refPrice != null && item.refPrice > 0 && (
                         <div className="text-muted-foreground text-xs">
-                          {formatAmount(item.ref_price, item.ref_currency as Currency)}/{item.unit_name || ''}
+                          {formatAmount(item.refPrice, item.refCurrency as Currency)}/{item.unitName || ''}
                         </div>
                       )}
                     </div>
@@ -490,8 +490,8 @@ export function ReplenishmentPage() {
                     <Button variant="ghost" size="sm" onClick={() => void handleViewTrend(item)} title={t('trend.title')}>
                       <TrendingUp className="size-4" />
                     </Button>
-                    {item.log_id && (
-                      <Button variant="ghost" size="sm" onClick={() => void handleIgnore(item.log_id!)}>
+                    {item.logId && (
+                      <Button variant="ghost" size="sm" onClick={() => void handleIgnore(item.logId!)}>
                         <X className="size-4" />
                       </Button>
                     )}
@@ -595,18 +595,18 @@ export function ReplenishmentPage() {
               ) : (
                 rules.map(rule => (
                   <TableRow key={rule.id}>
-                    <TableCell className="font-mono text-sm">{rule.material_code}</TableCell>
+                    <TableCell className="font-mono text-sm">{rule.materialCode}</TableCell>
                     <TableCell>
-                      <div>{rule.material_name}</div>
+                      <div>{rule.materialName}</div>
                       {rule.spec && <div className="text-muted-foreground text-xs">{rule.spec}</div>}
                     </TableCell>
-                    <TableCell className="text-right font-mono">{rule.analysis_days}</TableCell>
-                    <TableCell className="text-right font-mono">{rule.lead_days}</TableCell>
-                    <TableCell className="text-right font-mono">{rule.safety_days}</TableCell>
-                    <TableCell className="text-right font-mono">{rule.batch_multiple}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm truncate">{rule.supplier_name || '-'}</TableCell>
+                    <TableCell className="text-right font-mono">{rule.analysisDays}</TableCell>
+                    <TableCell className="text-right font-mono">{rule.leadDays}</TableCell>
+                    <TableCell className="text-right font-mono">{rule.safetyDays}</TableCell>
+                    <TableCell className="text-right font-mono">{rule.batchMultiple}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm truncate">{rule.supplierName || '-'}</TableCell>
                     <TableCell>
-                      <Badge variant={rule.is_enabled ? 'default' : 'secondary'}>{rule.is_enabled ? t('rule.enabled') : t('rule.disabled')}</Badge>
+                      <Badge variant={rule.isEnabled ? 'default' : 'secondary'}>{rule.isEnabled ? t('rule.enabled') : t('rule.disabled')}</Badge>
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" onClick={() => handleEditRule(rule)}>
@@ -642,7 +642,7 @@ export function ReplenishmentPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {t('rule.editRule')} — {editingRule?.material_code} {editingRule?.material_name}
+              {t('rule.editRule')} — {editingRule?.materialCode} {editingRule?.materialName}
             </DialogTitle>
           </DialogHeader>
 
@@ -652,8 +652,8 @@ export function ReplenishmentPage() {
               <Input
                 type="number"
                 className="w-24 text-right"
-                value={editForm.analysis_days}
-                onChange={e => setEditForm(f => ({ ...f, analysis_days: Number(e.target.value) }))}
+                value={editForm.analysisDays}
+                onChange={e => setEditForm(f => ({ ...f, analysisDays: Number(e.target.value) }))}
               />
             </div>
             <div className="flex items-center justify-between gap-4">
@@ -661,8 +661,8 @@ export function ReplenishmentPage() {
               <Input
                 type="number"
                 className="w-24 text-right"
-                value={editForm.lead_days}
-                onChange={e => setEditForm(f => ({ ...f, lead_days: Number(e.target.value) }))}
+                value={editForm.leadDays}
+                onChange={e => setEditForm(f => ({ ...f, leadDays: Number(e.target.value) }))}
               />
             </div>
             <div className="flex items-center justify-between gap-4">
@@ -670,8 +670,8 @@ export function ReplenishmentPage() {
               <Input
                 type="number"
                 className="w-24 text-right"
-                value={editForm.safety_days}
-                onChange={e => setEditForm(f => ({ ...f, safety_days: Number(e.target.value) }))}
+                value={editForm.safetyDays}
+                onChange={e => setEditForm(f => ({ ...f, safetyDays: Number(e.target.value) }))}
               />
             </div>
             <div className="flex items-center justify-between gap-4">
@@ -680,15 +680,15 @@ export function ReplenishmentPage() {
                 type="number"
                 step="0.1"
                 className="w-24 text-right"
-                value={editForm.batch_multiple}
-                onChange={e => setEditForm(f => ({ ...f, batch_multiple: Number(e.target.value) }))}
+                value={editForm.batchMultiple}
+                onChange={e => setEditForm(f => ({ ...f, batchMultiple: Number(e.target.value) }))}
               />
             </div>
             <div className="flex items-center justify-between gap-4">
               <Label>{t('rule.preferredSupplier')}</Label>
               <Select
-                value={editForm.preferred_supplier_id != null ? String(editForm.preferred_supplier_id) : ''}
-                onValueChange={v => setEditForm(f => ({ ...f, preferred_supplier_id: v ? Number(v) : null }))}
+                value={editForm.preferredSupplierId != null ? String(editForm.preferredSupplierId) : ''}
+                onValueChange={v => setEditForm(f => ({ ...f, preferredSupplierId: v ? Number(v) : null }))}
                 items={supplierOptions}
               >
                 <SelectTrigger className="w-48">
@@ -705,7 +705,7 @@ export function ReplenishmentPage() {
             </div>
             <div className="flex items-center justify-between gap-4">
               <Label>{t('rule.enabled')}</Label>
-              <Switch checked={editForm.is_enabled} onCheckedChange={v => setEditForm(f => ({ ...f, is_enabled: v }))} />
+              <Switch checked={editForm.isEnabled} onCheckedChange={v => setEditForm(f => ({ ...f, isEnabled: v }))} />
             </div>
           </div>
 

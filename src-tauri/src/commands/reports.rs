@@ -20,6 +20,7 @@ use super::PaginatedResponse;
 
 /// 收发存汇总项
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InventoryReportItem {
     pub material_id: i64,
     pub material_code: String,
@@ -39,6 +40,7 @@ pub struct InventoryReportItem {
 
 /// 收发存汇总 KPI 统计
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ReportStats {
     pub opening_value: i64,
     pub inbound_value: i64,
@@ -48,6 +50,7 @@ pub struct ReportStats {
 
 /// 库存报表响应（包含分页 + KPI + 时间戳）
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InventoryReportResponse {
     pub generated_at: String,
     pub stats: ReportStats,
@@ -59,6 +62,7 @@ pub struct InventoryReportResponse {
 
 /// 库龄分析项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct InventoryAgingItem {
     pub material_id: i64,
     pub material_code: String,
@@ -73,6 +77,7 @@ pub struct InventoryAgingItem {
 
 /// 滞销预警项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct InventorySlowMovingItem {
     pub material_id: i64,
     pub material_code: String,
@@ -86,6 +91,7 @@ pub struct InventorySlowMovingItem {
 
 /// 库存趋势数据点（用于图表）
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InventoryTrendPoint {
     pub date: String,
     pub total_qty: f64,
@@ -94,6 +100,7 @@ pub struct InventoryTrendPoint {
 
 /// 库存趋势响应
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InventoryTrendResponse {
     pub generated_at: String,
     pub points: Vec<InventoryTrendPoint>,
@@ -101,6 +108,7 @@ pub struct InventoryTrendResponse {
 
 /// 收发存筛选条件
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InventoryReportFilter {
     pub start_date: Option<String>, // YYYY-MM-DD
     pub end_date: Option<String>,   // YYYY-MM-DD
@@ -114,6 +122,7 @@ pub struct InventoryReportFilter {
 
 /// 库龄筛选
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AgingFilter {
     pub warehouse_id: Option<i64>,
     pub category_id: Option<i64>,
@@ -126,6 +135,7 @@ pub struct AgingFilter {
 
 /// 滞销筛选
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SlowMovingFilter {
     pub days_threshold: i64, // 默认 90
     pub warehouse_id: Option<i64>,
@@ -136,6 +146,7 @@ pub struct SlowMovingFilter {
 
 /// 趋势筛选
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TrendFilter {
     pub days: Option<i64>, // 默认 30
     pub warehouse_id: Option<i64>,
@@ -143,6 +154,7 @@ pub struct TrendFilter {
 
 /// 采购报表筛选
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PurchaseReportFilter {
     pub start_date: Option<String>,
     pub end_date: Option<String>,
@@ -155,6 +167,7 @@ pub struct PurchaseReportFilter {
 
 /// 销售报表筛选
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SalesReportFilter {
     pub start_date: Option<String>,
     pub end_date: Option<String>,
@@ -167,6 +180,7 @@ pub struct SalesReportFilter {
 
 /// 业务报表 KPI
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct BusinessReportStats {
     pub total_amount: i64,
     pub order_count: i64,
@@ -176,6 +190,7 @@ pub struct BusinessReportStats {
 
 /// 报表趋势点
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct BusinessTrendPoint {
     pub date: String,
     pub amount: i64,
@@ -184,6 +199,7 @@ pub struct BusinessTrendPoint {
 
 /// 往来单位排行项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct PartnerRankItem {
     pub partner_id: i64,
     pub partner_code: String,
@@ -195,6 +211,7 @@ pub struct PartnerRankItem {
 
 /// 物料报表明细项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct MaterialReportItem {
     pub material_id: i64,
     pub material_code: String,

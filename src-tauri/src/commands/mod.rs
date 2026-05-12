@@ -81,6 +81,7 @@ impl CurrentUser {
 
 /// 分页响应（通用泛型，供各业务模块共用）
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PaginatedResponse<T> {
     pub total: i64,
     pub items: Vec<T>,
@@ -152,6 +153,7 @@ pub async fn login(
 
 /// 修改密码请求参数
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ChangePasswordRequest {
     user_id: i64,
     new_password: String,
@@ -298,6 +300,7 @@ pub async fn set_system_configs(
 
 /// 向导仓库创建参数
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct WarehouseSetupItem {
     /// 仓库名称
     pub name: String,
@@ -375,6 +378,7 @@ pub async fn setup_create_warehouses(
 
 /// 操作日志筛选参数
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct OperationLogFilter {
     pub module: Option<String>,
     pub action: Option<String>,
@@ -387,6 +391,7 @@ pub struct OperationLogFilter {
 
 /// 操作日志记录（返回前端）
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct OperationLogItem {
     pub id: i64,
     pub module: String,

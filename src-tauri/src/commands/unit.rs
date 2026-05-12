@@ -15,6 +15,7 @@ use crate::error::AppError;
 
 /// 单位记录（列表/详情返回）
 #[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct Unit {
     pub id: i64,
     pub name: String,
@@ -30,6 +31,7 @@ pub struct Unit {
 
 /// 单位保存参数（新增/编辑）
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveUnitParams {
     pub id: Option<i64>,
     pub name: String,

@@ -219,21 +219,21 @@ export function StockMovementsListPage() {
           ) : (
             items.map(item => (
               <TableRow key={item.id} className="group">
-                <TableCell className={`${BUSINESS_LIST_STICKY_CELL_CLASS} font-mono text-sm`}>{item.transaction_no}</TableCell>
-                <TableCell className="text-sm">{item.transaction_date}</TableCell>
+                <TableCell className={`${BUSINESS_LIST_STICKY_CELL_CLASS} font-mono text-sm`}>{item.transactionNo}</TableCell>
+                <TableCell className="text-sm">{item.transactionDate}</TableCell>
                 <TableCell>
-                  <Badge variant={item.quantity > 0 ? 'default' : 'secondary'}>{getTypeName(item.transaction_type)}</Badge>
+                  <Badge variant={item.quantity > 0 ? 'default' : 'secondary'}>{getTypeName(item.transactionType)}</Badge>
                 </TableCell>
-                <TableCell className="font-mono text-sm">{item.material_code}</TableCell>
-                <TableCell>{item.material_name}</TableCell>
-                <TableCell>{item.warehouse_name}</TableCell>
+                <TableCell className="font-mono text-sm">{item.materialCode}</TableCell>
+                <TableCell>{item.materialName}</TableCell>
+                <TableCell>{item.warehouseName}</TableCell>
                 <TableCell className={`text-right font-mono ${item.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {item.quantity > 0 ? '+' : ''}
                   {item.quantity}
                 </TableCell>
-                <TableCell className="text-right font-mono text-sm">{item.before_qty}</TableCell>
-                <TableCell className="text-right font-mono text-sm">{item.after_qty}</TableCell>
-                <TableCell className="text-muted-foreground font-mono text-sm">{item.related_order_no || '-'}</TableCell>
+                <TableCell className="text-right font-mono text-sm">{item.beforeQty}</TableCell>
+                <TableCell className="text-right font-mono text-sm">{item.afterQty}</TableCell>
+                <TableCell className="text-muted-foreground font-mono text-sm">{item.relatedOrderNo || '-'}</TableCell>
               </TableRow>
             ))
           )}

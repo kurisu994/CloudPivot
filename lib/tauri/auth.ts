@@ -15,13 +15,13 @@ export async function login(username: string, password: string): Promise<LoginRe
 /** 修改密码 */
 export async function changePassword(userId: number, newPassword: string): Promise<void> {
   return invoke<void>('change_password', {
-    request: { user_id: userId, new_password: newPassword },
+    request: { userId, newPassword },
   })
 }
 
 /** 获取用户信息 */
 export async function getUserInfo(userId: number): Promise<UserInfo> {
-  return invoke<UserInfo>('get_user_info', { user_id: userId })
+  return invoke<UserInfo>('get_user_info', { userId })
 }
 
 /** 认证数据在 localStorage 中的存储键（Web 调试模式降级用） */

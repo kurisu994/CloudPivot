@@ -87,7 +87,7 @@ export function WarehousesContent() {
   /** 切换启用/禁用 */
   const handleToggleStatus = async (item: WarehouseItem) => {
     // 禁用默认仓时提示用户
-    if (item.is_enabled) {
+    if (item.isEnabled) {
       if (!confirm(t('disableConfirm'))) return
     }
 
@@ -162,13 +162,11 @@ export function WarehousesContent() {
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-sm">{item.code}</TableCell>
                     <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>
-                      {WAREHOUSE_TYPE_KEYS[item.warehouse_type] ? t(WAREHOUSE_TYPE_KEYS[item.warehouse_type]) : item.warehouse_type}
-                    </TableCell>
+                    <TableCell>{WAREHOUSE_TYPE_KEYS[item.warehouseType] ? t(WAREHOUSE_TYPE_KEYS[item.warehouseType]) : item.warehouseType}</TableCell>
                     <TableCell>{item.manager ?? '—'}</TableCell>
                     <TableCell>
-                      <Badge variant={item.is_enabled ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => handleToggleStatus(item)}>
-                        {item.is_enabled ? t('enabled') : t('disabled')}
+                      <Badge variant={item.isEnabled ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => handleToggleStatus(item)}>
+                        {item.isEnabled ? t('enabled') : t('disabled')}
                       </Badge>
                     </TableCell>
                     <TableCell>

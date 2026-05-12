@@ -19,6 +19,7 @@ use super::{CurrentUser, inventory_ops, material};
 
 /// 备份文件信息
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BackupFileInfo {
     pub file_name: String,
     pub file_path: String,
@@ -28,6 +29,7 @@ pub struct BackupFileInfo {
 
 /// 数据管理状态
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DataManagementStatus {
     pub db_path: String,
     pub db_size_bytes: u64,
@@ -38,6 +40,7 @@ pub struct DataManagementStatus {
 
 /// 物料导入行
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MaterialImportRow {
     pub code: String,
     pub name: String,
@@ -65,6 +68,7 @@ pub struct MaterialImportRow {
 
 /// 期初库存导入行
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InitialInventoryImportRow {
     pub material_code: String,
     pub warehouse_code: String,
@@ -87,6 +91,7 @@ pub struct ImportResult {
 
 /// 物料导出行
 #[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct MaterialExportRow {
     pub code: String,
     pub name: String,

@@ -10,30 +10,30 @@ export interface OperationLogItem {
   id: number
   module: string
   action: string
-  target_type: string | null
-  target_id: number | null
-  target_no: string | null
+  targetType: string | null
+  targetId: number | null
+  targetNo: string | null
   detail: string
-  operator_user_id: number | null
-  operator_name: string | null
-  created_at: string
+  operatorUserId: number | null
+  operatorName: string | null
+  createdAt: string
 }
 
 /** 操作日志筛选参数 */
 export interface OperationLogFilter {
   module?: string | null
   action?: string | null
-  operator_user_id?: number | null
-  date_from?: string | null
-  date_to?: string | null
+  operatorUserId?: number | null
+  dateFrom?: string | null
+  dateTo?: string | null
   page: number
-  page_size: number
+  pageSize: number
 }
 
 /** 查询操作日志列表 */
 export async function getOperationLogs(filter: OperationLogFilter): Promise<PaginatedResponse<OperationLogItem>> {
   if (!isTauriEnv()) {
-    return { total: 0, items: [], page: filter.page, page_size: filter.page_size }
+    return { total: 0, items: [], page: filter.page, pageSize: filter.pageSize }
   }
   return invoke<PaginatedResponse<OperationLogItem>>('get_operation_logs', { filter })
 }

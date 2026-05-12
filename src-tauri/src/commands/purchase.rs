@@ -21,6 +21,7 @@ use super::{CurrentUser, PaginatedResponse};
 
 /// 采购单列表项（列表页展示用）
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct PurchaseOrderListItem {
     pub id: i64,
     pub order_no: String,
@@ -44,6 +45,7 @@ pub struct PurchaseOrderListItem {
 
 /// 采购单明细项
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct PurchaseOrderItemData {
     pub id: Option<i64>,
     pub material_id: i64,
@@ -65,6 +67,7 @@ pub struct PurchaseOrderItemData {
 
 /// 采购单详情（含明细）
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PurchaseOrderDetail {
     pub id: i64,
     pub order_no: String,
@@ -97,6 +100,7 @@ pub struct PurchaseOrderDetail {
 
 /// 保存采购单参数（新建/编辑共用）
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SavePurchaseOrderParams {
     pub id: Option<i64>,
     pub supplier_id: i64,
@@ -114,6 +118,7 @@ pub struct SavePurchaseOrderParams {
 
 /// 保存采购单明细参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SavePurchaseOrderItemParams {
     #[allow(dead_code)]
     pub id: Option<i64>,
@@ -130,6 +135,7 @@ pub struct SavePurchaseOrderItemParams {
 
 /// 采购单列表筛选参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PurchaseOrderFilter {
     pub keyword: Option<String>,
     pub supplier_id: Option<i64>,
@@ -832,6 +838,7 @@ pub async fn get_supplier_materials_for_purchase(
 
 /// 供应商物料报价（采购单快速带入用）
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct SupplierMaterialForPurchase {
     pub material_id: i64,
     pub material_code: String,
@@ -851,6 +858,7 @@ pub struct SupplierMaterialForPurchase {
 
 /// 采购入库列表项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct InboundOrderListItem {
     pub id: i64,
     pub order_no: String,
@@ -872,6 +880,7 @@ pub struct InboundOrderListItem {
 
 /// 采购入库列表筛选
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InboundOrderFilter {
     pub keyword: Option<String>,
     pub purchase_id: Option<i64>,
@@ -886,6 +895,7 @@ pub struct InboundOrderFilter {
 
 /// 保存入库单明细参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveInboundItemParams {
     /// 关联采购单明细行 ID（采购入库时必填）
     pub purchase_order_item_id: Option<i64>,
@@ -904,6 +914,7 @@ pub struct SaveInboundItemParams {
 
 /// 保存入库单参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveInboundOrderParams {
     #[allow(dead_code)]
     pub id: Option<i64>,
@@ -919,6 +930,7 @@ pub struct SaveInboundOrderParams {
 
 /// 获取采购单待入库明细（创建入库单时用）
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct PendingInboundItem {
     pub purchase_order_item_id: i64,
     pub material_id: i64,
@@ -1607,6 +1619,7 @@ async fn update_purchase_order_status(
 
 /// 采购退货列表项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct PurchaseReturnListItem {
     pub id: i64,
     pub return_no: String,
@@ -1625,6 +1638,7 @@ pub struct PurchaseReturnListItem {
 
 /// 采购退货列表筛选
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PurchaseReturnFilter {
     pub keyword: Option<String>,
     pub supplier_id: Option<i64>,
@@ -1637,6 +1651,7 @@ pub struct PurchaseReturnFilter {
 
 /// 入库单可退明细（创建退货单时用）
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct ReturnableInboundItem {
     pub inbound_item_id: i64,
     pub material_id: i64,
@@ -1656,6 +1671,7 @@ pub struct ReturnableInboundItem {
 
 /// 保存退货单明细参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveReturnItemParams {
     /// 原入库明细行 ID
     pub source_inbound_item_id: i64,
@@ -1672,6 +1688,7 @@ pub struct SaveReturnItemParams {
 
 /// 保存退货单参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SavePurchaseReturnParams {
     #[allow(dead_code)]
     pub id: Option<i64>,

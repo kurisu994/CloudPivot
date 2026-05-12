@@ -8,23 +8,23 @@ import { invoke, isTauriEnv } from './core'
 /** 库存列表项 */
 export interface InventoryListItem {
   id: number
-  material_id: number
-  material_code: string
-  material_name: string
+  materialId: number
+  materialCode: string
+  materialName: string
   spec: string | null
-  category_name: string | null
-  warehouse_id: number
-  warehouse_name: string
+  categoryName: string | null
+  warehouseId: number
+  warehouseName: string
   quantity: number
-  reserved_qty: number
-  available_qty: number
-  avg_cost: number
-  inventory_value: number
-  safety_stock: number | null
-  max_stock: number | null
-  alert_status: 'normal' | 'low' | 'high'
-  last_in_date: string | null
-  last_out_date: string | null
+  reservedQty: number
+  availableQty: number
+  avgCost: number
+  inventoryValue: number
+  safetyStock: number | null
+  maxStock: number | null
+  alertStatus: 'normal' | 'low' | 'high'
+  lastInDate: string | null
+  lastOutDate: string | null
 }
 
 /** 库存查询筛选参数 */
@@ -39,78 +39,78 @@ export interface InventoryFilter {
 
 /** 分仓汇总 */
 export interface InventoryWarehouseSummary {
-  warehouse_id: number
-  warehouse_name: string
+  warehouseId: number
+  warehouseName: string
   quantity: number
-  reserved_qty: number
-  available_qty: number
-  avg_cost: number
-  inventory_value: number
-  last_in_date: string | null
-  last_out_date: string | null
+  reservedQty: number
+  availableQty: number
+  avgCost: number
+  inventoryValue: number
+  lastInDate: string | null
+  lastOutDate: string | null
 }
 
 /** 批次明细 */
 export interface InventoryLotDetail {
   id: number
-  lot_no: string
-  warehouse_name: string
-  qty_on_hand: number
-  qty_reserved: number
-  available_qty: number
-  receipt_unit_cost: number
-  received_date: string
-  age_days: number
-  supplier_batch_no: string | null
+  lotNo: string
+  warehouseName: string
+  qtyOnHand: number
+  qtyReserved: number
+  availableQty: number
+  receiptUnitCost: number
+  receivedDate: string
+  ageDays: number
+  supplierBatchNo: string | null
 }
 
 /** 近期流水 */
 export interface RecentTransaction {
   id: number
-  transaction_no: string
-  transaction_date: string
-  transaction_type: string
+  transactionNo: string
+  transactionDate: string
+  transactionType: string
   quantity: number
-  before_qty: number
-  after_qty: number
-  warehouse_name: string
-  related_order_no: string | null
+  beforeQty: number
+  afterQty: number
+  warehouseName: string
+  relatedOrderNo: string | null
 }
 
 /** 库存详情 */
 export interface InventoryDetail {
-  material_id: number
-  material_code: string
-  material_name: string
+  materialId: number
+  materialCode: string
+  materialName: string
   spec: string | null
-  total_quantity: number
-  total_reserved: number
-  total_available: number
+  totalQuantity: number
+  totalReserved: number
+  totalAvailable: number
   warehouses: InventoryWarehouseSummary[]
   lots: InventoryLotDetail[]
-  recent_transactions: RecentTransaction[]
+  recentTransactions: RecentTransaction[]
 }
 
 /** 流水列表项 */
 export interface TransactionListItem {
   id: number
-  transaction_no: string
-  transaction_date: string
-  material_id: number
-  material_code: string
-  material_name: string
-  warehouse_id: number
-  warehouse_name: string
-  lot_no: string | null
-  transaction_type: string
+  transactionNo: string
+  transactionDate: string
+  materialId: number
+  materialCode: string
+  materialName: string
+  warehouseId: number
+  warehouseName: string
+  lotNo: string | null
+  transactionType: string
   quantity: number
-  before_qty: number
-  after_qty: number
-  unit_cost: number
-  related_order_no: string | null
-  operator_name: string | null
+  beforeQty: number
+  afterQty: number
+  unitCost: number
+  relatedOrderNo: string | null
+  operatorName: string | null
   remark: string | null
-  created_at: string | null
+  createdAt: string | null
 }
 
 /** 流水查询筛选参数 */
@@ -128,16 +128,16 @@ export interface TransactionFilter {
 /** 盘点单列表项 */
 export interface StockCheckListItem {
   id: number
-  check_no: string
-  warehouse_id: number
-  warehouse_name: string
-  check_date: string
+  checkNo: string
+  warehouseId: number
+  warehouseName: string
+  checkDate: string
   status: string
-  scope_type: string
-  item_count: number
-  diff_count: number
-  created_by_name: string | null
-  created_at: string | null
+  scopeType: string
+  itemCount: number
+  diffCount: number
+  createdByName: string | null
+  createdAt: string | null
 }
 
 /** 盘点单筛选参数 */
@@ -153,36 +153,36 @@ export interface StockCheckFilter {
 /** 盘点明细 */
 export interface StockCheckItemData {
   id: number
-  material_id: number
-  material_code: string
-  material_name: string
+  materialId: number
+  materialCode: string
+  materialName: string
   spec: string | null
-  unit_name: string
-  lot_id: number | null
-  lot_no_snapshot: string | null
-  system_qty: number
-  actual_qty: number | null
-  diff_qty: number
-  unit_price: number
-  diff_amount: number
+  unitName: string
+  lotId: number | null
+  lotNoSnapshot: string | null
+  systemQty: number
+  actualQty: number | null
+  diffQty: number
+  unitPrice: number
+  diffAmount: number
   remark: string | null
 }
 
 /** 盘点单详情 */
 export interface StockCheckDetail {
   id: number
-  check_no: string
-  warehouse_id: number
-  warehouse_name: string
-  check_date: string
+  checkNo: string
+  warehouseId: number
+  warehouseName: string
+  checkDate: string
   status: string
-  scope_type: string
-  scope_category_id: number | null
+  scopeType: string
+  scopeCategoryId: number | null
   remark: string | null
-  created_by_name: string | null
-  confirmed_by_name: string | null
-  confirmed_at: string | null
-  created_at: string | null
+  createdByName: string | null
+  confirmedByName: string | null
+  confirmedAt: string | null
+  createdAt: string | null
   items: StockCheckItemData[]
 }
 
@@ -205,14 +205,14 @@ export interface UpdateStockCheckItemParams {
 /** 调拨单列表项 */
 export interface TransferListItem {
   id: number
-  transfer_no: string
-  from_warehouse_name: string
-  to_warehouse_name: string
-  transfer_date: string
+  transferNo: string
+  fromWarehouseName: string
+  toWarehouseName: string
+  transferDate: string
   status: string
-  item_count: number
-  created_by_name: string | null
-  created_at: string | null
+  itemCount: number
+  createdByName: string | null
+  createdAt: string | null
 }
 
 /** 调拨单筛选参数 */
@@ -228,35 +228,35 @@ export interface TransferFilter {
 /** 调拨明细 */
 export interface TransferItemData {
   id: number | null
-  material_id: number
-  material_code: string | null
-  material_name: string | null
+  materialId: number
+  materialCode: string | null
+  materialName: string | null
   spec: string | null
-  unit_id: number
-  unit_name_snapshot: string
-  conversion_rate_snapshot: number
+  unitId: number
+  unitNameSnapshot: string
+  conversionRateSnapshot: number
   quantity: number
-  base_quantity: number
-  lot_id: number | null
-  lot_no: string | null
+  baseQuantity: number
+  lotId: number | null
+  lotNo: string | null
   remark: string | null
 }
 
 /** 调拨单详情 */
 export interface TransferDetail {
   id: number
-  transfer_no: string
-  from_warehouse_id: number
-  from_warehouse_name: string
-  to_warehouse_id: number
-  to_warehouse_name: string
-  transfer_date: string
+  transferNo: string
+  fromWarehouseId: number
+  fromWarehouseName: string
+  toWarehouseId: number
+  toWarehouseName: string
+  transferDate: string
   status: string
   remark: string | null
-  created_by_name: string | null
-  confirmed_by_name: string | null
-  confirmed_at: string | null
-  created_at: string | null
+  createdByName: string | null
+  confirmedByName: string | null
+  confirmedAt: string | null
+  createdAt: string | null
   items: TransferItemData[]
 }
 
@@ -301,7 +301,7 @@ export async function getInventoryList(filter: InventoryFilter): Promise<Paginat
   if (isTauriEnv()) {
     return invoke<PaginatedResponse<InventoryListItem>>('get_inventory_list', { filter })
   }
-  return { total: 0, items: [], page: filter.page, page_size: filter.pageSize }
+  return { total: 0, items: [], page: filter.page, pageSize: filter.pageSize }
 }
 
 /** 获取库存详情 */
@@ -316,7 +316,7 @@ export async function getInventoryTransactions(filter: TransactionFilter): Promi
   if (isTauriEnv()) {
     return invoke<PaginatedResponse<TransactionListItem>>('get_inventory_transactions', { filter })
   }
-  return { total: 0, items: [], page: filter.page, page_size: filter.pageSize }
+  return { total: 0, items: [], page: filter.page, pageSize: filter.pageSize }
 }
 
 /** 创建自由出入库记录 */
@@ -334,7 +334,7 @@ export async function getStockChecks(filter: StockCheckFilter): Promise<Paginate
   if (isTauriEnv()) {
     return invoke<PaginatedResponse<StockCheckListItem>>('get_stock_checks', { filter })
   }
-  return { total: 0, items: [], page: filter.page, page_size: filter.pageSize }
+  return { total: 0, items: [], page: filter.page, pageSize: filter.pageSize }
 }
 
 /** 获取盘点单详情 */
@@ -364,7 +364,7 @@ export async function getTransfers(filter: TransferFilter): Promise<PaginatedRes
   if (isTauriEnv()) {
     return invoke<PaginatedResponse<TransferListItem>>('get_transfers', { filter })
   }
-  return { total: 0, items: [], page: filter.page, page_size: filter.pageSize }
+  return { total: 0, items: [], page: filter.page, pageSize: filter.pageSize }
 }
 
 /** 获取调拨单详情 */

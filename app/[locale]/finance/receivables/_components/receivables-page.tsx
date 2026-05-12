@@ -39,7 +39,7 @@ export function ReceivablesPage() {
   const [items, setItems] = useState<ReceivableListItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
-  const [kpi, setKpi] = useState({ total_receivable: 0, total_received: 0, total_partial: 0, total_overdue: 0 })
+  const [kpi, setKpi] = useState({ totalReceivable: 0, totalReceived: 0, totalPartial: 0, totalOverdue: 0 })
 
   // 筛选
   const [draftKeyword, setDraftKeyword] = useState('')
@@ -87,7 +87,7 @@ export function ReceivablesPage() {
         keyword: keyword || undefined,
         status: status || undefined,
         page,
-        page_size: pageSize,
+        pageSize: pageSize,
       })
       setKpi(res.summary)
       setItems(res.list.items)
@@ -138,10 +138,10 @@ export function ReceivablesPage() {
     setReceiptSubmitting(true)
     try {
       await recordReceipt({
-        receivable_id: receiptTarget.id,
-        receipt_date: receiptDate,
-        receipt_amount: amount,
-        receipt_method: receiptMethod,
+        receivableId: receiptTarget.id,
+        receiptDate: receiptDate,
+        receiptAmount: amount,
+        receiptMethod: receiptMethod,
         remark: receiptRemark || undefined,
       })
       toast.success(t('receivables.toast.receiptSuccess'))
@@ -220,7 +220,7 @@ export function ReceivablesPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('receivables.kpi.totalReceivable')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.total_receivable, 'VND' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalReceivable, 'VND' as Currency)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
@@ -229,7 +229,7 @@ export function ReceivablesPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('receivables.kpi.totalReceived')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.total_received, 'VND' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalReceived, 'VND' as Currency)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
@@ -238,7 +238,7 @@ export function ReceivablesPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('receivables.kpi.totalPartial')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.total_partial, 'VND' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalPartial, 'VND' as Currency)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
@@ -247,7 +247,7 @@ export function ReceivablesPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('receivables.kpi.totalOverdue')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.total_overdue, 'VND' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalOverdue, 'VND' as Currency)}</p>
           </div>
         </div>
       </div>
@@ -314,27 +314,27 @@ export function ReceivablesPage() {
             <BusinessListTableEmptyRow colSpan={COL_COUNT} message={tc('noData')} />
           ) : (
             items.map(item => (
-              <TableRow key={item.id} className={item.adjustment_type === 'return_offset' ? 'bg-red-50/30 dark:bg-red-950/10' : ''}>
-                <TableCell>{typeBadge(item.adjustment_type)}</TableCell>
-                <TableCell className="font-mono text-sm">{item.order_no || '-'}</TableCell>
-                <TableCell className="truncate">{item.customer_name}</TableCell>
-                <TableCell className="text-sm">{item.receivable_date}</TableCell>
-                <TableCell className={`text-right font-mono ${item.receivable_amount < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-                  {formatAmount(item.receivable_amount, item.currency as Currency)}
+              <TableRow key={item.id} className={item.adjustmentType === 'return_offset' ? 'bg-red-50/30 dark:bg-red-950/10' : ''}>
+                <TableCell>{typeBadge(item.adjustmentType)}</TableCell>
+                <TableCell className="font-mono text-sm">{item.orderNo || '-'}</TableCell>
+                <TableCell className="truncate">{item.customerName}</TableCell>
+                <TableCell className="text-sm">{item.receivableDate}</TableCell>
+                <TableCell className={`text-right font-mono ${item.receivableAmount < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                  {formatAmount(item.receivableAmount, item.currency as Currency)}
                 </TableCell>
-                <TableCell className="text-right font-mono">{formatAmount(item.received_amount, item.currency as Currency)}</TableCell>
-                <TableCell className={`text-right font-mono font-semibold ${item.unreceived_amount > 0 ? 'text-amber-600 dark:text-amber-400' : ''}`}>
-                  {formatAmount(item.unreceived_amount, item.currency as Currency)}
+                <TableCell className="text-right font-mono">{formatAmount(item.receivedAmount, item.currency as Currency)}</TableCell>
+                <TableCell className={`text-right font-mono font-semibold ${item.unreceivedAmount > 0 ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+                  {formatAmount(item.unreceivedAmount, item.currency as Currency)}
                 </TableCell>
                 <TableCell>{statusBadge(item.status)}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    {item.status !== 'paid' && item.adjustment_type === 'normal' && (
+                    {item.status !== 'paid' && item.adjustmentType === 'normal' && (
                       <Button variant="ghost" size="sm" onClick={() => openReceiptDialog(item)}>
                         <CreditCard className="size-4" />
                       </Button>
                     )}
-                    {item.received_amount > 0 && (
+                    {item.receivedAmount > 0 && (
                       <Button variant="ghost" size="sm" onClick={() => void openRecordsDialog(item)}>
                         <Clock className="size-4" />
                       </Button>
@@ -356,7 +356,7 @@ export function ReceivablesPage() {
           <DialogHeader>
             <DialogTitle>{t('receivables.dialog.title')}</DialogTitle>
             <DialogDescription>
-              {receiptTarget?.customer_name} — {receiptTarget?.order_no}
+              {receiptTarget?.customerName} — {receiptTarget?.orderNo}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-4">
@@ -364,13 +364,13 @@ export function ReceivablesPage() {
               <div>
                 <span className="text-muted-foreground">{t('receivables.dialog.receivableAmount')}</span>
                 <p className="font-mono font-semibold">
-                  {receiptTarget && formatAmount(receiptTarget.receivable_amount, receiptTarget.currency as Currency)}
+                  {receiptTarget && formatAmount(receiptTarget.receivableAmount, receiptTarget.currency as Currency)}
                 </p>
               </div>
               <div>
                 <span className="text-muted-foreground">{t('receivables.dialog.unreceivedAmount')}</span>
                 <p className="font-mono font-semibold text-amber-600 dark:text-amber-400">
-                  {receiptTarget && formatAmount(receiptTarget.unreceived_amount, receiptTarget.currency as Currency)}
+                  {receiptTarget && formatAmount(receiptTarget.unreceivedAmount, receiptTarget.currency as Currency)}
                 </p>
               </div>
             </div>
@@ -420,7 +420,7 @@ export function ReceivablesPage() {
           <DialogHeader>
             <DialogTitle>{t('receivables.records.title')}</DialogTitle>
             <DialogDescription>
-              {recordsTarget?.customer_name} — {recordsTarget?.order_no}
+              {recordsTarget?.customerName} — {recordsTarget?.orderNo}
             </DialogDescription>
           </DialogHeader>
           {recordsLoading ? (
@@ -440,9 +440,9 @@ export function ReceivablesPage() {
               <TableBody>
                 {records.map(rec => (
                   <TableRow key={rec.id}>
-                    <TableCell className="text-sm">{rec.receipt_date}</TableCell>
-                    <TableCell className="text-right font-mono">{formatAmount(rec.receipt_amount, rec.currency as Currency)}</TableCell>
-                    <TableCell className="text-sm">{rec.receipt_method ? t(`paymentMethods.${rec.receipt_method}`) : '-'}</TableCell>
+                    <TableCell className="text-sm">{rec.receiptDate}</TableCell>
+                    <TableCell className="text-right font-mono">{formatAmount(rec.receiptAmount, rec.currency as Currency)}</TableCell>
+                    <TableCell className="text-sm">{rec.receiptMethod ? t(`paymentMethods.${rec.receiptMethod}`) : '-'}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{rec.remark || '-'}</TableCell>
                   </TableRow>
                 ))}

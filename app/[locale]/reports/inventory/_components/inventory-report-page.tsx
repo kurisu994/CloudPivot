@@ -195,18 +195,18 @@ export function InventoryReportPage() {
     setReportLoading(true)
     try {
       const filter: InventoryReportFilter = {
-        start_date: startDate || null,
-        end_date: endDate || null,
-        warehouse_id: warehouseId !== 'all' ? Number(warehouseId) : null,
-        category_id: categoryId !== 'all' ? Number(categoryId) : null,
-        material_type: materialType !== 'all' ? materialType : null,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        warehouseId: warehouseId !== 'all' ? Number(warehouseId) : null,
+        categoryId: categoryId !== 'all' ? Number(categoryId) : null,
+        materialType: materialType !== 'all' ? materialType : null,
         keyword: keyword.trim() || null,
         page,
-        page_size: pageSize,
+        pageSize: pageSize,
       }
       const res = await getInventoryReportSummary(filter)
       setReportData(res)
-      setGeneratedAt(res.generated_at)
+      setGeneratedAt(res.generatedAt)
     } catch (error) {
       console.error('加载收发存数据失败', error)
     } finally {
@@ -220,13 +220,13 @@ export function InventoryReportPage() {
     try {
       const range = AGING_RANGES.find(r => r.value === agingRange) ?? AGING_RANGES[0]
       const filter: AgingFilter = {
-        warehouse_id: warehouseId !== 'all' ? Number(warehouseId) : null,
-        category_id: categoryId !== 'all' ? Number(categoryId) : null,
-        min_days: range.min,
-        max_days: range.max,
+        warehouseId: warehouseId !== 'all' ? Number(warehouseId) : null,
+        categoryId: categoryId !== 'all' ? Number(categoryId) : null,
+        minDays: range.min,
+        maxDays: range.max,
         keyword: agingKeyword.trim() || null,
         page: agingPage,
-        page_size: pageSize,
+        pageSize: pageSize,
       }
       const res = await getInventoryAgingAnalysis(filter)
       setAgingData(res)
@@ -242,11 +242,11 @@ export function InventoryReportPage() {
     setSlowLoading(true)
     try {
       const filter: SlowMovingFilter = {
-        days_threshold: slowThreshold,
-        warehouse_id: warehouseId !== 'all' ? Number(warehouseId) : null,
-        category_id: categoryId !== 'all' ? Number(categoryId) : null,
+        daysThreshold: slowThreshold,
+        warehouseId: warehouseId !== 'all' ? Number(warehouseId) : null,
+        categoryId: categoryId !== 'all' ? Number(categoryId) : null,
         page: slowPage,
-        page_size: pageSize,
+        pageSize: pageSize,
       }
       const res = await getInventorySlowMoving(filter)
       setSlowData(res)
@@ -332,16 +332,16 @@ export function InventoryReportPage() {
     setExporting(true)
     try {
       if (activeTab === 'movement') {
-        // 拉全量数据（page_size=99999）
+        // 拉全量数据（pageSize=99999）
         const filter: InventoryReportFilter = {
-          start_date: startDate || null,
-          end_date: endDate || null,
-          warehouse_id: warehouseId !== 'all' ? Number(warehouseId) : null,
-          category_id: categoryId !== 'all' ? Number(categoryId) : null,
-          material_type: materialType !== 'all' ? materialType : null,
+          startDate: startDate || null,
+          endDate: endDate || null,
+          warehouseId: warehouseId !== 'all' ? Number(warehouseId) : null,
+          categoryId: categoryId !== 'all' ? Number(categoryId) : null,
+          materialType: materialType !== 'all' ? materialType : null,
           keyword: keyword.trim() || null,
           page: 1,
-          page_size: 99999,
+          pageSize: 99999,
         }
         const res = await getInventoryReportSummary(filter)
         const headers = [
@@ -357,48 +357,48 @@ export function InventoryReportPage() {
           t('closingValue'),
         ]
         const rows = res.items.map(i => [
-          i.material_code,
-          i.material_name,
+          i.materialCode,
+          i.materialName,
           i.spec || '',
-          i.opening_qty.toFixed(2),
-          i.inbound_qty.toFixed(2),
-          i.outbound_qty.toFixed(2),
-          i.closing_qty.toFixed(2),
-          (i.inbound_value / 100).toFixed(2),
-          (i.outbound_value / 100).toFixed(2),
-          (i.closing_value / 100).toFixed(2),
+          i.openingQty.toFixed(2),
+          i.inboundQty.toFixed(2),
+          i.outboundQty.toFixed(2),
+          i.closingQty.toFixed(2),
+          (i.inboundValue / 100).toFixed(2),
+          (i.outboundValue / 100).toFixed(2),
+          (i.closingValue / 100).toFixed(2),
         ])
         await exportToExcel(headers, rows, `inventory_report_${startDate}_${endDate}.xlsx`)
       } else if (activeTab === 'aging') {
         const range = AGING_RANGES.find(r => r.value === agingRange) ?? AGING_RANGES[0]
         const filter: AgingFilter = {
-          warehouse_id: warehouseId !== 'all' ? Number(warehouseId) : null,
-          category_id: categoryId !== 'all' ? Number(categoryId) : null,
-          min_days: range.min,
-          max_days: range.max,
+          warehouseId: warehouseId !== 'all' ? Number(warehouseId) : null,
+          categoryId: categoryId !== 'all' ? Number(categoryId) : null,
+          minDays: range.min,
+          maxDays: range.max,
           keyword: agingKeyword.trim() || null,
           page: 1,
-          page_size: 99999,
+          pageSize: 99999,
         }
         const res = await getInventoryAgingAnalysis(filter)
         const headers = [t('materialCode'), t('materialName'), t('lotNo'), t('receivedDate'), t('daysInStock'), t('qty'), t('value')]
         const rows = res.items.map(i => [
-          i.material_code,
-          i.material_name,
-          i.lot_no,
-          i.received_date,
-          String(i.days_in_stock),
-          i.qty_on_hand.toFixed(2),
+          i.materialCode,
+          i.materialName,
+          i.lotNo,
+          i.receivedDate,
+          String(i.daysInStock),
+          i.qtyOnHand.toFixed(2),
           (i.value / 100).toFixed(2),
         ])
         await exportToExcel(headers, rows, 'inventory_aging.xlsx')
       } else if (activeTab === 'slowMoving') {
         const filter: SlowMovingFilter = {
-          days_threshold: slowThreshold,
-          warehouse_id: warehouseId !== 'all' ? Number(warehouseId) : null,
-          category_id: categoryId !== 'all' ? Number(categoryId) : null,
+          daysThreshold: slowThreshold,
+          warehouseId: warehouseId !== 'all' ? Number(warehouseId) : null,
+          categoryId: categoryId !== 'all' ? Number(categoryId) : null,
           page: 1,
-          page_size: 99999,
+          pageSize: 99999,
         }
         const res = await getInventorySlowMoving(filter)
         const headers = [
@@ -411,13 +411,13 @@ export function InventoryReportPage() {
           t('avgMonthlyOutbound'),
         ]
         const rows = res.items.map(i => [
-          i.material_code,
-          i.material_name,
-          i.category_name || '',
-          i.current_qty.toFixed(2),
-          i.last_out_date || '',
-          String(i.days_since_last_out),
-          i.avg_monthly_outbound.toFixed(1),
+          i.materialCode,
+          i.materialName,
+          i.categoryName || '',
+          i.currentQty.toFixed(2),
+          i.lastOutDate || '',
+          String(i.daysSinceLastOut),
+          i.avgMonthlyOutbound.toFixed(1),
         ])
         await exportToExcel(headers, rows, 'inventory_slow_moving.xlsx')
       }
@@ -436,9 +436,9 @@ export function InventoryReportPage() {
     let g2 = 0
     let g3 = 0
     for (const item of agingData.items) {
-      if (item.days_in_stock <= 30) g0++
-      else if (item.days_in_stock <= 60) g1++
-      else if (item.days_in_stock <= 90) g2++
+      if (item.daysInStock <= 30) g0++
+      else if (item.daysInStock <= 60) g1++
+      else if (item.daysInStock <= 90) g2++
       else g3++
     }
     return [
@@ -482,7 +482,7 @@ export function InventoryReportPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('openingStock')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(stats?.opening_value ?? 0, 'USD' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(stats?.openingValue ?? 0, 'USD' as Currency)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
@@ -491,7 +491,7 @@ export function InventoryReportPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('inbound')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(stats?.inbound_value ?? 0, 'USD' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(stats?.inboundValue ?? 0, 'USD' as Currency)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
@@ -500,7 +500,7 @@ export function InventoryReportPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('outbound')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(stats?.outbound_value ?? 0, 'USD' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(stats?.outboundValue ?? 0, 'USD' as Currency)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
@@ -509,7 +509,7 @@ export function InventoryReportPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('closingStock')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(stats?.closing_value ?? 0, 'USD' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(stats?.closingValue ?? 0, 'USD' as Currency)}</p>
           </div>
         </div>
       </div>
@@ -748,21 +748,21 @@ function StockMovementTable({
             <BusinessListTableEmptyRow colSpan={MOVEMENT_COL_COUNT} message={tc('noData')} />
           ) : (
             items.map(item => (
-              <TableRow key={item.material_id}>
-                <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.material_code}</TableCell>
-                <TableCell className="truncate">{item.material_name}</TableCell>
+              <TableRow key={item.materialId}>
+                <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.materialCode}</TableCell>
+                <TableCell className="truncate">{item.materialName}</TableCell>
                 <TableCell className="text-muted-foreground text-sm">{item.spec || '-'}</TableCell>
-                <TableCell className="text-right font-mono">{item.opening_qty.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-mono">{item.openingQty.toFixed(2)}</TableCell>
                 <TableCell className="text-right font-mono text-emerald-600 dark:text-emerald-400">
-                  {item.inbound_qty > 0 ? `+${item.inbound_qty.toFixed(2)}` : '0.00'}
+                  {item.inboundQty > 0 ? `+${item.inboundQty.toFixed(2)}` : '0.00'}
                 </TableCell>
                 <TableCell className="text-right font-mono text-amber-600 dark:text-amber-400">
-                  {item.outbound_qty > 0 ? `-${item.outbound_qty.toFixed(2)}` : '0.00'}
+                  {item.outboundQty > 0 ? `-${item.outboundQty.toFixed(2)}` : '0.00'}
                 </TableCell>
-                <TableCell className="text-right font-mono font-semibold">{item.closing_qty.toFixed(2)}</TableCell>
-                <TableCell className="text-right font-mono">{formatAmount(item.inbound_value, 'USD' as Currency)}</TableCell>
-                <TableCell className="text-right font-mono">{formatAmount(item.outbound_value, 'USD' as Currency)}</TableCell>
-                <TableCell className="text-right font-mono font-semibold">{formatAmount(item.closing_value, 'USD' as Currency)}</TableCell>
+                <TableCell className="text-right font-mono font-semibold">{item.closingQty.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-mono">{formatAmount(item.inboundValue, 'USD' as Currency)}</TableCell>
+                <TableCell className="text-right font-mono">{formatAmount(item.outboundValue, 'USD' as Currency)}</TableCell>
+                <TableCell className="text-right font-mono font-semibold">{formatAmount(item.closingValue, 'USD' as Currency)}</TableCell>
               </TableRow>
             ))
           )}
@@ -841,13 +841,13 @@ function AgingTable({
             <BusinessListTableEmptyRow colSpan={7} message={tc('noData')} />
           ) : (
             items.map(item => (
-              <TableRow key={`${item.material_id}-${item.lot_no}`}>
-                <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.material_code}</TableCell>
-                <TableCell className="truncate">{item.material_name}</TableCell>
-                <TableCell className="font-mono text-sm">{item.lot_no}</TableCell>
-                <TableCell className="text-sm">{item.received_date}</TableCell>
-                <TableCell>{agingBadge(item.days_in_stock)}</TableCell>
-                <TableCell className="text-right font-mono">{item.qty_on_hand.toFixed(2)}</TableCell>
+              <TableRow key={`${item.materialId}-${item.lotNo}`}>
+                <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.materialCode}</TableCell>
+                <TableCell className="truncate">{item.materialName}</TableCell>
+                <TableCell className="font-mono text-sm">{item.lotNo}</TableCell>
+                <TableCell className="text-sm">{item.receivedDate}</TableCell>
+                <TableCell>{agingBadge(item.daysInStock)}</TableCell>
+                <TableCell className="text-right font-mono">{item.qtyOnHand.toFixed(2)}</TableCell>
                 <TableCell className="text-right font-mono">{formatAmount(item.value, 'USD' as Currency)}</TableCell>
               </TableRow>
             ))
@@ -905,18 +905,18 @@ function SlowMovingTable({
             <BusinessListTableEmptyRow colSpan={7} message={tc('noData')} />
           ) : (
             items.map(item => (
-              <TableRow key={item.material_id}>
-                <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.material_code}</TableCell>
-                <TableCell className="truncate">{item.material_name}</TableCell>
-                <TableCell className="text-sm">{item.category_name || '-'}</TableCell>
-                <TableCell className="text-right font-mono">{item.current_qty.toFixed(2)}</TableCell>
-                <TableCell className="text-sm">{item.last_out_date || '-'}</TableCell>
+              <TableRow key={item.materialId}>
+                <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.materialCode}</TableCell>
+                <TableCell className="truncate">{item.materialName}</TableCell>
+                <TableCell className="text-sm">{item.categoryName || '-'}</TableCell>
+                <TableCell className="text-right font-mono">{item.currentQty.toFixed(2)}</TableCell>
+                <TableCell className="text-sm">{item.lastOutDate || '-'}</TableCell>
                 <TableCell className="text-right">
-                  <Badge variant={item.days_since_last_out > 180 ? 'destructive' : 'secondary'}>
-                    {item.days_since_last_out === 9999 ? '∞' : t('daysCount', { count: item.days_since_last_out })}
+                  <Badge variant={item.daysSinceLastOut > 180 ? 'destructive' : 'secondary'}>
+                    {item.daysSinceLastOut === 9999 ? '∞' : t('daysCount', { count: item.daysSinceLastOut })}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right font-mono">{item.avg_monthly_outbound.toFixed(1)}</TableCell>
+                <TableCell className="text-right font-mono">{item.avgMonthlyOutbound.toFixed(1)}</TableCell>
               </TableRow>
             ))
           )}

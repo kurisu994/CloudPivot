@@ -352,7 +352,7 @@ export async function getCustomers(filter: CustomerFilter): Promise<PaginatedRes
     total: filtered.length,
     items: filtered.slice(start, start + filter.pageSize),
     page: filter.page,
-    page_size: filter.pageSize,
+    pageSize: filter.pageSize,
   }
 }
 
@@ -494,7 +494,7 @@ export async function deleteCustomer(id: number): Promise<void> {
  */
 export async function toggleCustomerStatus(id: number, isEnabled: boolean): Promise<void> {
   if (isTauriEnv()) {
-    return invoke<void>('toggle_customer_status', { id, is_enabled: isEnabled })
+    return invoke<void>('toggle_customer_status', { id, isEnabled })
   }
 
   const listItem = MOCK_CUSTOMERS.find(item => item.id === id)

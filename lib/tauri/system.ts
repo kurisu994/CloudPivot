@@ -71,18 +71,18 @@ export async function setSystemConfigs(configs: { key: string; value: string }[]
 
 /** 备份文件信息 */
 export interface BackupFileInfo {
-  file_name: string
-  file_path: string
-  size_bytes: number
-  created_at: string
+  fileName: string
+  filePath: string
+  sizeBytes: number
+  createdAt: string
 }
 
 /** 数据管理状态 */
 export interface DataManagementStatus {
-  db_path: string
-  db_size_bytes: number
-  backup_dir: string
-  last_backup_at: string | null
+  dbPath: string
+  dbSizeBytes: number
+  backupDir: string
+  lastBackupAt: string | null
   backups: BackupFileInfo[]
 }
 
@@ -98,59 +98,59 @@ export interface ImportResult {
 export interface MaterialImportRow {
   code: string
   name: string
-  material_type: string
-  category_code?: string | null
-  category_name?: string | null
+  materialType: string
+  categoryCode?: string | null
+  categoryName?: string | null
   spec?: string | null
-  base_unit_name: string
-  aux_unit_name?: string | null
-  conversion_rate?: number | null
-  ref_cost_price?: number | null
-  sale_price?: number | null
-  safety_stock?: number | null
-  max_stock?: number | null
-  lot_tracking_mode?: string | null
+  baseUnitName: string
+  auxUnitName?: string | null
+  conversionRate?: number | null
+  refCostPrice?: number | null
+  salePrice?: number | null
+  safetyStock?: number | null
+  maxStock?: number | null
+  lotTrackingMode?: string | null
   texture?: string | null
   color?: string | null
-  surface_craft?: string | null
-  length_mm?: number | null
-  width_mm?: number | null
-  height_mm?: number | null
+  surfaceCraft?: string | null
+  lengthMm?: number | null
+  widthMm?: number | null
+  heightMm?: number | null
   barcode?: string | null
   remark?: string | null
 }
 
 /** 物料导出行 */
 export interface MaterialExportRow extends MaterialImportRow {
-  category_code: string | null
-  category_name: string | null
+  categoryCode: string | null
+  categoryName: string | null
   spec: string | null
-  aux_unit_name: string | null
-  conversion_rate: number | null
-  ref_cost_price: number
-  sale_price: number
-  safety_stock: number
-  max_stock: number
-  lot_tracking_mode: string
+  auxUnitName: string | null
+  conversionRate: number | null
+  refCostPrice: number
+  salePrice: number
+  safetyStock: number
+  maxStock: number
+  lotTrackingMode: string
   texture: string | null
   color: string | null
-  surface_craft: string | null
-  length_mm: number | null
-  width_mm: number | null
-  height_mm: number | null
+  surfaceCraft: string | null
+  lengthMm: number | null
+  widthMm: number | null
+  heightMm: number | null
   barcode: string | null
   remark: string | null
-  is_enabled: boolean
+  isEnabled: boolean
 }
 
 /** 期初库存导入行 */
 export interface InitialInventoryImportRow {
-  material_code: string
-  warehouse_code: string
+  materialCode: string
+  warehouseCode: string
   quantity: number
-  unit_cost_usd: number
-  received_date: string
-  lot_no?: string | null
+  unitCostUsd: number
+  receivedDate: string
+  lotNo?: string | null
   supplier_batch_no?: string | null
   remark?: string | null
 }
@@ -161,10 +161,10 @@ export async function getDataManagementStatus(): Promise<DataManagementStatus> {
     return invoke<DataManagementStatus>('get_data_management_status')
   }
   return {
-    db_path: 'web-preview/cloudpivot.db',
-    db_size_bytes: 0,
-    backup_dir: 'web-preview/backups',
-    last_backup_at: null,
+    dbPath: 'web-preview/cloudpivot.db',
+    dbSizeBytes: 0,
+    backupDir: 'web-preview/backups',
+    lastBackupAt: null,
     backups: [],
   }
 }
@@ -206,7 +206,7 @@ export async function importInitialInventory(rows: InitialInventoryImportRow[]):
 /** 向导：仓库创建参数 */
 export interface WarehouseSetupItem {
   name: string
-  warehouse_type: 'raw' | 'semi' | 'finished'
+  warehouseType: 'raw' | 'semi' | 'finished'
   manager?: string
 }
 

@@ -25,18 +25,18 @@ export interface MaterialItem {
   id: number
   code: string
   name: string
-  material_type: string
-  category_id: number | null
-  category_name: string | null
+  materialType: string
+  categoryId: number | null
+  categoryName: string | null
   spec: string | null
-  base_unit_id: number
-  unit_name: string | null
+  base_unitId: number
+  unitName: string | null
   ref_cost_price: number
   sale_price: number
   safety_stock: number
   max_stock: number
-  is_enabled: boolean
-  created_at: string | null
+  isEnabled: boolean
+  createdAt: string | null
 }
 
 /** 分类选项 */
@@ -50,8 +50,8 @@ export interface CategoryOption {
 export interface UnitOption {
   id: number
   name: string
-  name_en: string | null
-  name_vi: string | null
+  nameEn: string | null
+  nameVi: string | null
 }
 
 /* ------------------------------------------------------------------ */
@@ -66,11 +66,11 @@ const MOCK_CATEGORIES: CategoryOption[] = [
 ]
 
 const MOCK_UNITS: UnitOption[] = [
-  { id: 1, name: '张', name_en: 'Sheet', name_vi: 'Tấm' },
-  { id: 2, name: '个', name_en: 'Piece', name_vi: 'Cái' },
-  { id: 3, name: '套', name_en: 'Set', name_vi: 'Bộ' },
-  { id: 4, name: '米', name_en: 'Meter', name_vi: 'Mét' },
-  { id: 5, name: '千克', name_en: 'Kg', name_vi: 'Kg' },
+  { id: 1, name: '张', nameEn: 'Sheet', nameVi: 'Tấm' },
+  { id: 2, name: '个', nameEn: 'Piece', nameVi: 'Cái' },
+  { id: 3, name: '套', nameEn: 'Set', nameVi: 'Bộ' },
+  { id: 4, name: '米', nameEn: 'Meter', nameVi: 'Mét' },
+  { id: 5, name: '千克', nameEn: 'Kg', nameVi: 'Kg' },
 ]
 
 const MOCK_MATERIALS: MaterialItem[] = [
@@ -78,69 +78,69 @@ const MOCK_MATERIALS: MaterialItem[] = [
     id: 1,
     code: 'M-1002',
     name: '真皮三人沙发',
-    material_type: 'finished',
-    category_id: 3,
-    category_name: '客厅',
+    materialType: 'finished',
+    categoryId: 3,
+    categoryName: '客厅',
     spec: '2100×900',
-    base_unit_id: 3,
-    unit_name: '套',
+    base_unitId: 3,
+    unitName: '套',
     ref_cost_price: 0,
     sale_price: 175600,
     safety_stock: 10,
     max_stock: 50,
-    is_enabled: true,
-    created_at: '2024-01-15',
+    isEnabled: true,
+    createdAt: '2024-01-15',
   },
   {
     id: 2,
     code: 'M-0001',
     name: '白橡实木板',
-    material_type: 'raw',
-    category_id: 1,
-    category_name: '木材',
+    materialType: 'raw',
+    categoryId: 1,
+    categoryName: '木材',
     spec: '2440×1220',
-    base_unit_id: 1,
-    unit_name: '张',
+    base_unitId: 1,
+    unitName: '张',
     ref_cost_price: 3850,
     sale_price: 0,
     safety_stock: 50,
     max_stock: 500,
-    is_enabled: true,
-    created_at: '2024-01-10',
+    isEnabled: true,
+    createdAt: '2024-01-10',
   },
   {
     id: 3,
     code: 'M-0002',
     name: '不锈钢铰链',
-    material_type: 'raw',
-    category_id: 2,
-    category_name: '五金',
+    materialType: 'raw',
+    categoryId: 2,
+    categoryName: '五金',
     spec: '40mm',
-    base_unit_id: 2,
-    unit_name: '个',
+    base_unitId: 2,
+    unitName: '个',
     ref_cost_price: 48,
     sale_price: 0,
     safety_stock: 500,
     max_stock: 5000,
-    is_enabled: true,
-    created_at: '2024-01-12',
+    isEnabled: true,
+    createdAt: '2024-01-12',
   },
   {
     id: 4,
     code: 'M-1001',
     name: '北欧实木餐桌',
-    material_type: 'finished',
-    category_id: 4,
-    category_name: '餐厅',
+    materialType: 'finished',
+    categoryId: 4,
+    categoryName: '餐厅',
     spec: '1400×800',
-    base_unit_id: 3,
-    unit_name: '套',
+    base_unitId: 3,
+    unitName: '套',
     ref_cost_price: 0,
     sale_price: 49000,
     safety_stock: 5,
     max_stock: 30,
-    is_enabled: true,
-    created_at: '2024-01-08',
+    isEnabled: true,
+    createdAt: '2024-01-08',
   },
 ]
 
@@ -230,13 +230,13 @@ export function MaterialsClientPage() {
         filtered = filtered.filter(m => m.code.toLowerCase().includes(kw) || m.name.toLowerCase().includes(kw))
       }
       if (categoryId !== 'all') {
-        filtered = filtered.filter(m => m.category_id === parseInt(categoryId))
+        filtered = filtered.filter(m => m.categoryId === parseInt(categoryId))
       }
       if (materialType !== 'all') {
-        filtered = filtered.filter(m => m.material_type === materialType)
+        filtered = filtered.filter(m => m.materialType === materialType)
       }
       if (status !== 'all') {
-        filtered = filtered.filter(m => (status === 'active' ? m.is_enabled : !m.is_enabled))
+        filtered = filtered.filter(m => (status === 'active' ? m.isEnabled : !m.isEnabled))
       }
       setTotal(filtered.length)
       setData(filtered.slice((page - 1) * pageSize, page * pageSize))
@@ -247,11 +247,11 @@ export function MaterialsClientPage() {
       const res = await invoke<{ total: number; items: MaterialItem[] }>('get_materials', {
         filter: {
           keyword: keyword.trim() || null,
-          category_id: categoryId === 'all' ? null : parseInt(categoryId, 10),
-          material_type: materialType === 'all' ? null : materialType,
-          is_enabled: status === 'all' ? null : status === 'active',
+          categoryId: categoryId === 'all' ? null : parseInt(categoryId, 10),
+          materialType: materialType === 'all' ? null : materialType,
+          isEnabled: status === 'all' ? null : status === 'active',
           page,
-          page_size: pageSize,
+          pageSize: pageSize,
         },
       })
       setData(res.items)
@@ -285,7 +285,7 @@ export function MaterialsClientPage() {
 
   const handleToggleStatus = async (id: number, currentEnabled: boolean) => {
     if (!isTauriEnv()) {
-      setData(prev => prev.map(item => (item.id === id ? { ...item, is_enabled: !currentEnabled } : item)))
+      setData(prev => prev.map(item => (item.id === id ? { ...item, isEnabled: !currentEnabled } : item)))
       toast.success(currentEnabled ? t('notifications.materialDisabled') : t('notifications.materialEnabled'))
       return
     }
@@ -306,7 +306,7 @@ export function MaterialsClientPage() {
       const lineNo = index + 2
       if (!row.code?.trim()) errors.push(t('import.errors.codeRequired', { line: lineNo }))
       if (!row.name?.trim()) errors.push(t('import.errors.nameRequired', { line: lineNo }))
-      if (!row.base_unit_name?.trim()) errors.push(t('import.errors.unitRequired', { line: lineNo }))
+      if (!row.baseUnitName?.trim()) errors.push(t('import.errors.unitRequired', { line: lineNo }))
       if (row.code && seenCodes.has(row.code.trim())) errors.push(t('import.errors.duplicateCode', { line: lineNo }))
       if (row.code) seenCodes.add(row.code.trim())
     })
@@ -361,7 +361,7 @@ export function MaterialsClientPage() {
     try {
       const rows: object[] = isTauriEnv()
         ? await exportMaterials()
-        : MOCK_MATERIALS.map(item => ({ ...item, base_unit_name: item.unit_name ?? '', lot_tracking_mode: 'none' }))
+        : MOCK_MATERIALS.map(item => ({ ...item, baseUnitName: item.unitName ?? '', lot_tracking_mode: 'none' }))
       await downloadBusinessWorkbook('materials.xlsx', 'materials', materialExcelColumns, rows)
       toast.success(t('notifications.exportSuccess'))
     } catch (error) {
@@ -529,8 +529,8 @@ export function MaterialsClientPage() {
                     <tr key={`${row.code}-${index}`} className="border-t">
                       <td className="px-3 py-2">{row.code}</td>
                       <td className="px-3 py-2">{row.name}</td>
-                      <td className="px-3 py-2">{row.material_type}</td>
-                      <td className="px-3 py-2">{row.base_unit_name}</td>
+                      <td className="px-3 py-2">{row.materialType}</td>
+                      <td className="px-3 py-2">{row.baseUnitName}</td>
                     </tr>
                   ))}
                 </tbody>

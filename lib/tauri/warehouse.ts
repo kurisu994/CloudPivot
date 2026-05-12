@@ -9,14 +9,14 @@ export interface WarehouseItem {
   id: number
   code: string
   name: string
-  warehouse_type: string
+  warehouseType: string
   manager: string | null
   phone: string | null
   address: string | null
   remark: string | null
-  is_enabled: boolean
-  created_at: string | null
-  updated_at: string | null
+  isEnabled: boolean
+  createdAt: string | null
+  updatedAt: string | null
 }
 
 /** 仓库保存参数 */
@@ -24,26 +24,26 @@ export interface SaveWarehouseParams {
   id?: number | null
   code: string
   name: string
-  warehouse_type: string
+  warehouseType: string
   manager?: string | null
   phone?: string | null
   address?: string | null
   remark?: string | null
-  is_enabled?: boolean
+  isEnabled?: boolean
 }
 
 /** 默认仓映射记录 */
 export interface DefaultWarehouseItem {
   id: number
-  material_type: string
-  warehouse_id: number
-  warehouse_name: string | null
+  materialType: string
+  warehouseId: number
+  warehouseName: string | null
 }
 
 /** 默认仓映射保存参数 */
 export interface DefaultWarehouseMapping {
-  material_type: string
-  warehouse_id: number
+  materialType: string
+  warehouseId: number
 }
 
 /** mock 仓库数据 */
@@ -52,61 +52,61 @@ const MOCK_WAREHOUSES: WarehouseItem[] = [
     id: 1,
     code: 'WH-RAW-001',
     name: '原材料仓',
-    warehouse_type: 'raw',
+    warehouseType: 'raw',
     manager: 'Nguyen A',
     phone: '+84 912345678',
     address: null,
     remark: null,
-    is_enabled: true,
-    created_at: '2026-01-01',
-    updated_at: '2026-01-01',
+    isEnabled: true,
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01',
   },
   {
     id: 2,
     code: 'WH-FIN-001',
     name: '成品仓',
-    warehouse_type: 'finished',
+    warehouseType: 'finished',
     manager: 'Tran B',
     phone: null,
     address: null,
     remark: null,
-    is_enabled: true,
-    created_at: '2026-01-01',
-    updated_at: '2026-01-01',
+    isEnabled: true,
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01',
   },
   {
     id: 3,
     code: 'WH-SEMI-001',
     name: '半成品仓',
-    warehouse_type: 'semi',
+    warehouseType: 'semi',
     manager: null,
     phone: null,
     address: null,
     remark: null,
-    is_enabled: true,
-    created_at: '2026-01-01',
-    updated_at: '2026-01-01',
+    isEnabled: true,
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01',
   },
   {
     id: 4,
     code: 'WH-RET-001',
     name: '退货仓',
-    warehouse_type: 'return',
+    warehouseType: 'return',
     manager: null,
     phone: null,
     address: null,
     remark: null,
-    is_enabled: true,
-    created_at: '2026-01-01',
-    updated_at: '2026-01-01',
+    isEnabled: true,
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01',
   },
 ]
 
 /** mock 默认仓映射 */
 const MOCK_DEFAULT_WAREHOUSES: DefaultWarehouseItem[] = [
-  { id: 1, material_type: 'raw', warehouse_id: 1, warehouse_name: '原材料仓' },
-  { id: 2, material_type: 'semi', warehouse_id: 3, warehouse_name: '半成品仓' },
-  { id: 3, material_type: 'finished', warehouse_id: 2, warehouse_name: '成品仓' },
+  { id: 1, materialType: 'raw', warehouseId: 1, warehouseName: '原材料仓' },
+  { id: 2, materialType: 'semi', warehouseId: 3, warehouseName: '半成品仓' },
+  { id: 3, materialType: 'finished', warehouseId: 2, warehouseName: '成品仓' },
 ]
 
 /** 获取仓库列表 */
@@ -115,7 +115,7 @@ export async function getWarehouses(includeDisabled: boolean = true): Promise<Wa
     return invoke<WarehouseItem[]>('get_warehouses', { includeDisabled })
   }
   if (includeDisabled) return [...MOCK_WAREHOUSES]
-  return MOCK_WAREHOUSES.filter(w => w.is_enabled)
+  return MOCK_WAREHOUSES.filter(w => w.isEnabled)
 }
 
 /** 获取单个仓库 */
@@ -156,7 +156,7 @@ export async function generateWarehouseCode(warehouseType: string): Promise<stri
     return invoke<string>('generate_warehouse_code', { warehouseType })
   }
   const prefix = { raw: 'RAW', semi: 'SEMI', finished: 'FIN', return: 'RET' }[warehouseType] ?? 'GEN'
-  const count = MOCK_WAREHOUSES.filter(w => w.warehouse_type === warehouseType).length
+  const count = MOCK_WAREHOUSES.filter(w => w.warehouseType === warehouseType).length
   return `WH-${prefix}-${String(count + 1).padStart(3, '0')}`
 }
 

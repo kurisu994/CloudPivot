@@ -16,6 +16,7 @@ pub struct CategoryOption {
 
 /// 单位记录（物料表单下拉用，含小数位和符号供采购模块使用）
 #[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct UnitOption {
     pub id: i64,
     pub name: String,
@@ -147,6 +148,7 @@ pub async fn get_units(db: State<'_, DbState>) -> Result<Vec<UnitOption>, AppErr
 
 /// 筛选参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MaterialFilter {
     pub keyword: Option<String>,
     pub category_id: Option<i64>,
@@ -157,6 +159,7 @@ pub struct MaterialFilter {
 }
 
 #[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct MaterialListItem {
     pub id: i64,
     pub code: String,
@@ -306,6 +309,7 @@ pub async fn get_material_by_id(
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveMaterialParams {
     pub id: Option<i64>,
     pub code: String,

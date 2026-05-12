@@ -1,6 +1,6 @@
 export interface ToggleSupplierStatusArgs extends Record<string, unknown> {
   id: number
-  is_enabled: boolean
+  isEnabled: boolean
 }
 
 export interface SupplierValidationInput {
@@ -24,7 +24,7 @@ export type SupplierValidationErrorKey =
 export function buildToggleSupplierStatusArgs(id: number, currentEnabled: boolean): ToggleSupplierStatusArgs {
   return {
     id,
-    is_enabled: !currentEnabled,
+    isEnabled: !currentEnabled,
   }
 }
 

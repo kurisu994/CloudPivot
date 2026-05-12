@@ -7,67 +7,67 @@ import { invoke, isTauriEnv } from './core'
 
 /** 补货建议项 */
 export interface ReplenishmentSuggestion {
-  material_id: number
-  material_code: string
-  material_name: string
+  materialId: number
+  materialCode: string
+  materialName: string
   spec: string | null
-  category_name: string | null
-  unit_name: string | null
-  material_type: string
-  physical_qty: number
-  reserved_qty: number
-  available_qty: number
-  safety_stock: number
-  gap_qty: number
-  daily_consumption: number
-  days_until_stockout: number
-  suggested_qty: number
-  supplier_id: number | null
-  supplier_name: string | null
-  ref_price: number | null
-  ref_currency: string
+  categoryName: string | null
+  unitName: string | null
+  materialType: string
+  physicalQty: number
+  reservedQty: number
+  availableQty: number
+  safetyStock: number
+  gapQty: number
+  dailyConsumption: number
+  daysUntilStockout: number
+  suggestedQty: number
+  supplierId: number | null
+  supplierName: string | null
+  refPrice: number | null
+  refCurrency: string
   urgency: 'urgent' | 'warning' | 'normal'
-  log_id: number | null
+  logId: number | null
 }
 
 /** 补货建议筛选参数 */
 export interface SuggestionFilter {
   urgency?: string
-  category_id?: number
+  categoryId?: number
   keyword?: string
 }
 
 /** 补货策略配置项 */
 export interface ReplenishmentRule {
   id: number
-  material_id: number
-  material_code: string
-  material_name: string
+  materialId: number
+  materialCode: string
+  materialName: string
   spec: string | null
-  analysis_days: number
-  lead_days: number
-  safety_days: number
-  batch_multiple: number
-  preferred_supplier_id: number | null
-  supplier_name: string | null
-  is_enabled: boolean
+  analysisDays: number
+  leadDays: number
+  safetyDays: number
+  batchMultiple: number
+  preferredSupplierId: number | null
+  supplierName: string | null
+  isEnabled: boolean
 }
 
 /** 策略列表筛选参数 */
 export interface RuleFilter {
   keyword?: string
   page: number
-  page_size: number
+  pageSize: number
 }
 
 /** 策略更新参数 */
 export interface UpdateRuleParams {
-  analysis_days: number
-  lead_days: number
-  safety_days: number
-  batch_multiple: number
-  preferred_supplier_id: number | null
-  is_enabled: boolean
+  analysisDays: number
+  leadDays: number
+  safetyDays: number
+  batchMultiple: number
+  preferredSupplierId: number | null
+  isEnabled: boolean
 }
 
 /** 消耗趋势数据点 */
@@ -78,7 +78,7 @@ export interface ConsumptionTrendPoint {
 
 /** 批量生成采购单结果 */
 export interface BulkCreatePoResult {
-  created_orders: number[]
+  createdOrders: number[]
   errors: string[]
 }
 
@@ -96,7 +96,7 @@ export async function getReplenishmentSuggestions(filter: SuggestionFilter): Pro
 
 /** 获取补货策略配置列表 */
 export async function getReplenishmentRules(filter: RuleFilter): Promise<PaginatedResponse<ReplenishmentRule>> {
-  if (!isTauriEnv()) return { total: 0, items: [], page: 1, page_size: 20 }
+  if (!isTauriEnv()) return { total: 0, items: [], page: 1, pageSize: 20 }
   return invoke<PaginatedResponse<ReplenishmentRule>>('get_replenishment_rules', { filter })
 }
 
@@ -114,7 +114,7 @@ export async function getConsumptionTrend(materialId: number, days: number): Pro
 
 /** 一键生成采购单 */
 export async function createPurchaseOrdersFromSuggestions(materialIds: number[], userId?: number, userName?: string): Promise<BulkCreatePoResult> {
-  if (!isTauriEnv()) return { created_orders: [], errors: ['仅 Tauri 环境可用'] }
+  if (!isTauriEnv()) return { createdOrders: [], errors: ['仅 Tauri 环境可用'] }
   return invoke<BulkCreatePoResult>('create_purchase_orders_from_suggestions', {
     materialIds,
     userId: userId ?? null,

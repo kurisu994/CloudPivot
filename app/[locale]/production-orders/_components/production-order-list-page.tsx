@@ -15,9 +15,9 @@ import { ProductionOrderTable } from './production-order-table'
 /** 工单列表项 */
 interface ProductionOrderListItem {
   id: number
-  order_no: string
-  bom_id: number
-  custom_order_id: number | null
+  orderNo: string
+  bomId: number
+  customOrderId: number | null
   custom_order_no: string | null
   output_material_id: number
   output_material_name: string
@@ -66,15 +66,15 @@ export function ProductionOrderListPage({ onEdit, onNew }: Props) {
         items: ProductionOrderListItem[]
         total: number
         page: number
-        page_size: number
+        pageSize: number
       }>('get_production_orders', {
         filter: {
           keyword: keyword || null,
           status: statusFilter || null,
-          date_from: dateFrom || null,
-          date_to: dateTo || null,
+          dateFrom: dateFrom || null,
+          dateTo: dateTo || null,
           page,
-          page_size: PAGE_SIZE,
+          pageSize: PAGE_SIZE,
         },
       })
       setItems(result.items)

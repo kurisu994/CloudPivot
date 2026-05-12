@@ -69,7 +69,7 @@ export function SalesOrderListPage({ onEdit, onNew }: SalesOrderListPageProps) {
   const loadOrders = useCallback(async () => {
     setLoading(true)
     try {
-      const result = await invoke<{ total: number; items: SalesOrderListItem[]; page: number; page_size: number }>('get_sales_orders', {
+      const result = await invoke<{ total: number; items: SalesOrderListItem[]; page: number; pageSize: number }>('get_sales_orders', {
         filter: { ...filters, page: currentPage, pageSize },
       })
       setItems(result.items)

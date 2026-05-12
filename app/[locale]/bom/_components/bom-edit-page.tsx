@@ -23,9 +23,9 @@ import { BomItemDialog } from './bom-item-dialog'
 interface BomDetail {
   id: number
   bom_code: string
-  material_id: number
-  material_code: string | null
-  material_name: string | null
+  materialId: number
+  materialCode: string | null
+  materialName: string | null
   material_spec: string | null
   version: string
   status: string
@@ -37,12 +37,12 @@ interface BomDetail {
 
 export interface BomItemRow {
   id?: number
-  bom_id?: number
+  bomId?: number
   child_material_id: number
-  material_code: string | null
-  material_name: string | null
+  materialCode: string | null
+  materialName: string | null
   material_spec: string | null
-  unit_name: string | null
+  unitName: string | null
   ref_cost_price: number | null
   standard_qty: number
   wastage_rate: number
@@ -60,15 +60,15 @@ interface ParentMaterialOption {
   code: string
   name: string
   spec: string | null
-  material_type: string
+  materialType: string
 }
 
 interface DemandItem {
-  material_id: number
-  material_code: string | null
-  material_name: string | null
+  materialId: number
+  materialCode: string | null
+  materialName: string | null
   material_spec: string | null
-  unit_name: string | null
+  unitName: string | null
   single_qty: number
   total_qty: number
   current_stock: number
@@ -80,17 +80,17 @@ interface DemandItem {
 /* ------------------------------------------------------------------ */
 
 const MOCK_PARENT_MATERIALS: ParentMaterialOption[] = [
-  { id: 4, code: 'FP-001', name: '实木餐椅', spec: '450×520×880mm', material_type: 'finished' },
-  { id: 5, code: 'FP-002', name: '橡木茶几', spec: '1200×600×450mm', material_type: 'finished' },
-  { id: 6, code: 'SP-001', name: '餐椅椅架', spec: null, material_type: 'semi' },
+  { id: 4, code: 'FP-001', name: '实木餐椅', spec: '450×520×880mm', materialType: 'finished' },
+  { id: 5, code: 'FP-002', name: '橡木茶几', spec: '1200×600×450mm', materialType: 'finished' },
+  { id: 6, code: 'SP-001', name: '餐椅椅架', spec: null, materialType: 'semi' },
 ]
 
 const MOCK_BOM_DETAIL: BomDetail = {
   id: 1,
   bom_code: 'BOM-20260401-001',
-  material_id: 4,
-  material_code: 'FP-001',
-  material_name: '实木餐椅',
+  materialId: 4,
+  materialCode: 'FP-001',
+  materialName: '实木餐椅',
   material_spec: '450×520×880mm',
   version: 'V2.0',
   status: 'active',
@@ -100,10 +100,10 @@ const MOCK_BOM_DETAIL: BomDetail = {
   items: [
     {
       child_material_id: 1,
-      material_code: 'M-0001',
-      material_name: '白橡实木板',
+      materialCode: 'M-0001',
+      materialName: '白橡实木板',
       material_spec: '2440×1220',
-      unit_name: '张',
+      unitName: '张',
       ref_cost_price: 28000,
       standard_qty: 2.5,
       wastage_rate: 5,
@@ -117,10 +117,10 @@ const MOCK_BOM_DETAIL: BomDetail = {
     },
     {
       child_material_id: 7,
-      material_code: 'M-0007',
-      material_name: '木方',
+      materialCode: 'M-0007',
+      materialName: '木方',
       material_spec: '40×40',
-      unit_name: '根',
+      unitName: '根',
       ref_cost_price: 1200,
       standard_qty: 4,
       wastage_rate: 3,
@@ -134,10 +134,10 @@ const MOCK_BOM_DETAIL: BomDetail = {
     },
     {
       child_material_id: 8,
-      material_code: 'M-0008',
-      material_name: '不锈钢腿',
+      materialCode: 'M-0008',
+      materialName: '不锈钢腿',
       material_spec: '710mm',
-      unit_name: '个',
+      unitName: '个',
       ref_cost_price: 3500,
       standard_qty: 4,
       wastage_rate: 0,
@@ -151,10 +151,10 @@ const MOCK_BOM_DETAIL: BomDetail = {
     },
     {
       child_material_id: 9,
-      material_code: 'M-0009',
-      material_name: '螺丝M6',
+      materialCode: 'M-0009',
+      materialName: '螺丝M6',
       material_spec: '30mm',
-      unit_name: '个',
+      unitName: '个',
       ref_cost_price: 15,
       standard_qty: 16,
       wastage_rate: 2,
@@ -168,10 +168,10 @@ const MOCK_BOM_DETAIL: BomDetail = {
     },
     {
       child_material_id: 10,
-      material_code: 'M-0010',
-      material_name: '木蜡油',
+      materialCode: 'M-0010',
+      materialName: '木蜡油',
       material_spec: null,
-      unit_name: '千克',
+      unitName: '千克',
       ref_cost_price: 6800,
       standard_qty: 0.5,
       wastage_rate: 10,
@@ -264,7 +264,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
     if (!isTauriEnv()) {
       await new Promise(r => setTimeout(r, 300))
       const detail = MOCK_BOM_DETAIL
-      setMaterialId(detail.material_id.toString())
+      setMaterialId(detail.materialId.toString())
       setVersion(detail.version)
       setEffectiveDate(detail.effective_date ?? '')
       setRemark(detail.remark ?? '')
@@ -276,7 +276,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
     }
     try {
       const detail = await invoke<BomDetail>('get_bom_detail', { id: bomId })
-      setMaterialId(detail.material_id.toString())
+      setMaterialId(detail.materialId.toString())
       setVersion(detail.version)
       setEffectiveDate(detail.effective_date ?? '')
       setRemark(detail.remark ?? '')
@@ -311,7 +311,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
     setSaving(true)
     const params = {
       id: bomId,
-      material_id: parseInt(materialId, 10),
+      materialId: parseInt(materialId, 10),
       version,
       effective_date: effectiveDate || null,
       status: isNew ? 'draft' : status,
@@ -380,11 +380,11 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
         const totalQty = singleQty * qty
         const currentStock = 100 // mock
         return {
-          material_id: item.child_material_id,
-          material_code: item.material_code,
-          material_name: item.material_name,
+          materialId: item.child_material_id,
+          materialCode: item.materialCode,
+          materialName: item.materialName,
           material_spec: item.material_spec,
-          unit_name: item.unit_name,
+          unitName: item.unitName,
           single_qty: singleQty,
           total_qty: totalQty,
           current_stock: currentStock,
@@ -532,12 +532,12 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
                       <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
                       <TableCell>
                         <div className="min-w-0">
-                          <div className="truncate font-medium">{item.material_name}</div>
-                          <div className="text-muted-foreground truncate text-xs">{item.material_code}</div>
+                          <div className="truncate font-medium">{item.materialName}</div>
+                          <div className="text-muted-foreground truncate text-xs">{item.materialCode}</div>
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground truncate">{item.material_spec ?? '—'}</TableCell>
-                      <TableCell>{item.unit_name ?? '—'}</TableCell>
+                      <TableCell>{item.unitName ?? '—'}</TableCell>
                       <TableCell className="font-mono">{item.standard_qty}</TableCell>
                       <TableCell className="font-mono">{item.wastage_rate}%</TableCell>
                       <TableCell className="font-mono">{actualQty.toFixed(2)}</TableCell>
@@ -602,13 +602,13 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
                 </TableHeader>
                 <TableBody>
                   {demandResults.map(d => (
-                    <TableRow key={d.material_id}>
+                    <TableRow key={d.materialId}>
                       <TableCell>
-                        <span className="font-medium">{d.material_name}</span>
-                        <span className="text-muted-foreground ml-1 text-xs">({d.material_code})</span>
+                        <span className="font-medium">{d.materialName}</span>
+                        <span className="text-muted-foreground ml-1 text-xs">({d.materialCode})</span>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{d.material_spec ?? '—'}</TableCell>
-                      <TableCell>{d.unit_name ?? '—'}</TableCell>
+                      <TableCell>{d.unitName ?? '—'}</TableCell>
                       <TableCell className="font-mono">{d.single_qty.toFixed(2)}</TableCell>
                       <TableCell className="font-mono">{d.total_qty.toFixed(2)}</TableCell>
                       <TableCell className="font-mono">{d.current_stock}</TableCell>

@@ -17,6 +17,7 @@ use crate::operation_log;
 
 /// 应付账款 KPI 概览
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PayablesSummary {
     /// 应付总额
     pub total_payable: i64,
@@ -30,6 +31,7 @@ pub struct PayablesSummary {
 
 /// 应付账款列表项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct PayableListItem {
     pub id: i64,
     pub supplier_id: i64,
@@ -52,6 +54,7 @@ pub struct PayableListItem {
 
 /// 应付账款筛选参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PayablesFilter {
     pub keyword: Option<String>,
     pub supplier_id: Option<i64>,
@@ -71,6 +74,7 @@ pub struct PayablesResponse {
 
 /// 付款记录项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct PaymentRecordItem {
     pub id: i64,
     pub payable_id: i64,
@@ -84,6 +88,7 @@ pub struct PaymentRecordItem {
 
 /// 登记付款参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RecordPaymentParams {
     pub payable_id: i64,
     pub payment_date: String,
@@ -98,6 +103,7 @@ pub struct RecordPaymentParams {
 
 /// 应收账款 KPI 概览
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ReceivablesSummary {
     /// 应收总额
     pub total_receivable: i64,
@@ -111,6 +117,7 @@ pub struct ReceivablesSummary {
 
 /// 应收账款列表项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct ReceivableListItem {
     pub id: i64,
     pub customer_id: i64,
@@ -133,6 +140,7 @@ pub struct ReceivableListItem {
 
 /// 应收账款筛选参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ReceivablesFilter {
     pub keyword: Option<String>,
     pub customer_id: Option<i64>,
@@ -152,6 +160,7 @@ pub struct ReceivablesResponse {
 
 /// 收款记录项
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct ReceiptRecordItem {
     pub id: i64,
     pub receivable_id: i64,
@@ -165,6 +174,7 @@ pub struct ReceiptRecordItem {
 
 /// 登记收款参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RecordReceiptParams {
     pub receivable_id: i64,
     pub receipt_date: String,

@@ -31,9 +31,9 @@ import { BomReverseLookup } from './bom-reverse-lookup'
 export interface BomListItem {
   id: number
   bom_code: string
-  material_id: number
-  material_code: string | null
-  material_name: string | null
+  materialId: number
+  materialCode: string | null
+  materialName: string | null
   material_spec: string | null
   version: string
   status: string
@@ -53,9 +53,9 @@ const MOCK_BOMS: BomListItem[] = [
   {
     id: 1,
     bom_code: 'BOM-20260401-001',
-    material_id: 4,
-    material_code: 'FP-001',
-    material_name: '实木餐椅',
+    materialId: 4,
+    materialCode: 'FP-001',
+    materialName: '实木餐椅',
     material_spec: '450×520×880mm',
     version: 'V2.0',
     status: 'active',
@@ -69,9 +69,9 @@ const MOCK_BOMS: BomListItem[] = [
   {
     id: 2,
     bom_code: 'BOM-20260401-002',
-    material_id: 4,
-    material_code: 'FP-001',
-    material_name: '实木餐椅',
+    materialId: 4,
+    materialCode: 'FP-001',
+    materialName: '实木餐椅',
     material_spec: '450×520×880mm',
     version: 'V1.0',
     status: 'inactive',
@@ -85,9 +85,9 @@ const MOCK_BOMS: BomListItem[] = [
   {
     id: 3,
     bom_code: 'BOM-20260401-003',
-    material_id: 5,
-    material_code: 'FP-002',
-    material_name: '橡木茶几',
+    materialId: 5,
+    materialCode: 'FP-002',
+    materialName: '橡木茶几',
     material_spec: '1200×600×450mm',
     version: 'V1.0',
     status: 'draft',
@@ -154,7 +154,7 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
       let filtered = [...MOCK_BOMS]
       if (keyword.trim()) {
         const kw = keyword.trim().toLowerCase()
-        filtered = filtered.filter(b => b.material_code?.toLowerCase().includes(kw) || b.material_name?.toLowerCase().includes(kw))
+        filtered = filtered.filter(b => b.materialCode?.toLowerCase().includes(kw) || b.materialName?.toLowerCase().includes(kw))
       }
       if (status !== 'all') {
         filtered = filtered.filter(b => b.status === status)
@@ -170,7 +170,7 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
           keyword: keyword.trim() || null,
           status: status === 'all' ? null : status,
           page,
-          page_size: pageSize,
+          pageSize: pageSize,
         },
       })
       setData(res.items)
@@ -220,7 +220,7 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
       setData(prev =>
         prev.map(b => {
           if (b.id === id) return { ...b, status: newStatus }
-          if (newStatus === 'active' && b.material_id === prev.find(x => x.id === id)?.material_id && b.status === 'active') {
+          if (newStatus === 'active' && b.materialId === prev.find(x => x.id === id)?.materialId && b.status === 'active') {
             return { ...b, status: 'inactive' }
           }
           return b
@@ -400,12 +400,12 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
                   <div className="flex items-center gap-2">
                     <Layers className="text-muted-foreground size-4 shrink-0" />
                     <div className="min-w-0">
-                      <div className="truncate font-medium">{bom.material_name ?? '—'}</div>
+                      <div className="truncate font-medium">{bom.materialName ?? '—'}</div>
                       {bom.material_spec && <div className="text-muted-foreground truncate text-xs">{bom.material_spec}</div>}
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{bom.material_code ?? '—'}</TableCell>
+                <TableCell className="text-muted-foreground">{bom.materialCode ?? '—'}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{bom.version}</Badge>
                 </TableCell>

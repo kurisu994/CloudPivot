@@ -39,7 +39,7 @@ export function PayablesPage() {
   const [items, setItems] = useState<PayableListItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
-  const [kpi, setKpi] = useState({ total_payable: 0, total_paid: 0, total_partial: 0, total_overdue: 0 })
+  const [kpi, setKpi] = useState({ totalPayable: 0, totalPaid: 0, totalPartial: 0, totalOverdue: 0 })
 
   // 筛选
   const [draftKeyword, setDraftKeyword] = useState('')
@@ -87,7 +87,7 @@ export function PayablesPage() {
         keyword: keyword || undefined,
         status: status || undefined,
         page,
-        page_size: pageSize,
+        pageSize: pageSize,
       })
       setKpi(res.summary)
       setItems(res.list.items)
@@ -138,10 +138,10 @@ export function PayablesPage() {
     setPaySubmitting(true)
     try {
       await recordPayment({
-        payable_id: payTarget.id,
-        payment_date: payDate,
-        payment_amount: amount,
-        payment_method: payMethod,
+        payableId: payTarget.id,
+        paymentDate: payDate,
+        paymentAmount: amount,
+        paymentMethod: payMethod,
         remark: payRemark || undefined,
       })
       toast.success(t('payables.toast.paymentSuccess'))
@@ -220,7 +220,7 @@ export function PayablesPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('payables.kpi.totalPayable')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.total_payable, 'VND' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalPayable, 'VND' as Currency)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
@@ -229,7 +229,7 @@ export function PayablesPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('payables.kpi.totalPaid')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.total_paid, 'VND' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalPaid, 'VND' as Currency)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
@@ -238,7 +238,7 @@ export function PayablesPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('payables.kpi.totalPartial')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.total_partial, 'VND' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalPartial, 'VND' as Currency)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
@@ -247,7 +247,7 @@ export function PayablesPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('payables.kpi.totalOverdue')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.total_overdue, 'VND' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalOverdue, 'VND' as Currency)}</p>
           </div>
         </div>
       </div>
@@ -314,27 +314,27 @@ export function PayablesPage() {
             <BusinessListTableEmptyRow colSpan={COL_COUNT} message={tc('noData')} />
           ) : (
             items.map(item => (
-              <TableRow key={item.id} className={item.adjustment_type === 'return_offset' ? 'bg-red-50/30 dark:bg-red-950/10' : ''}>
-                <TableCell>{typeBadge(item.adjustment_type)}</TableCell>
-                <TableCell className="font-mono text-sm">{item.order_no || '-'}</TableCell>
-                <TableCell className="truncate">{item.supplier_name}</TableCell>
-                <TableCell className="text-sm">{item.payable_date}</TableCell>
-                <TableCell className={`text-right font-mono ${item.payable_amount < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-                  {formatAmount(item.payable_amount, item.currency as Currency)}
+              <TableRow key={item.id} className={item.adjustmentType === 'return_offset' ? 'bg-red-50/30 dark:bg-red-950/10' : ''}>
+                <TableCell>{typeBadge(item.adjustmentType)}</TableCell>
+                <TableCell className="font-mono text-sm">{item.orderNo || '-'}</TableCell>
+                <TableCell className="truncate">{item.supplierName}</TableCell>
+                <TableCell className="text-sm">{item.payableDate}</TableCell>
+                <TableCell className={`text-right font-mono ${item.payableAmount < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                  {formatAmount(item.payableAmount, item.currency as Currency)}
                 </TableCell>
-                <TableCell className="text-right font-mono">{formatAmount(item.paid_amount, item.currency as Currency)}</TableCell>
-                <TableCell className={`text-right font-mono font-semibold ${item.unpaid_amount > 0 ? 'text-amber-600 dark:text-amber-400' : ''}`}>
-                  {formatAmount(item.unpaid_amount, item.currency as Currency)}
+                <TableCell className="text-right font-mono">{formatAmount(item.paidAmount, item.currency as Currency)}</TableCell>
+                <TableCell className={`text-right font-mono font-semibold ${item.unpaidAmount > 0 ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+                  {formatAmount(item.unpaidAmount, item.currency as Currency)}
                 </TableCell>
                 <TableCell>{statusBadge(item.status)}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    {item.status !== 'paid' && item.adjustment_type === 'normal' && (
+                    {item.status !== 'paid' && item.adjustmentType === 'normal' && (
                       <Button variant="ghost" size="sm" onClick={() => openPayDialog(item)}>
                         <CreditCard className="size-4" />
                       </Button>
                     )}
-                    {item.paid_amount > 0 && (
+                    {item.paidAmount > 0 && (
                       <Button variant="ghost" size="sm" onClick={() => void openRecordsDialog(item)}>
                         <Clock className="size-4" />
                       </Button>
@@ -356,19 +356,19 @@ export function PayablesPage() {
           <DialogHeader>
             <DialogTitle>{t('payables.dialog.title')}</DialogTitle>
             <DialogDescription>
-              {payTarget?.supplier_name} — {payTarget?.order_no}
+              {payTarget?.supplierName} — {payTarget?.orderNo}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-4">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <span className="text-muted-foreground">{t('payables.dialog.payableAmount')}</span>
-                <p className="font-mono font-semibold">{payTarget && formatAmount(payTarget.payable_amount, payTarget.currency as Currency)}</p>
+                <p className="font-mono font-semibold">{payTarget && formatAmount(payTarget.payableAmount, payTarget.currency as Currency)}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">{t('payables.dialog.unpaidAmount')}</span>
                 <p className="font-mono font-semibold text-amber-600 dark:text-amber-400">
-                  {payTarget && formatAmount(payTarget.unpaid_amount, payTarget.currency as Currency)}
+                  {payTarget && formatAmount(payTarget.unpaidAmount, payTarget.currency as Currency)}
                 </p>
               </div>
             </div>
@@ -418,7 +418,7 @@ export function PayablesPage() {
           <DialogHeader>
             <DialogTitle>{t('payables.records.title')}</DialogTitle>
             <DialogDescription>
-              {recordsTarget?.supplier_name} — {recordsTarget?.order_no}
+              {recordsTarget?.supplierName} — {recordsTarget?.orderNo}
             </DialogDescription>
           </DialogHeader>
           {recordsLoading ? (
@@ -438,9 +438,9 @@ export function PayablesPage() {
               <TableBody>
                 {records.map(rec => (
                   <TableRow key={rec.id}>
-                    <TableCell className="text-sm">{rec.payment_date}</TableCell>
-                    <TableCell className="text-right font-mono">{formatAmount(rec.payment_amount, rec.currency as Currency)}</TableCell>
-                    <TableCell className="text-sm">{rec.payment_method ? t(`paymentMethods.${rec.payment_method}`) : '-'}</TableCell>
+                    <TableCell className="text-sm">{rec.paymentDate}</TableCell>
+                    <TableCell className="text-right font-mono">{formatAmount(rec.paymentAmount, rec.currency as Currency)}</TableCell>
+                    <TableCell className="text-sm">{rec.paymentMethod ? t(`paymentMethods.${rec.paymentMethod}`) : '-'}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{rec.remark || '-'}</TableCell>
                   </TableRow>
                 ))}

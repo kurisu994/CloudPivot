@@ -34,13 +34,13 @@ interface ConfigItemRow {
 /** 定制单详情 */
 interface CustomOrderDetailData {
   id: number
-  order_no: string
-  customer_id: number
-  customer_name: string | null
-  order_date: string
+  orderNo: string
+  customerId: number
+  customerName: string | null
+  orderDate: string
   delivery_date: string | null
   currency: string
-  exchange_rate: number
+  exchangeRate: number
   custom_type: string
   priority: string
   status: string
@@ -69,13 +69,13 @@ interface CustomOrderDetailData {
     remark: string | null
     sort_order: number
   }[]
-  custom_bom: { bom_id: number; bom_code: string; material_name: string | null; total_standard_cost: number; item_count: number } | null
+  custom_bom: { bomId: number; bom_code: string; materialName: string | null; total_standard_cost: number; item_count: number } | null
   reservations: {
-    material_id: number
-    material_code: string | null
-    material_name: string | null
-    unit_name: string | null
-    warehouse_name: string | null
+    materialId: number
+    materialCode: string | null
+    materialName: string | null
+    unitName: string | null
+    warehouseName: string | null
     reserved_qty: number
     consumed_qty: number
     status: string
@@ -93,7 +93,7 @@ interface MaterialOption {
 interface BomOption {
   id: number
   bom_code: string
-  material_name: string | null
+  materialName: string | null
 }
 
 /** 币种选项 */
@@ -236,10 +236,10 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
       return
     }
     try {
-      const result = await invoke<{ items: { id: number; bom_code: string; material_name: string | null }[] }>('get_boms', {
-        filter: { material_id: materialId, page: 1, page_size: 100, keyword: null, status: null },
+      const result = await invoke<{ items: { id: number; bom_code: string; materialName: string | null }[] }>('get_boms', {
+        filter: { materialId: materialId, page: 1, pageSize: 100, keyword: null, status: null },
       })
-      setBomOptions(result.items.map(b => ({ id: b.id, bom_code: b.bom_code, material_name: b.material_name })))
+      setBomOptions(result.items.map(b => ({ id: b.id, bom_code: b.bom_code, materialName: b.materialName })))
     } catch {
       setBomOptions([])
     }
@@ -251,11 +251,11 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
     setLoading(true)
     try {
       const detail = await invoke<CustomOrderDetailData>('get_custom_order_detail', { id: orderId })
-      setCustomerId(String(detail.customer_id))
-      setOrderDate(detail.order_date)
+      setCustomerId(String(detail.customerId))
+      setOrderDate(detail.orderDate)
       setDeliveryDate(detail.delivery_date ?? '')
       setCurrency(detail.currency)
-      setExchangeRate(String(detail.exchange_rate))
+      setExchangeRate(String(detail.exchangeRate))
       setCustomType(detail.custom_type)
       setPriority(detail.priority)
       setRefMaterialId(detail.ref_material_id ? String(detail.ref_material_id) : '')
@@ -263,7 +263,7 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
       setCustomDesc(detail.custom_desc ?? '')
       setQuoteAmount(String(detail.quote_amount))
       setRemark(detail.remark ?? '')
-      setOrderNo(detail.order_no)
+      setOrderNo(detail.orderNo)
       setStatus(detail.status)
       setCostAmount(detail.cost_amount)
       setSalesOrderNo(detail.sales_order_no)
@@ -352,11 +352,11 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
     try {
       const params = {
         id: orderId,
-        customer_id: Number(customerId),
-        order_date: orderDate,
+        customerId: Number(customerId),
+        orderDate: orderDate,
         delivery_date: deliveryDate || null,
         currency,
-        exchange_rate: parseFloat(exchangeRate) || 1,
+        exchangeRate: parseFloat(exchangeRate) || 1,
         custom_type: customType,
         priority,
         ref_material_id: refMaterialId ? Number(refMaterialId) : null,
@@ -448,10 +448,7 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
   const typeItems = useMemo(() => TYPE_OPTIONS.map(opt => ({ value: opt.value, label: t(opt.labelKey) })), [t])
   const priorityItems = useMemo(() => PRIORITY_OPTIONS.map(opt => ({ value: opt.value, label: t(opt.labelKey) })), [t])
   const materialSelectItems = useMemo(() => materialOptions.map(m => ({ value: String(m.id), label: `${m.name} [${m.code}]` })), [materialOptions])
-  const bomSelectItems = useMemo(
-    () => bomOptions.map(b => ({ value: String(b.id), label: `${b.bom_code} - ${b.material_name ?? ''}` })),
-    [bomOptions],
-  )
+  const bomSelectItems = useMemo(() => bomOptions.map(b => ({ value: String(b.id), label: `${b.bom_code} - ${b.materialName ?? ''}` })), [bomOptions])
 
   // ================================================================
   // 渲染
@@ -807,7 +804,7 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">{t('bomMaterial')}</p>
-                <p className="text-sm">{customBom.material_name ?? '—'}</p>
+                <p className="text-sm">{customBom.materialName ?? '—'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">{t('bomCost')}</p>
@@ -845,9 +842,9 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
               <TableBody>
                 {reservations.map((res, idx) => (
                   <TableRow key={idx}>
-                    <TableCell className="font-mono text-xs">{res.material_code ?? '—'}</TableCell>
-                    <TableCell className="text-sm">{res.material_name ?? '—'}</TableCell>
-                    <TableCell className="text-sm">{res.unit_name ?? '—'}</TableCell>
+                    <TableCell className="font-mono text-xs">{res.materialCode ?? '—'}</TableCell>
+                    <TableCell className="text-sm">{res.materialName ?? '—'}</TableCell>
+                    <TableCell className="text-sm">{res.unitName ?? '—'}</TableCell>
                     <TableCell className="text-right font-mono">{res.reserved_qty}</TableCell>
                     <TableCell className="text-right font-mono">{res.consumed_qty}</TableCell>
                     <TableCell>

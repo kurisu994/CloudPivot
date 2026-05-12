@@ -20,6 +20,7 @@ use super::PaginatedResponse;
 
 /// 补货建议项（前端列表展示用）
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ReplenishmentSuggestion {
     pub material_id: i64,
     pub material_code: String,
@@ -46,6 +47,7 @@ pub struct ReplenishmentSuggestion {
 
 /// 策略配置项（前端展示用）
 #[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct ReplenishmentRule {
     pub id: i64,
     pub material_id: i64,
@@ -70,6 +72,7 @@ pub struct ConsumptionTrendPoint {
 
 /// 批量生成采购单结果
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BulkCreatePoResult {
     pub created_orders: Vec<i64>,
     pub errors: Vec<String>,
@@ -77,6 +80,7 @@ pub struct BulkCreatePoResult {
 
 /// 建议列表筛选参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SuggestionFilter {
     pub urgency: Option<String>,
     pub category_id: Option<i64>,
@@ -85,6 +89,7 @@ pub struct SuggestionFilter {
 
 /// 策略列表筛选参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RuleFilter {
     pub keyword: Option<String>,
     pub page: i32,
@@ -93,6 +98,7 @@ pub struct RuleFilter {
 
 /// 策略更新参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateRuleParams {
     pub analysis_days: i32,
     pub lead_days: i32,

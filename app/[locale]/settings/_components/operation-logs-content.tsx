@@ -77,11 +77,11 @@ export function OperationLogsContent() {
     try {
       const filter: OperationLogFilter = {
         page,
-        page_size: pageSize,
+        pageSize: pageSize,
         module: moduleFilter === 'all' ? null : moduleFilter,
         action: actionFilter === 'all' ? null : actionFilter,
-        date_from: dateFrom || null,
-        date_to: dateTo || null,
+        dateFrom: dateFrom || null,
+        dateTo: dateTo || null,
       }
       const res = await getOperationLogs(filter)
       setLogs(res.items)
@@ -250,13 +250,13 @@ export function OperationLogsContent() {
                 if (logs.length === 0) return
                 const headers = [t('time'), t('module'), t('action'), t('targetType'), t('targetNo'), t('details'), t('user')]
                 const rows = logs.map(log => [
-                  log.created_at,
+                  log.createdAt,
                   getModuleLabel(log.module),
                   getActionLabel(log.action),
-                  log.target_type ?? '',
-                  log.target_no ?? '',
+                  log.targetType ?? '',
+                  log.targetNo ?? '',
                   log.detail,
-                  log.operator_name ?? '',
+                  log.operatorName ?? '',
                 ])
                 const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
                 const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
@@ -320,15 +320,15 @@ export function OperationLogsContent() {
                   >
                     {/* 时间 */}
                     <TableCell className="px-6 py-4 text-sm font-medium whitespace-nowrap text-slate-500 dark:text-slate-400">
-                      {log.created_at?.replace('T', ' ').slice(0, 16) ?? '--'}
+                      {log.createdAt?.replace('T', ' ').slice(0, 16) ?? '--'}
                     </TableCell>
                     {/* 用户 */}
                     <TableCell className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
-                          {getInitials(log.operator_name)}
+                          {getInitials(log.operatorName)}
                         </div>
-                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{log.operator_name ?? 'system'}</span>
+                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{log.operatorName ?? 'system'}</span>
                       </div>
                     </TableCell>
                     {/* 模块 */}
@@ -341,7 +341,7 @@ export function OperationLogsContent() {
                     <TableCell className={cn('px-6 py-4 text-sm font-bold', getActionColor(log.action))}>{getActionLabel(log.action)}</TableCell>
                     {/* 对象 */}
                     <TableCell className="px-6 py-4 font-mono text-xs text-slate-600 dark:text-slate-400">
-                      {log.target_no ?? log.target_type ?? '--'}
+                      {log.targetNo ?? log.targetType ?? '--'}
                     </TableCell>
                     {/* 详情 */}
                     <TableCell className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">{log.detail}</TableCell>

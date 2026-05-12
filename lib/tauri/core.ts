@@ -32,7 +32,7 @@ export interface PaginatedResponse<T> {
   total: number
   items: T[]
   page: number
-  page_size: number
+  pageSize: number
 }
 
 // ================================================================
@@ -100,7 +100,7 @@ export async function invoke<T>(command: string, args?: Record<string, unknown>)
     // 3. 详情查询与分页列表的混合探测策略
     if (command.startsWith('get_') || command.includes('_list')) {
       if (args && ('filter' in args || 'page' in args)) {
-        return { total: 0, items: [], page: 1, pageSize: 10, page_size: 10 } as unknown as T
+        return { total: 0, items: [], page: 1, pageSize: 10 } as unknown as T
       }
       // 如果不是分页列表，默认当做返回空对象详情
       return {} as unknown as T

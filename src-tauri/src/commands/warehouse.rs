@@ -15,6 +15,7 @@ use crate::error::AppError;
 
 /// 仓库记录（列表/详情返回）
 #[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct Warehouse {
     pub id: i64,
     pub code: String,
@@ -31,6 +32,7 @@ pub struct Warehouse {
 
 /// 仓库保存参数（新增/编辑）
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SaveWarehouseParams {
     pub id: Option<i64>,
     pub code: String,
@@ -45,6 +47,7 @@ pub struct SaveWarehouseParams {
 
 /// 默认仓映射记录
 #[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct DefaultWarehouse {
     pub id: i64,
     pub material_type: String,
@@ -54,6 +57,7 @@ pub struct DefaultWarehouse {
 
 /// 默认仓映射保存参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DefaultWarehouseMapping {
     pub material_type: String,
     pub warehouse_id: i64,

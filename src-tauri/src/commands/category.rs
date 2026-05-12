@@ -11,6 +11,7 @@ use crate::error::AppError;
 
 /// 分类树节点（扁平返回，前端组装层级）
 #[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct CategoryNode {
     pub id: i64,
     pub parent_id: Option<i64>,
@@ -44,6 +45,7 @@ pub async fn get_category_tree(db: State<'_, DbState>) -> Result<Vec<CategoryNod
 
 /// 创建分类请求参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateCategoryParams {
     pub name: String,
     pub parent_id: Option<i64>,
@@ -117,6 +119,7 @@ pub async fn create_category(
 
 /// 更新分类请求参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateCategoryParams {
     pub id: i64,
     pub name: String,
@@ -255,6 +258,7 @@ pub async fn delete_category(db: State<'_, DbState>, id: i64) -> Result<(), AppE
 
 /// 拖拽排序项
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CategorySortItem {
     pub id: i64,
     pub parent_id: Option<i64>,

@@ -99,15 +99,15 @@ function makeSummaryFilter(
   pageSize = 20,
 ) {
   const base = {
-    start_date: startDate || null,
-    end_date: endDate || null,
-    warehouse_id: warehouseId !== 'all' ? Number(warehouseId) : null,
+    startDate: startDate || null,
+    endDate: endDate || null,
+    warehouseId: warehouseId !== 'all' ? Number(warehouseId) : null,
     keyword: keyword.trim() || null,
     page,
-    page_size: pageSize,
+    pageSize: pageSize,
   }
-  if (kind === 'purchase') return { ...base, supplier_id: partnerId !== 'all' ? Number(partnerId) : null } satisfies PurchaseReportFilter
-  return { ...base, customer_id: partnerId !== 'all' ? Number(partnerId) : null } satisfies SalesReportFilter
+  if (kind === 'purchase') return { ...base, supplierId: partnerId !== 'all' ? Number(partnerId) : null } satisfies PurchaseReportFilter
+  return { ...base, customerId: partnerId !== 'all' ? Number(partnerId) : null } satisfies SalesReportFilter
 }
 
 export function BusinessReportPage({ kind }: { kind: ReportKind }) {
@@ -270,7 +270,7 @@ export function BusinessReportPage({ kind }: { kind: ReportKind }) {
             : await getSalesReportSummary(filter as SalesReportFilter)
         await exportToExcel(
           [t('date'), t('amount'), t('orderCount')],
-          res.trend.map(item => [item.date, item.amount / 100, item.order_count]),
+          res.trend.map(item => [item.date, item.amount / 100, item.orderCount]),
           `${kind}_summary_${startDate}_${endDate}.xlsx`,
         )
       } else if (activeTab === 'ranking') {
@@ -280,7 +280,7 @@ export function BusinessReportPage({ kind }: { kind: ReportKind }) {
             : await getSalesCustomerRanking(filter as SalesReportFilter)
         await exportToExcel(
           [t('partner'), t('amount'), t('ratio'), t('orderCount')],
-          res.items.map(item => [item.partner_name, item.amount / 100, `${item.ratio.toFixed(2)}%`, item.order_count]),
+          res.items.map(item => [item.partnerName, item.amount / 100, `${item.ratio.toFixed(2)}%`, item.orderCount]),
           `${kind}_ranking_${startDate}_${endDate}.xlsx`,
         )
       } else {
@@ -291,12 +291,12 @@ export function BusinessReportPage({ kind }: { kind: ReportKind }) {
         await exportToExcel(
           [t('materialCode'), t('materialName'), t('spec'), t('quantity'), t('amount'), t('avgPrice')],
           res.items.map(item => [
-            item.material_code,
-            item.material_name,
+            item.materialCode,
+            item.materialName,
             item.spec ?? '',
             item.quantity.toFixed(2),
             item.amount / 100,
-            item.avg_price / 100,
+            item.avgPrice / 100,
           ]),
           `${kind}_materials_${startDate}_${endDate}.xlsx`,
         )
@@ -328,22 +328,22 @@ export function BusinessReportPage({ kind }: { kind: ReportKind }) {
         <KpiCard
           icon={<TrendingUp className="size-5 text-emerald-600 dark:text-emerald-400" />}
           label={t('totalAmount')}
-          value={money(stats?.total_amount ?? 0)}
+          value={money(stats?.totalAmount ?? 0)}
         />
         <KpiCard
           icon={<Package className="size-5 text-blue-600 dark:text-blue-400" />}
           label={t('orderCount')}
-          value={String(stats?.order_count ?? 0)}
+          value={String(stats?.orderCount ?? 0)}
         />
         <KpiCard
           icon={<Users className="size-5 text-purple-600 dark:text-purple-400" />}
           label={t('partnerCount')}
-          value={String(stats?.partner_count ?? 0)}
+          value={String(stats?.partnerCount ?? 0)}
         />
         <KpiCard
           icon={<Package className="size-5 text-amber-600 dark:text-amber-400" />}
           label={t('materialCount')}
-          value={String(stats?.material_count ?? 0)}
+          value={String(stats?.materialCount ?? 0)}
         />
       </div>
 
@@ -498,7 +498,7 @@ function TrendTable({
             <TableRow key={item.date}>
               <TableCell>{item.date}</TableCell>
               <TableCell className="text-right font-mono">{money(item.amount)}</TableCell>
-              <TableCell className="text-right font-mono">{item.order_count}</TableCell>
+              <TableCell className="text-right font-mono">{item.orderCount}</TableCell>
             </TableRow>
           ))
         )}
@@ -546,13 +546,13 @@ function RankingTable({
             <BusinessListTableEmptyRow colSpan={6} message={tc('noData')} />
           ) : (
             items.map((item, index) => (
-              <TableRow key={item.partner_id}>
+              <TableRow key={item.partnerId}>
                 <TableCell>{(page - 1) * pageSize + index + 1}</TableCell>
-                <TableCell className="font-mono text-sm">{item.partner_code}</TableCell>
-                <TableCell>{item.partner_name}</TableCell>
+                <TableCell className="font-mono text-sm">{item.partnerCode}</TableCell>
+                <TableCell>{item.partnerName}</TableCell>
                 <TableCell className="text-right font-mono">{money(item.amount)}</TableCell>
                 <TableCell className="text-right font-mono">{item.ratio.toFixed(2)}%</TableCell>
-                <TableCell className="text-right font-mono">{item.order_count}</TableCell>
+                <TableCell className="text-right font-mono">{item.orderCount}</TableCell>
               </TableRow>
             ))
           )}
@@ -605,14 +605,14 @@ function MaterialTable({
             <BusinessListTableEmptyRow colSpan={7} message={tc('noData')} />
           ) : (
             items.map(item => (
-              <TableRow key={item.material_id}>
-                <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.material_code}</TableCell>
-                <TableCell>{item.material_name}</TableCell>
+              <TableRow key={item.materialId}>
+                <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.materialCode}</TableCell>
+                <TableCell>{item.materialName}</TableCell>
                 <TableCell className="text-muted-foreground text-sm">{item.spec || '-'}</TableCell>
-                <TableCell>{item.unit_name}</TableCell>
+                <TableCell>{item.unitName}</TableCell>
                 <TableCell className="text-right font-mono">{item.quantity.toFixed(2)}</TableCell>
                 <TableCell className="text-right font-mono">{money(item.amount)}</TableCell>
-                <TableCell className="text-right font-mono">{money(item.avg_price)}</TableCell>
+                <TableCell className="text-right font-mono">{money(item.avgPrice)}</TableCell>
               </TableRow>
             ))
           )}

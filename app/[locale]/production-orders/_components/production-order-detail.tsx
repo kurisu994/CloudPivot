@@ -23,22 +23,22 @@ import { invoke } from '@/lib/tauri'
 
 interface ProductionMaterialItem {
   id: number
-  material_id: number
-  material_name: string
-  material_code: string | null
+  materialId: number
+  materialName: string
+  materialCode: string | null
   required_qty: number
   picked_qty: number
   returned_qty: number
-  unit_name: string | null
-  warehouse_id: number | null
+  unitName: string | null
+  warehouseId: number | null
 }
 
 interface ProductionCompletionItem {
   id: number
   completion_no: string
   quantity: number
-  warehouse_id: number
-  warehouse_name: string | null
+  warehouseId: number
+  warehouseName: string | null
   unit_cost: number
   remark: string | null
   completed_at: string | null
@@ -46,10 +46,10 @@ interface ProductionCompletionItem {
 
 interface ProductionOrderDetail {
   id: number
-  order_no: string
-  bom_id: number
+  orderNo: string
+  bomId: number
   bom_name: string
-  custom_order_id: number | null
+  customOrderId: number | null
   custom_order_no: string | null
   output_material_id: number
   output_material_name: string
@@ -155,7 +155,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
     try {
       const [bomResult, whResult] = await Promise.all([
         invoke<{ items: BomOption[] }>('get_bom_list', {
-          filter: { keyword: null, status: 'active', page: 1, page_size: 200 },
+          filter: { keyword: null, status: 'active', page: 1, pageSize: 200 },
         }),
         invoke<WarehouseOption[]>('get_warehouses'),
       ])
@@ -176,7 +176,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
   // 编辑模式回填
   useEffect(() => {
     if (detail && detail.status === 'draft') {
-      setFormBomId(String(detail.bom_id))
+      setFormBomId(String(detail.bomId))
       setFormPlannedQty(String(detail.planned_qty))
       setFormStartDate(detail.planned_start_date ?? '')
       setFormEndDate(detail.planned_end_date ?? '')
@@ -197,8 +197,8 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
       await invoke('save_production_order', {
         input: {
           id: orderId,
-          bom_id: Number(formBomId),
-          custom_order_id: null,
+          bomId: Number(formBomId),
+          customOrderId: null,
           planned_qty: Number(formPlannedQty),
           planned_start_date: formStartDate || null,
           planned_end_date: formEndDate || null,
@@ -223,12 +223,12 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
     try {
       await invoke('pick_materials', {
         input: {
-          production_order_id: orderId,
+          productionOrderId: orderId,
           items: [
             {
-              material_id: selectedMat.material_id,
+              materialId: selectedMat.materialId,
               quantity: Number(dialogQty),
-              warehouse_id: Number(dialogWarehouseId),
+              warehouseId: Number(dialogWarehouseId),
             },
           ],
         },
@@ -252,12 +252,12 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
     try {
       await invoke('return_materials', {
         input: {
-          production_order_id: orderId,
+          productionOrderId: orderId,
           items: [
             {
-              material_id: selectedMat.material_id,
+              materialId: selectedMat.materialId,
               quantity: Number(dialogQty),
-              warehouse_id: Number(dialogWarehouseId),
+              warehouseId: Number(dialogWarehouseId),
             },
           ],
         },
@@ -281,9 +281,9 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
     try {
       await invoke('complete_production', {
         input: {
-          production_order_id: orderId,
+          productionOrderId: orderId,
           quantity: Number(dialogQty),
-          warehouse_id: Number(dialogWarehouseId),
+          warehouseId: Number(dialogWarehouseId),
           remark: null,
         },
       })
@@ -334,7 +334,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
   const openPickDialog = (mat: ProductionMaterialItem) => {
     setSelectedMat(mat)
     setDialogQty('')
-    setDialogWarehouseId(mat.warehouse_id ? String(mat.warehouse_id) : '')
+    setDialogWarehouseId(mat.warehouseId ? String(mat.warehouseId) : '')
     setPickDialogOpen(true)
   }
 
@@ -342,7 +342,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
   const openReturnDialog = (mat: ProductionMaterialItem) => {
     setSelectedMat(mat)
     setDialogQty('')
-    setDialogWarehouseId(mat.warehouse_id ? String(mat.warehouse_id) : '')
+    setDialogWarehouseId(mat.warehouseId ? String(mat.warehouseId) : '')
     setReturnDialogOpen(true)
   }
 
@@ -456,7 +456,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
             <ArrowLeft className="mr-1 h-4 w-4" />
             {t('backToList')}
           </Button>
-          <h1 className="text-xl font-bold">{detail.order_no}</h1>
+          <h1 className="text-xl font-bold">{detail.orderNo}</h1>
           {getStatusBadge(detail.status, t)}
         </div>
       </div>
@@ -469,7 +469,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
         <CardContent>
           <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm md:grid-cols-3">
             <div>
-              <span className="text-muted-foreground">{t('orderNo')}:</span> <span className="font-medium">{detail.order_no}</span>
+              <span className="text-muted-foreground">{t('orderNo')}:</span> <span className="font-medium">{detail.orderNo}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('relatedBom')}:</span> <span className="font-medium">{detail.bom_name}</span>
@@ -551,14 +551,14 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
                 detail.materials.map(mat => (
                   <tr key={mat.id} className="hover:bg-muted/50 border-b transition-colors">
                     <td className="bg-background sticky left-0 z-10 px-3 py-2 text-sm">
-                      <div className="font-medium">{mat.material_name}</div>
-                      {mat.material_code && <div className="text-muted-foreground text-xs">{mat.material_code}</div>}
+                      <div className="font-medium">{mat.materialName}</div>
+                      {mat.materialCode && <div className="text-muted-foreground text-xs">{mat.materialCode}</div>}
                     </td>
                     <td className="px-3 py-2 text-right text-sm">{mat.required_qty}</td>
                     <td className="px-3 py-2 text-right text-sm">{mat.picked_qty}</td>
                     <td className="px-3 py-2 text-right text-sm">{mat.returned_qty}</td>
                     <td className="px-3 py-2 text-right text-sm font-medium">{(mat.picked_qty - mat.returned_qty).toFixed(2)}</td>
-                    <td className="px-3 py-2 text-center text-sm">{mat.unit_name ?? '—'}</td>
+                    <td className="px-3 py-2 text-center text-sm">{mat.unitName ?? '—'}</td>
                     <td className="px-3 py-2 text-center text-sm">{getPickStatus(mat, t)}</td>
                     {!isTerminal && (
                       <td className="px-3 py-2 text-right">
@@ -621,7 +621,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
                     <tr key={comp.id} className="hover:bg-muted/50 border-b transition-colors">
                       <td className="px-3 py-2 text-sm">{comp.completion_no}</td>
                       <td className="px-3 py-2 text-right text-sm">{comp.quantity}</td>
-                      <td className="px-3 py-2 text-sm">{comp.warehouse_name ?? '—'}</td>
+                      <td className="px-3 py-2 text-sm">{comp.warehouseName ?? '—'}</td>
                       <td className="px-3 py-2 text-right text-sm">{formatAmount(comp.unit_cost, 'VND')}</td>
                       <td className="px-3 py-2 text-sm">{comp.completed_at ?? '—'}</td>
                     </tr>
@@ -665,7 +665,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
           <div className="space-y-4 py-2">
             <div>
               <Label>{t('picking.materialName')}</Label>
-              <div className="text-sm font-medium">{selectedMat?.material_name}</div>
+              <div className="text-sm font-medium">{selectedMat?.materialName}</div>
             </div>
             <div className="space-y-2">
               <Label>{t('picking.pickQuantity')}</Label>
@@ -708,7 +708,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
           <div className="space-y-4 py-2">
             <div>
               <Label>{t('picking.materialName')}</Label>
-              <div className="text-sm font-medium">{selectedMat?.material_name}</div>
+              <div className="text-sm font-medium">{selectedMat?.materialName}</div>
             </div>
             <div className="space-y-2">
               <Label>{t('picking.returnQuantity')}</Label>
