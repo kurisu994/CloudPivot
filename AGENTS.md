@@ -16,7 +16,7 @@ app/[locale]/              # Next.js App Router + i18n 路由（next-intl）
 components/
   ui/                      # shadcn/ui（base-nova 风格，基于 @base-ui/react）
   layout/                  # AppLayout、Sidebar、Header、LocaleSwitcher、AppFooter
-  common/                  # PagePlaceholder、BusinessListTableShell、PaginationControls、SplashScreen
+  common/                  # PagePlaceholder、BusinessListTableShell、PaginationControls、SplashScreen、Loading 组件集
   providers/               # ThemeProvider + AuthProvider
 config/nav.ts              # 侧边栏导航树（路由唯一真实来源）
 i18n/                      # next-intl 配置

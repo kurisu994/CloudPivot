@@ -14,6 +14,11 @@
 
 ### 新增
 
+- **统一 Loading 状态设计系统**：创建 `components/common/loading.tsx`，提供 6 种场景化 Loading 组件（PageLoading、CardLoading、InlineLoading、FormLoading、MetricCardLoading、ChartLoading），统一全应用加载态视觉风格。
+- **Dashboard 快捷操作按钮功能**：4 个快捷按钮（新建采购单、新建销售单、采购入库、销售出库）添加路由导航，点击直接跳转对应页面；采购单/销售单支持 `?action=new` URL 参数自动进入新建模式。
+
+### 新增
+
 - **自由出入库（全栈）**：新增 `/manual-stock-movements` 页面和 `create_manual_stock_movement` IPC 命令，方便未启用采购单/销售单流程时直接登记其他入库或其他出库。
   - **自由入库**：选择物料、仓库、日期、数量和 USD 单位成本后即时过账，更新移动加权平均成本；批次追踪物料自动生成或使用手填批次。
   - **自由出库**：校验库存不足，批次追踪物料按 FIFO 扣减可用批次；仅生成 `other_out` 库存流水，不生成应收应付。

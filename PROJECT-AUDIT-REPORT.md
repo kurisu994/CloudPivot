@@ -171,8 +171,8 @@
 | 7 | ~~库存数量使用 f64 浮点类型~~ | ~~数据精度~~ | 🚫 保持现状：家具行业数量精度需求低（整数或 1-2 位小数），f64 精度足够，改动成本远大于收益 |
 | 8 | 采购/销售模块严重 DRY 违规 | 维护成本 | ✅ 已修复：创建 `order_shared.rs` 共享抽象模块，统一列表查询构建器、编号生成、审核/作废/删除、状态更新、费用分摊等 6 类重复模式 |
 | 9 | ~~错误信息无结构化~~ | ~~前端体验~~ | ✅ 已修复：`AppError` 序列化为 `{ code, message, details? }` JSON，前端 `lib/error.ts` 提供 `getErrorMessage` 等工具函数 |
-| 10 | Loading 状态不统一 | 用户体验 | 骨架屏无脉冲动画、旋转图标、纯文本、无 loading 状态混用。统一骨架屏设计系统 |
-| 11 | 快捷操作按钮无功能 | 用户体验 | Dashboard `QuickActions` 4 个按钮（新建采购/销售单等）无 `onClick` 或 `href`，为纯占位符 |
+| 10 | ~~Loading 状态不统一~~ | ~~用户体验~~ | ✅ 已修复：创建 `components/common/loading.tsx` 统一 Loading 组件集（PageLoading/CardLoading/InlineLoading/FormLoading/MetricCardLoading/ChartLoading） |
+| 11 | ~~快捷操作按钮无功能~~ | ~~用户体验~~ | ✅ 已修复：Dashboard QuickActions 4 个按钮添加路由导航，采购单/销售单支持 `?action=new` 参数自动进入新建模式 |
 | 12 | 面包屑导航未覆盖深层路径 | 导航体验 | `useBreadcrumbs()` 仅匹配 `navConfig` 二级路径，深层页面回退到仅显示 "Dashboard" |
 | 13 | 缺少 IPC API 文档 | 开发效率 | 156 个命令无参数/返回值说明，新开发者无法快速理解后端能力。使用 `tauri-specta` 或手写文档 |
 | 14 | count/data 查询条件重复 | 代码冗余 | 每个列表命令约 80 行重复。抽取 `build_where_clause` 宏或函数 |
@@ -349,8 +349,8 @@ tag push (v*) → 4 平台构建 → GitHub Release + Updater 签名
 
 **P2 — 中期改善（Phase 5 前）：**
 9. ~~提取采购/销售共享抽象（DRY 修复，~4,800 行）~~ ✅ 已完成（创建 order_shared.rs，统一 6 类重复模式）
-10. 统一 Loading 状态设计系统
-11. 补充 Dashboard 快捷操作按钮功能
+10. ~~统一 Loading 状态设计系统~~ ✅ 已完成（创建 loading.tsx 统一 6 种 Loading 组件）
+11. ~~补充 Dashboard 快捷操作按钮功能~~ ✅ 已完成（4 个按钮添加路由导航 + ?action=new 支持）
 12. 为数据库迁移添加 down 脚本
 13. 补充 IPC API 文档
 14. 完成剩余模块（用户管理、打印设置、编码规则）
