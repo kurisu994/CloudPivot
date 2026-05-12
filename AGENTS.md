@@ -22,17 +22,18 @@ config/nav.ts              # 侧边栏导航树（路由唯一真实来源）
 i18n/                      # next-intl 配置
 messages/{zh,vi,en}/       # 按域拆分翻译文件（20 域/语言）
 lib/
-  tauri.ts                 # IPC 封装（invoke 泛型 + 非 Tauri 降级）
+  tauri.ts                 # IPC 统一导出入口
+  tauri/                   # IPC 分域封装（invoke 泛型 + 非 Tauri 降级）
   currency.ts              # 多币种格式化（VND/CNY/USD，整数存储 ↔ 显示）
   types/system-config.ts   # 系统配置键名枚举 + 业务类型
 src-tauri/src/
   lib.rs                   # Tauri Builder：日志 + DB 初始化 + IPC 注册
   error.rs                 # 统一错误类型（AppError: Database/Sqlx/Auth/Business/Io）
   auth.rs                  # 认证：bcrypt + 锁定 + 改密 + session_version
-  keychain.rs              # 系统钥匙串封装（macOS Keychain / Windows Credential Manager）
+  keychain.rs              # 系统钥匙串封装（macOS Keychain / Windows Credential Manager / Linux Secret Service）
   operation_log.rs         # 操作日志公共模块（统一写入能力）
   db/{mod,migration}.rs    # SQLite 连接池（WAL）+ 自管理迁移框架
-  commands/                # IPC 命令模块（155 个命令，详见下方）
+  commands/                # IPC 命令模块（156 个命令，详见下方）
   migrations/sqlite/       # 5 个迁移文件（001_init ~ 005_drop_legacy）
 docs/                      # 设计文档（实现功能前必读）
   01-requirements.md       # 需求规格：12 大模块
@@ -108,15 +109,15 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 ### Tauri 集成
 
 - `TAURI_ENV_PLATFORM` 存在时启用 SSG；开发模式用 Next.js 服务器
-- `lib/tauri.ts` 的 `isTauriEnv()` 做运行时判断，非 Tauri 自动降级 mock
+- `lib/tauri/core.ts` 的 `isTauriEnv()` 兼容 Tauri 2 `__TAURI_INTERNALS__` / `isTauri` 运行时判断，非 Tauri 自动降级 mock
 
-## IPC 命令（155 个）
+## IPC 命令（156 个）
 
 | 模块 | 文件 | 命令数 | 说明 |
 |------|------|--------|------|
-| 基础 | `mod.rs` | 11 | ping / db_init_error / db_version / login / change_password / user_info / system_configs CRUD / setup_warehouses / operation_logs |
+| 基础 | `mod.rs` | 12 | ping / db_init_error / db_version / login / change_password / user_info / system_configs CRUD / setup_warehouses / operation_logs |
 | 数据管理 | `data_management.rs` | 7 | 备份/恢复/删除备份 + 数据管理状态 + 物料导入导出 + 期初库存导入 |
-| 钥匙串 | `keychain.rs` | 3 | 系统钥匙串存取清除（macOS Keychain / Windows Credential Manager） |
+| 钥匙串 | `keychain.rs` | 3 | 系统钥匙串存取清除（macOS Keychain / Windows Credential Manager / Linux Secret Service） |
 | 物料 | `material.rs` | 6 | CRUD + 状态切换 |
 | 分类 | `category.rs` | 5 | 树 CRUD + 排序 |
 | 供应商 | `supplier.rs` | 11 | CRUD + 详情 + 物料关联 + 编码生成 |
@@ -137,7 +138,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 ## 认证系统
 
 - **后端**（`auth.rs`）：bcrypt + 5 次锁定 15 分钟 + 首次强制改密 + session_version
-- **前端**（`auth-provider.tsx`）：AuthProvider + useAuth() + 路由守卫 + localStorage 持久化
+- **前端**（`auth-provider.tsx`）：AuthProvider + useAuth() + 路由守卫 + 系统钥匙串持久化（非 Tauri 环境降级 localStorage）
 - 默认管理员：admin / admin123
 
 ## 数据库

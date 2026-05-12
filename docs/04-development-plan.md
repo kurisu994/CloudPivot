@@ -1,6 +1,6 @@
 # 云枢 (CloudPivot IMS) — 开发计划
 
-> **版本**：v2.4 &nbsp;|&nbsp; **日期**：2026-05-11
+> **版本**：v2.5 &nbsp;|&nbsp; **日期**：2026-05-12
 > **工厂所在地**：越南
 
 ---
@@ -128,8 +128,8 @@ gantt
 | 1.11  | **系统配置模型** — 初始化编码规则/库存规则/打印参数/订单仓库模式配置项                                                                                                                               | 1d   | `system_config` 种子数据                 | ✅ 已完成（50+ 配置项种子数据 + system-config.ts 类型定义 + get/set IPC 命令）        |
 | 1.12  | 前端整体布局组件（侧边栏+顶栏+语言切换器）                                                                                                                                                           | 2d   | Layout 组件                              | ✅ 已完成                                                                            |
 | 1.13  | 前端 App Router 路由配置                                                                                                                                                                             | 1d   | app/[locale]/                            | ✅ 已完成                                                                            |
-| 1.14  | 封装 Tauri IPC 调用                                                                                                                                                                                  | 0.5d | lib/tauri.ts                             | ✅ 已完成（泛型 invoke + 全部认证命令 + isTauriEnv 降级）                            |
-| 1.15  | 验证前后端 IPC 通信（ping-pong 测试）                                                                                                                                                                | 0.5d | —                                        | ✅ 已完成（38 个 IPC 命令已注册，含系统配置/物料/分类/供应商/客户 CRUD）                  |
+| 1.14  | 封装 Tauri IPC 调用                                                                                                                                                                                  | 0.5d | lib/tauri.ts / lib/tauri/                | ✅ 已完成（泛型 invoke + 全部分域命令 + Tauri 2 环境识别 + 非 Tauri 降级）             |
+| 1.15  | 验证前后端 IPC 通信（ping-pong 测试）                                                                                                                                                                | 0.5d | —                                        | ✅ 已完成（156 个 IPC 命令已注册，覆盖全部业务域）                                      |
 | 1.16  | **用户认证** — Rust 端 bcrypt + `session_version` + 登录/登出 Command                                                                                                                                | 1.5d | users 表 + auth 模块                     | ✅ 已完成（auth.rs 237 行，含 5 次失败锁定 15 分钟）                                 |
 | 1.17  | **登录页面** — 登录表单 + 内置管理员 `admin/admin123` 提示 + 记住我（系统钥匙串）+ 首次强制改密                                                                                                      | 1.5d | 登录页组件                               | ✅ 已完成（login/page.tsx 294 行 + change-password/page.tsx 240 行）                 |
 | 1.18  | **认证守卫** — 路由守卫 + 本地会话失效处理（v1.0 不做权限判断，全部放行）                                                                                                                            | 0.5d | AuthProvider                             | ✅ 已完成（auth-provider.tsx 含系统钥匙串持久化（keyring）+ session_version 验证） |
@@ -475,12 +475,12 @@ main           ← 稳定发布分支
 
 ```
 src-tauri/src/
-├── lib.rs          # Tauri Builder — 日志 + 数据库初始化 + 管理员初始化 + IPC 注册（142 个命令）
+├── lib.rs          # Tauri Builder — 日志 + 数据库初始化 + 管理员初始化 + IPC 注册（156 个命令）
 ├── main.rs         # 入口
 ├── auth.rs         # 认证模块（登录/改密/管理员初始化，bcrypt + session_version + 锁定）
 ├── error.rs        # 统一错误类型（AppError: Database/Sqlx/Auth/Business/Io）
 ├── commands/       # IPC 接口层 — 接收前端请求，参数校验，调用 service
-│   ├── mod.rs      # 基础命令：ping / get_db_version / login / change_password / get_user_info / get/set_system_configs / setup_create_warehouses
+│   ├── mod.rs      # 基础命令：ping / db_init_error / get_db_version / login / change_password / get_user_info / get/set_system_configs / setup_create_warehouses / operation_logs
 │   ├── material.rs # 物料 CRUD：get_materials / get_material_by_id / save_material / toggle_material_status / get_categories / get_units
 │   ├── category.rs # 分类 CRUD：get_category_tree / create_category / update_category / delete_category / update_category_order
 │   ├── supplier.rs # 供应商 CRUD：get_suppliers / get_supplier_by_id / get_supplier_detail / save_supplier / delete_supplier / toggle_supplier_status / generate_supplier_code / get_supplier_categories / get_material_reference_options / save_supplier_material / delete_supplier_material
@@ -517,13 +517,14 @@ components/
 └── forms/          # 通用表单组件（待实现）
 hooks/              # 自定义 Hooks — 封装业务逻辑和状态（待实现）
 lib/
-├── tauri.ts        # IPC 服务 — Tauri invoke 泛型封装 + 全部命令 + 非 Tauri 降级
+├── tauri.ts        # IPC 服务统一导出入口
+├── tauri/          # IPC 分域封装 — Tauri invoke 泛型封装 + 全部命令 + 非 Tauri 降级
 ├── currency.ts     # 多币种格式化（VND/CNY/USD 存储↔显示转换 + 格式化输出）
 ├── utils.ts        # 工具函数（cn() = clsx + tailwind-merge）
 └── types/
     └── system-config.ts # 系统配置键名枚举（50+）+ TypeScript 类型
 stores/             # 全局状态 — Zustand store（已安装，待使用）
-messages/           # i18n 翻译文件（按域拆分 9 个文件/语言，约 860 行/语言，涵盖 auth/categories/common/customers/dashboard/materials/settings/setup-wizard/suppliers 9 域）
+messages/           # i18n 翻译文件（按域拆分 20 个文件/语言，覆盖全部业务域）
 ```
 
 > 表单管理使用 `react-hook-form` + `zod` 验证，处理采购/销售/定制单等复杂嵌套表单。
