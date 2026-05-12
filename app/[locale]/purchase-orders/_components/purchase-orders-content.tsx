@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { PurchaseOrderEditPage } from './purchase-order-edit-page'
 import { PurchaseOrderListPage } from './purchase-order-list-page'
 
@@ -11,6 +12,15 @@ import { PurchaseOrderListPage } from './purchase-order-list-page'
 export function PurchaseOrdersContent() {
   const [view, setView] = useState<'list' | 'edit'>('list')
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null)
+  const searchParams = useSearchParams()
+
+  // 处理 URL 参数 ?action=new（从 Dashboard 快捷操作跳转）
+  useEffect(() => {
+    if (searchParams.get('action') === 'new') {
+      setEditingOrderId(null)
+      setView('edit')
+    }
+  }, [searchParams])
 
   /** 编辑采购单 */
   const handleEdit = (id: number) => {
