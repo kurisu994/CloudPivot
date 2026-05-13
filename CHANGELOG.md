@@ -8,6 +8,10 @@
 
 ## [Unreleased]
 
+---
+
+## [0.1.5] — 2026-05-13
+
 ### 重构
 
 - **数据库迁移 SQLite → PostgreSQL**：将嵌入式 SQLite 替换为远程 PostgreSQL，支持多终端共享数据和集中式数据安全。
