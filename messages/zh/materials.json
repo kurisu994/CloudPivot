@@ -134,6 +134,32 @@
         "unitRequired": "第 {line} 行：基础单位不能为空",
         "duplicateCode": "第 {line} 行：导入文件内物料编码重复"
       }
+    },
+    "excel": {
+      "columns": {
+        "code": "物料编码",
+        "name": "物料名称",
+        "materialType": "物料类型",
+        "categoryCode": "分类编码",
+        "categoryName": "分类名称",
+        "spec": "规格型号",
+        "baseUnitName": "基础单位",
+        "auxUnitName": "辅助单位",
+        "conversionRate": "换算比例",
+        "refCostPrice": "参考进价",
+        "salePrice": "销售价格",
+        "safetyStock": "安全库存",
+        "maxStock": "最高库存",
+        "lotTrackingMode": "批次追踪",
+        "texture": "材质",
+        "color": "颜色",
+        "surfaceCraft": "表面工艺",
+        "lengthMm": "长(mm)",
+        "widthMm": "宽(mm)",
+        "heightMm": "高(mm)",
+        "barcode": "条形码",
+        "remark": "备注"
+      }
     }
   }
 }

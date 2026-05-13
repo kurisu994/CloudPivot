@@ -15,6 +15,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { type Locale, localeFlags, localeNames, locales } from '@/i18n/config'
 import { useRouter } from '@/i18n/navigation'
 
+const localeItems = locales.map(locale => ({
+  value: locale,
+  label: `${localeFlags[locale]} ${localeNames[locale]}`,
+}))
+
 /**
  * 登录页面组件
  *
@@ -189,7 +194,7 @@ export default function LoginPage() {
                   <Label htmlFor="login-language">
                     {t('language')} <span className="text-muted-foreground font-normal">(Language)</span>
                   </Label>
-                  <Select value={selectedLocale} onValueChange={v => setSelectedLocale(v as Locale)}>
+                  <Select value={selectedLocale} onValueChange={v => setSelectedLocale(v as Locale)} items={localeItems}>
                     <SelectTrigger id="login-language" className="h-11 w-full">
                       <span className="flex items-center gap-2">
                         <span className="text-base leading-none">{localeFlags[selectedLocale]}</span>

@@ -151,7 +151,7 @@ export interface InitialInventoryImportRow {
   unitCostUsd: number
   receivedDate: string
   lotNo?: string | null
-  supplier_batch_no?: string | null
+  supplierBatchNo?: string | null
   remark?: string | null
 }
 

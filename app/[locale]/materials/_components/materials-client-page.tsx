@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { downloadBusinessWorkbook, materialExcelColumns, readBusinessExcelRows } from '@/lib/business-excel'
+import { createMaterialExcelColumns, downloadBusinessWorkbook, readBusinessExcelRows } from '@/lib/business-excel'
 import { getErrorMessage } from '@/lib/error'
 import type { MaterialImportRow } from '@/lib/tauri'
 import { exportMaterials, importMaterials, invoke, isTauriEnv } from '@/lib/tauri'
@@ -150,6 +150,7 @@ const MOCK_MATERIALS: MaterialItem[] = [
 
 export function MaterialsClientPage() {
   const t = useTranslations('materials')
+  const materialExcelColumns = useMemo(() => createMaterialExcelColumns(t), [t])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 数据
@@ -361,7 +362,7 @@ export function MaterialsClientPage() {
     try {
       const rows: object[] = isTauriEnv()
         ? await exportMaterials()
-        : MOCK_MATERIALS.map(item => ({ ...item, baseUnitName: item.unitName ?? '', lot_tracking_mode: 'none' }))
+        : MOCK_MATERIALS.map(item => ({ ...item, baseUnitName: item.unitName ?? '', lotTrackingMode: 'none' }))
       await downloadBusinessWorkbook('materials.xlsx', 'materials', materialExcelColumns, rows)
       toast.success(t('notifications.exportSuccess'))
     } catch (error) {

@@ -230,6 +230,18 @@
         "validationFailed": "期初库存导入校验未通过",
         "failed": "期初库存导入失败",
         "success": "期初库存导入完成：{count} 条",
+        "excel": {
+          "columns": {
+            "materialCode": "物料编码",
+            "warehouseCode": "仓库编码",
+            "quantity": "数量",
+            "unitCostUsd": "单位成本USD分",
+            "receivedDate": "入库日期",
+            "lotNo": "批次号",
+            "supplierBatchNo": "供应商批号",
+            "remark": "备注"
+          }
+        },
         "errors": {
           "materialRequired": "第 {line} 行：物料编码不能为空",
           "warehouseRequired": "第 {line} 行：仓库编码不能为空",

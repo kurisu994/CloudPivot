@@ -2,7 +2,7 @@
 
 import { Database, Download, FileText, Info, Trash2, Upload, UploadCloud } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { downloadBusinessWorkbook, initialInventoryExcelColumns, materialExcelColumns, readBusinessExcelRows } from '@/lib/business-excel'
+import { createInitialInventoryExcelColumns, createMaterialExcelColumns, downloadBusinessWorkbook, readBusinessExcelRows } from '@/lib/business-excel'
 import { getErrorMessage } from '@/lib/error'
 import type { DataManagementStatus, InitialInventoryImportRow } from '@/lib/tauri'
 import {
@@ -211,6 +211,9 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
 /** 数据管理：右侧导入导出区域 */
 function DataImportExportSection({ onRefresh }: { onRefresh: () => Promise<void> }) {
   const t = useTranslations('settings.dataManagement')
+  const materialT = useTranslations('materials')
+  const materialExcelColumns = useMemo(() => createMaterialExcelColumns(materialT), [materialT])
+  const initialInventoryExcelColumns = useMemo(() => createInitialInventoryExcelColumns(t), [t])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [importing, setImporting] = useState(false)

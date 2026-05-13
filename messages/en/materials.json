@@ -134,6 +134,32 @@
         "unitRequired": "Line {line}: base unit is required",
         "duplicateCode": "Line {line}: duplicate material code in import file"
       }
+    },
+    "excel": {
+      "columns": {
+        "code": "Material Code",
+        "name": "Material Name",
+        "materialType": "Material Type",
+        "categoryCode": "Category Code",
+        "categoryName": "Category Name",
+        "spec": "Specification",
+        "baseUnitName": "Base Unit",
+        "auxUnitName": "Aux Unit",
+        "conversionRate": "Conversion Rate",
+        "refCostPrice": "Ref Cost",
+        "salePrice": "Sale Price",
+        "safetyStock": "Safety Stock",
+        "maxStock": "Max Stock",
+        "lotTrackingMode": "Lot Tracking",
+        "texture": "Texture",
+        "color": "Color",
+        "surfaceCraft": "Surface Craft",
+        "lengthMm": "Length (mm)",
+        "widthMm": "Width (mm)",
+        "heightMm": "Height (mm)",
+        "barcode": "Barcode",
+        "remark": "Remark"
+      }
     }
   }
 }

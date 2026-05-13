@@ -5,43 +5,68 @@ export interface ExcelColumn {
   type?: 'text' | 'number'
 }
 
-/** 物料模板列 */
-export const materialExcelColumns: ExcelColumn[] = [
-  { key: 'code', header: '物料编码', type: 'text' },
-  { key: 'name', header: '物料名称', type: 'text' },
-  { key: 'material_type', header: '物料类型', type: 'text' },
-  { key: 'category_code', header: '分类编码', type: 'text' },
-  { key: 'category_name', header: '分类名称', type: 'text' },
-  { key: 'spec', header: '规格型号', type: 'text' },
-  { key: 'base_unit_name', header: '基础单位', type: 'text' },
-  { key: 'aux_unit_name', header: '辅助单位', type: 'text' },
-  { key: 'conversion_rate', header: '换算比例', type: 'number' },
-  { key: 'ref_cost_price', header: '参考进价', type: 'number' },
-  { key: 'sale_price', header: '销售价格', type: 'number' },
-  { key: 'safety_stock', header: '安全库存', type: 'number' },
-  { key: 'max_stock', header: '最高库存', type: 'number' },
-  { key: 'lot_tracking_mode', header: '批次追踪', type: 'text' },
-  { key: 'texture', header: '材质', type: 'text' },
-  { key: 'color', header: '颜色', type: 'text' },
-  { key: 'surface_craft', header: '表面工艺', type: 'text' },
-  { key: 'length_mm', header: '长(mm)', type: 'number' },
-  { key: 'width_mm', header: '宽(mm)', type: 'number' },
-  { key: 'height_mm', header: '高(mm)', type: 'number' },
-  { key: 'barcode', header: '条形码', type: 'text' },
-  { key: 'remark', header: '备注', type: 'text' },
+interface ExcelColumnDefinition {
+  key: string
+  headerKey: string
+  type?: 'text' | 'number'
+}
+
+type ExcelColumnTranslator = (key: string) => string
+
+/** 物料模板列定义 */
+const materialExcelColumnDefinitions: ExcelColumnDefinition[] = [
+  { key: 'code', headerKey: 'excel.columns.code', type: 'text' },
+  { key: 'name', headerKey: 'excel.columns.name', type: 'text' },
+  { key: 'materialType', headerKey: 'excel.columns.materialType', type: 'text' },
+  { key: 'categoryCode', headerKey: 'excel.columns.categoryCode', type: 'text' },
+  { key: 'categoryName', headerKey: 'excel.columns.categoryName', type: 'text' },
+  { key: 'spec', headerKey: 'excel.columns.spec', type: 'text' },
+  { key: 'baseUnitName', headerKey: 'excel.columns.baseUnitName', type: 'text' },
+  { key: 'auxUnitName', headerKey: 'excel.columns.auxUnitName', type: 'text' },
+  { key: 'conversionRate', headerKey: 'excel.columns.conversionRate', type: 'number' },
+  { key: 'refCostPrice', headerKey: 'excel.columns.refCostPrice', type: 'number' },
+  { key: 'salePrice', headerKey: 'excel.columns.salePrice', type: 'number' },
+  { key: 'safetyStock', headerKey: 'excel.columns.safetyStock', type: 'number' },
+  { key: 'maxStock', headerKey: 'excel.columns.maxStock', type: 'number' },
+  { key: 'lotTrackingMode', headerKey: 'excel.columns.lotTrackingMode', type: 'text' },
+  { key: 'texture', headerKey: 'excel.columns.texture', type: 'text' },
+  { key: 'color', headerKey: 'excel.columns.color', type: 'text' },
+  { key: 'surfaceCraft', headerKey: 'excel.columns.surfaceCraft', type: 'text' },
+  { key: 'lengthMm', headerKey: 'excel.columns.lengthMm', type: 'number' },
+  { key: 'widthMm', headerKey: 'excel.columns.widthMm', type: 'number' },
+  { key: 'heightMm', headerKey: 'excel.columns.heightMm', type: 'number' },
+  { key: 'barcode', headerKey: 'excel.columns.barcode', type: 'text' },
+  { key: 'remark', headerKey: 'excel.columns.remark', type: 'text' },
 ]
 
-/** 期初库存模板列 */
-export const initialInventoryExcelColumns: ExcelColumn[] = [
-  { key: 'material_code', header: '物料编码', type: 'text' },
-  { key: 'warehouse_code', header: '仓库编码', type: 'text' },
-  { key: 'quantity', header: '数量', type: 'number' },
-  { key: 'unit_cost_usd', header: '单位成本USD分', type: 'number' },
-  { key: 'received_date', header: '入库日期', type: 'text' },
-  { key: 'lot_no', header: '批次号', type: 'text' },
-  { key: 'supplier_batch_no', header: '供应商批号', type: 'text' },
-  { key: 'remark', header: '备注', type: 'text' },
+/** 期初库存模板列定义 */
+const initialInventoryExcelColumnDefinitions: ExcelColumnDefinition[] = [
+  { key: 'materialCode', headerKey: 'initialImport.excel.columns.materialCode', type: 'text' },
+  { key: 'warehouseCode', headerKey: 'initialImport.excel.columns.warehouseCode', type: 'text' },
+  { key: 'quantity', headerKey: 'initialImport.excel.columns.quantity', type: 'number' },
+  { key: 'unitCostUsd', headerKey: 'initialImport.excel.columns.unitCostUsd', type: 'number' },
+  { key: 'receivedDate', headerKey: 'initialImport.excel.columns.receivedDate', type: 'text' },
+  { key: 'lotNo', headerKey: 'initialImport.excel.columns.lotNo', type: 'text' },
+  { key: 'supplierBatchNo', headerKey: 'initialImport.excel.columns.supplierBatchNo', type: 'text' },
+  { key: 'remark', headerKey: 'initialImport.excel.columns.remark', type: 'text' },
 ]
+
+function createExcelColumns(definitions: ExcelColumnDefinition[], t: ExcelColumnTranslator): ExcelColumn[] {
+  return definitions.map(({ headerKey, ...column }) => ({
+    ...column,
+    header: t(headerKey),
+  }))
+}
+
+/** 创建当前语言的物料 Excel 列 */
+export function createMaterialExcelColumns(t: ExcelColumnTranslator): ExcelColumn[] {
+  return createExcelColumns(materialExcelColumnDefinitions, t)
+}
+
+/** 创建当前语言的期初库存 Excel 列 */
+export function createInitialInventoryExcelColumns(t: ExcelColumnTranslator): ExcelColumn[] {
+  return createExcelColumns(initialInventoryExcelColumnDefinitions, t)
+}
 
 /** 将单元格值转为字符串 */
 function toCellText(value: unknown): string | null {

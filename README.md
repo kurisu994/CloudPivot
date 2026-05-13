@@ -199,7 +199,7 @@ lib/
   tauri.ts                  # Tauri IPC 统一导出入口
   tauri/                    # IPC 分域封装（invoke 泛型 + 认证命令 + 非 Tauri 降级）
   currency.ts               # 多币种格式化工具（VND/CNY/USD，整数存储 ↔ 显示金额转换）
-  business-excel.ts         # 报表 Excel 导出工具（基于 xlsx 库）
+  business-excel.ts         # 报表/业务 Excel 导入导出工具（基于 xlsx 库，列头支持 i18n）
   error.ts                  # 前端错误处理工具
   types/
     system-config.ts        # 系统配置键名枚举 + TypeScript 类型

@@ -230,6 +230,18 @@
         "validationFailed": "Initial inventory import validation failed",
         "failed": "Initial inventory import failed",
         "success": "Initial inventory import complete: {count} rows",
+        "excel": {
+          "columns": {
+            "materialCode": "Material Code",
+            "warehouseCode": "Warehouse Code",
+            "quantity": "Quantity",
+            "unitCostUsd": "Unit Cost (USD cents)",
+            "receivedDate": "Received Date",
+            "lotNo": "Lot No.",
+            "supplierBatchNo": "Supplier Batch No.",
+            "remark": "Remark"
+          }
+        },
         "errors": {
           "materialRequired": "Line {line}: material code is required",
           "warehouseRequired": "Line {line}: warehouse code is required",

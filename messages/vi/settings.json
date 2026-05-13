@@ -230,6 +230,18 @@
         "validationFailed": "Kiểm tra nhập tồn kho ban đầu thất bại",
         "failed": "Nhập tồn kho ban đầu thất bại",
         "success": "Nhập tồn kho ban đầu hoàn tất: {count} dòng",
+        "excel": {
+          "columns": {
+            "materialCode": "Mã vật tư",
+            "warehouseCode": "Mã kho",
+            "quantity": "Số lượng",
+            "unitCostUsd": "Đơn giá (cent USD)",
+            "receivedDate": "Ngày nhập",
+            "lotNo": "Mã lô",
+            "supplierBatchNo": "Mã lô nhà cung cấp",
+            "remark": "Ghi chú"
+          }
+        },
         "errors": {
           "materialRequired": "Dòng {line}: mã vật tư là bắt buộc",
           "warehouseRequired": "Dòng {line}: mã kho là bắt buộc",

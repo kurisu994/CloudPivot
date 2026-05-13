@@ -134,6 +134,32 @@
         "unitRequired": "Dòng {line}: đơn vị cơ bản là bắt buộc",
         "duplicateCode": "Dòng {line}: mã vật tư bị trùng trong file nhập"
       }
+    },
+    "excel": {
+      "columns": {
+        "code": "Mã vật tư",
+        "name": "Tên vật tư",
+        "materialType": "Loại vật tư",
+        "categoryCode": "Mã danh mục",
+        "categoryName": "Tên danh mục",
+        "spec": "Quy cách",
+        "baseUnitName": "Đơn vị cơ bản",
+        "auxUnitName": "Đơn vị phụ",
+        "conversionRate": "Tỷ lệ quy đổi",
+        "refCostPrice": "Giá nhập tham khảo",
+        "salePrice": "Giá bán",
+        "safetyStock": "Tồn kho an toàn",
+        "maxStock": "Tồn kho tối đa",
+        "lotTrackingMode": "Theo dõi lô",
+        "texture": "Vật liệu",
+        "color": "Màu sắc",
+        "surfaceCraft": "Bề mặt",
+        "lengthMm": "Dài (mm)",
+        "widthMm": "Rộng (mm)",
+        "heightMm": "Cao (mm)",
+        "barcode": "Mã vạch",
+        "remark": "Ghi chú"
+      }
     }
   }
 }

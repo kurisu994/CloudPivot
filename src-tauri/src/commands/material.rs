@@ -65,7 +65,8 @@ fn normalize_lot_tracking_for_compare(value: Option<&str>) -> String {
 
 /// 查询物料是否已有会影响历史口径的业务引用
 async fn has_material_core_references(pool: &PgPool, material_id: i64) -> Result<bool, AppError> {
-    let mut query = QueryBuilder::<'_, Postgres>::new("SELECT COALESCE(SUM(ref_count)::BIGINT, 0) FROM (");
+    let mut query =
+        QueryBuilder::<'_, Postgres>::new("SELECT COALESCE(SUM(ref_count)::BIGINT, 0) FROM (");
 
     for (index, (table, column)) in MATERIAL_CORE_REFERENCE_TABLES.iter().enumerate() {
         if index > 0 {
