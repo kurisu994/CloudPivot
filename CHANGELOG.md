@@ -10,6 +10,12 @@
 
 ### 修复
 
+- **物料管理字段命名不一致**：前端 `MaterialFormData` 和 `MaterialItem` 混用 snake_case 与 camelCase，与后端 `serde(rename_all = "camelCase")` 不匹配，导致保存物料报 `missing field` 错误、列表进价售价显示为空。统一为 camelCase。
+- **物料价格存储错误**：表单直接存储用户输入值而未做币种精度转换（USD 以分为单位），输入 100 元实际存为 100 分。新增 `toStorageAmount`/`toDisplayAmount` 转换，货币符号改为从系统本位币配置动态读取。
+- **物料 is_enabled 类型错误**：PostgreSQL `BOOLEAN` 列不接受整数 `1`/`0`（SQLite 遗留），INSERT 和 UPDATE 改为绑定原生布尔值 `TRUE`/`FALSE`。
+- **物料分类选择器平铺无层级**：后端 `get_categories` 新增返回 `parent_id` 和 `level` 字段，前端按深度优先排序并加缩进展示层级。
+- **物料弹窗尺寸过小**：`DialogContent` 从 `max-w-4xl` 调大 20% 至 `sm:max-w-[67rem]`。
+
 - **分类管理删除无效果**：Tauri 2 WebView 中 `window.confirm()` 不弹出原生对话框直接返回 false，改用 shadcn Dialog 组件实现确认弹窗。
 - **分类管理创建/更新/排序失败**：`category.rs` 中 `SELECT level` 查询用 `i64` 解码 PostgreSQL `INTEGER`（INT4）列，sqlx 类型检查报错。三处统一改为 `i32`。
 - **上级分类选择器层级错乱**：后端返回扁平列表按 `sort_order` 排序，子节点未紧跟父节点，缩进显示错位。新增深度优先遍历排序后再渲染下拉选项。

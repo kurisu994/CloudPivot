@@ -182,8 +182,8 @@ export function MaterialTable({ data, loading, total, page, pageSize, onPageChan
 
               {/* 进价 */}
               <TableCell className="text-right">
-                {row.ref_cost_price > 0 ? (
-                  <span className="font-bold">{formatAmount(row.ref_cost_price, 'USD')}</span>
+                {row.refCostPrice > 0 ? (
+                  <span className="font-bold">{formatAmount(row.refCostPrice, 'USD')}</span>
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
@@ -191,8 +191,8 @@ export function MaterialTable({ data, loading, total, page, pageSize, onPageChan
 
               {/* 售价 */}
               <TableCell className="text-right">
-                {row.sale_price > 0 ? (
-                  <span className="font-bold">{formatAmount(row.sale_price, 'USD')}</span>
+                {row.salePrice > 0 ? (
+                  <span className="font-bold">{formatAmount(row.salePrice, 'USD')}</span>
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}

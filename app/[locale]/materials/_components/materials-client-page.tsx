@@ -29,12 +29,12 @@ export interface MaterialItem {
   categoryId: number | null
   categoryName: string | null
   spec: string | null
-  base_unitId: number
+  baseUnitId: number
   unitName: string | null
-  ref_cost_price: number
-  sale_price: number
-  safety_stock: number
-  max_stock: number
+  refCostPrice: number
+  salePrice: number
+  safetyStock: number
+  maxStock: number
   isEnabled: boolean
   createdAt: string | null
 }
@@ -44,6 +44,8 @@ export interface CategoryOption {
   id: number
   name: string
   code: string
+  parentId: number | null
+  level: number
 }
 
 /** 单位选项 */
@@ -59,10 +61,10 @@ export interface UnitOption {
 /* ------------------------------------------------------------------ */
 
 const MOCK_CATEGORIES: CategoryOption[] = [
-  { id: 1, name: '木材', code: 'WOOD' },
-  { id: 2, name: '五金', code: 'HARDWARE' },
-  { id: 3, name: '客厅', code: 'LIVING' },
-  { id: 4, name: '餐厅', code: 'DINING' },
+  { id: 1, name: '木材', code: 'WOOD', parentId: null, level: 1 },
+  { id: 2, name: '五金', code: 'HARDWARE', parentId: null, level: 1 },
+  { id: 3, name: '客厅', code: 'LIVING', parentId: null, level: 1 },
+  { id: 4, name: '餐厅', code: 'DINING', parentId: null, level: 1 },
 ]
 
 const MOCK_UNITS: UnitOption[] = [
@@ -82,12 +84,12 @@ const MOCK_MATERIALS: MaterialItem[] = [
     categoryId: 3,
     categoryName: '客厅',
     spec: '2100×900',
-    base_unitId: 3,
+    baseUnitId: 3,
     unitName: '套',
-    ref_cost_price: 0,
-    sale_price: 175600,
-    safety_stock: 10,
-    max_stock: 50,
+    refCostPrice: 0,
+    salePrice: 175600,
+    safetyStock: 10,
+    maxStock: 50,
     isEnabled: true,
     createdAt: '2024-01-15',
   },
@@ -99,12 +101,12 @@ const MOCK_MATERIALS: MaterialItem[] = [
     categoryId: 1,
     categoryName: '木材',
     spec: '2440×1220',
-    base_unitId: 1,
+    baseUnitId: 1,
     unitName: '张',
-    ref_cost_price: 3850,
-    sale_price: 0,
-    safety_stock: 50,
-    max_stock: 500,
+    refCostPrice: 3850,
+    salePrice: 0,
+    safetyStock: 50,
+    maxStock: 500,
     isEnabled: true,
     createdAt: '2024-01-10',
   },
@@ -116,12 +118,12 @@ const MOCK_MATERIALS: MaterialItem[] = [
     categoryId: 2,
     categoryName: '五金',
     spec: '40mm',
-    base_unitId: 2,
+    baseUnitId: 2,
     unitName: '个',
-    ref_cost_price: 48,
-    sale_price: 0,
-    safety_stock: 500,
-    max_stock: 5000,
+    refCostPrice: 48,
+    salePrice: 0,
+    safetyStock: 500,
+    maxStock: 5000,
     isEnabled: true,
     createdAt: '2024-01-12',
   },
@@ -133,12 +135,12 @@ const MOCK_MATERIALS: MaterialItem[] = [
     categoryId: 4,
     categoryName: '餐厅',
     spec: '1400×800',
-    base_unitId: 3,
+    baseUnitId: 3,
     unitName: '套',
-    ref_cost_price: 0,
-    sale_price: 49000,
-    safety_stock: 5,
-    max_stock: 30,
+    refCostPrice: 0,
+    salePrice: 49000,
+    safetyStock: 5,
+    maxStock: 30,
     isEnabled: true,
     createdAt: '2024-01-08',
   },
@@ -178,11 +180,29 @@ export function MaterialsClientPage() {
   const [categories, setCategories] = useState<CategoryOption[]>([])
   const [units, setUnits] = useState<UnitOption[]>([])
 
-  /* 构建 Select items（base-ui 需要 items 以正确解析 SelectValue 显示文本） */
-  const categoryItems = useMemo(
-    () => [{ value: 'all', label: t('filters.categoryAll') }, ...categories.map(c => ({ value: c.id.toString(), label: c.name }))],
-    [categories, t],
-  )
+  /* 构建 Select items（按树形深度优先排序并加缩进） */
+  const categoryItems = useMemo(() => {
+    const childrenMap = new Map<number | null, CategoryOption[]>()
+    for (const cat of categories) {
+      const pid = cat.parentId ?? null
+      if (!childrenMap.has(pid)) childrenMap.set(pid, [])
+      childrenMap.get(pid)!.push(cat)
+    }
+    const sorted: CategoryOption[] = []
+    const traverse = (parentId: number | null) => {
+      const children = childrenMap.get(parentId)
+      if (!children) return
+      for (const child of children) {
+        sorted.push(child)
+        traverse(child.id)
+      }
+    }
+    traverse(null)
+    return [
+      { value: 'all', label: t('filters.categoryAll') },
+      ...sorted.map(c => ({ value: c.id.toString(), label: `${'　'.repeat(c.level - 1)}${c.name}` })),
+    ]
+  }, [categories, t])
 
   const typeItems = useMemo(
     () => [

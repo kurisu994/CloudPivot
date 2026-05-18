@@ -10,6 +10,7 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { type Currency, getCurrencyConfig, toDisplayAmount, toStorageAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
 import { invoke, isTauriEnv } from '@/lib/tauri'
 import type { CategoryOption, UnitOption } from './materials-client-page'
@@ -18,6 +19,9 @@ import type { CategoryOption, UnitOption } from './materials-client-page'
 /*  类型                                                               */
 /* ------------------------------------------------------------------ */
 
+/** 系统本位币（与系统设置一致） */
+const BASE_CURRENCY: Currency = 'USD'
+
 interface MaterialFormData {
   id: number | null
   code: string
@@ -25,20 +29,20 @@ interface MaterialFormData {
   materialType: string
   categoryId: number | null
   spec: string
-  base_unit_id: number | null
-  aux_unit_id: number | null
-  conversion_rate: number | null
-  ref_cost_price: number
-  sale_price: number
-  safety_stock: number
-  max_stock: number
-  lot_tracking_mode: string
+  baseUnitId: number | null
+  auxUnitId: number | null
+  conversionRate: number | null
+  refCostPrice: number
+  salePrice: number
+  safetyStock: number
+  maxStock: number
+  lotTrackingMode: string
   texture: string
   color: string
-  surface_craft: string
-  length_mm: number | null
-  width_mm: number | null
-  height_mm: number | null
+  surfaceCraft: string
+  lengthMm: number | null
+  widthMm: number | null
+  heightMm: number | null
   barcode: string
   remark: string
 }
@@ -50,20 +54,20 @@ const EMPTY_FORM: MaterialFormData = {
   materialType: 'raw',
   categoryId: null,
   spec: '',
-  base_unit_id: null,
-  aux_unit_id: null,
-  conversion_rate: null,
-  ref_cost_price: 0,
-  sale_price: 0,
-  safety_stock: 0,
-  max_stock: 0,
-  lot_tracking_mode: 'none',
+  baseUnitId: null,
+  auxUnitId: null,
+  conversionRate: null,
+  refCostPrice: 0,
+  salePrice: 0,
+  safetyStock: 0,
+  maxStock: 0,
+  lotTrackingMode: 'none',
   texture: '',
   color: '',
-  surface_craft: '',
-  length_mm: null,
-  width_mm: null,
-  height_mm: null,
+  surfaceCraft: '',
+  lengthMm: null,
+  widthMm: null,
+  heightMm: null,
   barcode: '',
   remark: '',
 }
@@ -92,8 +96,30 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
   const [loading, setLoading] = useState(false)
   const [initializing, setInitializing] = useState(false)
 
-  /* 构建 Select items — base-ui 需要 items 以正确显示 SelectValue */
-  const categoryItems = useMemo(() => categories.map(c => ({ value: c.id.toString(), label: c.name })), [categories])
+  /* 构建 Select items — 按树形深度优先排序并加缩进 */
+  const categoryItems = useMemo(() => {
+    // 深度优先排序
+    const childrenMap = new Map<number | null, CategoryOption[]>()
+    for (const cat of categories) {
+      const pid = cat.parentId ?? null
+      if (!childrenMap.has(pid)) childrenMap.set(pid, [])
+      childrenMap.get(pid)!.push(cat)
+    }
+    const sorted: CategoryOption[] = []
+    const traverse = (parentId: number | null) => {
+      const children = childrenMap.get(parentId)
+      if (!children) return
+      for (const child of children) {
+        sorted.push(child)
+        traverse(child.id)
+      }
+    }
+    traverse(null)
+    return sorted.map(c => ({
+      value: c.id.toString(),
+      label: `${'　'.repeat(c.level - 1)}${c.name}`,
+    }))
+  }, [categories])
 
   const unitItems = useMemo(() => units.map(u => ({ value: u.id.toString(), label: u.name })), [units])
 
@@ -138,10 +164,10 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
             spec: detail.spec ?? '',
             texture: detail.texture ?? '',
             color: detail.color ?? '',
-            surface_craft: detail.surface_craft ?? '',
+            surfaceCraft: detail.surfaceCraft ?? '',
             barcode: detail.barcode ?? '',
             remark: detail.remark ?? '',
-            lot_tracking_mode: detail.lot_tracking_mode ?? 'none',
+            lotTrackingMode: detail.lotTrackingMode ?? 'none',
           })
         })
         .catch(e => {
@@ -162,7 +188,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
     if (!form.name.trim()) errs.name = t('validation.nameRequired')
     if (!form.materialType) errs.materialType = t('validation.typeRequired')
     if (!form.categoryId) errs.categoryId = t('validation.categoryRequired')
-    if (!form.base_unit_id) errs.base_unit_id = t('validation.baseUnitRequired')
+    if (!form.baseUnitId) errs.baseUnitId = t('validation.baseUnitRequired')
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -195,7 +221,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden p-0 sm:max-w-4xl">
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-[67rem]">
         <DialogHeader className="px-6 pt-6 pb-2">
           <div className="flex items-center gap-3">
             <div className="bg-primary/10 flex size-10 items-center justify-center rounded-lg">
@@ -275,9 +301,9 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                         <SelectValue placeholder={t('form.categoryPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map(c => (
-                          <SelectItem key={c.id} value={c.id.toString()}>
-                            {c.name}
+                        {categoryItems.map(c => (
+                          <SelectItem key={c.value} value={c.value}>
+                            {c.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -292,16 +318,16 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                   </Field>
 
                   {/* 计量单位 * */}
-                  <Field data-invalid={!!errors.base_unit_id || undefined}>
+                  <Field data-invalid={!!errors.baseUnitId || undefined}>
                     <FieldLabel>
                       {t('form.baseUnit')} <span className="text-destructive">*</span>
                     </FieldLabel>
                     <Select
-                      value={form.base_unit_id?.toString() ?? ''}
-                      onValueChange={v => setField('base_unit_id', v ? parseInt(v) : null)}
+                      value={form.baseUnitId?.toString() ?? ''}
+                      onValueChange={v => setField('baseUnitId', v ? parseInt(v) : null)}
                       items={unitItems}
                     >
-                      <SelectTrigger aria-invalid={!!errors.base_unit_id || undefined}>
+                      <SelectTrigger aria-invalid={!!errors.baseUnitId || undefined}>
                         <SelectValue placeholder={t('form.baseUnitPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
@@ -312,7 +338,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.base_unit_id && <FieldError>{errors.base_unit_id}</FieldError>}
+                    {errors.baseUnitId && <FieldError>{errors.baseUnitId}</FieldError>}
                   </Field>
                 </div>
               </FieldGroup>
@@ -326,28 +352,28 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                       <Field>
                         <FieldLabel htmlFor="ref_cost">{t('form.refCostPrice')}</FieldLabel>
                         <div className="relative">
-                          <span className="text-muted-foreground absolute top-2.5 left-3 text-sm">¥</span>
+                          <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm">{getCurrencyConfig(BASE_CURRENCY).symbol}</span>
                           <Input
                             id="ref_cost"
                             type="number"
                             step="0.01"
                             className="pl-7"
-                            value={form.ref_cost_price || ''}
-                            onChange={e => setField('ref_cost_price', parseFloat(e.target.value) || 0)}
+                            value={form.refCostPrice ? toDisplayAmount(form.refCostPrice, BASE_CURRENCY) : ''}
+                            onChange={e => setField('refCostPrice', toStorageAmount(parseFloat(e.target.value) || 0, BASE_CURRENCY))}
                           />
                         </div>
                       </Field>
                       <Field>
                         <FieldLabel htmlFor="sale_price">{t('form.salePrice')}</FieldLabel>
                         <div className="relative">
-                          <span className="text-muted-foreground absolute top-2.5 left-3 text-sm">¥</span>
+                          <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm">{getCurrencyConfig(BASE_CURRENCY).symbol}</span>
                           <Input
                             id="sale_price"
                             type="number"
                             step="0.01"
                             className="pl-7"
-                            value={form.sale_price || ''}
-                            onChange={e => setField('sale_price', parseFloat(e.target.value) || 0)}
+                            value={form.salePrice ? toDisplayAmount(form.salePrice, BASE_CURRENCY) : ''}
+                            onChange={e => setField('salePrice', toStorageAmount(parseFloat(e.target.value) || 0, BASE_CURRENCY))}
                           />
                         </div>
                       </Field>
@@ -365,8 +391,8 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                           id="safety_stock"
                           type="number"
                           placeholder={t('form.safetyStockPlaceholder')}
-                          value={form.safety_stock || ''}
-                          onChange={e => setField('safety_stock', parseFloat(e.target.value) || 0)}
+                          value={form.safetyStock || ''}
+                          onChange={e => setField('safetyStock', parseFloat(e.target.value) || 0)}
                         />
                       </Field>
                       <Field>
@@ -375,8 +401,8 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                           id="max_stock"
                           type="number"
                           placeholder={t('form.maxStockPlaceholder')}
-                          value={form.max_stock || ''}
-                          onChange={e => setField('max_stock', parseFloat(e.target.value) || 0)}
+                          value={form.maxStock || ''}
+                          onChange={e => setField('maxStock', parseFloat(e.target.value) || 0)}
                         />
                       </Field>
                     </div>
@@ -393,8 +419,8 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                     <FieldLabel>{t('form.auxUnit')}</FieldLabel>
                     <Select
                       defaultValue="none"
-                      value={form.aux_unit_id?.toString() ?? 'none'}
-                      onValueChange={v => setField('aux_unit_id', !v || v === 'none' ? null : parseInt(v))}
+                      value={form.auxUnitId?.toString() ?? 'none'}
+                      onValueChange={v => setField('auxUnitId', !v || v === 'none' ? null : parseInt(v))}
                       items={auxUnitItems}
                     >
                       <SelectTrigger>
@@ -421,8 +447,8 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                         type="number"
                         step="0.01"
                         placeholder={t('form.conversionRatePlaceholder')}
-                        value={form.conversion_rate ?? ''}
-                        onChange={e => setField('conversion_rate', parseFloat(e.target.value) || null)}
+                        value={form.conversionRate ?? ''}
+                        onChange={e => setField('conversionRate', parseFloat(e.target.value) || null)}
                       />
                       <span className="text-muted-foreground text-sm whitespace-nowrap">主单位</span>
                     </div>
@@ -431,7 +457,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                   {/* 批次追踪 */}
                   <Field>
                     <FieldLabel>{t('form.lotTrackingMode')}</FieldLabel>
-                    <RadioGroup value={form.lot_tracking_mode} onValueChange={v => setField('lot_tracking_mode', v)} className="flex gap-4 pt-1">
+                    <RadioGroup value={form.lotTrackingMode} onValueChange={v => setField('lotTrackingMode', v)} className="flex gap-4 pt-1">
                       <label className="flex items-center gap-1.5 text-sm">
                         <RadioGroupItem value="none" />
                         {t('form.lotTrackingModes.none')}
@@ -477,8 +503,8 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                       <Input
                         id="surface"
                         placeholder={t('form.surfaceCraftPlaceholder')}
-                        value={form.surface_craft}
-                        onChange={e => setField('surface_craft', e.target.value)}
+                        value={form.surfaceCraft}
+                        onChange={e => setField('surfaceCraft', e.target.value)}
                       />
                     </Field>
                   </div>
@@ -488,8 +514,8 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                       <div className="relative">
                         <Input
                           type="number"
-                          value={form.length_mm ?? ''}
-                          onChange={e => setField('length_mm', parseFloat(e.target.value) || null)}
+                          value={form.lengthMm ?? ''}
+                          onChange={e => setField('lengthMm', parseFloat(e.target.value) || null)}
                           placeholder="0"
                         />
                         <span className="text-muted-foreground absolute top-2.5 right-3 text-xs">{t('form.labelL')}</span>
@@ -497,8 +523,8 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                       <div className="relative">
                         <Input
                           type="number"
-                          value={form.width_mm ?? ''}
-                          onChange={e => setField('width_mm', parseFloat(e.target.value) || null)}
+                          value={form.widthMm ?? ''}
+                          onChange={e => setField('widthMm', parseFloat(e.target.value) || null)}
                           placeholder="0"
                         />
                         <span className="text-muted-foreground absolute top-2.5 right-3 text-xs">{t('form.labelW')}</span>
@@ -506,8 +532,8 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                       <div className="relative">
                         <Input
                           type="number"
-                          value={form.height_mm ?? ''}
-                          onChange={e => setField('height_mm', parseFloat(e.target.value) || null)}
+                          value={form.heightMm ?? ''}
+                          onChange={e => setField('heightMm', parseFloat(e.target.value) || null)}
                           placeholder="0"
                         />
                         <span className="text-muted-foreground absolute top-2.5 right-3 text-xs">{t('form.labelH')}</span>

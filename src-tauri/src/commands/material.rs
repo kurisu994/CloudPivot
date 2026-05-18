@@ -8,10 +8,13 @@ use crate::error::AppError;
 
 /// 分类记录
 #[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct CategoryOption {
     pub id: i64,
     pub name: String,
     pub code: String,
+    pub parent_id: Option<i64>,
+    pub level: i32,
 }
 
 /// 单位记录（物料表单下拉用，含小数位和符号供采购模块使用）
@@ -130,7 +133,7 @@ pub(crate) async fn ensure_material_core_fields_editable(
 #[tauri::command]
 pub async fn get_categories(db: State<'_, DbState>) -> Result<Vec<CategoryOption>, AppError> {
     sqlx::query_as::<_, CategoryOption>(
-        "SELECT id, name, code FROM categories WHERE is_enabled = TRUE ORDER BY sort_order ASC, id ASC"
+        "SELECT id, name, code, parent_id, level FROM categories WHERE is_enabled = TRUE ORDER BY sort_order ASC, id ASC"
     )
     .fetch_all(&db.pool)
     .await
@@ -251,14 +254,13 @@ pub async fn get_materials(
     }
 
     if let Some(enabled) = filter.is_enabled {
-        let val = if enabled { 1 } else { 0 };
         add_where_or_and!(&mut count_query);
         count_query.push("m.is_enabled = ");
-        count_query.push_bind(val);
+        count_query.push_bind(enabled);
 
         add_where_or_and!(&mut data_query);
         data_query.push("m.is_enabled = ");
-        data_query.push_bind(val);
+        data_query.push_bind(enabled);
     }
 
     let total: (i64,) = count_query
@@ -416,7 +418,7 @@ pub async fn save_material(
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 0), COALESCE($10, 0),
                 COALESCE($11, 0), COALESCE($12, 0), COALESCE($13, 'none'), $14, $15, $16,
-                $17, $18, $19, $20, $21, 1, NOW(), NOW()
+                $17, $18, $19, $20, $21, TRUE, NOW(), NOW()
             ) RETURNING id",
         )
         .bind(&params.code)
@@ -454,9 +456,8 @@ pub async fn toggle_material_status(
     id: i64,
     is_enabled: bool,
 ) -> Result<(), AppError> {
-    let val = if is_enabled { 1 } else { 0 };
     sqlx::query("UPDATE materials SET is_enabled = $1, updated_at = NOW() WHERE id = $2")
-        .bind(val)
+        .bind(is_enabled)
         .bind(id)
         .execute(&db.pool)
         .await
