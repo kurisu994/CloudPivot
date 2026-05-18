@@ -1,126 +1,128 @@
 {
-  "title": "财务管理",
-  "payables": {
-    "title": "应付账款",
-    "kpi": {
-      "totalPayable": "应付总额",
-      "totalPaid": "已付清",
-      "totalPartial": "部分付款",
-      "totalOverdue": "超期未付"
+  "finance": {
+    "title": "财务管理",
+    "payables": {
+      "title": "应付账款",
+      "kpi": {
+        "totalPayable": "应付总额",
+        "totalPaid": "已付清",
+        "totalPartial": "部分付款",
+        "totalOverdue": "超期未付"
+      },
+      "filter": {
+        "supplier": "供应商",
+        "status": "状态",
+        "dateFrom": "开始日期",
+        "dateTo": "结束日期",
+        "search": "搜索单号或供应商"
+      },
+      "table": {
+        "orderNo": "关联单号",
+        "supplier": "供应商",
+        "currency": "币种",
+        "payableAmount": "应付金额",
+        "paidAmount": "已付金额",
+        "unpaidAmount": "未付金额",
+        "dueDate": "到期日",
+        "status": "状态",
+        "payableDate": "应付日期",
+        "type": "类型",
+        "actions": "操作"
+      },
+      "dialog": {
+        "title": "登记付款",
+        "supplier": "供应商",
+        "orderNo": "关联单号",
+        "payableAmount": "应付金额",
+        "paidAmount": "已付金额",
+        "unpaidAmount": "未付余额",
+        "paymentAmount": "付款金额",
+        "paymentDate": "付款日期",
+        "paymentMethod": "付款方式",
+        "remark": "备注",
+        "confirm": "确认付款",
+        "cancel": "取消"
+      },
+      "records": {
+        "title": "付款记录",
+        "date": "日期",
+        "amount": "金额",
+        "method": "方式",
+        "remark": "备注"
+      },
+      "toast": {
+        "paymentSuccess": "付款登记成功",
+        "paymentFailed": "付款登记失败"
+      }
     },
-    "filter": {
-      "supplier": "供应商",
-      "status": "状态",
-      "dateFrom": "开始日期",
-      "dateTo": "结束日期",
-      "search": "搜索单号或供应商"
+    "receivables": {
+      "title": "应收账款",
+      "kpi": {
+        "totalReceivable": "应收总额",
+        "totalReceived": "已收清",
+        "totalPartial": "部分收款",
+        "totalOverdue": "超期未收"
+      },
+      "filter": {
+        "customer": "客户",
+        "status": "状态",
+        "dateFrom": "开始日期",
+        "dateTo": "结束日期",
+        "search": "搜索单号或客户"
+      },
+      "table": {
+        "orderNo": "关联单号",
+        "customer": "客户",
+        "currency": "币种",
+        "receivableAmount": "应收金额",
+        "receivedAmount": "已收金额",
+        "unreceivedAmount": "未收金额",
+        "dueDate": "到期日",
+        "status": "状态",
+        "receivableDate": "应收日期",
+        "type": "类型",
+        "actions": "操作"
+      },
+      "dialog": {
+        "title": "登记收款",
+        "customer": "客户",
+        "orderNo": "关联单号",
+        "receivableAmount": "应收金额",
+        "receivedAmount": "已收金额",
+        "unreceivedAmount": "未收余额",
+        "receiptAmount": "收款金额",
+        "receiptDate": "收款日期",
+        "receiptMethod": "收款方式",
+        "remark": "备注",
+        "confirm": "确认收款",
+        "cancel": "取消"
+      },
+      "records": {
+        "title": "收款记录",
+        "date": "日期",
+        "amount": "金额",
+        "method": "方式",
+        "remark": "备注"
+      },
+      "toast": {
+        "receiptSuccess": "收款登记成功",
+        "receiptFailed": "收款登记失败"
+      }
     },
-    "table": {
-      "orderNo": "关联单号",
-      "supplier": "供应商",
-      "currency": "币种",
-      "payableAmount": "应付金额",
-      "paidAmount": "已付金额",
-      "unpaidAmount": "未付金额",
-      "dueDate": "到期日",
-      "status": "状态",
-      "payableDate": "应付日期",
-      "type": "类型",
-      "actions": "操作"
+    "status": {
+      "unpaid": "未付",
+      "partial": "部分",
+      "paid": "已付清"
     },
-    "dialog": {
-      "title": "登记付款",
-      "supplier": "供应商",
-      "orderNo": "关联单号",
-      "payableAmount": "应付金额",
-      "paidAmount": "已付金额",
-      "unpaidAmount": "未付余额",
-      "paymentAmount": "付款金额",
-      "paymentDate": "付款日期",
-      "paymentMethod": "付款方式",
-      "remark": "备注",
-      "confirm": "确认付款",
-      "cancel": "取消"
+    "adjustmentType": {
+      "normal": "正常",
+      "returnOffset": "退货冲减"
     },
-    "records": {
-      "title": "付款记录",
-      "date": "日期",
-      "amount": "金额",
-      "method": "方式",
-      "remark": "备注"
-    },
-    "toast": {
-      "paymentSuccess": "付款登记成功",
-      "paymentFailed": "付款登记失败"
+    "paymentMethods": {
+      "transfer": "银行转账",
+      "cash": "现金",
+      "check": "支票",
+      "other": "其他"
     }
-  },
-  "receivables": {
-    "title": "应收账款",
-    "kpi": {
-      "totalReceivable": "应收总额",
-      "totalReceived": "已收清",
-      "totalPartial": "部分收款",
-      "totalOverdue": "超期未收"
-    },
-    "filter": {
-      "customer": "客户",
-      "status": "状态",
-      "dateFrom": "开始日期",
-      "dateTo": "结束日期",
-      "search": "搜索单号或客户"
-    },
-    "table": {
-      "orderNo": "关联单号",
-      "customer": "客户",
-      "currency": "币种",
-      "receivableAmount": "应收金额",
-      "receivedAmount": "已收金额",
-      "unreceivedAmount": "未收金额",
-      "dueDate": "到期日",
-      "status": "状态",
-      "receivableDate": "应收日期",
-      "type": "类型",
-      "actions": "操作"
-    },
-    "dialog": {
-      "title": "登记收款",
-      "customer": "客户",
-      "orderNo": "关联单号",
-      "receivableAmount": "应收金额",
-      "receivedAmount": "已收金额",
-      "unreceivedAmount": "未收余额",
-      "receiptAmount": "收款金额",
-      "receiptDate": "收款日期",
-      "receiptMethod": "收款方式",
-      "remark": "备注",
-      "confirm": "确认收款",
-      "cancel": "取消"
-    },
-    "records": {
-      "title": "收款记录",
-      "date": "日期",
-      "amount": "金额",
-      "method": "方式",
-      "remark": "备注"
-    },
-    "toast": {
-      "receiptSuccess": "收款登记成功",
-      "receiptFailed": "收款登记失败"
-    }
-  },
-  "status": {
-    "unpaid": "未付",
-    "partial": "部分",
-    "paid": "已付清"
-  },
-  "adjustmentType": {
-    "normal": "正常",
-    "returnOffset": "退货冲减"
-  },
-  "paymentMethods": {
-    "transfer": "银行转账",
-    "cash": "现金",
-    "check": "支票",
-    "other": "其他"
   }
 }

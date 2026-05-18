@@ -1,126 +1,128 @@
 {
-  "title": "Finance",
-  "payables": {
-    "title": "Accounts Payable",
-    "kpi": {
-      "totalPayable": "Total Payable",
-      "totalPaid": "Fully Paid",
-      "totalPartial": "Partial Payment",
-      "totalOverdue": "Overdue"
+  "finance": {
+    "title": "Finance",
+    "payables": {
+      "title": "Accounts Payable",
+      "kpi": {
+        "totalPayable": "Total Payable",
+        "totalPaid": "Fully Paid",
+        "totalPartial": "Partial Payment",
+        "totalOverdue": "Overdue"
+      },
+      "filter": {
+        "supplier": "Supplier",
+        "status": "Status",
+        "dateFrom": "Start Date",
+        "dateTo": "End Date",
+        "search": "Search order# or supplier"
+      },
+      "table": {
+        "orderNo": "Order No.",
+        "supplier": "Supplier",
+        "currency": "Currency",
+        "payableAmount": "Payable Amount",
+        "paidAmount": "Paid Amount",
+        "unpaidAmount": "Unpaid Amount",
+        "dueDate": "Due Date",
+        "status": "Status",
+        "payableDate": "Payable Date",
+        "type": "Type",
+        "actions": "Actions"
+      },
+      "dialog": {
+        "title": "Record Payment",
+        "supplier": "Supplier",
+        "orderNo": "Order No.",
+        "payableAmount": "Payable Amount",
+        "paidAmount": "Paid Amount",
+        "unpaidAmount": "Unpaid Balance",
+        "paymentAmount": "Payment Amount",
+        "paymentDate": "Payment Date",
+        "paymentMethod": "Payment Method",
+        "remark": "Remark",
+        "confirm": "Confirm Payment",
+        "cancel": "Cancel"
+      },
+      "records": {
+        "title": "Payment Records",
+        "date": "Date",
+        "amount": "Amount",
+        "method": "Method",
+        "remark": "Remark"
+      },
+      "toast": {
+        "paymentSuccess": "Payment recorded successfully",
+        "paymentFailed": "Failed to record payment"
+      }
     },
-    "filter": {
-      "supplier": "Supplier",
-      "status": "Status",
-      "dateFrom": "Start Date",
-      "dateTo": "End Date",
-      "search": "Search order# or supplier"
+    "receivables": {
+      "title": "Accounts Receivable",
+      "kpi": {
+        "totalReceivable": "Total Receivable",
+        "totalReceived": "Fully Received",
+        "totalPartial": "Partial Receipt",
+        "totalOverdue": "Overdue"
+      },
+      "filter": {
+        "customer": "Customer",
+        "status": "Status",
+        "dateFrom": "Start Date",
+        "dateTo": "End Date",
+        "search": "Search order# or customer"
+      },
+      "table": {
+        "orderNo": "Order No.",
+        "customer": "Customer",
+        "currency": "Currency",
+        "receivableAmount": "Receivable Amount",
+        "receivedAmount": "Received Amount",
+        "unreceivedAmount": "Unreceived Amount",
+        "dueDate": "Due Date",
+        "status": "Status",
+        "receivableDate": "Receivable Date",
+        "type": "Type",
+        "actions": "Actions"
+      },
+      "dialog": {
+        "title": "Record Receipt",
+        "customer": "Customer",
+        "orderNo": "Order No.",
+        "receivableAmount": "Receivable Amount",
+        "receivedAmount": "Received Amount",
+        "unreceivedAmount": "Unreceived Balance",
+        "receiptAmount": "Receipt Amount",
+        "receiptDate": "Receipt Date",
+        "receiptMethod": "Receipt Method",
+        "remark": "Remark",
+        "confirm": "Confirm Receipt",
+        "cancel": "Cancel"
+      },
+      "records": {
+        "title": "Receipt Records",
+        "date": "Date",
+        "amount": "Amount",
+        "method": "Method",
+        "remark": "Remark"
+      },
+      "toast": {
+        "receiptSuccess": "Receipt recorded successfully",
+        "receiptFailed": "Failed to record receipt"
+      }
     },
-    "table": {
-      "orderNo": "Order No.",
-      "supplier": "Supplier",
-      "currency": "Currency",
-      "payableAmount": "Payable Amount",
-      "paidAmount": "Paid Amount",
-      "unpaidAmount": "Unpaid Amount",
-      "dueDate": "Due Date",
-      "status": "Status",
-      "payableDate": "Payable Date",
-      "type": "Type",
-      "actions": "Actions"
+    "status": {
+      "unpaid": "Unpaid",
+      "partial": "Partial",
+      "paid": "Paid"
     },
-    "dialog": {
-      "title": "Record Payment",
-      "supplier": "Supplier",
-      "orderNo": "Order No.",
-      "payableAmount": "Payable Amount",
-      "paidAmount": "Paid Amount",
-      "unpaidAmount": "Unpaid Balance",
-      "paymentAmount": "Payment Amount",
-      "paymentDate": "Payment Date",
-      "paymentMethod": "Payment Method",
-      "remark": "Remark",
-      "confirm": "Confirm Payment",
-      "cancel": "Cancel"
+    "adjustmentType": {
+      "normal": "Normal",
+      "returnOffset": "Return Offset"
     },
-    "records": {
-      "title": "Payment Records",
-      "date": "Date",
-      "amount": "Amount",
-      "method": "Method",
-      "remark": "Remark"
-    },
-    "toast": {
-      "paymentSuccess": "Payment recorded successfully",
-      "paymentFailed": "Failed to record payment"
+    "paymentMethods": {
+      "transfer": "Bank Transfer",
+      "cash": "Cash",
+      "check": "Check",
+      "other": "Other"
     }
-  },
-  "receivables": {
-    "title": "Accounts Receivable",
-    "kpi": {
-      "totalReceivable": "Total Receivable",
-      "totalReceived": "Fully Received",
-      "totalPartial": "Partial Receipt",
-      "totalOverdue": "Overdue"
-    },
-    "filter": {
-      "customer": "Customer",
-      "status": "Status",
-      "dateFrom": "Start Date",
-      "dateTo": "End Date",
-      "search": "Search order# or customer"
-    },
-    "table": {
-      "orderNo": "Order No.",
-      "customer": "Customer",
-      "currency": "Currency",
-      "receivableAmount": "Receivable Amount",
-      "receivedAmount": "Received Amount",
-      "unreceivedAmount": "Unreceived Amount",
-      "dueDate": "Due Date",
-      "status": "Status",
-      "receivableDate": "Receivable Date",
-      "type": "Type",
-      "actions": "Actions"
-    },
-    "dialog": {
-      "title": "Record Receipt",
-      "customer": "Customer",
-      "orderNo": "Order No.",
-      "receivableAmount": "Receivable Amount",
-      "receivedAmount": "Received Amount",
-      "unreceivedAmount": "Unreceived Balance",
-      "receiptAmount": "Receipt Amount",
-      "receiptDate": "Receipt Date",
-      "receiptMethod": "Receipt Method",
-      "remark": "Remark",
-      "confirm": "Confirm Receipt",
-      "cancel": "Cancel"
-    },
-    "records": {
-      "title": "Receipt Records",
-      "date": "Date",
-      "amount": "Amount",
-      "method": "Method",
-      "remark": "Remark"
-    },
-    "toast": {
-      "receiptSuccess": "Receipt recorded successfully",
-      "receiptFailed": "Failed to record receipt"
-    }
-  },
-  "status": {
-    "unpaid": "Unpaid",
-    "partial": "Partial",
-    "paid": "Paid"
-  },
-  "adjustmentType": {
-    "normal": "Normal",
-    "returnOffset": "Return Offset"
-  },
-  "paymentMethods": {
-    "transfer": "Bank Transfer",
-    "cash": "Cash",
-    "check": "Check",
-    "other": "Other"
   }
 }

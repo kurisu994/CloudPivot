@@ -1,126 +1,128 @@
 {
-  "title": "Quản lý tài chính",
-  "payables": {
-    "title": "Công nợ phải trả",
-    "kpi": {
-      "totalPayable": "Tổng phải trả",
-      "totalPaid": "Đã trả hết",
-      "totalPartial": "Trả một phần",
-      "totalOverdue": "Quá hạn"
+  "finance": {
+    "title": "Quản lý tài chính",
+    "payables": {
+      "title": "Công nợ phải trả",
+      "kpi": {
+        "totalPayable": "Tổng phải trả",
+        "totalPaid": "Đã trả hết",
+        "totalPartial": "Trả một phần",
+        "totalOverdue": "Quá hạn"
+      },
+      "filter": {
+        "supplier": "Nhà cung cấp",
+        "status": "Trạng thái",
+        "dateFrom": "Từ ngày",
+        "dateTo": "Đến ngày",
+        "search": "Tìm mã đơn hoặc NCC"
+      },
+      "table": {
+        "orderNo": "Mã liên quan",
+        "supplier": "Nhà cung cấp",
+        "currency": "Tiền tệ",
+        "payableAmount": "Số tiền phải trả",
+        "paidAmount": "Đã thanh toán",
+        "unpaidAmount": "Chưa thanh toán",
+        "dueDate": "Ngày đáo hạn",
+        "status": "Trạng thái",
+        "payableDate": "Ngày phát sinh",
+        "type": "Loại",
+        "actions": "Thao tác"
+      },
+      "dialog": {
+        "title": "Ghi nhận thanh toán",
+        "supplier": "Nhà cung cấp",
+        "orderNo": "Mã liên quan",
+        "payableAmount": "Số tiền phải trả",
+        "paidAmount": "Đã thanh toán",
+        "unpaidAmount": "Số dư chưa trả",
+        "paymentAmount": "Số tiền trả",
+        "paymentDate": "Ngày thanh toán",
+        "paymentMethod": "Phương thức",
+        "remark": "Ghi chú",
+        "confirm": "Xác nhận thanh toán",
+        "cancel": "Hủy"
+      },
+      "records": {
+        "title": "Lịch sử thanh toán",
+        "date": "Ngày",
+        "amount": "Số tiền",
+        "method": "Phương thức",
+        "remark": "Ghi chú"
+      },
+      "toast": {
+        "paymentSuccess": "Ghi nhận thanh toán thành công",
+        "paymentFailed": "Ghi nhận thanh toán thất bại"
+      }
     },
-    "filter": {
-      "supplier": "Nhà cung cấp",
-      "status": "Trạng thái",
-      "dateFrom": "Từ ngày",
-      "dateTo": "Đến ngày",
-      "search": "Tìm mã đơn hoặc NCC"
+    "receivables": {
+      "title": "Công nợ phải thu",
+      "kpi": {
+        "totalReceivable": "Tổng phải thu",
+        "totalReceived": "Đã thu hết",
+        "totalPartial": "Thu một phần",
+        "totalOverdue": "Quá hạn"
+      },
+      "filter": {
+        "customer": "Khách hàng",
+        "status": "Trạng thái",
+        "dateFrom": "Từ ngày",
+        "dateTo": "Đến ngày",
+        "search": "Tìm mã đơn hoặc KH"
+      },
+      "table": {
+        "orderNo": "Mã liên quan",
+        "customer": "Khách hàng",
+        "currency": "Tiền tệ",
+        "receivableAmount": "Số tiền phải thu",
+        "receivedAmount": "Đã thu",
+        "unreceivedAmount": "Chưa thu",
+        "dueDate": "Ngày đáo hạn",
+        "status": "Trạng thái",
+        "receivableDate": "Ngày phát sinh",
+        "type": "Loại",
+        "actions": "Thao tác"
+      },
+      "dialog": {
+        "title": "Ghi nhận thu tiền",
+        "customer": "Khách hàng",
+        "orderNo": "Mã liên quan",
+        "receivableAmount": "Số tiền phải thu",
+        "receivedAmount": "Đã thu",
+        "unreceivedAmount": "Số dư chưa thu",
+        "receiptAmount": "Số tiền thu",
+        "receiptDate": "Ngày thu tiền",
+        "receiptMethod": "Phương thức",
+        "remark": "Ghi chú",
+        "confirm": "Xác nhận thu tiền",
+        "cancel": "Hủy"
+      },
+      "records": {
+        "title": "Lịch sử thu tiền",
+        "date": "Ngày",
+        "amount": "Số tiền",
+        "method": "Phương thức",
+        "remark": "Ghi chú"
+      },
+      "toast": {
+        "receiptSuccess": "Ghi nhận thu tiền thành công",
+        "receiptFailed": "Ghi nhận thu tiền thất bại"
+      }
     },
-    "table": {
-      "orderNo": "Mã liên quan",
-      "supplier": "Nhà cung cấp",
-      "currency": "Tiền tệ",
-      "payableAmount": "Số tiền phải trả",
-      "paidAmount": "Đã thanh toán",
-      "unpaidAmount": "Chưa thanh toán",
-      "dueDate": "Ngày đáo hạn",
-      "status": "Trạng thái",
-      "payableDate": "Ngày phát sinh",
-      "type": "Loại",
-      "actions": "Thao tác"
+    "status": {
+      "unpaid": "Chưa trả",
+      "partial": "Một phần",
+      "paid": "Đã trả"
     },
-    "dialog": {
-      "title": "Ghi nhận thanh toán",
-      "supplier": "Nhà cung cấp",
-      "orderNo": "Mã liên quan",
-      "payableAmount": "Số tiền phải trả",
-      "paidAmount": "Đã thanh toán",
-      "unpaidAmount": "Số dư chưa trả",
-      "paymentAmount": "Số tiền trả",
-      "paymentDate": "Ngày thanh toán",
-      "paymentMethod": "Phương thức",
-      "remark": "Ghi chú",
-      "confirm": "Xác nhận thanh toán",
-      "cancel": "Hủy"
+    "adjustmentType": {
+      "normal": "Bình thường",
+      "returnOffset": "Bù trừ trả hàng"
     },
-    "records": {
-      "title": "Lịch sử thanh toán",
-      "date": "Ngày",
-      "amount": "Số tiền",
-      "method": "Phương thức",
-      "remark": "Ghi chú"
-    },
-    "toast": {
-      "paymentSuccess": "Ghi nhận thanh toán thành công",
-      "paymentFailed": "Ghi nhận thanh toán thất bại"
+    "paymentMethods": {
+      "transfer": "Chuyển khoản",
+      "cash": "Tiền mặt",
+      "check": "Séc",
+      "other": "Khác"
     }
-  },
-  "receivables": {
-    "title": "Công nợ phải thu",
-    "kpi": {
-      "totalReceivable": "Tổng phải thu",
-      "totalReceived": "Đã thu hết",
-      "totalPartial": "Thu một phần",
-      "totalOverdue": "Quá hạn"
-    },
-    "filter": {
-      "customer": "Khách hàng",
-      "status": "Trạng thái",
-      "dateFrom": "Từ ngày",
-      "dateTo": "Đến ngày",
-      "search": "Tìm mã đơn hoặc KH"
-    },
-    "table": {
-      "orderNo": "Mã liên quan",
-      "customer": "Khách hàng",
-      "currency": "Tiền tệ",
-      "receivableAmount": "Số tiền phải thu",
-      "receivedAmount": "Đã thu",
-      "unreceivedAmount": "Chưa thu",
-      "dueDate": "Ngày đáo hạn",
-      "status": "Trạng thái",
-      "receivableDate": "Ngày phát sinh",
-      "type": "Loại",
-      "actions": "Thao tác"
-    },
-    "dialog": {
-      "title": "Ghi nhận thu tiền",
-      "customer": "Khách hàng",
-      "orderNo": "Mã liên quan",
-      "receivableAmount": "Số tiền phải thu",
-      "receivedAmount": "Đã thu",
-      "unreceivedAmount": "Số dư chưa thu",
-      "receiptAmount": "Số tiền thu",
-      "receiptDate": "Ngày thu tiền",
-      "receiptMethod": "Phương thức",
-      "remark": "Ghi chú",
-      "confirm": "Xác nhận thu tiền",
-      "cancel": "Hủy"
-    },
-    "records": {
-      "title": "Lịch sử thu tiền",
-      "date": "Ngày",
-      "amount": "Số tiền",
-      "method": "Phương thức",
-      "remark": "Ghi chú"
-    },
-    "toast": {
-      "receiptSuccess": "Ghi nhận thu tiền thành công",
-      "receiptFailed": "Ghi nhận thu tiền thất bại"
-    }
-  },
-  "status": {
-    "unpaid": "Chưa trả",
-    "partial": "Một phần",
-    "paid": "Đã trả"
-  },
-  "adjustmentType": {
-    "normal": "Bình thường",
-    "returnOffset": "Bù trừ trả hàng"
-  },
-  "paymentMethods": {
-    "transfer": "Chuyển khoản",
-    "cash": "Tiền mặt",
-    "check": "Séc",
-    "other": "Khác"
   }
 }
