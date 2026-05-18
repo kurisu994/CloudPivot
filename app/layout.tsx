@@ -42,6 +42,16 @@ export default function RootLayout({
 }>) {
   return (
     <html suppressHydrationWarning className={`${inter.variable} ${notoSansSC.variable} ${raleway.variable} h-full antialiased`}>
+      <head>
+        {/* 主题初始化脚本：在 body 渲染前同步设置 class，避免闪烁。
+            放在服务端组件的 <head> 中可消除 React 19 的 script 标签警告。 */}
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("theme");if(t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme:dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className="h-full">{children}</body>
     </html>
   )
