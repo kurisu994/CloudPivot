@@ -67,20 +67,40 @@ export function CategoryEditModal({ open, onOpenChange, editingCategory, onSucce
     }
   }, [editingCategory, open])
 
+  /** 将扁平列表按树形深度优先排序 */
+  const sortedTreeCategories = useMemo(() => {
+    const childrenMap = new Map<number | null, CategoryNode[]>()
+    for (const cat of allCategories) {
+      const pid = cat.parentId ?? null
+      if (!childrenMap.has(pid)) childrenMap.set(pid, [])
+      childrenMap.get(pid)!.push(cat)
+    }
+    const result: CategoryNode[] = []
+    const traverse = (parentId: number | null) => {
+      const children = childrenMap.get(parentId)
+      if (!children) return
+      for (const child of children) {
+        result.push(child)
+        traverse(child.id)
+      }
+    }
+    traverse(null)
+    return result
+  }, [allCategories])
+
   /** 过滤掉当前编辑项自身及其子级（防止循环引用） */
   const parentOptions = useMemo(() => {
-    if (!editingCategory) return allCategories
+    if (!editingCategory) return sortedTreeCategories
 
     const currentId = editingCategory.id
     const currentPath = editingCategory.path ?? currentId.toString()
 
-    return allCategories.filter(cat => {
+    return sortedTreeCategories.filter(cat => {
       if (cat.id === currentId) return false
-      // 过滤掉子级：如果某个分类的 path 以当前分类的 path 开头
       if (cat.path && cat.path.startsWith(currentPath + '/')) return false
       return true
     })
-  }, [allCategories, editingCategory])
+  }, [sortedTreeCategories, editingCategory])
 
   /** 构建 Select items（base-nova 要求传 items） */
   const parentSelectItems = useMemo(

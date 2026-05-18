@@ -2,10 +2,11 @@
 
 import { ChevronDown, ChevronRight, Folder, FolderOpen, GripVertical, Pencil, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { type NodeApi, type NodeRendererProps, Tree } from 'react-arborist'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { getErrorMessage } from '@/lib/error'
 import type { CategoryNode, CategorySortItem } from '@/lib/tauri'
 import { deleteCategory, getCategoryTree, updateCategoryOrder } from '@/lib/tauri'
@@ -178,6 +179,11 @@ export function CategoryTree({ onEdit, refreshKey }: CategoryTreeProps) {
   const [treeData, setTreeData] = useState<TreeNode[]>([])
   const [loading, setLoading] = useState(true)
 
+  // 删除确认弹窗状态
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<CategoryNode | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
   /** 加载分类数据 */
   const fetchCategories = useCallback(async () => {
     setLoading(true)
@@ -238,25 +244,28 @@ export function CategoryTree({ onEdit, refreshKey }: CategoryTreeProps) {
     })
   }
 
-  /** 处理删除 */
-  const handleDelete = useCallback(
-    async (node: NodeApi<TreeNode>) => {
-      const category = node.data.rawData
+  /** 处理删除：打开确认弹窗 */
+  const handleDelete = useCallback((node: NodeApi<TreeNode>) => {
+    setDeleteTarget(node.data.rawData)
+    setDeleteDialogOpen(true)
+  }, [])
 
-      if (!window.confirm(t('deleteConfirm', { name: category.name }))) {
-        return
-      }
-
-      try {
-        await deleteCategory(category.id)
-        toast.success(t('deleteSuccess'))
-        fetchCategories()
-      } catch (e) {
-        toast.error(getErrorMessage(e, t('hasMaterials')))
-      }
-    },
-    [t, fetchCategories],
-  )
+  /** 确认删除 */
+  const confirmDelete = useCallback(async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await deleteCategory(deleteTarget.id)
+      toast.success(t('deleteSuccess'))
+      setDeleteDialogOpen(false)
+      setDeleteTarget(null)
+      fetchCategories()
+    } catch (e) {
+      toast.error(getErrorMessage(e, t('hasMaterials')))
+    } finally {
+      setDeleting(false)
+    }
+  }, [deleteTarget, t, fetchCategories])
 
   /** 处理编辑 */
   const handleEdit = useCallback(
@@ -339,6 +348,25 @@ export function CategoryTree({ onEdit, refreshKey }: CategoryTreeProps) {
       >
         {props => <TreeNodeRenderer {...props} onEdit={handleEdit} onDelete={handleDelete} />}
       </Tree>
+
+      {/* 删除确认弹窗 */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t('deleteCategory')}</DialogTitle>
+            <DialogDescription>{deleteTarget ? t('deleteConfirm', { name: deleteTarget.name }) : ''}</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+              {tc('cancel')}
+            </Button>
+            <Button variant="destructive" onClick={() => void confirmDelete()} disabled={deleting}>
+              <Trash2 className="size-4" />
+              {tc('delete')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

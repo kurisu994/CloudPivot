@@ -10,6 +10,10 @@
 
 ### 修复
 
+- **分类管理删除无效果**：Tauri 2 WebView 中 `window.confirm()` 不弹出原生对话框直接返回 false，改用 shadcn Dialog 组件实现确认弹窗。
+- **分类管理创建/更新/排序失败**：`category.rs` 中 `SELECT level` 查询用 `i64` 解码 PostgreSQL `INTEGER`（INT4）列，sqlx 类型检查报错。三处统一改为 `i32`。
+- **上级分类选择器层级错乱**：后端返回扁平列表按 `sort_order` 排序，子节点未紧跟父节点，缩进显示错位。新增深度优先遍历排序后再渲染下拉选项。
+
 - **财务模块翻译缺失**：`finance.json` 缺少顶层 `"finance"` 命名空间包裹键，导致 `useTranslations('finance')` 无法解析翻译内容。三语（zh/en/vi）统一补齐命名空间结构。
 
 - **记住我功能失效**：路由守卫缺少"已登录用户在登录页时重定向到首页"的规则，导致应用启动恢复会话后仍停留在登录页。新增第 4 条守卫规则及 `isPendingRedirect` 覆盖。

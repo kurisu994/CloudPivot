@@ -67,7 +67,7 @@ pub async fn create_category(
 
     // 计算层级和路径
     let (level, parent_path) = if let Some(pid) = params.parent_id {
-        let parent: Option<(i64, Option<String>)> =
+        let parent: Option<(i32, Option<String>)> =
             sqlx::query_as("SELECT level, path FROM categories WHERE id = $1")
                 .bind(pid)
                 .fetch_optional(&db.pool)
@@ -79,7 +79,7 @@ pub async fn create_category(
             None => return Err(AppError::Business("指定的父分类不存在".to_string())),
         }
     } else {
-        (1_i64, None)
+        (1_i32, None)
     };
 
     let sort_order = params.sort_order.unwrap_or(0);
@@ -170,7 +170,7 @@ pub async fn update_category(
 
     // 计算新的 level 和 path
     let (level, parent_path) = if let Some(pid) = params.parent_id {
-        let parent: Option<(i64, Option<String>)> =
+        let parent: Option<(i32, Option<String>)> =
             sqlx::query_as("SELECT level, path FROM categories WHERE id = $1")
                 .bind(pid)
                 .fetch_optional(&db.pool)
@@ -182,7 +182,7 @@ pub async fn update_category(
             None => return Err(AppError::Business("指定的父分类不存在".to_string())),
         }
     } else {
-        (1_i64, None)
+        (1_i32, None)
     };
 
     let full_path = match parent_path {
@@ -287,7 +287,7 @@ pub async fn update_category_order(
     for item in &items {
         // 计算 level 和 path
         let (level, full_path) = if let Some(pid) = item.parent_id {
-            let parent: Option<(i64, Option<String>)> =
+            let parent: Option<(i32, Option<String>)> =
                 sqlx::query_as("SELECT level, path FROM categories WHERE id = $1")
                     .bind(pid)
                     .fetch_optional(&mut *tx)
@@ -302,10 +302,10 @@ pub async fn update_category_order(
                     };
                     (p_level + 1, path)
                 }
-                None => (1_i64, item.id.to_string()),
+                None => (1_i32, item.id.to_string()),
             }
         } else {
-            (1_i64, item.id.to_string())
+            (1_i32, item.id.to_string())
         };
 
         sqlx::query(
