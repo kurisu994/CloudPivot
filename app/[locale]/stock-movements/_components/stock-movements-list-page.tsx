@@ -189,7 +189,7 @@ export function StockMovementsListPage() {
 
       {/* 表格 */}
       <BusinessListTableShell
-        tableClassName="min-w-[1200px]"
+        tableClassName="min-w-[1400px]"
         footer={
           <BusinessListTableFooter>
             <span>{t('totalItems', { total })}</span>
@@ -199,7 +199,7 @@ export function StockMovementsListPage() {
       >
         <TableHeader>
           <TableRow>
-            <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[160px]`}>{t('transactionNo')}</TableHead>
+            <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[240px]`}>{t('transactionNo')}</TableHead>
             <TableHead className="w-[100px]">{t('transactionDate')}</TableHead>
             <TableHead className="w-[120px]">{t('transactionType')}</TableHead>
             <TableHead className="w-[120px]">{ti('materialCode')}</TableHead>
@@ -208,7 +208,7 @@ export function StockMovementsListPage() {
             <TableHead className="w-[90px] text-right">{t('changeQty')}</TableHead>
             <TableHead className="w-[80px] text-right">{t('beforeQty')}</TableHead>
             <TableHead className="w-[80px] text-right">{t('afterQty')}</TableHead>
-            <TableHead className="w-[140px]">{t('relatedOrderNo')}</TableHead>
+            <TableHead className="w-[160px]">{t('relatedOrderNo')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

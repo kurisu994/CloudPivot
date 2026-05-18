@@ -58,6 +58,63 @@ const MATERIAL_CORE_REFERENCE_TABLES: [(&str, &str); 17] = [
     ("production_order_materials", "material_id"),
 ];
 
+/// 读取系统配置，缺失或为空时返回默认值
+async fn get_config_value(pool: &PgPool, key: &str, fallback: &str) -> Result<String, AppError> {
+    let value: Option<String> =
+        sqlx::query_scalar("SELECT value FROM system_config WHERE key = $1")
+            .bind(key)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| AppError::Database(format!("读取系统配置失败: {}", e)))?;
+
+    Ok(value
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| fallback.to_string()))
+}
+
+/// 生成物料编码（{prefix}-{seq}）
+///
+/// 规则来自 `system_config`：`material_prefix`、`material_serial_start`、
+/// `material_serial_digits`。配置缺失时回退到 `M-0001` 样式。
+pub async fn generate_material_code_internal(pool: &PgPool) -> Result<String, AppError> {
+    let prefix = get_config_value(pool, "material_prefix", "M").await?;
+    let serial_start = get_config_value(pool, "material_serial_start", "1")
+        .await?
+        .parse::<i64>()
+        .ok()
+        .filter(|v| *v > 0)
+        .unwrap_or(1);
+    let serial_digits = get_config_value(pool, "material_serial_digits", "4")
+        .await?
+        .parse::<usize>()
+        .ok()
+        .filter(|v| *v > 0)
+        .unwrap_or(4);
+    let code_prefix = format!("{}-", prefix);
+
+    let existing_codes: Vec<String> = sqlx::query_scalar("SELECT code FROM materials")
+        .fetch_all(pool)
+        .await
+        .map_err(|e| AppError::Database(format!("查询物料编码失败: {}", e)))?;
+
+    let max_seq = existing_codes
+        .iter()
+        .filter_map(|code| code.strip_prefix(&code_prefix))
+        .filter_map(|seq| seq.parse::<i64>().ok())
+        .max();
+    let next_seq = max_seq
+        .map(|seq| seq.max(serial_start - 1) + 1)
+        .unwrap_or(serial_start);
+
+    Ok(format!(
+        "{}{:0width$}",
+        code_prefix,
+        next_seq,
+        width = serial_digits
+    ))
+}
+
 /// 规范化批次追踪模式用于核心字段比较
 fn normalize_lot_tracking_for_compare(value: Option<&str>) -> String {
     match value.map(str::trim).filter(|v| !v.is_empty()) {
@@ -338,14 +395,26 @@ pub struct SaveMaterialParams {
     pub remark: Option<String>,
 }
 
+/// 生成下一个物料编码（格式由系统配置决定，默认 `M-0001`）
+#[tauri::command]
+pub async fn generate_material_code(db: State<'_, DbState>) -> Result<String, AppError> {
+    generate_material_code_internal(&db.pool).await
+}
+
 #[tauri::command]
 pub async fn save_material(
     db: State<'_, DbState>,
     params: SaveMaterialParams,
 ) -> Result<i64, AppError> {
+    let code = match params.code.trim() {
+        "" if params.id.is_none() => generate_material_code_internal(&db.pool).await?,
+        "" => return Err(AppError::Business("物料编码不能为空".to_string())),
+        value => value.to_string(),
+    };
+
     // Check if code exists
     let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM materials WHERE code = $1")
-        .bind(&params.code)
+        .bind(&code)
         .fetch_optional(&db.pool)
         .await
         .map_err(|e| AppError::Database(format!("检查物料编码失败: {}", e)))?;
@@ -378,7 +447,7 @@ pub async fn save_material(
                 barcode = $20, remark = $21, updated_at = NOW()
              WHERE id = $22",
         )
-        .bind(&params.code)
+        .bind(&code)
         .bind(&params.name)
         .bind(&params.material_type)
         .bind(params.category_id)
@@ -421,7 +490,7 @@ pub async fn save_material(
                 $17, $18, $19, $20, $21, TRUE, NOW(), NOW()
             ) RETURNING id",
         )
-        .bind(&params.code)
+        .bind(&code)
         .bind(&params.name)
         .bind(&params.material_type)
         .bind(params.category_id)

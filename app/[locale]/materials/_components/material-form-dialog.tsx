@@ -179,8 +179,23 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
     } else {
       setForm(EMPTY_FORM)
       setErrors({})
+      if (!isTauriEnv()) {
+        setForm({ ...EMPTY_FORM, code: 'M-0003' })
+        return
+      }
+
+      setInitializing(true)
+      invoke<string>('generate_material_code')
+        .then(code => {
+          setForm(prev => ({ ...prev, code }))
+        })
+        .catch(e => {
+          toast.error(getErrorMessage(e, t('notifications.generateCodeFailed')))
+          console.error(e)
+        })
+        .finally(() => setInitializing(false))
     }
-  }, [open, materialId, onOpenChange])
+  }, [open, materialId, onOpenChange, t])
 
   /** 校验 */
   const validate = (): boolean => {
@@ -352,7 +367,9 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                       <Field>
                         <FieldLabel htmlFor="ref_cost">{t('form.refCostPrice')}</FieldLabel>
                         <div className="relative">
-                          <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm">{getCurrencyConfig(BASE_CURRENCY).symbol}</span>
+                          <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm">
+                            {getCurrencyConfig(BASE_CURRENCY).symbol}
+                          </span>
                           <Input
                             id="ref_cost"
                             type="number"
@@ -366,7 +383,9 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                       <Field>
                         <FieldLabel htmlFor="sale_price">{t('form.salePrice')}</FieldLabel>
                         <div className="relative">
-                          <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm">{getCurrencyConfig(BASE_CURRENCY).symbol}</span>
+                          <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm">
+                            {getCurrencyConfig(BASE_CURRENCY).symbol}
+                          </span>
                           <Input
                             id="sale_price"
                             type="number"

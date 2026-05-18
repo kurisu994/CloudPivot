@@ -23,6 +23,12 @@ interface PreviewRowProps {
   value: string
 }
 
+/** 格式化物料下拉与预览文案，兼容历史空编码数据 */
+function formatMaterialLabel(material: MaterialReferenceOption) {
+  const code = material.code.trim()
+  return code ? `${code} - ${material.name}` : material.name
+}
+
 /**
  * 过账预览行
  * 用于在侧栏中展示当前表单已选择的关键业务字段。
@@ -70,7 +76,7 @@ export function ManualStockMovementContent() {
   }, [t])
 
   const warehouseItems = useMemo(() => warehouses.map(w => ({ value: String(w.id), label: w.name })), [warehouses])
-  const materialItems = useMemo(() => materials.map(m => ({ value: String(m.id), label: `${m.code} - ${m.name}` })), [materials])
+  const materialItems = useMemo(() => materials.map(m => ({ value: String(m.id), label: formatMaterialLabel(m) })), [materials])
   const selectedMaterial = materials.find(m => String(m.id) === materialId)
   const selectedWarehouse = warehouses.find(w => String(w.id) === warehouseId)
   const isInbound = movementType === 'in'
@@ -273,7 +279,7 @@ export function ManualStockMovementContent() {
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <PreviewRow label={t('movementType')} value={isInbound ? t('inbound') : t('outbound')} />
-              <PreviewRow label={t('material')} value={selectedMaterial ? `${selectedMaterial.code} - ${selectedMaterial.name}` : t('notSelected')} />
+              <PreviewRow label={t('material')} value={selectedMaterial ? formatMaterialLabel(selectedMaterial) : t('notSelected')} />
               <PreviewRow label={t('warehouse')} value={selectedWarehouse?.name ?? t('notSelected')} />
               <PreviewRow label={t('movementDate')} value={movementDate || t('notSelected')} />
               <PreviewRow label={t('quantity')} value={previewQuantity} />

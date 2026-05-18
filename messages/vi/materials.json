@@ -110,6 +110,7 @@
     "notifications": {
       "loadMaterialsFailed": "Tải danh sách vật tư thất bại",
       "loadDetailFailed": "Tải chi tiết vật tư thất bại",
+      "generateCodeFailed": "Tạo mã vật tư thất bại, vui lòng nhập thủ công",
       "updateSuccess": "Cập nhật thành công",
       "createSuccess": "Tạo thành công",
       "saveFailed": "Lưu thất bại",

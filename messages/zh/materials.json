@@ -110,6 +110,7 @@
     "notifications": {
       "loadMaterialsFailed": "加载物料失败",
       "loadDetailFailed": "加载物料详情失败",
+      "generateCodeFailed": "生成物料编码失败，请手动输入",
       "updateSuccess": "更新成功",
       "createSuccess": "创建成功",
       "saveFailed": "保存失败",

@@ -85,6 +85,7 @@ pub fn run() {
             commands::material::get_units,
             commands::material::get_materials,
             commands::material::get_material_by_id,
+            commands::material::generate_material_code,
             commands::material::save_material,
             commands::material::toggle_material_status,
             commands::category::get_category_tree,

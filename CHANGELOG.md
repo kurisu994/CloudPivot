@@ -10,6 +10,10 @@
 
 ### 修复
 
+- **新增物料编码未自动生成**：补齐 `generate_material_code` IPC，按系统配置的物料编码前缀、起始流水号和流水位数生成编码；新增保存时若编码为空由后端兜底生成，编辑时禁止保存空编码。
+- **自由出入库物料选择显示前导分隔符**：历史空编码物料在下拉和预览中不再显示 `- 物料名`，改为仅显示物料名称。
+- **库存详情弹窗尺寸过小**：库存查询详情 Dialog 调整为更宽更高的明细视图，改善分仓、批次和近期流水表格阅读体验。
+- **出入库流水长单号展示不全**：加宽流水号与关联单据列，并同步增大表格最小宽度，避免长单号溢出到相邻列。
 - **物料管理字段命名不一致**：前端 `MaterialFormData` 和 `MaterialItem` 混用 snake_case 与 camelCase，与后端 `serde(rename_all = "camelCase")` 不匹配，导致保存物料报 `missing field` 错误、列表进价售价显示为空。统一为 camelCase。
 - **物料价格存储错误**：表单直接存储用户输入值而未做币种精度转换（USD 以分为单位），输入 100 元实际存为 100 分。新增 `toStorageAmount`/`toDisplayAmount` 转换，货币符号改为从系统本位币配置动态读取。
 - **物料 is_enabled 类型错误**：PostgreSQL `BOOLEAN` 列不接受整数 `1`/`0`（SQLite 遗留），INSERT 和 UPDATE 改为绑定原生布尔值 `TRUE`/`FALSE`。

@@ -287,7 +287,7 @@ export function InventoryListPage() {
 
       {/* 详情弹窗 */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-h-[75vh] w-3/5 max-w-6xl overflow-y-auto sm:max-w-6xl">
           <DialogHeader>
             <DialogTitle>
               {t('detail')} — {detail?.materialCode} {detail?.materialName}

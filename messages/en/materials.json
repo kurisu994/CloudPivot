@@ -110,6 +110,7 @@
     "notifications": {
       "loadMaterialsFailed": "Failed to load materials",
       "loadDetailFailed": "Failed to load material details",
+      "generateCodeFailed": "Failed to generate material code. Please enter it manually.",
       "updateSuccess": "Updated successfully",
       "createSuccess": "Created successfully",
       "saveFailed": "Failed to save",
