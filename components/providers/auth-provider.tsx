@@ -52,6 +52,16 @@ interface AuthStorage {
 /** "记住我"会话有效期：7天（毫秒） */
 const REMEMBER_ME_DURATION_MS = 7 * 24 * 60 * 60 * 1000
 
+/**
+ * 模块级认证状态缓存
+ *
+ * 解决 locale 切换时 AuthProvider 重新挂载导致状态丢失的问题。
+ * 组件重新挂载时可从此缓存同步恢复，避免异步 gap 期间路由守卫误判。
+ */
+let cachedUser: UserInfo | null = null
+let cachedNeedsSetup = false
+let authInitialized = false
+
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 /**
@@ -63,13 +73,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
 
-  const [user, setUser] = useState<UserInfo | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [needsSetup, setNeedsSetup] = useState(false)
+  // 如果模块缓存中有认证状态（locale 切换重新挂载），同步恢复，跳过异步加载
+  const [user, setUser] = useState<UserInfo | null>(cachedUser)
+  const [isLoading, setIsLoading] = useState(!authInitialized)
+  const [needsSetup, setNeedsSetup] = useState(cachedNeedsSetup)
 
   /** 认证相关页面，不需要鉴权 */
   const authRoutes = ['/login', '/change-password', '/setup-wizard']
   const isAuthRoute = authRoutes.includes(pathname)
+
+  /** 更新用户状态并同步模块缓存 */
+  const updateUser = useCallback((newUser: UserInfo | null) => {
+    cachedUser = newUser
+    setUser(newUser)
+  }, [])
+
+  /** 更新向导状态并同步模块缓存 */
+  const updateNeedsSetup = useCallback((value: boolean) => {
+    cachedNeedsSetup = value
+    setNeedsSetup(value)
+  }, [])
 
   /** 保存认证信息到系统钥匙串（Tauri）或 localStorage（Web 调试模式） */
   const saveAuth = useCallback(async (userInfo: UserInfo, rememberMe: boolean) => {
@@ -88,13 +111,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** 清除认证信息 */
   const clearAuth = useCallback(async () => {
-    setUser(null)
+    updateUser(null)
     try {
       await tauriApi.clearAuthKeychain()
     } catch {
       // 忽略
     }
-  }, [])
+  }, [updateUser])
 
   /**
    * 检查系统是否已完成初始化配置
@@ -106,13 +129,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const configs = await tauriApi.getSystemConfigs([SystemConfigKeys.SETUP_COMPLETED])
       const setupConfig = configs.find(c => c.key === SystemConfigKeys.SETUP_COMPLETED)
       if (!setupConfig || setupConfig.value !== '1') {
-        setNeedsSetup(true)
+        updateNeedsSetup(true)
       }
     } catch {
       // 查询失败时不阻塞用户
       console.warn('[Auth] 检查 setup_completed 失败')
     }
-  }, [])
+  }, [updateNeedsSetup])
 
   /** 登录 */
   const login = useCallback(
@@ -127,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           must_change_password: false,
           session_version: 1,
         }
-        setUser(mockUser)
+        updateUser(mockUser)
         // 开发模式下始终持久化，方便调试
         await saveAuth(mockUser, true)
         // 模拟环境也要检查向导状态
@@ -137,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       try {
         const response = await tauriApi.login(username, password)
-        setUser(response.user)
+        updateUser(response.user)
 
         if (rememberMe) {
           // 勾选"记住我"：持久化会话到钥匙串，7天有效
@@ -164,7 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [saveAuth, clearAuth, checkSetupCompleted],
+    [updateUser, saveAuth, clearAuth, checkSetupCompleted],
   )
 
   /** 修改密码 */
@@ -183,7 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error) {
           console.warn('[Auth] 改密成功后刷新用户信息失败，使用本地状态继续', error)
         }
-        setUser(updated)
+        updateUser(updated)
         try {
           // 改密后保持之前的 rememberMe 状态
           const stored = await tauriApi.readAuthKeychain()
@@ -197,31 +220,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         // 非 Tauri 环境：模拟改密
         const updated = { ...user, must_change_password: false }
-        setUser(updated)
+        updateUser(updated)
         await saveAuth(updated, true)
       }
     },
-    [user, saveAuth],
+    [user, updateUser, saveAuth],
   )
 
   /** 登出 */
   const logout = useCallback(async () => {
     await clearAuth()
-    setNeedsSetup(false)
+    updateNeedsSetup(false)
+    authInitialized = false
     router.push('/login')
-  }, [clearAuth, router])
+  }, [clearAuth, updateNeedsSetup, router])
 
   /** 完成向导 — 由向导完成页调用 */
   const completeSetup = useCallback(() => {
-    setNeedsSetup(false)
-  }, [])
+    updateNeedsSetup(false)
+  }, [updateNeedsSetup])
 
-  /** 启动时恢复认证状态 */
+  /** 启动时恢复认证状态（仅首次挂载时执行，locale 切换时从缓存同步恢复） */
   useEffect(() => {
+    // 如果已经初始化过（locale 切换导致重新挂载），跳过异步恢复
+    if (authInitialized) {
+      return
+    }
+
     const restoreAuth = async () => {
       try {
         const stored = await tauriApi.readAuthKeychain()
         if (!stored) {
+          authInitialized = true
           setIsLoading(false)
           return
         }
@@ -231,6 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // 检查会话是否已过期（7天未使用）
         if (data.expiresAt && Date.now() > data.expiresAt) {
           await clearAuth()
+          authInitialized = true
           setIsLoading(false)
           return
         }
@@ -259,7 +290,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (restoredUser) {
-          setUser(restoredUser)
+          updateUser(restoredUser)
           // 恢复成功 → 刷新过期时间（用户活跃，重新计时7天）
           if (data.rememberMe) {
             await saveAuth(restoredUser, true)
@@ -272,12 +303,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         await clearAuth()
       } finally {
+        authInitialized = true
         setIsLoading(false)
       }
     }
 
     restoreAuth()
-  }, [clearAuth, checkSetupCompleted, saveAuth])
+  }, [clearAuth, checkSetupCompleted, saveAuth, updateUser])
 
   /** 路由守卫
    *
@@ -285,6 +317,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * 1. 未登录 → /login
    * 2. 需要改密 → /change-password
    * 3. 需要向导 → /setup-wizard
+   * 4. 已登录访问 /login → 首页
    */
   useEffect(() => {
     if (isLoading) return
@@ -298,6 +331,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else if (user && !user.must_change_password && needsSetup && pathname !== '/setup-wizard') {
       // 需要向导但不在向导页 → 强制跳转
       router.push('/setup-wizard')
+    } else if (user && !user.must_change_password && !needsSetup && pathname === '/login') {
+      // 已登录且无待办事项，但仍在登录页 → 跳转首页
+      router.push('/')
     }
   }, [user, isLoading, isAuthRoute, pathname, router, needsSetup])
 
@@ -314,13 +350,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * 同步计算是否正在等待重定向，阻止目标页面闪烁。
-   * 覆盖场景：加载中、未登录访问受保护页、需改密、需向导。
+   * 覆盖场景：加载中、未登录访问受保护页、需改密、需向导、已登录仍在登录页。
    */
   const isPendingRedirect =
     isLoading ||
     (!user && !isAuthRoute) ||
     (!!user && user.must_change_password && pathname !== '/change-password') ||
-    (!!user && !user.must_change_password && needsSetup && pathname !== '/setup-wizard')
+    (!!user && !user.must_change_password && needsSetup && pathname !== '/setup-wizard') ||
+    (!!user && !user.must_change_password && !needsSetup && pathname === '/login')
 
   if (isPendingRedirect) {
     return (
