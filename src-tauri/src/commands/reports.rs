@@ -368,7 +368,7 @@ pub async fn get_inventory_report_summary(
             SELECT material_id,
                    SUM(quantity) AS total_qty,
                    CASE WHEN SUM(quantity) = 0 THEN 0
-                        ELSE CAST(ROUND((SUM(quantity * avg_cost) * 1.0 / SUM(quantity))::numeric, 0) AS INTEGER)
+                        ELSE CAST(ROUND((SUM(quantity * avg_cost) * 1.0 / SUM(quantity))::numeric, 0) AS BIGINT)
                    END AS weighted_avg_cost
             FROM inventory
             WHERE ($1 IS NULL OR warehouse_id = $1)
@@ -395,9 +395,9 @@ pub async fn get_inventory_report_summary(
         SELECT
             material_id,
             SUM(CASE WHEN quantity > 0 THEN quantity ELSE 0 END) AS inbound_qty,
-            SUM(CASE WHEN quantity > 0 THEN CAST(ROUND((quantity * unit_cost)::numeric, 0) AS INTEGER) ELSE 0 END) AS inbound_value,
+            SUM(CASE WHEN quantity > 0 THEN CAST(ROUND((quantity * unit_cost)::numeric, 0) AS BIGINT) ELSE 0 END) AS inbound_value,
             SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) AS outbound_qty,
-            SUM(CASE WHEN quantity < 0 THEN CAST(ROUND((ABS(quantity) * unit_cost)::numeric, 0) AS INTEGER) ELSE 0 END) AS outbound_value
+            SUM(CASE WHEN quantity < 0 THEN CAST(ROUND((ABS(quantity) * unit_cost)::numeric, 0) AS BIGINT) ELSE 0 END) AS outbound_value
         FROM inventory_transactions
         WHERE transaction_date BETWEEN $1 AND $2
           AND ($3 IS NULL OR warehouse_id = $3)
@@ -572,7 +572,7 @@ pub async fn get_inventory_aging_analysis(
             (CURRENT_DATE - il.received_date::DATE) AS days_in_stock,
             il.qty_on_hand,
             il.receipt_unit_cost AS unit_cost,
-            CAST(ROUND((il.qty_on_hand * il.receipt_unit_cost)::numeric, 0) AS INTEGER) AS value
+            CAST(ROUND((il.qty_on_hand * il.receipt_unit_cost)::numeric, 0) AS BIGINT) AS value
         FROM inventory_lots il
         JOIN materials m ON m.id = il.material_id
         WHERE il.qty_on_hand > 0
@@ -746,7 +746,7 @@ pub async fn get_inventory_trend(
         r#"
         SELECT
             COALESCE(SUM(quantity), 0),
-            COALESCE(SUM(CAST(ROUND((quantity * avg_cost)::numeric, 0) AS INTEGER)), 0)
+            COALESCE(SUM(CAST(ROUND((quantity * avg_cost)::numeric, 0) AS BIGINT)), 0)
         FROM inventory
         WHERE ($1 IS NULL OR warehouse_id = $1)
         "#,
@@ -764,9 +764,9 @@ pub async fn get_inventory_trend(
         SELECT
             transaction_date AS date,
             SUM(CASE WHEN quantity > 0 THEN quantity ELSE 0 END) AS inbound_qty,
-            SUM(CASE WHEN quantity > 0 THEN CAST(ROUND((quantity * unit_cost)::numeric, 0) AS INTEGER) ELSE 0 END) AS inbound_value,
+            SUM(CASE WHEN quantity > 0 THEN CAST(ROUND((quantity * unit_cost)::numeric, 0) AS BIGINT) ELSE 0 END) AS inbound_value,
             SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) AS outbound_qty,
-            SUM(CASE WHEN quantity < 0 THEN CAST(ROUND((ABS(quantity) * unit_cost)::numeric, 0) AS INTEGER) ELSE 0 END) AS outbound_value
+            SUM(CASE WHEN quantity < 0 THEN CAST(ROUND((ABS(quantity) * unit_cost)::numeric, 0) AS BIGINT) ELSE 0 END) AS outbound_value
         FROM inventory_transactions
         WHERE transaction_date >= CURRENT_DATE - ($1 || ' days')::INTERVAL
           AND ($2 IS NULL OR warehouse_id = $2)

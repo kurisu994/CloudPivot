@@ -402,7 +402,7 @@ pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i
     let total_cost: Option<i64> = sqlx::query_scalar(
         r#"SELECT CAST(SUM(
             COALESCE(m.ref_cost_price, 0) * bi.standard_qty * (1 + bi.wastage_rate / 100.0)
-           ) AS INTEGER)
+           ) AS BIGINT)
            FROM bom_items bi
            LEFT JOIN materials m ON bi.child_material_id = m.id
            WHERE bi.bom_id = $1"#,

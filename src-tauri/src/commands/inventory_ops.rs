@@ -136,7 +136,7 @@ pub async fn create_inventory_lot(
 /// 基于当前时间戳 + 序号，保证唯一性。
 pub async fn generate_transaction_no(tx: &mut PgConnection) -> Result<String, AppError> {
     // 使用数据库时间确保一致性
-    let now: (String,) = sqlx::query_as("SELECT strftime('%Y%m%d%H%M%S', 'now')")
+    let now: (String,) = sqlx::query_as("SELECT to_char(now(), 'YYYYMMDDHH24MISS')")
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("获取时间失败: {}", e)))?;

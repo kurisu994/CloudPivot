@@ -1325,7 +1325,7 @@ pub async fn calculate_custom_cost(
         r#"
         SELECT CAST(SUM(
             COALESCE(m.ref_cost_price, 0) * bi.standard_qty * (1 + bi.wastage_rate / 100.0)
-        ) AS INTEGER)
+        ) AS BIGINT)
         FROM bom_items bi
         JOIN bom b ON b.id = bi.bom_id
         LEFT JOIN materials m ON bi.child_material_id = m.id
