@@ -12,6 +12,7 @@
 
 - **记住我功能失效**：路由守卫缺少"已登录用户在登录页时重定向到首页"的规则，导致应用启动恢复会话后仍停留在登录页。新增第 4 条守卫规则及 `isPendingRedirect` 覆盖。
 - **切换语言后跳转登录页**：`AuthProvider` 位于 `[locale]` layout 中，locale 变化导致组件重新挂载、state 重置为未登录态，路由守卫误判重定向。引入模块级缓存（`cachedUser` / `authInitialized`），locale 切换时同步恢复认证状态，跳过重复异步验证。
+- **输入框首字母自动大写**：macOS WebView 默认对 input/textarea 启用 autocapitalize，在 ThemeProvider 中通过 MutationObserver 全局禁用 autocapitalize、autocorrect 和 spellcheck。
 
 - **分类管理新增/更新无法挂到父级**：分类前端字段命名与后端 `serde(rename_all = "camelCase")` 不一致，`parent_id` 等 snake_case 字段无法被反序列化，导致新建分类总是落到顶级节点。统一 `lib/tauri/category.ts` 与分类页面字段为 camelCase，库存报表筛选中残留的 `parent_id` 引用一并修正。
 
