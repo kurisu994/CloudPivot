@@ -8,6 +8,10 @@
 
 ## [Unreleased]
 
+### 修复
+
+- **分类管理新增/更新无法挂到父级**：分类前端字段命名与后端 `serde(rename_all = "camelCase")` 不一致，`parent_id` 等 snake_case 字段无法被反序列化，导致新建分类总是落到顶级节点。统一 `lib/tauri/category.ts` 与分类页面字段为 camelCase，库存报表筛选中残留的 `parent_id` 引用一并修正。
+
 ---
 
 ## [0.1.5] — 2026-05-13

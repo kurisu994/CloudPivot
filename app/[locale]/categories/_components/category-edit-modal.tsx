@@ -56,8 +56,8 @@ export function CategoryEditModal({ open, onOpenChange, editingCategory, onSucce
   useEffect(() => {
     if (editingCategory) {
       setName(editingCategory.name)
-      setParentId(editingCategory.parent_id ? editingCategory.parent_id.toString() : '')
-      setSortOrder(editingCategory.sort_order.toString())
+      setParentId(editingCategory.parentId ? editingCategory.parentId.toString() : '')
+      setSortOrder(editingCategory.sortOrder.toString())
       setRemark(editingCategory.remark ?? '')
     } else {
       setName('')
@@ -108,16 +108,16 @@ export function CategoryEditModal({ open, onOpenChange, editingCategory, onSucce
         await updateCategory({
           id: editingCategory.id,
           name: name.trim(),
-          parent_id: parentId ? parseInt(parentId) : null,
-          sort_order: parseInt(sortOrder) || 0,
+          parentId: parentId ? parseInt(parentId) : null,
+          sortOrder: parseInt(sortOrder) || 0,
           remark: remark.trim() || undefined,
         })
       } else {
         // 创建
         await createCategory({
           name: name.trim(),
-          parent_id: parentId ? parseInt(parentId) : null,
-          sort_order: parseInt(sortOrder) || 0,
+          parentId: parentId ? parseInt(parentId) : null,
+          sortOrder: parseInt(sortOrder) || 0,
           remark: remark.trim() || undefined,
         })
       }

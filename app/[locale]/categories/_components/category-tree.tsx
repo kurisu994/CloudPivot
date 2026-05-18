@@ -43,8 +43,8 @@ function buildTree(flatNodes: CategoryNode[]): TreeNode[] {
   // 第二遍：建立父子关系
   for (const node of flatNodes) {
     const treeNode = map.get(node.id)!
-    if (node.parent_id && map.has(node.parent_id)) {
-      map.get(node.parent_id)!.children!.push(treeNode)
+    if (node.parentId && map.has(node.parentId)) {
+      map.get(node.parentId)!.children!.push(treeNode)
     } else {
       roots.push(treeNode)
     }
@@ -66,8 +66,8 @@ function flattenTreeForOrder(nodes: TreeNode[], parentId: number | null = null):
   nodes.forEach((node, index) => {
     result.push({
       id: parseInt(node.id),
-      parent_id: parentId,
-      sort_order: index,
+      parentId,
+      sortOrder: index,
     })
     if (node.children) {
       result.push(...flattenTreeForOrder(node.children, parseInt(node.id)))

@@ -149,9 +149,7 @@ export function InventoryReportPage() {
         const [wh, cat] = await Promise.all([getWarehouses(), getCategoryTree()])
         setWarehouses(wh.map((w: { id: number; name: string }) => ({ id: w.id, name: w.name })))
         setCategories(
-          cat
-            .filter((c: { parent_id: number | null }) => c.parent_id === null)
-            .map((c: { id: number; name: string }) => ({ id: c.id, name: c.name })),
+          cat.filter((c: { parentId: number | null }) => c.parentId === null).map((c: { id: number; name: string }) => ({ id: c.id, name: c.name })),
         )
       } catch {
         /* 静默处理 */
