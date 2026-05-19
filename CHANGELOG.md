@@ -32,6 +32,10 @@
 
 - **分类管理新增/更新无法挂到父级**：分类前端字段命名与后端 `serde(rename_all = "camelCase")` 不一致，`parent_id` 等 snake_case 字段无法被反序列化，导致新建分类总是落到顶级节点。统一 `lib/tauri/category.ts` 与分类页面字段为 camelCase，库存报表筛选中残留的 `parent_id` 引用一并修正。
 
+### 重构
+
+- **全站替换 `window.confirm` 为 `ConfirmDialog` 组件**：Tauri WebView 环境下原生 `window.confirm()` 被静默拦截导致删除/审核等操作无响应。新增 `components/common/confirm-dialog.tsx` 统一确认弹窗组件，覆盖 18 个业务页面（基础管理 5 + 业务列表 5 + 执行页 6 + 定制单详情 1 + 数据管理 1），采用 `pendingAction` 联合类型或 `showConfirm` 布尔状态驱动模式，支持 `destructive` 危险操作样式。
+
 ---
 
 ## [0.1.5] — 2026-05-13
