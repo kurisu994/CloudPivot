@@ -35,7 +35,8 @@
     "noInventory": "No inventory data",
     "loadDetailFailed": "Failed to load details",
     "beforeQty": "Before",
-    "afterQty": "After"
+    "afterQty": "After",
+    "unit": "Unit"
   },
   "manualStockMovements": {
     "title": "Manual Stock Movement",

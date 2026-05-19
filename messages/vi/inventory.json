@@ -35,7 +35,8 @@
     "noInventory": "Không có dữ liệu tồn kho",
     "loadDetailFailed": "Tải chi tiết thất bại",
     "beforeQty": "Trước",
-    "afterQty": "Sau"
+    "afterQty": "Sau",
+    "unit": "Đơn vị"
   },
   "manualStockMovements": {
     "title": "Xuất nhập tự do",

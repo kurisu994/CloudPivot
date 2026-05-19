@@ -35,7 +35,8 @@
     "noInventory": "暂无库存数据",
     "loadDetailFailed": "加载详情失败",
     "beforeQty": "前",
-    "afterQty": "后"
+    "afterQty": "后",
+    "unit": "单位"
   },
   "manualStockMovements": {
     "title": "自由出入库",
