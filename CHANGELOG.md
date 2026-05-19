@@ -8,6 +8,10 @@
 
 ## [Unreleased]
 
+---
+
+## [0.1.7] — 2026-05-19
+
 ### 变更
 
 - **认证会话持久化策略降级**：Tauri 环境下“记住我”会话从系统钥匙串改为应用数据目录 `auth_session.json` 文件持久化，前端 API 语义同步调整为 `AuthSession`，保留旧 `AuthKeychain` 导出兼容现有调用。
