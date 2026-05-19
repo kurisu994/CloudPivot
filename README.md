@@ -210,7 +210,7 @@ src-tauri/                  # Rust 后端
     main.rs                 # 入口
     error.rs                # 统一错误类型（AppError: Database/Sqlx/Auth/Business/Io）
     auth.rs                 # 认证模块：登录（含锁定）、改密（含强度校验）、管理员初始化
-    keychain.rs             # 认证会话文件持久化（应用数据目录 auth_session.json，Unix 0600 权限）
+    keychain.rs             # 认证会话文件持久化（~/.cloudpivot/data/auth_session.json，Unix 0600 权限）
     operation_log.rs        # 操作日志公共模块（统一写入能力，写入失败不阻塞业务）
     db/
       mod.rs                # PostgreSQL 连接池初始化（PgPool）
@@ -328,7 +328,7 @@ just clean                  # 清理构建产物
 
 - [x] 数据管理 — 数据库备份/恢复 + 物料导入导出 + 期初库存导入（7 个 IPC 命令）
 - [x] 操作日志 — 全模块操作日志记录 + 查询筛选 + CSV 导出
-- [x] 认证会话持久化 — 应用数据目录会话文件 + session_version 失效校验
+- [x] 认证会话持久化 — ~/.cloudpivot/data/ 会话文件 + session_version 失效校验
 - [x] 系统设置完善 — 编码规则 + 库存规则 + 汇率管理 + 打印设置 + 用户管理
 
 **阶段五**（工程化）：✅ 已完成

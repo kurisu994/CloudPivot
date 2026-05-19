@@ -32,7 +32,7 @@ src-tauri/src/
   lib.rs                   # Tauri Builder：日志 + DB 初始化 + IPC 注册
   error.rs                 # 统一错误类型（AppError: Database/Sqlx/Auth/Business/Io）
   auth.rs                  # 认证：bcrypt + 锁定 + 改密 + session_version
-  keychain.rs              # 认证会话文件持久化（应用数据目录 auth_session.json，Unix 0600 权限）
+  keychain.rs              # 认证会话文件持久化（~/.cloudpivot/data/auth_session.json，Unix 0600 权限）
   operation_log.rs         # 操作日志公共模块（统一写入能力）
   db/{mod,migration}.rs    # PostgreSQL 连接池 + 自管理迁移框架
   commands/                # IPC 命令模块（155 个命令，详见下方）
@@ -122,7 +122,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 |------|------|--------|------|
 | 基础 | `mod.rs` | 11 | ping / db_init_error / db_version / login / change_password / user_info / system_configs CRUD / setup_warehouses / operation_logs |
 | 数据管理 | `data_management.rs` | 7 | 备份/恢复/删除备份 + 数据管理状态 + 物料导入导出 + 期初库存导入 |
-| 认证持久化 | `keychain.rs` | 3 | 认证会话文件存取清除（应用数据目录 auth_session.json，Unix 0600 权限） |
+| 认证持久化 | `keychain.rs` | 3 | 认证会话文件存取清除（~/.cloudpivot/data/auth_session.json，Unix 0600 权限） |
 | 物料 | `material.rs` | 6 | CRUD + 状态切换 |
 | 分类 | `category.rs` | 5 | 树 CRUD + 排序 |
 | 供应商 | `supplier.rs` | 11 | CRUD + 详情 + 物料关联 + 编码生成 |
@@ -143,7 +143,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 ## 认证系统
 
 - **后端**（`auth.rs`）：bcrypt + 5 次锁定 15 分钟 + 首次强制改密 + session_version
-- **前端**（`auth-provider.tsx`）：AuthProvider + useAuth() + 路由守卫 + 认证会话持久化（Tauri 应用数据目录文件，非 Tauri 环境降级 localStorage）
+- **前端**（`auth-provider.tsx`）：AuthProvider + useAuth() + 路由守卫 + 认证会话持久化（~/.cloudpivot/data/ 文件，非 Tauri 环境降级 localStorage）
 - 默认管理员：admin / admin123
 
 ## 数据库
@@ -185,4 +185,4 @@ sqlx + PostgreSQL，45 张表，自管理迁移（从 SQLite 迁移至 PostgreSQ
 | **报表中心** | ✅ | 10 命令 | 采购报表+销售报表+库存报表(收发存/库龄/滞销/趋势)+Excel导出 |
 | **数据管理** | ✅ | 7 命令 | 备份/恢复+物料导入导出+期初库存导入 |
 | **操作日志** | ✅ | 1 命令 | 列表(模块/动作/日期筛选+分页+CSV导出) |
-| **认证持久化** | ✅ | 3 命令 | 应用数据目录会话文件存取(auth_session.json) |
+| **认证持久化** | ✅ | 3 命令 | ~/.cloudpivot/data/ 会话文件存取(auth_session.json) |

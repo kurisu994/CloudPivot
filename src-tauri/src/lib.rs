@@ -14,6 +14,43 @@ use std::path::Path;
 use tauri::Manager;
 use tauri_plugin_log::{Target, TargetKind};
 
+/// 尝试初始化文件日志目标
+///
+/// 成功时返回 (file_targets, log_dir)，失败时返回 None 并降级为仅控制台输出。
+fn init_file_logging() -> Option<(Vec<Target>, std::path::PathBuf)> {
+    let home = dirs::home_dir()?;
+    let log_dir = home.join(".cloudpivot").join("logs");
+    std::fs::create_dir_all(&log_dir).ok()?;
+
+    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+
+    // 全量日志文件（cloudpivot-YYYY-MM-DD.log）
+    let all_file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(log_dir.join(format!("cloudpivot-{today}.log")))
+        .ok()?;
+    let all_dispatch = fern::Dispatch::new().chain(all_file);
+
+    // 错误日志文件（cloudpivot-error-YYYY-MM-DD.log）
+    let error_file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(log_dir.join(format!("cloudpivot-error-{today}.log")))
+        .ok()?;
+    let error_dispatch = fern::Dispatch::new()
+        .level(log::LevelFilter::Error)
+        .chain(error_file);
+
+    Some((
+        vec![
+            Target::new(TargetKind::Dispatch(all_dispatch)),
+            Target::new(TargetKind::Dispatch(error_dispatch)),
+        ],
+        log_dir,
+    ))
+}
+
 /// 清理超过指定天数的旧日志文件
 ///
 /// 扫描日志目录中 `cloudpivot-*.log` 文件，从文件名提取日期，
@@ -62,53 +99,32 @@ pub fn run() {
             // ── 日志初始化 ──────────────────────────────────────────
             // 按天分文件：all 全量日志 + error 错误日志
             // 日志目录：~/.cloudpivot/logs/（macOS/Windows 统一路径）
-            let home = dirs::home_dir().expect("无法获取用户主目录");
-            let log_dir = home.join(".cloudpivot").join("logs");
-            std::fs::create_dir_all(&log_dir)?;
-
-            let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+            // 文件目标初始化失败时降级为仅控制台输出，不阻断应用启动
             let log_level = if cfg!(debug_assertions) {
                 log::LevelFilter::Debug
             } else {
                 log::LevelFilter::Info
             };
 
-            // 全量日志文件（cloudpivot-YYYY-MM-DD.log）
-            let all_log_path = log_dir.join(format!("cloudpivot-{today}.log"));
-            let all_file = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&all_log_path)?;
-            let all_dispatch = fern::Dispatch::new().chain(all_file);
+            let mut targets = vec![
+                Target::new(TargetKind::Stdout),
+                Target::new(TargetKind::Webview),
+            ];
 
-            // 错误日志文件（cloudpivot-error-YYYY-MM-DD.log）
-            let error_log_path = log_dir.join(format!("cloudpivot-error-{today}.log"));
-            let error_file = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&error_log_path)?;
-            let error_dispatch = fern::Dispatch::new()
-                .level(log::LevelFilter::Error)
-                .chain(error_file);
+            if let Some((file_targets, log_dir)) = init_file_logging() {
+                targets.extend(file_targets);
+                // 清理超过 30 天的旧日志
+                cleanup_old_logs(&log_dir, 30);
+            } else {
+                eprintln!("[警告] 日志文件初始化失败，降级为仅控制台输出");
+            }
 
             app.handle().plugin(
                 tauri_plugin_log::Builder::default()
                     .level(log_level)
-                    .targets([
-                        // 全量日志 → 按天文件
-                        Target::new(TargetKind::Dispatch(all_dispatch)),
-                        // 错误日志 → 按天文件（仅 Error 级别）
-                        Target::new(TargetKind::Dispatch(error_dispatch)),
-                        // 标准输出（开发时终端可见）
-                        Target::new(TargetKind::Stdout),
-                        // Webview 控制台（前端 devtools 可见）
-                        Target::new(TargetKind::Webview),
-                    ])
+                    .targets(targets)
                     .build(),
             )?;
-
-            // 清理超过 30 天的旧日志
-            cleanup_old_logs(&log_dir, 30);
 
             // 注入当前用户状态（默认 admin）
             app.manage(commands::CurrentUser::default());
