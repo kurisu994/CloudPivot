@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle, Save } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +31,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   // 实盘数量编辑
   const [editValues, setEditValues] = useState<Record<number, string>>({})
@@ -80,9 +82,15 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
   }
 
   /** 审核确认 */
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
     if (!detail) return
-    if (!window.confirm(t('confirmCheckTip'))) return
+    setShowConfirm(true)
+  }
+
+  /** 审核确认（弹窗确认后执行） */
+  const doConfirm = async () => {
+    if (!detail) return
+    setShowConfirm(false)
     setConfirming(true)
     try {
       await confirmStockCheck(detail.id)
@@ -90,6 +98,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
       await loadDetail()
     } catch (error) {
       toast.error(getErrorMessage(error, tc('confirmFailed')))
+      throw error
     } finally {
       setConfirming(false)
     }
@@ -217,6 +226,16 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
           </Table>
         </div>
       ) : null}
+
+      {/* 盘点确认对话框 */}
+      <ConfirmDialog
+        open={showConfirm}
+        onOpenChange={setShowConfirm}
+        title={t('confirmCheckTip')}
+        confirmText={tc('confirm')}
+        cancelText={tc('cancel')}
+        onConfirm={doConfirm}
+      />
     </div>
   )
 }

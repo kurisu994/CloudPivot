@@ -4,6 +4,7 @@ import { Download, Plus, RotateCcw, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -49,6 +50,9 @@ export function PurchaseOrderListPage({ onEdit, onNew }: PurchaseOrderListPagePr
 
   const [suppliers, setSuppliers] = useState<SupplierListItem[]>([])
   const [warehouses, setWarehouses] = useState<WarehouseItem[]>([])
+
+  // 确认对话框状态
+  const [pendingAction, setPendingAction] = useState<{ type: 'approve' | 'cancel' | 'delete'; order: PurchaseOrderListItem } | null>(null)
 
   const loadOrders = useCallback(async () => {
     setLoading(true)
@@ -121,38 +125,45 @@ export function PurchaseOrderListPage({ onEdit, onNew }: PurchaseOrderListPagePr
     setFilters({ page: 1, pageSize })
   }
 
-  const handleApprove = async (order: PurchaseOrderListItem) => {
-    if (!window.confirm(t('approveConfirm'))) return
+  const handleApprove = (order: PurchaseOrderListItem) => {
+    setPendingAction({ type: 'approve', order })
+  }
+
+  const handleCancel = (order: PurchaseOrderListItem) => {
+    setPendingAction({ type: 'cancel', order })
+  }
+
+  const handleDelete = (order: PurchaseOrderListItem) => {
+    setPendingAction({ type: 'delete', order })
+  }
+
+  /** 确认操作执行 */
+  const handleActionConfirm = async () => {
+    if (!pendingAction) return
+    const { type, order } = pendingAction
     try {
-      await approvePurchaseOrder(order.id)
-      toast.success(t('approveSuccess'))
+      if (type === 'approve') {
+        await approvePurchaseOrder(order.id)
+        toast.success(t('approveSuccess'))
+      } else if (type === 'cancel') {
+        await cancelPurchaseOrder(order.id)
+        toast.success(t('cancelSuccess'))
+      } else {
+        await deletePurchaseOrder(order.id)
+        toast.success(t('deleteSuccess'))
+      }
+      setPendingAction(null)
       await loadOrders()
     } catch (error) {
-      toast.error(getErrorMessage(error, t('approveError')))
+      const errKey = type === 'approve' ? 'approveError' : type === 'cancel' ? 'cancelError' : 'deleteError'
+      toast.error(getErrorMessage(error, t(errKey)))
+      throw error
     }
   }
 
-  const handleCancel = async (order: PurchaseOrderListItem) => {
-    if (!window.confirm(t('cancelConfirm'))) return
-    try {
-      await cancelPurchaseOrder(order.id)
-      toast.success(t('cancelSuccess'))
-      await loadOrders()
-    } catch (error) {
-      toast.error(getErrorMessage(error, t('cancelError')))
-    }
-  }
-
-  const handleDelete = async (order: PurchaseOrderListItem) => {
-    if (!window.confirm(t('deleteConfirm'))) return
-    try {
-      await deletePurchaseOrder(order.id)
-      toast.success(t('deleteSuccess'))
-      await loadOrders()
-    } catch (error) {
-      toast.error(getErrorMessage(error, t('deleteError')))
-    }
-  }
+  const confirmTitle =
+    pendingAction?.type === 'approve' ? t('approveConfirm') : pendingAction?.type === 'cancel' ? t('cancelConfirm') : t('deleteConfirm')
+  const isDestructiveAction = pendingAction?.type === 'delete' || pendingAction?.type === 'cancel'
 
   return (
     <div className="flex flex-col gap-6">
@@ -263,6 +274,17 @@ export function PurchaseOrderListPage({ onEdit, onNew }: PurchaseOrderListPagePr
         onApprove={handleApprove}
         onCancel={handleCancel}
         onDelete={handleDelete}
+      />
+
+      {/* 确认对话框 */}
+      <ConfirmDialog
+        open={!!pendingAction}
+        onOpenChange={open => !open && setPendingAction(null)}
+        title={confirmTitle}
+        confirmText={pendingAction?.type === 'delete' ? tc('delete') : tc('confirm')}
+        cancelText={tc('cancel')}
+        destructive={isDestructiveAction}
+        onConfirm={handleActionConfirm}
       />
     </div>
   )

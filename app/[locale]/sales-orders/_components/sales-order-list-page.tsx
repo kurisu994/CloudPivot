@@ -4,6 +4,7 @@ import { Download, Plus, RotateCcw, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -64,6 +65,9 @@ export function SalesOrderListPage({ onEdit, onNew }: SalesOrderListPageProps) {
   // 下拉选项数据
   const [customers, setCustomers] = useState<CustomerListItem[]>([])
   const [warehouses, setWarehouses] = useState<WarehouseItem[]>([])
+
+  // 确认对话框状态
+  const [pendingAction, setPendingAction] = useState<{ type: 'approve' | 'cancel' | 'delete'; order: SalesOrderListItem } | null>(null)
 
   /** 加载销售单列表 */
   const loadOrders = useCallback(async () => {
@@ -144,40 +148,47 @@ export function SalesOrderListPage({ onEdit, onNew }: SalesOrderListPageProps) {
   }
 
   /** 审核销售单 */
-  const handleApprove = async (order: SalesOrderListItem) => {
-    if (!window.confirm(t('approveConfirm'))) return
-    try {
-      await invoke<void>('approve_sales_order', { id: order.id })
-      toast.success(t('approveSuccess'))
-      await loadOrders()
-    } catch (error) {
-      toast.error(getErrorMessage(error, t('approveError')))
-    }
+  const handleApprove = (order: SalesOrderListItem) => {
+    setPendingAction({ type: 'approve', order })
   }
 
   /** 作废销售单 */
-  const handleCancel = async (order: SalesOrderListItem) => {
-    if (!window.confirm(t('cancelConfirm'))) return
-    try {
-      await invoke<void>('cancel_sales_order', { id: order.id })
-      toast.success(t('cancelSuccess'))
-      await loadOrders()
-    } catch (error) {
-      toast.error(getErrorMessage(error, t('cancelError')))
-    }
+  const handleCancel = (order: SalesOrderListItem) => {
+    setPendingAction({ type: 'cancel', order })
   }
 
   /** 删除销售单 */
-  const handleDelete = async (order: SalesOrderListItem) => {
-    if (!window.confirm(t('deleteConfirm'))) return
+  const handleDelete = (order: SalesOrderListItem) => {
+    setPendingAction({ type: 'delete', order })
+  }
+
+  /** 确认操作执行 */
+  const handleActionConfirm = async () => {
+    if (!pendingAction) return
+    const { type, order } = pendingAction
     try {
-      await invoke<void>('delete_sales_order', { id: order.id })
-      toast.success(t('deleteSuccess'))
+      if (type === 'approve') {
+        await invoke<void>('approve_sales_order', { id: order.id })
+        toast.success(t('approveSuccess'))
+      } else if (type === 'cancel') {
+        await invoke<void>('cancel_sales_order', { id: order.id })
+        toast.success(t('cancelSuccess'))
+      } else {
+        await invoke<void>('delete_sales_order', { id: order.id })
+        toast.success(t('deleteSuccess'))
+      }
+      setPendingAction(null)
       await loadOrders()
     } catch (error) {
-      toast.error(getErrorMessage(error, t('deleteError')))
+      const errKey = type === 'approve' ? 'approveError' : type === 'cancel' ? 'cancelError' : 'deleteError'
+      toast.error(getErrorMessage(error, t(errKey)))
+      throw error
     }
   }
+
+  const confirmTitle =
+    pendingAction?.type === 'approve' ? t('approveConfirm') : pendingAction?.type === 'cancel' ? t('cancelConfirm') : t('deleteConfirm')
+  const isDestructiveAction = pendingAction?.type === 'delete' || pendingAction?.type === 'cancel'
 
   return (
     <div className="flex flex-col gap-6">
@@ -295,6 +306,17 @@ export function SalesOrderListPage({ onEdit, onNew }: SalesOrderListPageProps) {
         onApprove={handleApprove}
         onCancel={handleCancel}
         onDelete={handleDelete}
+      />
+
+      {/* 确认对话框 */}
+      <ConfirmDialog
+        open={!!pendingAction}
+        onOpenChange={open => !open && setPendingAction(null)}
+        title={confirmTitle}
+        confirmText={pendingAction?.type === 'delete' ? tc('delete') : tc('confirm')}
+        cancelText={tc('cancel')}
+        destructive={isDestructiveAction}
+        onConfirm={handleActionConfirm}
       />
     </div>
   )

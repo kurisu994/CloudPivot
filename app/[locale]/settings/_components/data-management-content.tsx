@@ -4,6 +4,7 @@ import { Database, Download, FileText, Info, Trash2, Upload, UploadCloud } from 
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -35,6 +36,7 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
   const t = useTranslations('settings.dataManagement')
   const commonT = useTranslations('common')
   const [busyFile, setBusyFile] = useState<string | null>(null)
+  const [pendingBackupAction, setPendingBackupAction] = useState<{ type: 'restore' | 'delete'; fileName: string } | null>(null)
 
   /** 创建数据库备份 */
   const handleBackup = async () => {
@@ -55,156 +57,176 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
   }
 
   /** 恢复指定数据库备份 */
-  const handleRestore = async (fileName: string) => {
-    if (!window.confirm(t('restoreConfirm'))) return
-    setBusyFile(fileName)
-    try {
-      await restoreDatabaseBackup(fileName)
-      toast.success(t('restoreSuccess'))
-    } catch (error) {
-      toast.error(getErrorMessage(error, t('restoreFailed')))
-    } finally {
-      setBusyFile(null)
-    }
+  const handleRestore = (fileName: string) => {
+    setPendingBackupAction({ type: 'restore', fileName })
   }
 
   /** 删除指定数据库备份 */
-  const handleDelete = async (fileName: string) => {
-    if (!window.confirm(t('deleteBackupConfirm'))) return
+  const handleDelete = (fileName: string) => {
+    setPendingBackupAction({ type: 'delete', fileName })
+  }
+
+  /** 确认备份操作执行 */
+  const handleBackupActionConfirm = async () => {
+    if (!pendingBackupAction) return
+    const { type, fileName } = pendingBackupAction
     setBusyFile(fileName)
     try {
-      await deleteDatabaseBackup(fileName)
-      toast.success(t('deleteBackupSuccess'))
-      await onRefresh()
+      if (type === 'restore') {
+        await restoreDatabaseBackup(fileName)
+        toast.success(t('restoreSuccess'))
+      } else {
+        await deleteDatabaseBackup(fileName)
+        toast.success(t('deleteBackupSuccess'))
+        await onRefresh()
+      }
+      setPendingBackupAction(null)
     } catch (error) {
-      toast.error(getErrorMessage(error, t('deleteBackupFailed')))
+      const errKey = type === 'restore' ? 'restoreFailed' : 'deleteBackupFailed'
+      toast.error(getErrorMessage(error, t(errKey)))
+      throw error
     } finally {
       setBusyFile(null)
     }
   }
 
+  const backupConfirmTitle = pendingBackupAction?.type === 'restore' ? t('restoreConfirm') : t('deleteBackupConfirm')
+
   return (
-    <div className="flex flex-col gap-6 lg:col-span-2">
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-slate-100">
-            <Database className="text-primary size-5" />
-            {t('dataBackup')}
-          </h2>
-          <div className="flex gap-2">
-            <Button
-              disabled={busyFile === 'backup'}
-              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold"
-              onClick={handleBackup}
-            >
-              <UploadCloud className="size-4" />
-              {t('backupNow')}
-            </Button>
-            <Button
-              variant="outline"
-              disabled={!status?.backups.length}
-              className="rounded-lg px-4 py-2 text-sm font-bold"
-              onClick={() => status?.backups[0] && handleRestore(status.backups[0].fileName)}
-            >
-              {t('restoreBackup')}
-            </Button>
-          </div>
-        </div>
-
-        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-            <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('dbLocation')}</div>
-            <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{status?.dbPath ?? '-'}</div>
-          </div>
-          <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-            <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('dbSize')}</div>
-            <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{formatBytes(status?.dbSizeBytes ?? 0)}</div>
-          </div>
-          <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-            <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('lastBackupTime')}</div>
-            <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{status?.lastBackupAt ?? '-'}</div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="flex flex-col gap-2">
-            <Label className="text-sm font-bold text-slate-600 dark:text-slate-300">{t('backupPath')}</Label>
-            <Input readOnly value={status?.backupDir ?? '-'} className="flex-1 bg-slate-50 dark:bg-slate-900/50" />
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/30 p-4 dark:border-slate-800/50 dark:bg-slate-900/30">
-              <div>
-                <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{t('autoBackup')}</div>
-                <div className="text-xs text-slate-400">{t('autoBackupDesc')}</div>
-              </div>
-              <Switch disabled />
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <Label className="mb-1 block text-[11px] font-bold text-slate-400 uppercase">{t('backupCycle')}</Label>
-                <Select defaultValue="daily" items={[{ value: 'daily', label: t('dailyBackup') }]}>
-                  <SelectTrigger className="bg-white dark:bg-slate-950">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">{t('dailyBackup')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="w-24">
-                <Label className="mb-1 block text-[11px] font-bold text-slate-400 uppercase">{t('retentionCount')}</Label>
-                <Input type="number" value="30" readOnly />
-              </div>
+    <>
+      <div className="flex flex-col gap-6 lg:col-span-2">
+        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-slate-100">
+              <Database className="text-primary size-5" />
+              {t('dataBackup')}
+            </h2>
+            <div className="flex gap-2">
+              <Button
+                disabled={busyFile === 'backup'}
+                className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold"
+                onClick={handleBackup}
+              >
+                <UploadCloud className="size-4" />
+                {t('backupNow')}
+              </Button>
+              <Button
+                variant="outline"
+                disabled={!status?.backups.length}
+                className="rounded-lg px-4 py-2 text-sm font-bold"
+                onClick={() => status?.backups[0] && handleRestore(status.backups[0].fileName)}
+              >
+                {t('restoreBackup')}
+              </Button>
             </div>
           </div>
-        </div>
-      </section>
 
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/50">
-          <h3 className="font-bold text-slate-900 dark:text-slate-100">{t('backupHistory')}</h3>
-          <Button variant="link" className="text-primary h-auto p-0 text-xs font-bold" onClick={onRefresh}>
-            {t('refresh')}
-          </Button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="border-b border-slate-100 bg-slate-50/50 text-xs font-bold text-slate-500 dark:border-slate-800 dark:bg-slate-900/50">
-              <tr>
-                <th className="px-6 py-4">{t('backupDate')}</th>
-                <th className="px-6 py-4">{t('fileSize')}</th>
-                <th className="px-6 py-4 text-right">{commonT('actions')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50 text-sm font-medium dark:divide-slate-800/50">
-              {(status?.backups ?? []).map(item => (
-                <tr key={item.fileName} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                  <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">{item.createdAt}</td>
-                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{formatBytes(item.sizeBytes)}</td>
-                  <td className="flex justify-end gap-2 px-6 py-4 text-right">
-                    <Button variant="outline" size="sm" disabled={busyFile === item.fileName} onClick={() => handleRestore(item.fileName)}>
-                      {t('restore')}
-                    </Button>
-                    <Button variant="outline" size="sm" disabled={busyFile === item.fileName} onClick={() => handleDelete(item.fileName)}>
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {!status?.backups.length && (
+          <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+              <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('dbLocation')}</div>
+              <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{status?.dbPath ?? '-'}</div>
+            </div>
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+              <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('dbSize')}</div>
+              <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{formatBytes(status?.dbSizeBytes ?? 0)}</div>
+            </div>
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+              <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('lastBackupTime')}</div>
+              <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{status?.lastBackupAt ?? '-'}</div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="flex flex-col gap-2">
+              <Label className="text-sm font-bold text-slate-600 dark:text-slate-300">{t('backupPath')}</Label>
+              <Input readOnly value={status?.backupDir ?? '-'} className="flex-1 bg-slate-50 dark:bg-slate-900/50" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/30 p-4 dark:border-slate-800/50 dark:bg-slate-900/30">
+                <div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{t('autoBackup')}</div>
+                  <div className="text-xs text-slate-400">{t('autoBackupDesc')}</div>
+                </div>
+                <Switch disabled />
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <Label className="mb-1 block text-[11px] font-bold text-slate-400 uppercase">{t('backupCycle')}</Label>
+                  <Select defaultValue="daily" items={[{ value: 'daily', label: t('dailyBackup') }]}>
+                    <SelectTrigger className="bg-white dark:bg-slate-950">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">{t('dailyBackup')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-24">
+                  <Label className="mb-1 block text-[11px] font-bold text-slate-400 uppercase">{t('retentionCount')}</Label>
+                  <Input type="number" value="30" readOnly />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/50">
+            <h3 className="font-bold text-slate-900 dark:text-slate-100">{t('backupHistory')}</h3>
+            <Button variant="link" className="text-primary h-auto p-0 text-xs font-bold" onClick={onRefresh}>
+              {t('refresh')}
+            </Button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="border-b border-slate-100 bg-slate-50/50 text-xs font-bold text-slate-500 dark:border-slate-800 dark:bg-slate-900/50">
                 <tr>
-                  <td colSpan={3} className="px-6 py-8 text-center text-sm text-slate-500">
-                    {t('noBackups')}
-                  </td>
+                  <th className="px-6 py-4">{t('backupDate')}</th>
+                  <th className="px-6 py-4">{t('fileSize')}</th>
+                  <th className="px-6 py-4 text-right">{commonT('actions')}</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
+              </thead>
+              <tbody className="divide-y divide-slate-50 text-sm font-medium dark:divide-slate-800/50">
+                {(status?.backups ?? []).map(item => (
+                  <tr key={item.fileName} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">{item.createdAt}</td>
+                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{formatBytes(item.sizeBytes)}</td>
+                    <td className="flex justify-end gap-2 px-6 py-4 text-right">
+                      <Button variant="outline" size="sm" disabled={busyFile === item.fileName} onClick={() => handleRestore(item.fileName)}>
+                        {t('restore')}
+                      </Button>
+                      <Button variant="outline" size="sm" disabled={busyFile === item.fileName} onClick={() => handleDelete(item.fileName)}>
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+                {!status?.backups.length && (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-8 text-center text-sm text-slate-500">
+                      {t('noBackups')}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      {/* 备份操作确认对话框 */}
+      <ConfirmDialog
+        open={!!pendingBackupAction}
+        onOpenChange={open => !open && setPendingBackupAction(null)}
+        title={backupConfirmTitle}
+        confirmText={pendingBackupAction?.type === 'delete' ? commonT('delete') : commonT('confirm')}
+        cancelText={commonT('cancel')}
+        destructive={pendingBackupAction?.type === 'delete'}
+        onConfirm={handleBackupActionConfirm}
+      />
+    </>
   )
 }
 

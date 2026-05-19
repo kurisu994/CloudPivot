@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -70,6 +72,7 @@ export function InboundExecutePage({ purchaseId, onBack }: InboundExecutePagePro
 
   const [loading, setLoading] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   // ================================================================
   // 数据加载
@@ -147,7 +150,7 @@ export function InboundExecutePage({ purchaseId, onBack }: InboundExecutePagePro
   // 确认入库
   // ================================================================
 
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
     if (!poDetail) return
 
     // 校验
@@ -179,8 +182,19 @@ export function InboundExecutePage({ purchaseId, onBack }: InboundExecutePagePro
       }
     }
 
-    if (!window.confirm(t('confirmInboundTip'))) return
+    setShowConfirm(true)
+  }
 
+  /** 确认入库（弹窗确认后执行） */
+  const doConfirm = async () => {
+    if (!poDetail) return
+
+    const validItems = items.filter(item => {
+      const qty = parseFloat(item.thisQty) || 0
+      return qty > 0
+    })
+
+    setShowConfirm(false)
     setConfirming(true)
     try {
       const params: SaveInboundOrderParams = {
@@ -210,6 +224,7 @@ export function InboundExecutePage({ purchaseId, onBack }: InboundExecutePagePro
       onBack()
     } catch (error) {
       toast.error(getErrorMessage(error, t('confirmInboundError')))
+      throw error
     } finally {
       setConfirming(false)
     }
@@ -385,6 +400,16 @@ export function InboundExecutePage({ purchaseId, onBack }: InboundExecutePagePro
           </div>
         </div>
       </div>
+
+      {/* 入库确认对话框 */}
+      <ConfirmDialog
+        open={showConfirm}
+        onOpenChange={setShowConfirm}
+        title={t('confirmInboundTip')}
+        confirmText={tc('confirm')}
+        cancelText={tc('cancel')}
+        onConfirm={doConfirm}
+      />
     </div>
   )
 }

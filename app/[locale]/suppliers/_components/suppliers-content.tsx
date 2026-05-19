@@ -4,6 +4,7 @@ import { Download, Plus, RotateCcw, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -72,6 +73,9 @@ export function SuppliersContent() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [editingSupplierId, setEditingSupplierId] = useState<number | null>(null)
   const [detailSupplierId, setDetailSupplierId] = useState<number | null>(null)
+
+  // 删除确认状态
+  const [deleteTarget, setDeleteTarget] = useState<SupplierListItem | null>(null)
 
   const loadSuppliers = useCallback(async () => {
     setLoading(true)
@@ -166,18 +170,23 @@ export function SuppliersContent() {
     }
   }
 
-  const handleDelete = async (supplier: SupplierListItem) => {
-    const confirmed = window.confirm(t('deleteConfirm'))
-    if (!confirmed) return
+  const handleDelete = (supplier: SupplierListItem) => {
+    setDeleteTarget(supplier)
+  }
 
+  /** 删除供应商（确认后执行） */
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return
     try {
-      await deleteSupplier(supplier.id)
+      await deleteSupplier(deleteTarget.id)
       toast.success(t('deleteSuccess'))
+      setDeleteTarget(null)
       await loadSuppliers()
       await loadCategories()
     } catch (error) {
       console.error('删除供应商失败', error)
       toast.error(getErrorMessage(error, t('deleteError')))
+      throw error
     }
   }
 
@@ -297,6 +306,17 @@ export function SuppliersContent() {
 
       <SupplierDialog open={dialogOpen} onOpenChange={setDialogOpen} supplierId={editingSupplierId} onSaved={handleSaved} />
       <SupplierDetailDialog open={detailOpen} onOpenChange={setDetailOpen} supplierId={detailSupplierId} />
+
+      {/* 删除确认对话框 */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={open => !open && setDeleteTarget(null)}
+        title={t('deleteConfirm')}
+        confirmText={tc('delete')}
+        cancelText={tc('cancel')}
+        destructive
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   )
 }

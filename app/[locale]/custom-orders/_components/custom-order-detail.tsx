@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -193,6 +195,9 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
 
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  // 确认对话框状态
+  const [pendingAction, setPendingAction] = useState<{ type: 'convert' | 'production' } | null>(null)
 
   const keyCounterRef = useRef(0)
   const nextKey = () => `cfg-${Date.now()}-${keyCounterRef.current++}`
@@ -415,29 +420,38 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
   }
 
   /** 转销售单 */
-  const handleConvert = async () => {
-    if (!window.confirm(t('convertConfirm'))) return
-    try {
-      await invoke<number>('convert_to_sales_order', { customOrderId: orderId })
-      toast.success(t('convertSuccess'))
-      await loadDetail()
-    } catch (error) {
-      toast.error(getErrorMessage(error, t('convertError')))
-    }
+  const handleConvert = () => {
+    setPendingAction({ type: 'convert' })
   }
 
   /** 开始生产（自动创建工单） */
-  const handleStartProduction = async () => {
-    if (!window.confirm(t('startProductionConfirm'))) return
-    if (orderId == null) return
+  const handleStartProduction = () => {
+    setPendingAction({ type: 'production' })
+  }
+
+  /** 确认操作执行 */
+  const handleActionConfirm = async () => {
+    if (!pendingAction) return
+    const { type } = pendingAction
     try {
-      await startProductionFromCustomOrder(orderId)
-      toast.success(t('startProductionSuccess'))
+      if (type === 'convert') {
+        await invoke<number>('convert_to_sales_order', { customOrderId: orderId })
+        toast.success(t('convertSuccess'))
+      } else {
+        if (orderId == null) return
+        await startProductionFromCustomOrder(orderId)
+        toast.success(t('startProductionSuccess'))
+      }
+      setPendingAction(null)
       await loadDetail()
     } catch (error) {
-      toast.error(getErrorMessage(error, t('startProductionError')))
+      const errKey = type === 'convert' ? 'convertError' : 'startProductionError'
+      toast.error(getErrorMessage(error, t(errKey)))
+      throw error
     }
   }
+
+  const actionConfirmTitle = pendingAction?.type === 'convert' ? t('convertConfirm') : t('startProductionConfirm')
 
   // ================================================================
   // 下拉选项
@@ -890,6 +904,16 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
           </div>
         </div>
       </div>
+
+      {/* 确认对话框 */}
+      <ConfirmDialog
+        open={!!pendingAction}
+        onOpenChange={open => !open && setPendingAction(null)}
+        title={actionConfirmTitle}
+        confirmText={tc('confirm')}
+        cancelText={tc('cancel')}
+        onConfirm={handleActionConfirm}
+      />
     </div>
   )
 }

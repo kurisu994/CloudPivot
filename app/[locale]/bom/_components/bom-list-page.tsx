@@ -4,7 +4,6 @@ import { ChevronLeft, ChevronRight, Copy, Layers, Pencil, Play, Plus, Search, Sq
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-
 import {
   BUSINESS_LIST_STICKY_CELL_CLASS,
   BUSINESS_LIST_STICKY_HEAD_CLASS,
@@ -13,6 +12,7 @@ import {
   BusinessListTableLoadingRows,
   BusinessListTableShell,
 } from '@/components/common/business-list-table'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -120,6 +120,7 @@ interface BomListPageProps {
 
 export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
   const t = useTranslations('bom')
+  const tc = useTranslations('common')
 
   // 数据
   const [data, setData] = useState<BomListItem[]>([])
@@ -135,6 +136,10 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
   // 复制弹窗
   const [copyDialogOpen, setCopyDialogOpen] = useState(false)
   const [copySourceId, setCopySourceId] = useState<number | null>(null)
+
+  // 确认对话框状态
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null)
+  const [activateTargetId, setActivateTargetId] = useState<number | null>(null)
 
   const statusItems = useMemo(
     () => [
@@ -197,25 +202,41 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
   }
 
   /** 删除 BOM */
-  const handleDelete = async (id: number) => {
-    if (!confirm(t('notifications.confirmDelete'))) return
+  const handleDelete = (id: number) => {
+    setDeleteTargetId(id)
+  }
+
+  /** 删除 BOM（确认后执行） */
+  const handleDeleteConfirm = async () => {
+    if (deleteTargetId == null) return
     if (!isTauriEnv()) {
-      setData(prev => prev.filter(b => b.id !== id))
+      setData(prev => prev.filter(b => b.id !== deleteTargetId))
       toast.success(t('notifications.deleteBomSuccess'))
+      setDeleteTargetId(null)
       return
     }
     try {
-      await invoke('delete_bom', { id })
+      await invoke('delete_bom', { id: deleteTargetId })
       toast.success(t('notifications.deleteBomSuccess'))
+      setDeleteTargetId(null)
       fetchBomList()
     } catch (e) {
       toast.error(getErrorMessage(e, t('notifications.deleteBomFailed')))
+      throw e
     }
   }
 
   /** 切换状态 */
   const handleToggleStatus = async (id: number, newStatus: string) => {
-    if (newStatus === 'active' && !confirm(t('notifications.confirmActivate'))) return
+    if (newStatus === 'active') {
+      setActivateTargetId(id)
+      return
+    }
+    await doToggleStatus(id, newStatus)
+  }
+
+  /** 执行状态切换 */
+  const doToggleStatus = async (id: number, newStatus: string) => {
     if (!isTauriEnv()) {
       setData(prev =>
         prev.map(b => {
@@ -235,6 +256,17 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
       fetchBomList()
     } catch (e) {
       toast.error(getErrorMessage(e, t('notifications.statusChangeFailed')))
+    }
+  }
+
+  /** 激活 BOM（确认后执行） */
+  const handleActivateConfirm = async () => {
+    if (activateTargetId == null) return
+    try {
+      await doToggleStatus(activateTargetId, 'active')
+      setActivateTargetId(null)
+    } catch (e) {
+      throw e
     }
   }
 
@@ -458,6 +490,27 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
 
       {/* 复制弹窗 */}
       <BomCopyDialog open={copyDialogOpen} onOpenChange={setCopyDialogOpen} sourceId={copySourceId} onSuccess={handleCopySuccess} />
+
+      {/* 删除确认对话框 */}
+      <ConfirmDialog
+        open={deleteTargetId != null}
+        onOpenChange={open => !open && setDeleteTargetId(null)}
+        title={t('notifications.confirmDelete')}
+        confirmText={tc('delete')}
+        cancelText={tc('cancel')}
+        destructive
+        onConfirm={handleDeleteConfirm}
+      />
+
+      {/* 激活确认对话框 */}
+      <ConfirmDialog
+        open={activateTargetId != null}
+        onOpenChange={open => !open && setActivateTargetId(null)}
+        title={t('notifications.confirmActivate')}
+        confirmText={tc('confirm')}
+        cancelText={tc('cancel')}
+        onConfirm={handleActivateConfirm}
+      />
     </div>
   )
 }

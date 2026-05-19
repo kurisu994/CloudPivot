@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,6 +28,7 @@ const WAREHOUSE_TYPE_KEYS: Record<string, string> = {
 /** 仓库管理主内容组件 */
 export function WarehousesContent() {
   const t = useTranslations('warehouses')
+  const tc = useTranslations('common')
 
   // 列表数据
   const [items, setItems] = useState<WarehouseItem[]>([])
@@ -35,6 +37,10 @@ export function WarehousesContent() {
   // 弹窗状态
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingWarehouseId, setEditingWarehouseId] = useState<number | null>(null)
+
+  // 确认对话框状态
+  const [deleteTarget, setDeleteTarget] = useState<WarehouseItem | null>(null)
+  const [disableTarget, setDisableTarget] = useState<WarehouseItem | null>(null)
 
   // 默认仓映射刷新触发器
   const [mappingRefreshKey, setMappingRefreshKey] = useState(0)
@@ -69,12 +75,11 @@ export function WarehousesContent() {
     setDialogOpen(true)
   }
 
-  /** 删除仓库 */
-  const handleDelete = async (item: WarehouseItem) => {
-    if (!confirm(t('deleteConfirm', { name: item.name }))) return
-
+  /** 删除仓库（确认后执行） */
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return
     try {
-      await deleteWarehouse(item.id)
+      await deleteWarehouse(deleteTarget.id)
       toast.success(t('deleteSuccess'))
       loadWarehouses()
       // 删除后刷新默认仓映射（可能被清除了）
@@ -84,20 +89,32 @@ export function WarehousesContent() {
     }
   }
 
-  /** 切换启用/禁用 */
-  const handleToggleStatus = async (item: WarehouseItem) => {
-    // 禁用默认仓时提示用户
-    if (item.isEnabled) {
-      if (!confirm(t('disableConfirm'))) return
-    }
-
+  /** 切换启用/禁用（确认后执行） */
+  const handleDisableConfirm = async () => {
+    if (!disableTarget) return
     try {
-      await toggleWarehouseStatus(item.id)
+      await toggleWarehouseStatus(disableTarget.id)
       loadWarehouses()
       // 禁用时可能清除了默认仓映射，刷新
       setMappingRefreshKey(k => k + 1)
     } catch (error) {
       toast.error(String(error))
+    }
+  }
+
+  /** 切换启用/禁用 */
+  const handleToggleStatus = (item: WarehouseItem) => {
+    if (item.isEnabled) {
+      // 禁用时需要确认
+      setDisableTarget(item)
+    } else {
+      // 启用直接执行
+      toggleWarehouseStatus(item.id)
+        .then(() => {
+          loadWarehouses()
+          setMappingRefreshKey(k => k + 1)
+        })
+        .catch(error => toast.error(String(error)))
     }
   }
 
@@ -174,7 +191,7 @@ export function WarehousesContent() {
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(item.id)}>
                           {t('edit')}
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(item)}>
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(item)}>
                           {t('delete')}
                         </Button>
                       </div>
@@ -192,6 +209,28 @@ export function WarehousesContent() {
 
       {/* 新增/编辑弹窗 */}
       <WarehouseDialog open={dialogOpen} onOpenChange={setDialogOpen} warehouseId={editingWarehouseId} onSuccess={handleDialogSuccess} />
+
+      {/* 删除确认对话框 */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={open => !open && setDeleteTarget(null)}
+        title={t('deleteConfirm', { name: deleteTarget?.name ?? '' })}
+        description={t('deleteConfirmDesc')}
+        confirmText={tc('delete')}
+        cancelText={tc('cancel')}
+        destructive
+        onConfirm={handleDeleteConfirm}
+      />
+
+      {/* 禁用确认对话框 */}
+      <ConfirmDialog
+        open={!!disableTarget}
+        onOpenChange={open => !open && setDisableTarget(null)}
+        title={t('disableConfirm')}
+        confirmText={tc('confirm')}
+        cancelText={tc('cancel')}
+        onConfirm={handleDisableConfirm}
+      />
     </div>
   )
 }

@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -54,6 +56,7 @@ export function ReturnExecutePage({ inboundId, onBack }: ReturnExecutePageProps)
 
   const [loading, setLoading] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   // 加载数据
   const loadData = useCallback(async () => {
@@ -120,7 +123,7 @@ export function ReturnExecutePage({ inboundId, onBack }: ReturnExecutePageProps)
   }
 
   // 确认退货
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
     const validItems = items.filter(item => (parseFloat(item.thisQty) || 0) > 0)
 
     if (validItems.length === 0) {
@@ -137,8 +140,14 @@ export function ReturnExecutePage({ inboundId, onBack }: ReturnExecutePageProps)
       }
     }
 
-    if (!window.confirm(t('confirmReturnTip'))) return
+    setShowConfirm(true)
+  }
 
+  /** 确认退货（弹窗确认后执行） */
+  const doConfirm = async () => {
+    const validItems = items.filter(item => (parseFloat(item.thisQty) || 0) > 0)
+
+    setShowConfirm(false)
     setConfirming(true)
     try {
       const params: SavePurchaseReturnParams = {
@@ -164,6 +173,7 @@ export function ReturnExecutePage({ inboundId, onBack }: ReturnExecutePageProps)
       onBack()
     } catch (error) {
       toast.error(getErrorMessage(error, t('confirmReturnError')))
+      throw error
     } finally {
       setConfirming(false)
     }
@@ -318,6 +328,17 @@ export function ReturnExecutePage({ inboundId, onBack }: ReturnExecutePageProps)
           <p className="text-muted-foreground mt-1 text-xs">{t('returnCostRecalcHint')}</p>
         </div>
       </div>
+
+      {/* 退货确认对话框 */}
+      <ConfirmDialog
+        open={showConfirm}
+        onOpenChange={setShowConfirm}
+        title={t('confirmReturnTip')}
+        confirmText={tc('confirm')}
+        cancelText={tc('cancel')}
+        destructive
+        onConfirm={doConfirm}
+      />
     </div>
   )
 }

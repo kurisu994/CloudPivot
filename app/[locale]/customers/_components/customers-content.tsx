@@ -4,6 +4,7 @@ import { Download, Plus, RotateCcw, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -69,6 +70,9 @@ export function CustomersContent() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [editingCustomerId, setEditingCustomerId] = useState<number | null>(null)
   const [detailCustomerId, setDetailCustomerId] = useState<number | null>(null)
+
+  // 删除确认状态
+  const [deleteTarget, setDeleteTarget] = useState<CustomerListItem | null>(null)
 
   /** 加载客户列表 */
   const loadCustomers = useCallback(async () => {
@@ -160,17 +164,22 @@ export function CustomersContent() {
   }
 
   /** 删除客户 */
-  const handleDelete = async (customer: CustomerListItem) => {
-    const confirmed = window.confirm(t('delete.confirmDelete'))
-    if (!confirmed) return
+  const handleDelete = (customer: CustomerListItem) => {
+    setDeleteTarget(customer)
+  }
 
+  /** 删除客户（确认后执行） */
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return
     try {
-      await deleteCustomer(customer.id)
+      await deleteCustomer(deleteTarget.id)
       toast.success(t('toast.deleteSuccess'))
+      setDeleteTarget(null)
       await loadCustomers()
     } catch (error) {
       console.error('删除客户失败', error)
       toast.error(getErrorMessage(error, t('toast.deleteError')))
+      throw error
     }
   }
 
@@ -302,6 +311,17 @@ export function CustomersContent() {
 
       {/* 客户详情弹窗 */}
       <CustomerDetailDialog open={detailOpen} onOpenChange={setDetailOpen} customerId={detailCustomerId} />
+
+      {/* 删除确认对话框 */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={open => !open && setDeleteTarget(null)}
+        title={t('delete.confirmDelete')}
+        confirmText={tc('delete')}
+        cancelText={tc('cancel')}
+        destructive
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   )
 }

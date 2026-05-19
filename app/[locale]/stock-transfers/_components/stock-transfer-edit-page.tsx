@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle, Plus, Save, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,6 +44,7 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
   const [detail, setDetail] = useState<TransferDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const [fromWarehouseId, setFromWarehouseId] = useState('')
   const [toWarehouseId, setToWarehouseId] = useState('')
@@ -198,15 +200,22 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
   }
 
   /** 确认调拨 */
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
     if (!transferId) return
-    if (!window.confirm(t('confirmTransferTip'))) return
+    setShowConfirm(true)
+  }
+
+  /** 确认调拨（弹窗确认后执行） */
+  const doConfirm = async () => {
+    if (!transferId) return
+    setShowConfirm(false)
     try {
       await confirmTransfer(transferId)
       toast.success(t('confirmSuccess'))
       onBack()
     } catch (error) {
       toast.error(getErrorMessage(error, t('confirmFailed')))
+      throw error
     }
   }
 
@@ -407,6 +416,16 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
           </div>
         </>
       )}
+
+      {/* 调拨确认对话框 */}
+      <ConfirmDialog
+        open={showConfirm}
+        onOpenChange={setShowConfirm}
+        title={t('confirmTransferTip')}
+        confirmText={tc('confirm')}
+        cancelText={tc('cancel')}
+        onConfirm={doConfirm}
+      />
     </div>
   )
 }

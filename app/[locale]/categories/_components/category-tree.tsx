@@ -5,8 +5,8 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
 import { type NodeApi, type NodeRendererProps, Tree } from 'react-arborist'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { getErrorMessage } from '@/lib/error'
 import type { CategoryNode, CategorySortItem } from '@/lib/tauri'
 import { deleteCategory, getCategoryTree, updateCategoryOrder } from '@/lib/tauri'
@@ -180,9 +180,7 @@ export function CategoryTree({ onEdit, refreshKey }: CategoryTreeProps) {
   const [loading, setLoading] = useState(true)
 
   // 删除确认弹窗状态
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<CategoryNode | null>(null)
-  const [deleting, setDeleting] = useState(false)
 
   /** 加载分类数据 */
   const fetchCategories = useCallback(async () => {
@@ -247,23 +245,19 @@ export function CategoryTree({ onEdit, refreshKey }: CategoryTreeProps) {
   /** 处理删除：打开确认弹窗 */
   const handleDelete = useCallback((node: NodeApi<TreeNode>) => {
     setDeleteTarget(node.data.rawData)
-    setDeleteDialogOpen(true)
   }, [])
 
   /** 确认删除 */
   const confirmDelete = useCallback(async () => {
     if (!deleteTarget) return
-    setDeleting(true)
     try {
       await deleteCategory(deleteTarget.id)
       toast.success(t('deleteSuccess'))
-      setDeleteDialogOpen(false)
       setDeleteTarget(null)
       fetchCategories()
     } catch (e) {
       toast.error(getErrorMessage(e, t('hasMaterials')))
-    } finally {
-      setDeleting(false)
+      throw e // 抛出错误让 ConfirmDialog 不自动关闭
     }
   }, [deleteTarget, t, fetchCategories])
 
@@ -350,23 +344,17 @@ export function CategoryTree({ onEdit, refreshKey }: CategoryTreeProps) {
       </Tree>
 
       {/* 删除确认弹窗 */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{t('deleteCategory')}</DialogTitle>
-            <DialogDescription>{deleteTarget ? t('deleteConfirm', { name: deleteTarget.name }) : ''}</DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
-              {tc('cancel')}
-            </Button>
-            <Button variant="destructive" onClick={() => void confirmDelete()} disabled={deleting}>
-              <Trash2 className="size-4" />
-              {tc('delete')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={open => !open && setDeleteTarget(null)}
+        title={t('deleteCategory')}
+        description={deleteTarget ? t('deleteConfirm', { name: deleteTarget.name }) : ''}
+        confirmText={tc('delete')}
+        cancelText={tc('cancel')}
+        confirmIcon={<Trash2 className="size-4" />}
+        destructive
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }

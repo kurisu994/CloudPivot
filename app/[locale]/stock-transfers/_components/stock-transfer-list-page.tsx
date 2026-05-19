@@ -10,6 +10,7 @@ import {
   BusinessListTableLoadingRows,
   BusinessListTableShell,
 } from '@/components/common/business-list-table'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { PaginationControls } from '@/components/common/pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -46,6 +47,9 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
   const [pageSize] = useState(DEFAULT_PAGE_SIZE)
 
   const [warehouses, setWarehouses] = useState<WarehouseItem[]>([])
+
+  // 确认对话框状态
+  const [pendingAction, setPendingAction] = useState<{ type: 'delete' | 'confirm'; item: TransferListItem } | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -102,27 +106,36 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
     setFilters({ page: 1, pageSize })
   }
 
-  const handleDelete = async (item: TransferListItem) => {
-    if (!window.confirm(t('deleteConfirm'))) return
+  const handleDelete = (item: TransferListItem) => {
+    setPendingAction({ type: 'delete', item })
+  }
+
+  const handleConfirm = (item: TransferListItem) => {
+    setPendingAction({ type: 'confirm', item })
+  }
+
+  /** 确认操作执行 */
+  const handleActionConfirm = async () => {
+    if (!pendingAction) return
+    const { type, item } = pendingAction
     try {
-      await deleteTransfer(item.id)
-      toast.success(t('deleteSuccess'))
+      if (type === 'delete') {
+        await deleteTransfer(item.id)
+        toast.success(t('deleteSuccess'))
+      } else {
+        await confirmTransfer(item.id)
+        toast.success(t('confirmSuccess'))
+      }
+      setPendingAction(null)
       await loadData()
     } catch (error) {
-      toast.error(getErrorMessage(error, t('deleteFailed')))
+      const errKey = type === 'delete' ? 'deleteFailed' : 'confirmFailed'
+      toast.error(getErrorMessage(error, t(errKey)))
+      throw error
     }
   }
 
-  const handleConfirm = async (item: TransferListItem) => {
-    if (!window.confirm(t('confirmTransferTip'))) return
-    try {
-      await confirmTransfer(item.id)
-      toast.success(t('confirmSuccess'))
-      await loadData()
-    } catch (error) {
-      toast.error(getErrorMessage(error, t('confirmFailed')))
-    }
-  }
+  const confirmTitle = pendingAction?.type === 'delete' ? t('deleteConfirm') : t('confirmTransferTip')
 
   return (
     <div className="flex flex-col gap-6">
@@ -247,6 +260,17 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
           )}
         </TableBody>
       </BusinessListTableShell>
+
+      {/* 确认对话框 */}
+      <ConfirmDialog
+        open={!!pendingAction}
+        onOpenChange={open => !open && setPendingAction(null)}
+        title={confirmTitle}
+        confirmText={pendingAction?.type === 'delete' ? tc('delete') : tc('confirm')}
+        cancelText={tc('cancel')}
+        destructive={pendingAction?.type === 'delete'}
+        onConfirm={handleActionConfirm}
+      />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { Plus, RotateCcw, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -70,6 +71,9 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
 
   // 下拉选项数据
   const [customers, setCustomers] = useState<CustomerListItem[]>([])
+
+  // 确认对话框状态
+  const [pendingAction, setPendingAction] = useState<{ type: 'confirm' | 'cancel' | 'delete'; order: CustomOrderListItem } | null>(null)
 
   /** 加载定制单列表 */
   const loadOrders = useCallback(async () => {
@@ -158,40 +162,47 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
   }
 
   /** 确认定制单 */
-  const handleConfirm = async (order: CustomOrderListItem) => {
-    if (!window.confirm(t('confirmConfirm'))) return
-    try {
-      await invoke<void>('confirm_custom_order', { id: order.id })
-      toast.success(t('confirmSuccess'))
-      await loadOrders()
-    } catch (error) {
-      toast.error(getErrorMessage(error, t('confirmError')))
-    }
+  const handleConfirm = (order: CustomOrderListItem) => {
+    setPendingAction({ type: 'confirm', order })
   }
 
   /** 取消定制单 */
-  const handleCancel = async (order: CustomOrderListItem) => {
-    if (!window.confirm(t('cancelConfirm'))) return
-    try {
-      await invoke<void>('cancel_custom_order', { id: order.id })
-      toast.success(t('cancelSuccess'))
-      await loadOrders()
-    } catch (error) {
-      toast.error(getErrorMessage(error, t('cancelError')))
-    }
+  const handleCancel = (order: CustomOrderListItem) => {
+    setPendingAction({ type: 'cancel', order })
   }
 
   /** 删除定制单 */
-  const handleDelete = async (order: CustomOrderListItem) => {
-    if (!window.confirm(t('deleteConfirm'))) return
+  const handleDelete = (order: CustomOrderListItem) => {
+    setPendingAction({ type: 'delete', order })
+  }
+
+  /** 确认操作执行 */
+  const handleActionConfirm = async () => {
+    if (!pendingAction) return
+    const { type, order } = pendingAction
     try {
-      await invoke<void>('delete_custom_order', { id: order.id })
-      toast.success(t('deleteSuccess'))
+      if (type === 'confirm') {
+        await invoke<void>('confirm_custom_order', { id: order.id })
+        toast.success(t('confirmSuccess'))
+      } else if (type === 'cancel') {
+        await invoke<void>('cancel_custom_order', { id: order.id })
+        toast.success(t('cancelSuccess'))
+      } else {
+        await invoke<void>('delete_custom_order', { id: order.id })
+        toast.success(t('deleteSuccess'))
+      }
+      setPendingAction(null)
       await loadOrders()
     } catch (error) {
-      toast.error(getErrorMessage(error, t('deleteError')))
+      const errKey = type === 'confirm' ? 'confirmError' : type === 'cancel' ? 'cancelError' : 'deleteError'
+      toast.error(getErrorMessage(error, t(errKey)))
+      throw error
     }
   }
+
+  const confirmDialogTitle =
+    pendingAction?.type === 'confirm' ? t('confirmConfirm') : pendingAction?.type === 'cancel' ? t('cancelConfirm') : t('deleteConfirm')
+  const isDestructiveAction = pendingAction?.type === 'delete' || pendingAction?.type === 'cancel'
 
   return (
     <div className="flex flex-col gap-6">
@@ -305,6 +316,17 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
         onConfirm={handleConfirm}
         onCancel={handleCancel}
         onDelete={handleDelete}
+      />
+
+      {/* 确认对话框 */}
+      <ConfirmDialog
+        open={!!pendingAction}
+        onOpenChange={open => !open && setPendingAction(null)}
+        title={confirmDialogTitle}
+        confirmText={pendingAction?.type === 'delete' ? tc('delete') : tc('confirm')}
+        cancelText={tc('cancel')}
+        destructive={isDestructiveAction}
+        onConfirm={handleActionConfirm}
       />
     </div>
   )

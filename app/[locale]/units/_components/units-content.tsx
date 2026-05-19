@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,6 +20,7 @@ import { UnitDialog } from './unit-dialog'
 /** 单位管理主内容组件 */
 export function UnitsContent() {
   const t = useTranslations('units')
+  const tc = useTranslations('common')
 
   // 列表数据
   const [items, setItems] = useState<UnitItem[]>([])
@@ -26,6 +29,9 @@ export function UnitsContent() {
   // 弹窗状态
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingUnitId, setEditingUnitId] = useState<number | null>(null)
+
+  // 删除确认状态
+  const [deleteTarget, setDeleteTarget] = useState<UnitItem | null>(null)
 
   /** 加载单位列表 */
   const loadUnits = useCallback(async () => {
@@ -57,16 +63,17 @@ export function UnitsContent() {
     setDialogOpen(true)
   }
 
-  /** 删除单位 */
-  const handleDelete = async (item: UnitItem) => {
-    if (!confirm(t('deleteConfirm', { name: item.name }))) return
-
+  /** 删除单位（确认后执行） */
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return
     try {
-      await deleteUnit(item.id)
+      await deleteUnit(deleteTarget.id)
       toast.success(t('deleteSuccess'))
+      setDeleteTarget(null)
       loadUnits()
     } catch (error) {
       toast.error(String(error))
+      throw error
     }
   }
 
@@ -158,7 +165,7 @@ export function UnitsContent() {
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(item.id)}>
                           {t('edit')}
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(item)}>
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(item)}>
                           {t('delete')}
                         </Button>
                       </div>
@@ -173,6 +180,17 @@ export function UnitsContent() {
 
       {/* 新增/编辑弹窗 */}
       <UnitDialog open={dialogOpen} onOpenChange={setDialogOpen} unitId={editingUnitId} onSuccess={handleDialogSuccess} />
+
+      {/* 删除确认对话框 */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={open => !open && setDeleteTarget(null)}
+        title={t('deleteConfirm', { name: deleteTarget?.name ?? '' })}
+        confirmText={tc('delete')}
+        cancelText={tc('cancel')}
+        destructive
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   )
 }
