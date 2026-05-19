@@ -2237,14 +2237,14 @@ mod tests {
         let check: CreateStockCheckParams = serde_json::from_value(serde_json::json!({
             "warehouseId": 1,
             "checkDate": "2026-05-12",
-            "scopeType": "all",
+            "scopeType": "warehouse",
             "scopeCategoryId": null,
             "remark": "月度盘点"
         }))
         .expect("盘点创建参数应支持前端 camelCase 字段");
         assert_eq!(check.warehouse_id, 1);
         assert_eq!(check.check_date, "2026-05-12");
-        assert_eq!(check.scope_type, "all");
+        assert_eq!(check.scope_type, "warehouse");
 
         let transfer: SaveTransferParams = serde_json::from_value(serde_json::json!({
             "id": null,

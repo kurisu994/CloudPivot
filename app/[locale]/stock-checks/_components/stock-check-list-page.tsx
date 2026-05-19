@@ -60,7 +60,7 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
   const [createOpen, setCreateOpen] = useState(false)
   const [newWarehouseId, setNewWarehouseId] = useState('')
   const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0])
-  const [newScope, setNewScope] = useState('all')
+  const [newScope, setNewScope] = useState('warehouse')
   const [newCategoryId, setNewCategoryId] = useState('')
   const [creating, setCreating] = useState(false)
 
@@ -103,7 +103,7 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
   const categorySelectItems = useMemo(() => categories.map(c => ({ value: String(c.id), label: c.name })), [categories])
   const scopeItems = useMemo(
     () => [
-      { value: 'all', label: t('scopeWarehouse') },
+      { value: 'warehouse', label: t('scopeWarehouse') },
       { value: 'category', label: t('scopeCategory') },
     ],
     [t],
@@ -253,7 +253,7 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
                 <TableCell>{item.warehouseName}</TableCell>
                 <TableCell className="text-sm">{item.checkDate}</TableCell>
                 <TableCell>{statusBadge(item.status)}</TableCell>
-                <TableCell className="text-sm">{item.scopeType === 'all' ? t('scopeWarehouse') : t('scopeCategory')}</TableCell>
+                <TableCell className="text-sm">{item.scopeType === 'warehouse' ? t('scopeWarehouse') : t('scopeCategory')}</TableCell>
                 <TableCell className="text-right">{item.itemCount}</TableCell>
                 <TableCell className="text-right">
                   {item.diffCount > 0 ? <span className="text-amber-600 font-medium">{item.diffCount}</span> : 0}
