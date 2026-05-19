@@ -10,18 +10,105 @@ mod keychain;
 mod operation_log;
 
 use db::DbState;
+use std::path::Path;
 use tauri::Manager;
+use tauri_plugin_log::{Target, TargetKind};
+
+/// 清理超过指定天数的旧日志文件
+///
+/// 扫描日志目录中 `cloudpivot-*.log` 文件，从文件名提取日期，
+/// 删除超过 `max_days` 天的文件。
+fn cleanup_old_logs(log_dir: &Path, max_days: i64) {
+    let cutoff = chrono::Local::now().date_naive() - chrono::Duration::days(max_days);
+    let entries = match std::fs::read_dir(log_dir) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+
+        // 匹配 cloudpivot-YYYY-MM-DD.log 或 cloudpivot-error-YYYY-MM-DD.log
+        if !name.starts_with("cloudpivot-") || !name.ends_with(".log") {
+            continue;
+        }
+
+        // 从文件名末尾提取日期：去掉 ".log" 后取最后 10 个字符
+        let name_no_ext = name.trim_end_matches(".log");
+        if name_no_ext.len() < 10 {
+            continue;
+        }
+        let date_str = &name_no_ext[name_no_ext.len() - 10..];
+
+        if let Ok(date) = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+            if date < cutoff {
+                if let Err(e) = std::fs::remove_file(&path) {
+                    log::warn!("清理旧日志失败 {}: {}", path.display(), e);
+                } else {
+                    log::info!("已清理过期日志: {}", name);
+                }
+            }
+        }
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            // 初始化日志插件
+            // ── 日志初始化 ──────────────────────────────────────────
+            // 按天分文件：all 全量日志 + error 错误日志
+            // 日志目录：~/.cloudpivot/logs/（macOS/Windows 统一路径）
+            let home = dirs::home_dir().expect("无法获取用户主目录");
+            let log_dir = home.join(".cloudpivot").join("logs");
+            std::fs::create_dir_all(&log_dir)?;
+
+            let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+            let log_level = if cfg!(debug_assertions) {
+                log::LevelFilter::Debug
+            } else {
+                log::LevelFilter::Info
+            };
+
+            // 全量日志文件（cloudpivot-YYYY-MM-DD.log）
+            let all_log_path = log_dir.join(format!("cloudpivot-{today}.log"));
+            let all_file = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&all_log_path)?;
+            let all_dispatch = fern::Dispatch::new().chain(all_file);
+
+            // 错误日志文件（cloudpivot-error-YYYY-MM-DD.log）
+            let error_log_path = log_dir.join(format!("cloudpivot-error-{today}.log"));
+            let error_file = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&error_log_path)?;
+            let error_dispatch = fern::Dispatch::new()
+                .level(log::LevelFilter::Error)
+                .chain(error_file);
+
             app.handle().plugin(
                 tauri_plugin_log::Builder::default()
-                    .level(log::LevelFilter::Info)
+                    .level(log_level)
+                    .targets([
+                        // 全量日志 → 按天文件
+                        Target::new(TargetKind::Dispatch(all_dispatch)),
+                        // 错误日志 → 按天文件（仅 Error 级别）
+                        Target::new(TargetKind::Dispatch(error_dispatch)),
+                        // 标准输出（开发时终端可见）
+                        Target::new(TargetKind::Stdout),
+                        // Webview 控制台（前端 devtools 可见）
+                        Target::new(TargetKind::Webview),
+                    ])
                     .build(),
             )?;
+
+            // 清理超过 30 天的旧日志
+            cleanup_old_logs(&log_dir, 30);
 
             // 注入当前用户状态（默认 admin）
             app.manage(commands::CurrentUser::default());

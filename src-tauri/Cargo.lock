@@ -87,7 +87,9 @@ version = "0.1.6"
 dependencies = [
  "bcrypt",
  "chrono",
+ "dirs",
  "dotenvy",
+ "fern",
  "log",
  "serde",
  "serde_json",

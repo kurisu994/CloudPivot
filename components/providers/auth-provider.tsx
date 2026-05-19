@@ -4,6 +4,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useS
 import { SplashScreen } from '@/components/common/splash-screen'
 import { usePathname, useRouter } from '@/i18n/navigation'
 import { getErrorMessage } from '@/lib/error'
+import { initLogger } from '@/lib/logger'
 import * as tauriApi from '@/lib/tauri'
 import { isTauriEnv, type UserInfo } from '@/lib/tauri'
 import { SystemConfigKeys } from '@/lib/types/system-config'
@@ -239,6 +240,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const completeSetup = useCallback(() => {
     updateNeedsSetup(false)
   }, [updateNeedsSetup])
+
+  /** 应用启动时初始化日志系统（最先执行，仅一次） */
+  useEffect(() => {
+    initLogger()
+  }, [])
 
   /** 启动时恢复认证状态（仅首次挂载时执行，locale 切换时从缓存同步恢复） */
   useEffect(() => {

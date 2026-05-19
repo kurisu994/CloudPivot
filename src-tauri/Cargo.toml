@@ -24,6 +24,8 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2.10.3", features = [] }
 tauri-plugin-log = "2"
+# 日志分发 — 按天按级别双文件写入（tauri-plugin-log 内部使用的同版本）
+fern = "0.7"
 # 异步运行时
 tokio = { version = "1", features = ["full"] }
 # 数据库 — PostgreSQL + 异步运行时
@@ -38,3 +40,4 @@ chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4"] }
 # 错误处理
 thiserror = "2"
+dirs = "6.0.0"

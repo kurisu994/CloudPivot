@@ -1,27 +1,22 @@
 //! 认证会话持久化
 //!
-//! 将认证会话数据以 JSON 文件形式存储在应用数据目录下。
-//! 文件路径：`{app_data_dir}/auth_session.json`
+//! 将认证会话数据以 JSON 文件形式存储在固定数据目录下。
+//! 文件路径：`~/.cloudpivot/data/auth_session.json`
 //!
-//! 各平台数据目录：
-//! - macOS: ~/Library/Application Support/com.cloudpivot.ims/
-//! - Windows: C:\Users\<user>\AppData\Roaming\com.cloudpivot.ims\
-//! - Linux: ~/.local/share/com.cloudpivot.ims/
+//! 各平台实际路径：
+//! - macOS/Linux: ~/.cloudpivot/data/
+//! - Windows: C:\Users\<user>\.cloudpivot\data\
 
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use tauri::{AppHandle, Manager};
 
 const AUTH_FILE_NAME: &str = "auth_session.json";
 
-/// 获取认证文件路径
-fn auth_file_path(app: &AppHandle) -> Result<PathBuf, String> {
-    let data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("无法获取应用数据目录: {}", e))?;
-    Ok(data_dir.join(AUTH_FILE_NAME))
+/// 获取认证文件路径：~/.cloudpivot/data/auth_session.json
+fn auth_file_path() -> Result<PathBuf, String> {
+    let home = dirs::home_dir().ok_or_else(|| "无法获取用户主目录".to_string())?;
+    Ok(home.join(".cloudpivot").join("data").join(AUTH_FILE_NAME))
 }
 
 /// 将认证文件写入应用数据目录。
@@ -117,24 +112,24 @@ fn clear_auth_file(path: &Path) -> Result<(), String> {
     }
 }
 
-/// 保存认证信息到应用数据目录
+/// 保存认证信息到数据目录
 #[tauri::command]
-pub fn save_auth_keychain(app: AppHandle, data: String) -> Result<(), String> {
-    let path = auth_file_path(&app)?;
+pub fn save_auth_keychain(data: String) -> Result<(), String> {
+    let path = auth_file_path()?;
     write_auth_file(&path, &data)
 }
 
-/// 从应用数据目录读取认证信息
+/// 从数据目录读取认证信息
 #[tauri::command]
-pub fn read_auth_keychain(app: AppHandle) -> Result<Option<String>, String> {
-    let path = auth_file_path(&app)?;
+pub fn read_auth_keychain() -> Result<Option<String>, String> {
+    let path = auth_file_path()?;
     read_auth_file(&path)
 }
 
-/// 清除应用数据目录中的认证文件
+/// 清除数据目录中的认证文件
 #[tauri::command]
-pub fn clear_auth_keychain(app: AppHandle) -> Result<(), String> {
-    let path = auth_file_path(&app)?;
+pub fn clear_auth_keychain() -> Result<(), String> {
+    let path = auth_file_path()?;
     clear_auth_file(&path)
 }
 
