@@ -19,6 +19,8 @@
 - **物料 is_enabled 类型错误**：PostgreSQL `BOOLEAN` 列不接受整数 `1`/`0`（SQLite 遗留），INSERT 和 UPDATE 改为绑定原生布尔值 `TRUE`/`FALSE`。
 - **物料分类选择器平铺无层级**：后端 `get_categories` 新增返回 `parent_id` 和 `level` 字段，前端按深度优先排序并加缩进展示层级。
 - **物料弹窗尺寸过小**：`DialogContent` 从 `max-w-4xl` 调大 20% 至 `sm:max-w-[67rem]`。
+- **报表 SQL 类型不兼容**：`reports.rs` 中 `SUM(bigint)` 返回 `NUMERIC`，sqlx 用 `i64` 解码失败。在 3 处 SQL 的 `SUM(...)` 外层包裹 `CAST(COALESCE(..., 0) AS BIGINT)` 强制转回 `BIGINT`。
+- **盘点盈亏金额显示放大 100 倍**：盘点编辑页 `diffAmount` 直接 `.toFixed(2)` 展示数据库分值，未做分→元转换。改用 `formatAmount()` 正确格式化。
 
 - **分类管理删除无效果**：Tauri 2 WebView 中 `window.confirm()` 不弹出原生对话框直接返回 false，改用 shadcn Dialog 组件实现确认弹窗。
 - **分类管理创建/更新/排序失败**：`category.rs` 中 `SELECT level` 查询用 `i64` 解码 PostgreSQL `INTEGER`（INT4）列，sqlx 类型检查报错。三处统一改为 `i32`。
