@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { formatAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
 import type { StockCheckDetail, UpdateStockCheckItemParams } from '@/lib/tauri'
 import { confirmStockCheck, getStockCheckDetail, updateStockCheckItems } from '@/lib/tauri'
@@ -216,7 +217,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
                       <TableCell
                         className={`text-right font-mono text-sm ${item.diffAmount > 0 ? 'text-green-600' : item.diffAmount < 0 ? 'text-red-600' : ''}`}
                       >
-                        {item.actualQty !== null ? item.diffAmount.toFixed(2) : '-'}
+                        {item.actualQty !== null ? formatAmount(item.diffAmount, 'USD', { showSymbol: false }) : '-'}
                       </TableCell>
                     </TableRow>
                   )
