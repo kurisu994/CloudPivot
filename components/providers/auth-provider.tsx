@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setNeedsSetup(value)
   }, [])
 
-  /** 保存认证信息到系统钥匙串（Tauri）或 localStorage（Web 调试模式） */
+  /** 保存认证会话（Tauri 应用数据目录文件，Web 调试模式 localStorage） */
   const saveAuth = useCallback(async (userInfo: UserInfo, rememberMe: boolean) => {
     const data: AuthStorage = {
       userId: userInfo.id,
@@ -103,9 +103,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       rememberMe,
     }
     try {
-      await tauriApi.saveAuthKeychain(JSON.stringify(data))
+      await tauriApi.saveAuthSession(JSON.stringify(data))
     } catch {
-      // 钥匙串或 localStorage 不可用（如隐私模式）
+      // 认证会话文件或 localStorage 不可用（如隐私模式）
     }
   }, [])
 
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearAuth = useCallback(async () => {
     updateUser(null)
     try {
-      await tauriApi.clearAuthKeychain()
+      await tauriApi.clearAuthSession()
     } catch {
       // 忽略
     }
@@ -163,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateUser(response.user)
 
         if (rememberMe) {
-          // 勾选"记住我"：持久化会话到钥匙串，7天有效
+          // 勾选"记住我"：持久化会话，7天有效
           await saveAuth(response.user, true)
         } else {
           // 未勾选：清除之前可能残留的持久化数据，仅内存保持登录
@@ -209,7 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateUser(updated)
         try {
           // 改密后保持之前的 rememberMe 状态
-          const stored = await tauriApi.readAuthKeychain()
+          const stored = await tauriApi.readAuthSession()
           const wasRemembered = stored ? (JSON.parse(stored) as AuthStorage).rememberMe : false
           if (wasRemembered) {
             await saveAuth(updated, true)
@@ -249,7 +249,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const restoreAuth = async () => {
       try {
-        const stored = await tauriApi.readAuthKeychain()
+        const stored = await tauriApi.readAuthSession()
         if (!stored) {
           authInitialized = true
           setIsLoading(false)
