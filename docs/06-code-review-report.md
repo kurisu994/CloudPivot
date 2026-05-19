@@ -78,9 +78,9 @@
 
 #### 5. "记住我" — 本地会话持久化 ✅ 已修复
 
-- **当前要求**："记住我"仅保存本地会话凭证，不保存明文密码；Tauri 环境写入应用数据目录认证文件，改密后通过 `session_version` 失效
+- **当前要求**："记住我"仅保存本地会话凭证，不保存明文密码；Tauri 环境写入~/.cloudpivot/data/auth_session.json，改密后通过 `session_version` 失效
 - **修复内容**：
-  - `src-tauri/src/keychain.rs` 负责应用数据目录 `auth_session.json` 的读写删，Unix 平台收敛为 `0600` 权限
+  - `src-tauri/src/keychain.rs` 负责~/.cloudpivot/data/auth_session.json 的读写删，Unix 平台收敛为 `0600` 权限
   - 前端 `auth-provider.tsx`：`saveAuth` / `clearAuth` / 启动恢复均调用 IPC 认证持久化命令；非 Tauri 环境保留 localStorage 降级
 
 ---
@@ -164,7 +164,7 @@
 2. ~~**业务操作日志采集**~~ — 提取 `operation_log.rs` 公共模块，覆盖采购/销售/库存/定制单/工单/财务关键操作；查询页接入真实分页筛选
 3. ~~**销售出库 FIFO 批次分配**~~ — 后端 `save_and_confirm_outbound` 自动按 FIFO 分配 lot，前端展示建议批次
 4. ~~**`inventory_reservation_lots` 批次预留分配**~~ — 定制单确认时按 FIFO 分配 lot 级预留，领料/退料同步消耗/恢复
-5. ~~**"记住我"本地会话持久化**~~ — Tauri 环境使用应用数据目录认证文件替代 localStorage，配合 `session_version` 控制失效
+5. ~~**"记住我"本地会话持久化**~~ — Tauri 环境使用~/.cloudpivot/data/auth_session.json替代 localStorage，配合 `session_version` 控制失效
 
 ### P1（发布前建议完成）
 
