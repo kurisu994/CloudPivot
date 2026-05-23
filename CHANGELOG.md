@@ -8,6 +8,20 @@
 
 ## [Unreleased]
 
+### 修复
+
+- **Critical/High 级别安全与并发缺陷**：
+  - SQL 注入防护：操作日志、盘点单、单号生成等模块改用 QueryBuilder 参数化查询，消除字符串拼接风险
+  - PostgreSQL 方言兼容：`MAX(0, expr)` 统一改为 `GREATEST(0, expr)`
+  - 并发覆盖保护：库存 SELECT 添加 `FOR UPDATE` 行锁，批次预留增加数量约束校验
+  - IPC 鉴权增强：`CurrentUser` 增加 `is_authenticated` 校验，12 个写命令添加 `require_auth` 守卫
+  - 密码修改安全：后端增加旧密码校验，前端改密页同步添加旧密码输入框
+  - 迁移原子性：每条迁移在独立事务内执行，补齐 003/004 PostgreSQL 迁移脚本
+  - BOM 删除保护：修正被引用字段判断条件
+  - 备份恢复安全：改为事务内执行并添加鉴权校验
+- **构建环境区分**：`next.config.ts` 仅在 Tauri `pnpm build` 生命周期启用静态导出，开发模式保持 Next.js 服务器，避免非 Tauri 环境下构建失败
+- **i18n 翻译补全**：操作日志页面补全 zh/en/vi 三语下缺失的 `loading` 与 `noData` 翻译键
+
 ---
 
 ## [0.1.7] — 2026-05-19

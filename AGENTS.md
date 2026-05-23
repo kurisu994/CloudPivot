@@ -38,7 +38,7 @@ src-tauri/src/
   commands/                # IPC 命令模块（155 个命令，详见下方）
     order_shared.rs        # 采购/销售共享抽象（编号生成、列表查询、审核/作废/删除、状态更新）
   migrations/
-    postgres/              # PostgreSQL 迁移文件（001_init + 002_seed_data）
+    postgres/              # PostgreSQL 迁移文件（001_init + 002_seed_data + 003_production_orders + 004_drop_legacy_work_orders）
     sqlite/                # SQLite 历史迁移文件（5 个，已废弃）
 docs/                      # 设计文档（实现功能前必读）
   01-requirements.md       # 需求规格：12 大模块
@@ -68,6 +68,7 @@ just release <tag> # 一键发布
 ### 代码修改规则
 
 - 每次修改代码后，必须运行 `just fmt` 和 `just lint`，确保代码质量
+- 涉及安全边界（SQL 注入、并发覆盖、IPC 鉴权）的修改，需同步更新 `CHANGELOG.md` 的 `[Unreleased]` 栏目
 
 
 ### UI 组件：shadcn/ui 优先
@@ -92,6 +93,7 @@ base-nova Select 用 Portal 渲染，**必须传 `items` prop**（`{ value, labe
 - 面向用户文案**必须** `t()` 获取，**严禁硬编码**
 - 代码注释中文，变量名英文
 - Git commit 中文 + emoji（如 `🚀 feat(采购): 添加入库确认`）
+- **安全编码**：SQL 查询必须使用 QueryBuilder 参数化，禁止字符串拼接；库存操作使用 `FOR UPDATE` 行锁防止并发覆盖
 
 ### 页面组件模式
 
@@ -115,6 +117,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 
 - `TAURI_ENV_PLATFORM` 存在时启用 SSG；开发模式用 Next.js 服务器
 - `lib/tauri/core.ts` 的 `isTauriEnv()` 兼容 Tauri 2 `__TAURI_INTERNALS__` / `isTauri` 运行时判断，非 Tauri 自动降级 mock
+- `next.config.ts` 仅在 Tauri `pnpm build` 生命周期启用静态导出（`output: 'export'`），避免非 Tauri 环境下构建失败
 
 ## IPC 命令（155 个）
 
@@ -142,14 +145,16 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 
 ## 认证系统
 
-- **后端**（`auth.rs`）：bcrypt + 5 次锁定 15 分钟 + 首次强制改密 + session_version
+- **后端**（`auth.rs`）：bcrypt + 5 次锁定 15 分钟 + 首次强制改密 + session_version + 旧密码校验（改密时验证）
 - **前端**（`auth-provider.tsx`）：AuthProvider + useAuth() + 路由守卫 + 认证会话持久化（~/.cloudpivot/data/ 文件，非 Tauri 环境降级 localStorage）
+- **IPC 鉴权**：`CurrentUser` 增加 `is_authenticated` 校验，12 个写命令添加 `require_auth` 守卫
 - 默认管理员：admin / admin123
 
 ## 数据库
 
-sqlx + PostgreSQL，45 张表，自管理迁移（从 SQLite 迁移至 PostgreSQL，支持多终端共享数据）。`AppError` 统一错误类型 + `Serialize` 返回前端。
+sqlx + PostgreSQL，45 张表（001_init）+ 3 张表（003/004 生产工单迁移），自管理迁移（从 SQLite 迁移至 PostgreSQL，支持多终端共享数据）。`AppError` 统一错误类型 + `Serialize` 返回前端。
 数据库连接地址通过 `DATABASE_URL` 环境变量在编译时注入二进制（`build.rs` 从 `.env` 或环境变量读取，本地开发读 `.env`，CI 读 GitHub Secrets）。
+迁移执行每条在独立事务内完成，保证原子性。
 
 ## 当前状态（全部五个阶段已完成）
 
