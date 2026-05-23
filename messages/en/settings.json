@@ -269,6 +269,8 @@
       "allTypes": "All Types",
       "exportData": "Export Data",
       "query": "Query",
+      "loading": "Loading...",
+      "noData": "No data",
       "showingRange": "Showing {from} to {to} of {total} entries",
       "actionCreate": "Create",
       "actionUpdate": "Update",

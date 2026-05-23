@@ -269,6 +269,8 @@
       "allTypes": "Tất cả loại",
       "exportData": "Xuất dữ liệu",
       "query": "Truy vấn",
+      "loading": "Đang tải...",
+      "noData": "Không có dữ liệu",
       "showingRange": "Hiển thị {from} đến {to}, tổng cộng {total} bản ghi",
       "actionCreate": "Tạo mới",
       "actionUpdate": "Cập nhật",

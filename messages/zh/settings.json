@@ -269,6 +269,8 @@
       "allTypes": "全部类型",
       "exportData": "导出数据",
       "query": "查询",
+      "loading": "加载中...",
+      "noData": "暂无数据",
       "showingRange": "显示 {from} 到 {to} 条，共 {total} 条记录",
       "actionCreate": "新建",
       "actionUpdate": "更新",
