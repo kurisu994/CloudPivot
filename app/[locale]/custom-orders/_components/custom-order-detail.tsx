@@ -826,7 +826,7 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">{t('bomStdQty')}</p>
-                <p className="text-sm">{customBom.item_count} 项</p>
+                <p className="text-sm">{t('bomItems', { count: customBom.item_count })}</p>
               </div>
             </div>
           ) : (

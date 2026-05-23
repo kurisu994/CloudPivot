@@ -75,6 +75,8 @@
       "noAuxUnit": "Không",
       "conversionRate": "Tỷ lệ quy đổi",
       "conversionRatePlaceholder": "Số lượng",
+      "auxUnitPrefix": "1 Phụ =",
+      "baseUnitLabel": "Đơn vị chính",
       "refCostPrice": "Giá nhập tham khảo",
       "salePrice": "Giá bán",
       "safetyStock": "Tồn kho an toàn",

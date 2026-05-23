@@ -460,7 +460,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                   <Field>
                     <FieldLabel htmlFor="conversion">{t('form.conversionRate')}</FieldLabel>
                     <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground text-sm whitespace-nowrap">1辅 =</span>
+                      <span className="text-muted-foreground text-sm whitespace-nowrap">{t('form.auxUnitPrefix')}</span>
                       <Input
                         id="conversion"
                         type="number"
@@ -469,7 +469,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                         value={form.conversionRate ?? ''}
                         onChange={e => setField('conversionRate', parseFloat(e.target.value) || null)}
                       />
-                      <span className="text-muted-foreground text-sm whitespace-nowrap">主单位</span>
+                      <span className="text-muted-foreground text-sm whitespace-nowrap">{t('form.baseUnitLabel')}</span>
                     </div>
                   </Field>
 

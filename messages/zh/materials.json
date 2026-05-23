@@ -75,6 +75,8 @@
       "noAuxUnit": "无",
       "conversionRate": "换算比例",
       "conversionRatePlaceholder": "数量",
+      "auxUnitPrefix": "1辅 =",
+      "baseUnitLabel": "主单位",
       "refCostPrice": "参考进价",
       "salePrice": "销售价格",
       "safetyStock": "安全库存",

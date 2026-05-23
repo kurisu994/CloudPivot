@@ -64,18 +64,18 @@ function PrintLanguageCard() {
           <Select
             defaultValue="zh"
             items={[
-              { value: 'zh', label: '简体中文' },
-              { value: 'en', label: 'English' },
-              { value: 'vi', label: 'Tiếng Việt' },
+              { value: 'zh', label: t('localeZh') },
+              { value: 'en', label: t('localeEn') },
+              { value: 'vi', label: t('localeVi') },
             ]}
           >
             <SelectTrigger className="h-10 bg-slate-50 dark:bg-slate-900/50">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="zh">简体中文</SelectItem>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="vi">Tiếng Việt</SelectItem>
+          <SelectItem value="zh">{t('localeZh')}</SelectItem>
+          <SelectItem value="en">{t('localeEn')}</SelectItem>
+          <SelectItem value="vi">{t('localeVi')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -84,18 +84,18 @@ function PrintLanguageCard() {
           <Select
             defaultValue="en"
             items={[
-              { value: 'en', label: 'English' },
-              { value: 'vi', label: 'Tiếng Việt' },
-              { value: 'none', label: '无' },
+              { value: 'en', label: t('localeEn') },
+              { value: 'vi', label: t('localeVi') },
+              { value: 'none', label: t('localeNone') },
             ]}
           >
             <SelectTrigger className="h-10 bg-slate-50 dark:bg-slate-900/50">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="vi">Tiếng Việt</SelectItem>
-              <SelectItem value="none">无</SelectItem>
+          <SelectItem value="en">{t('localeEn')}</SelectItem>
+          <SelectItem value="vi">{t('localeVi')}</SelectItem>
+          <SelectItem value="none">{t('localeNone')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -139,13 +139,13 @@ function PaperAndMarginsCard() {
           <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('presetSpec')}</Label>
           <div className="grid grid-cols-2 gap-3">
             <Button variant="outline" className="border-primary bg-primary/5 text-primary h-10 border-2 text-sm font-bold shadow-none">
-              A4 (210x297mm)
+              {t('paperA4')}
             </Button>
             <Button
               variant="outline"
               className="h-10 border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900/50"
             >
-              A5 (148x210mm)
+              {t('paperA5')}
             </Button>
           </div>
         </div>
@@ -293,7 +293,7 @@ function RealtimePreviewModule({ templateName }: { templateName: string }) {
 
         {/* Footer info */}
         <div className="absolute right-6 bottom-4 left-6 flex items-center justify-between border-t border-slate-50 pt-2 text-[7px] text-slate-300">
-          <span>{t('printTime')}: 2024-05-20 14:30</span>
+          <span>{t('printTimeLabel')}: 2024-05-20 14:30</span>
           <span>{t('pageCount')}</span>
         </div>
       </div>

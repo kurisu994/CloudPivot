@@ -4,6 +4,10 @@
     "subtitle": "Bill of Materials",
     "description": "Manage the relationship between finished products and raw materials, maintain standard usage and wastage rates",
     "searchPlaceholder": "Search product name/code...",
+    "loading": "Loading...",
+    "noResults": "No BOM data yet. Click \"New BOM\" to create one",
+    "noItems": "No items yet. Click \"Add Material\"",
+    "noReverseLookup": "No reference records found",
     "filters": {
       "statusAll": "All Status",
       "status": {

@@ -4,6 +4,10 @@
     "subtitle": "Danh mục vật tư",
     "description": "Quản lý mối quan hệ giữa thành phẩm và nguyên vật liệu, duy trì định mức và tỷ lệ hao hụt",
     "searchPlaceholder": "Tìm tên/mã sản phẩm...",
+    "loading": "Đang tải...",
+    "noResults": "Chưa có dữ liệu BOM. Nhấn \"Tạo BOM\" để bắt đầu",
+    "noItems": "Chưa có chi tiết. Nhấn \"Thêm vật tư\"",
+    "noReverseLookup": "Không tìm thấy bản ghi tham chiếu",
     "filters": {
       "statusAll": "Tất cả trạng thái",
       "status": {

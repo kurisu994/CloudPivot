@@ -4,6 +4,10 @@
     "subtitle": "物料清单",
     "description": "管理成品与原材料的对应关系，维护标准用量和损耗率",
     "searchPlaceholder": "搜索成品名称/编码...",
+    "loading": "加载中...",
+    "noResults": "暂无 BOM 数据，点击「新建 BOM」开始创建",
+    "noItems": "暂无明细，点击「添加物料」",
+    "noReverseLookup": "未找到引用记录",
     "filters": {
       "statusAll": "全部状态",
       "status": {

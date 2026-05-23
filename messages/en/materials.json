@@ -75,6 +75,8 @@
       "noAuxUnit": "None",
       "conversionRate": "Conversion Rate",
       "conversionRatePlaceholder": "Quantity",
+      "auxUnitPrefix": "1 Aux =",
+      "baseUnitLabel": "Base Unit",
       "refCostPrice": "Ref Cost",
       "salePrice": "Sale Price",
       "safetyStock": "Safety Stock",

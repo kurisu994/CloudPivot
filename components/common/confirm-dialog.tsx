@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useTranslations } from 'next-intl'
 
 interface ConfirmDialogProps {
   /** 对话框是否打开 */
@@ -36,12 +37,13 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmText = '确认',
-  cancelText = '取消',
+  confirmText,
+  cancelText,
   destructive = false,
   confirmIcon,
   onConfirm,
 }: ConfirmDialogProps) {
+  const t = useTranslations('common')
   const [loading, setLoading] = useState(false)
 
   const handleConfirm = async () => {
@@ -65,11 +67,11 @@ export function ConfirmDialog({
         </DialogHeader>
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            {cancelText}
+            {cancelText || t('cancel')}
           </Button>
           <Button variant={destructive ? 'destructive' : 'default'} onClick={() => void handleConfirm()} disabled={loading}>
             {confirmIcon}
-            {confirmText}
+            {confirmText || t('confirm')}
           </Button>
         </div>
       </DialogContent>

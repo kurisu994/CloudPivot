@@ -178,23 +178,23 @@ function SystemDefaultsCard({
 }) {
   const t = useTranslations('settings.companyInfo')
 
-  // 模拟可选列表，后续可以根据实际需求抽离或从i18n获取
+  // 语言选项从 i18n 获取
   const localeOptions = [
-    { label: '简体中文 (Chinese Simplified)', value: 'zh' },
-    { label: 'Tiếng Việt (Vietnamese)', value: 'vi' },
-    { label: 'English', value: 'en' },
+    { label: t('localeZh'), value: 'zh' },
+    { label: t('localeVi'), value: 'vi' },
+    { label: t('localeEn'), value: 'en' },
   ]
 
   const currencyOptions = [
-    { label: '人民币 (CNY ¥)', value: 'CNY' },
-    { label: '越南盾 (VND ₫)', value: 'VND' },
-    { label: '美元 (USD $)', value: 'USD' },
+    { label: t('currencyCny'), value: 'CNY' },
+    { label: t('currencyVnd'), value: 'VND' },
+    { label: t('currencyUsd'), value: 'USD' },
   ]
 
   const timezoneOptions = [
-    { label: 'UTC+8 (北京, 上海, 香港)', value: 'UTC+8' },
-    { label: 'UTC+7 (胡志明市, 曼谷)', value: 'UTC+7' },
-    { label: 'UTC+0 (伦敦)', value: 'UTC+0' },
+    { label: t('timezoneUtc8'), value: 'UTC+8' },
+    { label: t('timezoneUtc7'), value: 'UTC+7' },
+    { label: t('timezoneUtc0'), value: 'UTC+0' },
   ]
 
   return (

@@ -134,13 +134,13 @@ export function BomReverseLookup() {
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-muted-foreground py-8 text-center">
-                    加载中...
+                    {t('loading')}
                   </TableCell>
                 </TableRow>
               ) : results.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-muted-foreground py-8 text-center">
-                    未找到引用记录
+                    {t('noReverseLookup')}
                   </TableCell>
                 </TableRow>
               ) : (

@@ -412,7 +412,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <span className="text-muted-foreground">加载中...</span>
+        <span className="text-muted-foreground">{t('loading')}</span>
       </div>
     )
   }

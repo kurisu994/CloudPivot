@@ -91,6 +91,7 @@
     "bomActualQty": "Số lượng thực tế",
     "bomCost": "Chi phí",
     "bomNone": "Chưa có BOM tùy chỉnh",
+    "bomItems": "{count} mục",
     "selectBom": "Chọn BOM chuẩn",
 
     "reservationTitle": "Dự trữ nguyên liệu",

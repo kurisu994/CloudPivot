@@ -91,6 +91,7 @@
     "bomActualQty": "实际用量",
     "bomCost": "成本",
     "bomNone": "暂无定制 BOM",
+    "bomItems": "{count} 项",
     "selectBom": "选择标准 BOM",
 
     "reservationTitle": "原材料预留",

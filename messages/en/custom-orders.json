@@ -91,6 +91,7 @@
     "bomActualQty": "Actual Qty",
     "bomCost": "Cost",
     "bomNone": "No custom BOM yet",
+    "bomItems": "{count} items",
     "selectBom": "Select Standard BOM",
 
     "reservationTitle": "Material Reservations",
