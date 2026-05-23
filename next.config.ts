@@ -3,6 +3,8 @@ import createNextIntlPlugin from 'next-intl/plugin'
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
 
+const isTauriBuild = Boolean(process.env.TAURI_ENV_PLATFORM && process.env.npm_lifecycle_event === 'build')
+
 /**
  * Next.js 配置
  *
@@ -10,8 +12,8 @@ const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
  * 构建时通过 package.json 的 build 脚本自动处理。
  */
 const nextConfig: NextConfig = {
-  // 仅在 Tauri 生产构建时启用 SSG
-  output: process.env.TAURI_ENV_PLATFORM ? 'export' : undefined,
+  // Tauri dev 同样注入 TAURI_ENV_PLATFORM，仅在构建脚本执行时启用 SSG
+  output: isTauriBuild ? 'export' : undefined,
   images: {
     unoptimized: true,
   },
