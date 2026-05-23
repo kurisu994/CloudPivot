@@ -508,6 +508,8 @@ pub async fn save_sales_order(
     current_user: State<'_, CurrentUser>,
     params: SaveSalesOrderParams,
 ) -> Result<i64, AppError> {
+    current_user.require_auth()?;
+
     validate_save_params(&params)?;
 
     // 校验客户存在
@@ -1256,6 +1258,8 @@ pub async fn save_and_confirm_outbound(
     current_user: State<'_, CurrentUser>,
     params: SaveOutboundOrderParams,
 ) -> Result<i64, AppError> {
+    current_user.require_auth()?;
+
     use super::inventory_ops;
 
     // 基本校验

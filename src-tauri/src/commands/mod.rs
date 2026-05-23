@@ -35,8 +35,8 @@ use crate::error::AppError;
 
 /// 当前登录用户信息（Tauri managed state）
 ///
-/// 登录成功后更新此状态，所有写操作从中读取 user_id 和 display_name，
-/// 替代硬编码的 `1` / `"admin"`。支持未来多用户扩展。
+/// 登录成功后更新此状态，所有写操作从中读取 user_id 和 display_name。
+/// 未登录时 is_authenticated = false，业务命令需显式校验。
 pub struct CurrentUser {
     pub inner: std::sync::RwLock<CurrentUserInner>,
 }
@@ -46,15 +46,17 @@ pub struct CurrentUser {
 pub struct CurrentUserInner {
     pub user_id: i64,
     pub display_name: String,
+    pub is_authenticated: bool,
 }
 
 impl Default for CurrentUser {
-    /// 默认值：admin (id=1)，确保未登录时也有合理的降级值
+    /// 默认值：未认证状态，防止未登录时误用 admin 身份
     fn default() -> Self {
         Self {
             inner: std::sync::RwLock::new(CurrentUserInner {
-                user_id: 1,
-                display_name: "admin".to_string(),
+                user_id: 0,
+                display_name: "未认证".to_string(),
+                is_authenticated: false,
             }),
         }
     }
@@ -71,11 +73,28 @@ impl CurrentUser {
         self.inner.read().unwrap().display_name.clone()
     }
 
+    /// 校验当前用户已登录
+    pub fn require_auth(&self) -> Result<(), AppError> {
+        if !self.inner.read().unwrap().is_authenticated {
+            return Err(AppError::Auth("请先登录".into()));
+        }
+        Ok(())
+    }
+
     /// 更新当前用户（登录成功后调用）
     pub fn set(&self, user_id: i64, display_name: String) {
         let mut inner = self.inner.write().unwrap();
         inner.user_id = user_id;
         inner.display_name = display_name;
+        inner.is_authenticated = true;
+    }
+
+    /// 清除登录状态（登出时调用）
+    pub fn clear(&self) {
+        let mut inner = self.inner.write().unwrap();
+        inner.user_id = 0;
+        inner.display_name = "未认证".to_string();
+        inner.is_authenticated = false;
     }
 }
 
@@ -156,6 +175,7 @@ pub async fn login(
 #[serde(rename_all = "camelCase")]
 pub struct ChangePasswordRequest {
     user_id: i64,
+    old_password: String,
     new_password: String,
 }
 
@@ -165,7 +185,7 @@ pub async fn change_password(
     db: State<'_, DbState>,
     request: ChangePasswordRequest,
 ) -> Result<(), AppError> {
-    auth::change_password(&db.pool, request.user_id, &request.new_password).await
+    auth::change_password(&db.pool, request.user_id, &request.old_password, &request.new_password).await
 }
 
 /// 获取用户信息
@@ -418,64 +438,58 @@ pub async fn get_operation_logs(
     let offset = (page - 1) * page_size;
 
     // 动态构建 WHERE 子句
-    let mut conditions: Vec<String> = Vec::new();
-    let mut binds: Vec<String> = Vec::new();
-    let mut bind_i64s: Vec<i64> = Vec::new();
+    let mut count_qb =
+        sqlx::QueryBuilder::new("SELECT COUNT(*) FROM operation_logs WHERE 1=1");
+    let mut list_qb = sqlx::QueryBuilder::new(
+        "SELECT id, module, action, target_type, target_id, target_no,
+                detail, operator_user_id, operator_name_snapshot, created_at::TEXT
+         FROM operation_logs WHERE 1=1",
+    );
 
     if let Some(ref m) = filter.module {
-        conditions.push("module = ?".to_string());
-        binds.push(m.clone());
+        count_qb.push(" AND module = ");
+        count_qb.push_bind(m);
+        list_qb.push(" AND module = ");
+        list_qb.push_bind(m);
     }
     if let Some(ref a) = filter.action {
-        conditions.push("action = ?".to_string());
-        binds.push(a.clone());
+        count_qb.push(" AND action = ");
+        count_qb.push_bind(a);
+        list_qb.push(" AND action = ");
+        list_qb.push_bind(a);
     }
     if let Some(uid) = filter.operator_user_id {
-        conditions.push("operator_user_id = ?".to_string());
-        bind_i64s.push(uid);
+        count_qb.push(" AND operator_user_id = ");
+        count_qb.push_bind(uid);
+        list_qb.push(" AND operator_user_id = ");
+        list_qb.push_bind(uid);
     }
     if let Some(ref df) = filter.date_from {
-        conditions.push("created_at >= ?".to_string());
-        binds.push(df.clone());
+        count_qb.push(" AND created_at >= ");
+        count_qb.push_bind(df);
+        list_qb.push(" AND created_at >= ");
+        list_qb.push_bind(df);
     }
     if let Some(ref dt) = filter.date_to {
-        conditions.push("created_at <= ?".to_string());
-        binds.push(dt.clone());
+        count_qb.push(" AND created_at <= ");
+        count_qb.push_bind(dt);
+        list_qb.push(" AND created_at <= ");
+        list_qb.push_bind(dt);
     }
 
-    let where_clause = if conditions.is_empty() {
-        String::new()
-    } else {
-        format!("WHERE {}", conditions.join(" AND "))
-    };
-
-    // 查询总数
-    let count_sql = format!("SELECT COUNT(*) FROM operation_logs {}", where_clause);
-    let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql);
-    for b in &binds {
-        count_query = count_query.bind(b);
-    }
-    for b in &bind_i64s {
-        count_query = count_query.bind(*b);
-    }
-    let total: i64 = count_query
+    let total: i64 = count_qb
+        .build_query_scalar::<i64>()
         .fetch_one(&db.pool)
         .await
         .map_err(|e| AppError::Database(format!("查询操作日志总数失败: {}", e)))?;
 
-    // 查询列表
-    let list_sql = format!(
-        "SELECT id, module, action, target_type, target_id, target_no,
-                detail, operator_user_id, operator_name_snapshot, created_at::TEXT
-         FROM operation_logs
-         {}
-         ORDER BY created_at DESC
-         LIMIT $1 OFFSET $2",
-        where_clause
-    );
-    let mut list_query = sqlx::query_as::<
-        _,
-        (
+    list_qb.push(" ORDER BY created_at DESC LIMIT ");
+    list_qb.push_bind(page_size as i64);
+    list_qb.push(" OFFSET ");
+    list_qb.push_bind(offset as i64);
+
+    let rows = list_qb
+        .build_query_as::<(
             i64,
             String,
             String,
@@ -486,17 +500,7 @@ pub async fn get_operation_logs(
             Option<i64>,
             Option<String>,
             String,
-        ),
-    >(&list_sql);
-    for b in &binds {
-        list_query = list_query.bind(b);
-    }
-    for b in &bind_i64s {
-        list_query = list_query.bind(*b);
-    }
-    list_query = list_query.bind(page_size as i64).bind(offset as i64);
-
-    let rows = list_query
+        )>()
         .fetch_all(&db.pool)
         .await
         .map_err(|e| AppError::Database(format!("查询操作日志列表失败: {}", e)))?;

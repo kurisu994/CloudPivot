@@ -34,6 +34,16 @@ fn get_migrations() -> Vec<Migration> {
             name: "seed_data",
             sql: include_str!("../../migrations/postgres/002_seed_data.sql"),
         },
+        Migration {
+            version: 3,
+            name: "production_orders",
+            sql: include_str!("../../migrations/postgres/003_production_orders.sql"),
+        },
+        Migration {
+            version: 4,
+            name: "drop_legacy_work_orders",
+            sql: include_str!("../../migrations/postgres/004_drop_legacy_work_orders.sql"),
+        },
     ]
 }
 
@@ -67,15 +77,20 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), AppError> {
 
     let migrations = get_migrations();
 
-    // 执行未应用的迁移
+    // 在事务内执行未应用的迁移，确保原子性
     for migration in &migrations {
         if migration.version > current_version {
             log::info!("执行迁移 v{}: {}", migration.version, migration.name);
 
+            let mut tx = pool
+                .begin()
+                .await
+                .map_err(|e| AppError::Database(format!("开启迁移事务失败: {}", e)))?;
+
             // 按分号分割并逐条执行 SQL 语句
             for statement in split_sql_statements(migration.sql) {
                 if !statement.is_empty() {
-                    sqlx::raw_sql(statement).execute(pool).await.map_err(|e| {
+                    sqlx::raw_sql(statement).execute(&mut *tx).await.map_err(|e| {
                         AppError::Database(format!(
                             "迁移 v{} ({}) 执行失败: {}\nSQL: {}",
                             migration.version,
@@ -91,9 +106,13 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), AppError> {
             sqlx::query("INSERT INTO schema_migrations (version, name) VALUES ($1, $2)")
                 .bind(migration.version)
                 .bind(migration.name)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await
                 .map_err(|e| AppError::Database(format!("记录迁移版本失败: {}", e)))?;
+
+            tx.commit()
+                .await
+                .map_err(|e| AppError::Database(format!("迁移 v{} 提交失败: {}", migration.version, e)))?;
 
             log::info!("迁移 v{} 完成", migration.version);
         }

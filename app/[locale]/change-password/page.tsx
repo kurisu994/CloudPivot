@@ -24,8 +24,10 @@ export default function ChangePasswordPage() {
   const t = useTranslations('changePassword')
   const { changePassword, logout } = useAuth()
 
+  const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showOldPassword, setShowOldPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -33,6 +35,10 @@ export default function ChangePasswordPage() {
 
   /** 密码校验 */
   const validate = (): boolean => {
+    if (oldPassword.length === 0) {
+      setError(t('oldPasswordRequired'))
+      return false
+    }
     if (newPassword.length < 8) {
       setError(t('tooShort'))
       return false
@@ -58,7 +64,7 @@ export default function ChangePasswordPage() {
     setError('')
 
     try {
-      await changePassword(newPassword)
+      await changePassword(oldPassword, newPassword)
       // 改密成功 → 登出并跳转登录页
       await logout()
     } catch (err) {
@@ -109,6 +115,37 @@ export default function ChangePasswordPage() {
 
               {/* 表单 */}
               <form onSubmit={handleSubmit} className="space-y-5">
+                {/* 旧密码 */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="old-password">
+                    {t('oldPassword')} <span className="text-destructive">*</span>
+                  </Label>
+                  <div className="relative">
+                    <KeyRound className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                    <Input
+                      id="old-password"
+                      type={showOldPassword ? 'text' : 'password'}
+                      value={oldPassword}
+                      onChange={e => {
+                        setOldPassword(e.target.value)
+                        setError('')
+                      }}
+                      placeholder={t('oldPasswordPlaceholder')}
+                      className="h-11 pr-11 pl-10"
+                      autoComplete="current-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOldPassword(!showOldPassword)}
+                      className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
                 {/* 新密码 */}
                 <div className="space-y-1.5">
                   <Label htmlFor="new-password">

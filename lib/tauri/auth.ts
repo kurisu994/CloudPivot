@@ -13,9 +13,9 @@ export async function login(username: string, password: string): Promise<LoginRe
 }
 
 /** 修改密码 */
-export async function changePassword(userId: number, newPassword: string): Promise<void> {
+export async function changePassword(userId: number, oldPassword: string, newPassword: string): Promise<void> {
   return invoke<void>('change_password', {
-    request: { userId, newPassword },
+    request: { userId, oldPassword, newPassword },
   })
 }
 

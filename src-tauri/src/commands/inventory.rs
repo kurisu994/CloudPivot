@@ -1252,6 +1252,8 @@ pub async fn create_stock_check(
     current_user: State<'_, CurrentUser>,
     params: CreateStockCheckParams,
 ) -> Result<i64, AppError> {
+    current_user.require_auth()?;
+
     if params.warehouse_id <= 0 {
         return Err(AppError::Business("请选择盘点仓库".to_string()));
     }
@@ -1290,31 +1292,31 @@ pub async fn create_stock_check(
     .map_err(|e| AppError::Database(format!("创建盘点单失败: {}", e)))?;
 
     // 根据范围查询物料并快照库存
-    let inventory_query = if params.scope_type == "category"
+    let inv_rows = if params.scope_type == "category"
         && let Some(cat_id) = params.scope_category_id
     {
-        // 按分类范围
-        format!(
+        sqlx::query_as::<_, (i64, f64, i64)>(
             r#"
             SELECT inv.material_id, inv.quantity, inv.avg_cost
             FROM inventory inv
             JOIN materials m ON m.id = inv.material_id
-            WHERE inv.warehouse_id = {} AND m.category_id = {}
+            WHERE inv.warehouse_id = $1 AND m.category_id = $2
             "#,
-            params.warehouse_id, cat_id
         )
-    } else {
-        // 整仓
-        format!(
-            "SELECT material_id, quantity, avg_cost FROM inventory WHERE warehouse_id = {}",
-            params.warehouse_id
-        )
-    };
-
-    let inv_rows = sqlx::query_as::<_, (i64, f64, i64)>(&inventory_query)
+        .bind(params.warehouse_id)
+        .bind(cat_id)
         .fetch_all(&mut *tx)
         .await
-        .map_err(|e| AppError::Database(format!("查询库存快照失败: {}", e)))?;
+        .map_err(|e| AppError::Database(format!("查询库存快照失败: {}", e)))?
+    } else {
+        sqlx::query_as::<_, (i64, f64, i64)>(
+            "SELECT material_id, quantity, avg_cost FROM inventory WHERE warehouse_id = $1"
+        )
+        .bind(params.warehouse_id)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("查询库存快照失败: {}", e)))?
+    };
 
     // 为每个物料生成盘点明细行
     for (material_id, qty, cost) in &inv_rows {
@@ -1450,6 +1452,8 @@ pub async fn confirm_stock_check(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    current_user.require_auth()?;
+
     let mut tx = db
         .pool
         .begin()

@@ -28,7 +28,7 @@ pub async fn increase_inventory(
 ) -> Result<(f64, f64), AppError> {
     // 查询当前库存
     let current = sqlx::query_as::<_, (f64, i64)>(
-        "SELECT COALESCE(quantity, 0), COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2",
+        "SELECT COALESCE(quantity, 0), COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2 FOR UPDATE",
     )
     .bind(material_id)
     .bind(warehouse_id)
@@ -295,7 +295,7 @@ pub async fn decrease_inventory(
     out_date: &str,
 ) -> Result<(f64, f64, i64), AppError> {
     let current = sqlx::query_as::<_, (f64, i64)>(
-        "SELECT COALESCE(quantity, 0), COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2",
+        "SELECT COALESCE(quantity, 0), COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2 FOR UPDATE",
     )
     .bind(material_id)
     .bind(warehouse_id)
@@ -346,7 +346,7 @@ pub async fn recalc_avg_cost_after_return(
     return_unit_cost: i64,
 ) -> Result<(), AppError> {
     let current = sqlx::query_as::<_, (f64, i64)>(
-        "SELECT COALESCE(quantity, 0), COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2",
+        "SELECT COALESCE(quantity, 0), COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2 FOR UPDATE",
     )
     .bind(material_id)
     .bind(warehouse_id)
@@ -400,6 +400,7 @@ pub async fn get_available_lots(
         FROM inventory_lots
         WHERE material_id = $1 AND warehouse_id = $2 AND qty_on_hand > qty_reserved
         ORDER BY received_date ASC, id ASC
+        FOR UPDATE
         "#,
     )
     .bind(material_id)

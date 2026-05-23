@@ -26,7 +26,7 @@ use super::{CurrentUser, PaginatedResponse};
 /// - `column`: 编号列名（如 "order_no"、"return_no"）
 /// - `prefix`: 编号前缀（如 "PO"、"SO"、"PI"、"SD"、"PR"、"SR"）
 /// - `order_date`: 日期字符串（YYYY-MM-DD 格式）
-pub async fn generate_order_no(
+pub(crate) async fn generate_order_no(
     tx: &mut sqlx::PgConnection,
     table: &str,
     column: &str,

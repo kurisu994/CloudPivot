@@ -422,6 +422,8 @@ pub async fn save_production_order(
     current_user: State<'_, CurrentUser>,
     input: SaveProductionOrderInput,
 ) -> Result<i64, AppError> {
+    current_user.require_auth()?;
+
     // 校验 BOM 存在且已启用
     #[derive(sqlx::FromRow)]
     struct BomInfo {
@@ -714,6 +716,8 @@ pub async fn pick_materials(
     current_user: State<'_, CurrentUser>,
     input: PickMaterialInput,
 ) -> Result<(), AppError> {
+    current_user.require_auth()?;
+
     if input.items.is_empty() {
         return Err(AppError::Business("领料明细不能为空".to_string()));
     }
@@ -816,7 +820,7 @@ pub async fn pick_materials(
 
                     // 减少 inventory 的 reserved_qty
                     sqlx::query(
-                        "UPDATE inventory SET reserved_qty = MAX(0, reserved_qty - $1) WHERE material_id = $2 AND warehouse_id = $3",
+                        "UPDATE inventory SET reserved_qty = GREATEST(0, reserved_qty - $1) WHERE material_id = $2 AND warehouse_id = $3",
                     )
                     .bind(consume_qty)
                     .bind(line.material_id)
@@ -861,7 +865,7 @@ pub async fn pick_materials(
                             AppError::Database(format!("查询预留批次 lot_id 失败: {}", e))
                         })?;
                         sqlx::query(
-                            "UPDATE inventory_lots SET qty_reserved = MAX(0, qty_reserved - $1) WHERE id = $2"
+                            "UPDATE inventory_lots SET qty_reserved = GREATEST(0, qty_reserved - $1) WHERE id = $2"
                         )
                         .bind(c)
                         .bind(lot_id)

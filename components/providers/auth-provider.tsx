@@ -26,7 +26,7 @@ interface AuthContextValue extends AuthState {
   /** 登录（rememberMe=true 时持久化会话，7天未使用过期） */
   login: (username: string, password: string, rememberMe?: boolean) => Promise<LoginResult>
   /** 修改密码 */
-  changePassword: (newPassword: string) => Promise<void>
+  changePassword: (oldPassword: string, newPassword: string) => Promise<void>
   /** 登出 */
   logout: () => void
   /** 完成向导 */
@@ -193,13 +193,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** 修改密码 */
   const changePassword = useCallback(
-    async (newPassword: string) => {
+    async (oldPassword: string, newPassword: string) => {
       if (!user) {
         throw new Error('未登录')
       }
 
       if (isTauriEnv()) {
-        await tauriApi.changePassword(user.id, newPassword)
+        await tauriApi.changePassword(user.id, oldPassword, newPassword)
         // 刷新用户信息（session_version 已递增）；刷新失败不应反向判定为改密失败。
         let updated = { ...user, must_change_password: false, session_version: user.session_version + 1 }
         try {

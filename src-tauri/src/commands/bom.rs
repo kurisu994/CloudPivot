@@ -787,9 +787,8 @@ pub(crate) async fn generate_bom_code_internal(pool: &sqlx::PgPool) -> Result<St
 /// 校验 BOM 未被业务单据引用
 async fn ensure_bom_not_referenced(pool: &PgPool, bom_id: i64) -> Result<(), AppError> {
     let custom_order_count: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM custom_orders WHERE bom_id = $1 OR custom_bom_id = $2",
+        "SELECT COUNT(*) FROM custom_orders WHERE ref_bom_id = $1",
     )
-    .bind(bom_id)
     .bind(bom_id)
     .fetch_one(pool)
     .await

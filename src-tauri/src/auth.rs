@@ -302,16 +302,30 @@ pub async fn login(
 /// 修改密码
 ///
 /// 校验流程：
-/// 1. 密码强度校验（长度 ≥ 8）
-/// 2. 不能使用默认密码
-/// 3. 新密码不能与旧密码相同
-/// 4. 更新密码哈希、清除 must_change_password 标记、递增 session_version
-/// 5. 写入操作日志
+/// 1. 校验旧密码（身份验证）
+/// 2. 密码强度校验（长度 ≥ 8）
+/// 3. 不能使用默认密码
+/// 4. 新密码不能与旧密码相同
+/// 5. 更新密码哈希、清除 must_change_password 标记、递增 session_version
+/// 6. 写入操作日志
 pub async fn change_password(
     pool: &PgPool,
     user_id: i64,
+    old_password: &str,
     new_password: &str,
 ) -> Result<(), AppError> {
+    // 查询当前密码哈希并校验旧密码
+    let current_hash: String = sqlx::query_scalar("SELECT password_hash FROM users WHERE id = $1")
+        .bind(user_id)
+        .fetch_one(pool)
+        .await
+        .map_err(|e| AppError::Database(format!("查询用户密码失败: {}", e)))?;
+
+    let old_valid = bcrypt::verify(old_password, &current_hash).unwrap_or(false);
+    if !old_valid {
+        return Err(AppError::Auth("旧密码不正确".into()));
+    }
+
     // 密码强度校验
     if new_password.len() < 8 {
         return Err(AppError::Auth("密码长度至少 8 位".into()));
@@ -321,13 +335,6 @@ pub async fn change_password(
     if new_password == DEFAULT_ADMIN_PASSWORD {
         return Err(AppError::Auth("新密码不能与初始密码相同".into()));
     }
-
-    // 查询当前密码哈希，校验新密码不能与旧密码相同
-    let current_hash: String = sqlx::query_scalar("SELECT password_hash FROM users WHERE id = $1")
-        .bind(user_id)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| AppError::Database(format!("查询用户密码失败: {}", e)))?;
 
     let same_as_old = bcrypt::verify(new_password, &current_hash).unwrap_or(false);
     if same_as_old {

@@ -481,6 +481,8 @@ pub async fn save_purchase_order(
     current_user: State<'_, CurrentUser>,
     params: SavePurchaseOrderParams,
 ) -> Result<i64, AppError> {
+    current_user.require_auth()?;
+
     validate_save_params(&params)?;
 
     // 校验供应商存在
@@ -697,6 +699,8 @@ pub async fn approve_purchase_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    current_user.require_auth()?;
+
     use super::order_shared;
 
     let rows = order_shared::approve_order(&db.pool, "purchase_orders", id, "采购单").await?;

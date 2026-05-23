@@ -876,6 +876,8 @@ pub async fn confirm_custom_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    current_user.require_auth()?;
+
     let order_info: Option<(String, i64)> =
         sqlx::query_as("SELECT status, quote_amount FROM custom_orders WHERE id = $1")
             .bind(id)
@@ -1007,15 +1009,21 @@ pub async fn confirm_custom_order(
                 .await
                 .map_err(|e| AppError::Database(format!("创建预留批次分配失败: {}", e)))?;
 
-                // 增加 inventory_lots.qty_reserved
-                sqlx::query(
-                    "UPDATE inventory_lots SET qty_reserved = qty_reserved + $1 WHERE id = $2",
+                // 增加 inventory_lots.qty_reserved，确保不超出实际库存
+                let res = sqlx::query(
+                    "UPDATE inventory_lots SET qty_reserved = qty_reserved + $1 WHERE id = $2 AND qty_reserved + $1 <= qty_on_hand",
                 )
                 .bind(alloc)
                 .bind(lot_id)
                 .execute(&mut *tx)
                 .await
                 .map_err(|e| AppError::Database(format!("更新批次预留数量失败: {}", e)))?;
+                if res.rows_affected() == 0 {
+                    return Err(AppError::Business(format!(
+                        "物料#{} 批次#{} 预留超额：并发操作导致可用库存不足",
+                        material_id, lot_id
+                    )));
+                }
 
                 remaining -= alloc;
             }
@@ -1136,7 +1144,7 @@ pub async fn cancel_custom_order(
 
         // 恢复库存预留数量
         sqlx::query(
-            "UPDATE inventory SET reserved_qty = MAX(0, reserved_qty - $1), updated_at = NOW() WHERE material_id = $2 AND warehouse_id = $3",
+            "UPDATE inventory SET reserved_qty = GREATEST(0, reserved_qty - $1), updated_at = NOW() WHERE material_id = $2 AND warehouse_id = $3",
         )
         .bind(reserved_qty)
         .bind(material_id)

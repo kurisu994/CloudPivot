@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 use chrono::Local;
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, PgPool};
+use sqlx::{Executor, FromRow, PgPool};
 use tauri::{AppHandle, Manager, State};
 
 use crate::db::DbState;
@@ -398,14 +398,22 @@ pub async fn create_database_backup(
 pub async fn restore_database_backup(
     app: AppHandle,
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     file_name: String,
 ) -> Result<(), AppError> {
+    current_user.require_auth()?;
     let backup_dir = get_backup_dir(&app)?;
     let source = resolve_backup_file(&backup_dir, &file_name)?;
 
     let sql_content = fs::read_to_string(&source).map_err(AppError::Io)?;
 
-    // 逐条执行 SQL 语句
+    // 在事务内执行恢复，确保原子性
+    let mut tx = db
+        .pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Database(format!("开启恢复事务失败: {}", e)))?;
+
     for statement in sql_content.split(';') {
         let stmt = statement.trim();
         if stmt.is_empty() || stmt.starts_with("--") {
@@ -419,7 +427,7 @@ pub async fn restore_database_backup(
             continue;
         }
 
-        sqlx::raw_sql(stmt).execute(&db.pool).await.map_err(|e| {
+        tx.execute(sqlx::raw_sql(stmt)).await.map_err(|e| {
             AppError::Database(format!(
                 "恢复备份执行失败: {}\nSQL: {}",
                 e,
@@ -427,6 +435,10 @@ pub async fn restore_database_backup(
             ))
         })?;
     }
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::Database(format!("恢复备份提交失败: {}", e)))?;
 
     log::info!("数据库备份恢复完成: {}", file_name);
     Ok(())
@@ -689,6 +701,8 @@ pub async fn import_initial_inventory(
     current_user: State<'_, CurrentUser>,
     rows: Vec<InitialInventoryImportRow>,
 ) -> Result<ImportResult, AppError> {
+    current_user.require_auth()?;
+
     if rows.is_empty() {
         return Ok(ImportResult {
             created: 0,

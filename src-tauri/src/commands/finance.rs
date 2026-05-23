@@ -389,6 +389,8 @@ pub async fn record_payment(
     current_user: State<'_, CurrentUser>,
     params: RecordPaymentParams,
 ) -> Result<i64, AppError> {
+    current_user.require_auth()?;
+
     if params.payment_amount <= 0 {
         return Err(AppError::Business("付款金额必须大于 0".to_string()));
     }
@@ -697,6 +699,8 @@ pub async fn record_receipt(
     current_user: State<'_, CurrentUser>,
     params: RecordReceiptParams,
 ) -> Result<i64, AppError> {
+    current_user.require_auth()?;
+
     if params.receipt_amount <= 0 {
         return Err(AppError::Business("收款金额必须大于 0".to_string()));
     }

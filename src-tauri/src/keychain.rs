@@ -10,6 +10,9 @@
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use tauri::State;
+
+use crate::commands::CurrentUser;
 
 const AUTH_FILE_NAME: &str = "auth_session.json";
 
@@ -126,11 +129,13 @@ pub fn read_auth_keychain() -> Result<Option<String>, String> {
     read_auth_file(&path)
 }
 
-/// 清除数据目录中的认证文件
+/// 清除数据目录中的认证文件，并清除后端当前用户状态
 #[tauri::command]
-pub fn clear_auth_keychain() -> Result<(), String> {
+pub fn clear_auth_keychain(current_user: State<'_, CurrentUser>) -> Result<(), String> {
     let path = auth_file_path()?;
-    clear_auth_file(&path)
+    clear_auth_file(&path)?;
+    current_user.clear();
+    Ok(())
 }
 
 #[cfg(test)]
