@@ -1,41 +1,42 @@
 import {
   ArrowLeftRight,
-  BarChart3,
   Box,
-  Building2,
-  ClipboardCheck,
   ClipboardList,
-  CreditCard,
-  Database,
-  DollarSign,
   FileText,
   FolderTree,
-  Hammer,
-  Hash,
-  Layers,
   LayoutDashboard,
   Lightbulb,
   type LucideIcon,
   Package,
-  PackageCheck,
-  PackageOpen,
   PackagePlus,
-  PackageSearch,
   Paintbrush,
-  Palette,
-  PieChart,
-  Printer,
-  Receipt,
-  RotateCcw,
   Ruler,
   Settings,
-  ShoppingCart,
-  TrendingUp,
-  Truck,
-  Undo2,
-  Users,
-  Wallet,
-  Warehouse,
+  // ── 以下图标对应阶段性隐藏的菜单，后续分批开放时连同菜单一并恢复 ──
+  // BarChart3,
+  // Building2,
+  // ClipboardCheck,
+  // CreditCard,
+  // Database,
+  // DollarSign,
+  // Hammer,
+  // Hash,
+  // Layers,
+  // PackageCheck,
+  // PackageOpen,
+  // PackageSearch,
+  // Palette,
+  // PieChart,
+  // Printer,
+  // Receipt,
+  // RotateCcw,
+  // ShoppingCart,
+  // TrendingUp,
+  // Truck,
+  // Undo2,
+  // Users,
+  // Wallet,
+  // Warehouse,
 } from 'lucide-react'
 
 /** 侧边栏导航项类型 */
@@ -53,13 +54,19 @@ export interface NavItem {
 /**
  * 侧边栏导航配置
  * 对应 UI 原型 §1.1 的 12 大模块
+ *
+ * 阶段性裁剪：当前仅开放 首页看板、物料管理、分类管理、单位管理、
+ * 库存查询、自由出入库、出入库流水、库存盘点、智能补货、操作日志、外观设置。
+ * 其余菜单用块注释暂时隐藏，后续分批开放时去掉对应注释（及顶部图标 import）即可。
  */
 export const navConfig: NavItem[] = [
+  // 首页看板
   {
     titleKey: 'nav.dashboard',
     href: '',
     icon: LayoutDashboard,
   },
+  // 基础数据（阶段性仅开放：物料 / 分类 / 单位）
   {
     titleKey: 'nav.baseData',
     href: '/materials',
@@ -67,17 +74,22 @@ export const navConfig: NavItem[] = [
     children: [
       { titleKey: 'nav.materials', href: '/materials', icon: Package },
       { titleKey: 'nav.categories', href: '/categories', icon: FolderTree },
+      /* 阶段性隐藏，后续分批开放：
       { titleKey: 'nav.suppliers', href: '/suppliers', icon: Truck },
       { titleKey: 'nav.customers', href: '/customers', icon: Users },
       { titleKey: 'nav.warehouses', href: '/warehouses', icon: Warehouse },
+      */
       { titleKey: 'nav.units', href: '/units', icon: Ruler },
     ],
   },
+  /* ── 阶段性隐藏（BOM），后续分批开放 ──
   {
     titleKey: 'nav.bom',
     href: '/bom',
     icon: Layers,
   },
+  */
+  /* ── 阶段性隐藏（采购），后续分批开放 ──
   {
     titleKey: 'nav.purchase',
     href: '/purchase-orders',
@@ -100,6 +112,8 @@ export const navConfig: NavItem[] = [
       },
     ],
   },
+  */
+  /* ── 阶段性隐藏（销售），后续分批开放 ──
   {
     titleKey: 'nav.sales',
     href: '/sales-orders',
@@ -114,6 +128,8 @@ export const navConfig: NavItem[] = [
       { titleKey: 'nav.salesReturns', href: '/sales-returns', icon: RotateCcw },
     ],
   },
+  */
+  // 库存（阶段性仅开放：库存查询 / 自由出入库 / 出入库流水 / 库存盘点）
   {
     titleKey: 'nav.inventory',
     href: '/inventory',
@@ -135,28 +151,36 @@ export const navConfig: NavItem[] = [
         href: '/stock-checks',
         icon: ClipboardList,
       },
+      /* 阶段性隐藏，后续分批开放：
       {
         titleKey: 'nav.stockTransfers',
         href: '/stock-transfers',
         icon: ClipboardCheck,
       },
+      */
     ],
   },
+  /* ── 阶段性隐藏（定制单），后续分批开放 ──
   {
     titleKey: 'nav.customOrders',
     href: '/custom-orders',
     icon: Palette,
   },
+  */
+  /* ── 阶段性隐藏（生产工单），后续分批开放 ──
   {
     titleKey: 'nav.productionOrders',
     href: '/production-orders',
     icon: Hammer,
   },
+  */
+  // 智能补货
   {
     titleKey: 'nav.replenishment',
     href: '/replenishment',
     icon: Lightbulb,
   },
+  /* ── 阶段性隐藏（财务：应付 / 应收），后续分批开放 ──
   {
     titleKey: 'nav.finance',
     href: '/finance/payables',
@@ -170,6 +194,8 @@ export const navConfig: NavItem[] = [
       },
     ],
   },
+  */
+  /* ── 阶段性隐藏（报表中心），后续分批开放 ──
   {
     titleKey: 'nav.reports',
     href: '/reports/purchase',
@@ -192,11 +218,14 @@ export const navConfig: NavItem[] = [
       },
     ],
   },
+  */
+  // 系统设置（阶段性仅开放：操作日志 / 外观设置）
   {
     titleKey: 'nav.settings',
     href: '/settings',
     icon: Settings,
     children: [
+      /* 阶段性隐藏，后续分批开放：
       { titleKey: 'nav.companyInfo', href: '/settings', icon: Building2 },
       {
         titleKey: 'nav.encodingRules',
@@ -223,6 +252,7 @@ export const navConfig: NavItem[] = [
         href: '/settings/data-management',
         icon: Database,
       },
+      */
       {
         titleKey: 'nav.operationLogs',
         href: '/settings/operation-logs',
