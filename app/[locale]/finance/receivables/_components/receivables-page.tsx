@@ -220,7 +220,7 @@ export function ReceivablesPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('receivables.kpi.totalReceivable')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalReceivable, 'VND' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalReceivable, 'USD' as Currency)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
@@ -229,7 +229,7 @@ export function ReceivablesPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('receivables.kpi.totalReceived')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalReceived, 'VND' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalReceived, 'USD' as Currency)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
@@ -238,7 +238,7 @@ export function ReceivablesPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('receivables.kpi.totalPartial')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalPartial, 'VND' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalPartial, 'USD' as Currency)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
@@ -247,7 +247,7 @@ export function ReceivablesPage() {
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{t('receivables.kpi.totalOverdue')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalOverdue, 'VND' as Currency)}</p>
+            <p className="text-foreground text-lg font-bold">{formatAmount(kpi.totalOverdue, 'USD' as Currency)}</p>
           </div>
         </div>
       </div>
