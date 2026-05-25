@@ -5,10 +5,24 @@
 -- 前置: 已执行基础分类/物料脚本并已配置启用的原材料默认仓
 -- 口径: 期初作为 other_in；每日发生按 other_in/other_out；库存不足先补足入库
 -- 生成基准: 期初 354 笔；源表每日 441 笔；负库存补足 22 笔/1200
+-- 警告: 本脚本会在录入前清空库存、批次、预留、盘点、调拨及库存流水数据
 -- 使用: psql "$DATABASE_URL" -f scripts/import_may_2026_manual_stock_movements_pg.sql
 -- ================================================================
 
 BEGIN;
+
+-- 仅重置库存域数据，保留分类、物料、单位、仓库、用户及其他业务单据。
+TRUNCATE TABLE
+    transfer_items,
+    transfers,
+    stock_check_items,
+    stock_checks,
+    inventory_reservation_lots,
+    inventory_reservations,
+    inventory_lots,
+    inventory_transactions,
+    inventory
+RESTART IDENTITY CASCADE;
 
 LOCK TABLE inventory_transactions IN SHARE ROW EXCLUSIVE MODE;
 LOCK TABLE inventory IN SHARE ROW EXCLUSIVE MODE;
