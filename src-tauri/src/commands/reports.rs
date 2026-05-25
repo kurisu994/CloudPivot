@@ -569,7 +569,7 @@ pub async fn get_inventory_aging_analysis(
             m.name AS material_name,
             il.lot_no,
             il.received_date,
-            (CURRENT_DATE - il.received_date::DATE) AS days_in_stock,
+            (CURRENT_DATE - il.received_date::DATE)::BIGINT AS days_in_stock,
             il.qty_on_hand,
             il.receipt_unit_cost AS unit_cost,
             CAST(ROUND((il.qty_on_hand * il.receipt_unit_cost)::numeric, 0) AS BIGINT) AS value
@@ -666,16 +666,16 @@ pub async fn get_inventory_slow_moving(
             c.name AS category_name,
             COALESCE(i_agg.total_qty, 0) AS current_qty,
             i_agg.last_out_date,
-            CASE
+            (CASE
                 WHEN i_agg.last_out_date IS NULL THEN 9999
                 ELSE (CURRENT_DATE - i_agg.last_out_date::DATE)
-            END AS days_since_last_out,
+            END)::BIGINT AS days_since_last_out,
             COALESCE(
                 (SELECT (SUM(ABS(quantity)) / GREATEST((CURRENT_DATE - MIN(transaction_date)::DATE)::FLOAT8, 1.0)) * 30.0
                  FROM inventory_transactions
                  WHERE material_id = m.id
                    AND transaction_type IN ('sales_out', 'production_out')
-                   AND transaction_date >= CURRENT_DATE - INTERVAL '90 days'
+                   AND transaction_date::DATE >= CURRENT_DATE - INTERVAL '90 days'
                  GROUP BY material_id),
                 0
             ) AS avg_monthly_outbound
@@ -768,7 +768,7 @@ pub async fn get_inventory_trend(
             SUM(CASE WHEN quantity < 0 THEN ABS(quantity) ELSE 0 END) AS outbound_qty,
             CAST(COALESCE(SUM(CASE WHEN quantity < 0 THEN CAST(ROUND((ABS(quantity) * unit_cost)::numeric, 0) AS BIGINT) ELSE 0 END), 0) AS BIGINT) AS outbound_value
         FROM inventory_transactions
-        WHERE transaction_date >= CURRENT_DATE - ($1 || ' days')::INTERVAL
+        WHERE transaction_date::DATE >= CURRENT_DATE - ($1 || ' days')::INTERVAL
           AND ($2 IS NULL OR warehouse_id = $2)
         GROUP BY transaction_date
         ORDER BY transaction_date
