@@ -3,17 +3,56 @@ name: CI
 on:
   push:
     branches: [main]
-    tags-ignore:
-      - "v*"
-    paths-ignore:
-      - "*.md"
-      - "docs/**"
-      - "CHANGELOG.md"
-      - "*.lock"
-      - "LICENSE"
-      - ".gstack/**"
+    # 仅当「代码相关」路径变更时触发；文档/编辑器配置等改动不跑 CI
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "config/**"
+      - "i18n/**"
+      - "messages/**"
+      - "public/**"
+      - "scripts/**"
+      - "src-tauri/**"
+      - "tests/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "biome.json"
+      - "components.json"
+      - "tsconfig.json"
+      - "next.config.ts"
+      - "next-env.d.ts"
+      - "postcss.config.mjs"
+      - ".npmrc"
+      - ".nvmrc"
+      - ".github/workflows/**"
   pull_request:
     branches: [main]
+    # 与 push 保持一致：仅代码相关变更触发
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "config/**"
+      - "i18n/**"
+      - "messages/**"
+      - "public/**"
+      - "scripts/**"
+      - "src-tauri/**"
+      - "tests/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "biome.json"
+      - "components.json"
+      - "tsconfig.json"
+      - "next.config.ts"
+      - "next-env.d.ts"
+      - "postcss.config.mjs"
+      - ".npmrc"
+      - ".nvmrc"
+      - ".github/workflows/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -122,14 +161,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
-            target: aarch64-apple-darwin
-          - os: macos-latest
-            target: x86_64-apple-darwin
+          # CI 阶段仅验证 Linux 能编译，节省 macOS(×10)/Windows(×2) 额度
+          # 真正的全平台打包交给 release.yml（仅在打 tag 时触发）
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
