@@ -73,9 +73,9 @@ function PrintLanguageCard() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-          <SelectItem value="zh">{t('localeZh')}</SelectItem>
-          <SelectItem value="en">{t('localeEn')}</SelectItem>
-          <SelectItem value="vi">{t('localeVi')}</SelectItem>
+              <SelectItem value="zh">{t('localeZh')}</SelectItem>
+              <SelectItem value="en">{t('localeEn')}</SelectItem>
+              <SelectItem value="vi">{t('localeVi')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -93,9 +93,9 @@ function PrintLanguageCard() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-          <SelectItem value="en">{t('localeEn')}</SelectItem>
-          <SelectItem value="vi">{t('localeVi')}</SelectItem>
-          <SelectItem value="none">{t('localeNone')}</SelectItem>
+              <SelectItem value="en">{t('localeEn')}</SelectItem>
+              <SelectItem value="vi">{t('localeVi')}</SelectItem>
+              <SelectItem value="none">{t('localeNone')}</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -185,7 +185,13 @@ pub async fn change_password(
     db: State<'_, DbState>,
     request: ChangePasswordRequest,
 ) -> Result<(), AppError> {
-    auth::change_password(&db.pool, request.user_id, &request.old_password, &request.new_password).await
+    auth::change_password(
+        &db.pool,
+        request.user_id,
+        &request.old_password,
+        &request.new_password,
+    )
+    .await
 }
 
 /// 获取用户信息
@@ -438,8 +444,7 @@ pub async fn get_operation_logs(
     let offset = (page - 1) * page_size;
 
     // 动态构建 WHERE 子句
-    let mut count_qb =
-        sqlx::QueryBuilder::new("SELECT COUNT(*) FROM operation_logs WHERE 1=1");
+    let mut count_qb = sqlx::QueryBuilder::new("SELECT COUNT(*) FROM operation_logs WHERE 1=1");
     let mut list_qb = sqlx::QueryBuilder::new(
         "SELECT id, module, action, target_type, target_id, target_no,
                 detail, operator_user_id, operator_name_snapshot, created_at::TEXT

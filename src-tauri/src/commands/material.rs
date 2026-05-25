@@ -291,9 +291,7 @@ pub async fn get_materials(
         // 借助 categories.path 前缀匹配（path 形如 "1/3/7"）；选叶子分类时子查询仅返回自身，等价于精确匹配。
         macro_rules! push_category_subtree {
             ($q:expr) => {{
-                $q.push(
-                    "m.category_id IN (SELECT id FROM categories WHERE id = ",
-                );
+                $q.push("m.category_id IN (SELECT id FROM categories WHERE id = ");
                 $q.push_bind(cat_id);
                 $q.push(" OR path LIKE (SELECT path FROM categories WHERE id = ");
                 $q.push_bind(cat_id);

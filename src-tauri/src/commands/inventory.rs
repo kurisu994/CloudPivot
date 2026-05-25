@@ -1310,7 +1310,7 @@ pub async fn create_stock_check(
         .map_err(|e| AppError::Database(format!("查询库存快照失败: {}", e)))?
     } else {
         sqlx::query_as::<_, (i64, f64, i64)>(
-            "SELECT material_id, quantity, avg_cost FROM inventory WHERE warehouse_id = $1"
+            "SELECT material_id, quantity, avg_cost FROM inventory WHERE warehouse_id = $1",
         )
         .bind(params.warehouse_id)
         .fetch_all(&mut *tx)

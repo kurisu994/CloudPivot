@@ -786,13 +786,12 @@ pub(crate) async fn generate_bom_code_internal(pool: &sqlx::PgPool) -> Result<St
 
 /// 校验 BOM 未被业务单据引用
 async fn ensure_bom_not_referenced(pool: &PgPool, bom_id: i64) -> Result<(), AppError> {
-    let custom_order_count: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM custom_orders WHERE ref_bom_id = $1",
-    )
-    .bind(bom_id)
-    .fetch_one(pool)
-    .await
-    .map_err(|e| AppError::Database(format!("检查定制单引用失败: {}", e)))?;
+    let custom_order_count: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM custom_orders WHERE ref_bom_id = $1")
+            .bind(bom_id)
+            .fetch_one(pool)
+            .await
+            .map_err(|e| AppError::Database(format!("检查定制单引用失败: {}", e)))?;
 
     if custom_order_count.0 > 0 {
         return Err(AppError::Business(

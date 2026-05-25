@@ -90,15 +90,18 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), AppError> {
             // 按分号分割并逐条执行 SQL 语句
             for statement in split_sql_statements(migration.sql) {
                 if !statement.is_empty() {
-                    sqlx::raw_sql(statement).execute(&mut *tx).await.map_err(|e| {
-                        AppError::Database(format!(
-                            "迁移 v{} ({}) 执行失败: {}\nSQL: {}",
-                            migration.version,
-                            migration.name,
-                            e,
-                            &statement[..statement.len().min(200)]
-                        ))
-                    })?;
+                    sqlx::raw_sql(statement)
+                        .execute(&mut *tx)
+                        .await
+                        .map_err(|e| {
+                            AppError::Database(format!(
+                                "迁移 v{} ({}) 执行失败: {}\nSQL: {}",
+                                migration.version,
+                                migration.name,
+                                e,
+                                &statement[..statement.len().min(200)]
+                            ))
+                        })?;
                 }
             }
 
@@ -110,9 +113,9 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), AppError> {
                 .await
                 .map_err(|e| AppError::Database(format!("记录迁移版本失败: {}", e)))?;
 
-            tx.commit()
-                .await
-                .map_err(|e| AppError::Database(format!("迁移 v{} 提交失败: {}", migration.version, e)))?;
+            tx.commit().await.map_err(|e| {
+                AppError::Database(format!("迁移 v{} 提交失败: {}", migration.version, e))
+            })?;
 
             log::info!("迁移 v{} 完成", migration.version);
         }

@@ -1,9 +1,9 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useTranslations } from 'next-intl'
 
 interface ConfirmDialogProps {
   /** 对话框是否打开 */
