@@ -842,8 +842,7 @@ mod tests {
         sqlx::query(
             "CREATE TABLE custom_orders (
                 id INTEGER PRIMARY KEY,
-                bom_id INTEGER,
-                custom_bom_id INTEGER
+                ref_bom_id INTEGER
             )",
         )
         .execute(&pool)
@@ -879,7 +878,7 @@ mod tests {
     #[tokio::test]
     async fn ensure_bom_not_referenced_blocks_custom_order_reference() {
         let pool = setup_bom_reference_pool().await;
-        sqlx::query("INSERT INTO custom_orders (id, custom_bom_id) VALUES (1, 20)")
+        sqlx::query("INSERT INTO custom_orders (id, ref_bom_id) VALUES (1, 20)")
             .execute(&pool)
             .await
             .expect("插入定制单测试数据失败");
