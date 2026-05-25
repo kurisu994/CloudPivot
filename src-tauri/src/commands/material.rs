@@ -287,13 +287,25 @@ pub async fn get_materials(
     }
 
     if let Some(cat_id) = filter.category_id {
+        // 选中的分类可能是父级，需连同其所有子孙分类下的物料一并查询。
+        // 借助 categories.path 前缀匹配（path 形如 "1/3/7"）；选叶子分类时子查询仅返回自身，等价于精确匹配。
+        macro_rules! push_category_subtree {
+            ($q:expr) => {{
+                $q.push(
+                    "m.category_id IN (SELECT id FROM categories WHERE id = ",
+                );
+                $q.push_bind(cat_id);
+                $q.push(" OR path LIKE (SELECT path FROM categories WHERE id = ");
+                $q.push_bind(cat_id);
+                $q.push(") || '/%')");
+            }};
+        }
+
         add_where_or_and!(&mut count_query);
-        count_query.push("m.category_id = ");
-        count_query.push_bind(cat_id);
+        push_category_subtree!(&mut count_query);
 
         add_where_or_and!(&mut data_query);
-        data_query.push("m.category_id = ");
-        data_query.push_bind(cat_id);
+        push_category_subtree!(&mut data_query);
         has_where = true;
     }
 
