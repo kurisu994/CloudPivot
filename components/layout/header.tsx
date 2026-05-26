@@ -1,9 +1,10 @@
 'use client'
 
-import { Bell, ChevronRight, Monitor, Moon, Sun, User } from 'lucide-react'
+import { Bell, ChevronRight, LogOut, Monitor, Moon, Sun, User } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useTheme } from 'next-themes'
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useAuth } from '@/components/providers/auth-provider'
 import { navConfig } from '@/config/nav'
 import { Link, usePathname } from '@/i18n/navigation'
 import { setSystemConfig } from '@/lib/tauri'
@@ -133,6 +134,65 @@ function ThemeSwitcher() {
 }
 
 /**
+ * 用户菜单
+ *
+ * 展示当前登录用户，点击展开下拉，提供退出登录入口。
+ * 交互模式与 ThemeSwitcher 一致（点击切换、点击外部关闭）。
+ */
+function UserMenu() {
+  const t = useTranslations()
+  const { user, logout } = useAuth()
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  // 点击外部关闭
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const displayName = user?.display_name || user?.username || ''
+  const role = (user?.role || '').toUpperCase()
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(prev => !prev)}
+        className="hidden items-center gap-3 rounded-lg py-1 pr-1 pl-2 text-left transition-colors hover:bg-slate-50 sm:flex dark:hover:bg-slate-900"
+      >
+        <div className="flex flex-col">
+          <span className="text-sm leading-none font-bold text-slate-800 dark:text-slate-100">{displayName}</span>
+          {role && <span className="mt-1 text-[10px] font-semibold tracking-wider text-slate-400">{role}</span>}
+        </div>
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800">
+          <User className="h-4 w-4" />
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-border bg-popover absolute top-full right-0 mt-1 w-44 rounded-lg border p-1 shadow-lg">
+          <button
+            onClick={() => {
+              setOpen(false)
+              logout()
+            }}
+            className="text-popover-foreground hover:bg-accent flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>{t('header.logout')}</span>
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
  * 顶部工具栏组件
  *
  * 包含动态面包屑、语言切换、主题切换、通知和用户信息
@@ -222,16 +282,8 @@ export function Header({ onToggleSidebar }: HeaderProps) {
         {/* 分隔线 */}
         <div className="mx-1 h-8 w-px bg-slate-200 dark:bg-slate-800" />
 
-        {/* 用户信息 */}
-        <button className="hidden items-center gap-3 rounded-lg py-1 pr-1 pl-2 text-left transition-colors hover:bg-slate-50 sm:flex dark:hover:bg-slate-900">
-          <div className="flex flex-col">
-            <span className="text-sm leading-none font-bold text-slate-800 dark:text-slate-100">Admin User</span>
-            <span className="mt-1 text-[10px] font-semibold tracking-wider text-slate-400">SUPER ADMINISTRATOR</span>
-          </div>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800">
-            <User className="h-4 w-4" />
-          </div>
-        </button>
+        {/* 用户信息与退出登录 */}
+        <UserMenu />
       </div>
     </header>
   )
