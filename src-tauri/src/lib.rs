@@ -168,6 +168,7 @@ pub fn run() {
             commands::get_db_version,
             commands::login,
             commands::change_password,
+            commands::logout,
             commands::get_user_info,
             commands::get_system_configs,
             commands::set_system_config,

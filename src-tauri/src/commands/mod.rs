@@ -194,6 +194,25 @@ pub async fn change_password(
     .await
 }
 
+/// 用户登出
+///
+/// 写入退出登录操作日志，并清除后端当前用户状态。
+/// 操作者身份取自 CurrentUser（即当前登录用户自己），因此必须在
+/// 清除会话（clear_auth_keychain）之前调用，否则身份已被重置。
+#[tauri::command]
+pub async fn logout(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+) -> Result<(), AppError> {
+    let user_id = current_user.user_id();
+    // 仅在已登录状态下记录日志，避免未认证时写入无意义记录
+    if user_id != 0 {
+        auth::logout(&db.pool, user_id, &current_user.display_name()).await;
+    }
+    current_user.clear();
+    Ok(())
+}
+
 /// 获取用户信息
 #[tauri::command]
 pub async fn get_user_info(db: State<'_, DbState>, user_id: i64) -> Result<UserInfo, AppError> {

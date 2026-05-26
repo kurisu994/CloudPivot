@@ -299,6 +299,27 @@ pub async fn login(
     })
 }
 
+/// 用户登出
+///
+/// 写入退出登录操作日志，操作者即登出用户自己。
+/// 日志写入失败不阻塞登出流程（write_log 内部仅打印警告）。
+pub async fn logout(pool: &PgPool, user_id: i64, display_name: &str) {
+    operation_log::write_log(
+        pool,
+        operation_log::OperationLogEntry {
+            module: "auth".to_string(),
+            action: "logout".to_string(),
+            target_type: Some("user".to_string()),
+            target_id: Some(user_id),
+            target_no: None,
+            detail: format!("用户 {} 退出登录", display_name),
+            operator_user_id: Some(user_id),
+            operator_name: Some(display_name.to_string()),
+        },
+    )
+    .await;
+}
+
 /// 修改密码
 ///
 /// 校验流程：

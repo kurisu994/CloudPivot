@@ -307,6 +307,7 @@
       "actions": {
         "login_success": "Đăng nhập thành công",
         "login_failed": "Đăng nhập thất bại",
+        "logout": "Đăng xuất",
         "account_locked": "Tài khoản bị khóa",
         "change_password": "Đổi mật khẩu",
         "backup": "Sao lưu",

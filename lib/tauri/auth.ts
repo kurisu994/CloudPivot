@@ -19,6 +19,11 @@ export async function changePassword(userId: number, oldPassword: string, newPas
   })
 }
 
+/** 用户登出（记录退出登录操作日志并清除后端当前用户状态） */
+export async function logout(): Promise<void> {
+  return invoke<void>('logout')
+}
+
 /** 获取用户信息 */
 export async function getUserInfo(userId: number): Promise<UserInfo> {
   return invoke<UserInfo>('get_user_info', { userId })

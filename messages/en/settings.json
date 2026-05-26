@@ -307,6 +307,7 @@
       "actions": {
         "login_success": "Login Success",
         "login_failed": "Login Failed",
+        "logout": "Logout",
         "account_locked": "Account Locked",
         "change_password": "Change Password",
         "backup": "Backup",

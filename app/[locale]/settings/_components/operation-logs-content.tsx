@@ -16,6 +16,7 @@ const MODULE_KEYS = ['auth', 'settings', 'material', 'purchase', 'sales', 'inven
 const ACTION_KEYS = [
   'login_success',
   'login_failed',
+  'logout',
   'account_locked',
   'change_password',
   'backup',

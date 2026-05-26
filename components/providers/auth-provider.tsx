@@ -230,6 +230,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** 登出 */
   const logout = useCallback(async () => {
+    // 先记录退出登录日志：clearAuth 会清空后端 CurrentUser，必须在其之前调用。
+    // 记录失败不应阻塞登出流程。
+    if (isTauriEnv()) {
+      try {
+        await tauriApi.logout()
+      } catch (error) {
+        console.warn('[Auth] 记录退出登录日志失败', error)
+      }
+    }
     await clearAuth()
     updateNeedsSetup(false)
     authInitialized = false

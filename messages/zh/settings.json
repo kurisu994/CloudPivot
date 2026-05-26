@@ -307,6 +307,7 @@
       "actions": {
         "login_success": "登录成功",
         "login_failed": "登录失败",
+        "logout": "退出登录",
         "account_locked": "账号锁定",
         "change_password": "修改密码",
         "backup": "备份",
