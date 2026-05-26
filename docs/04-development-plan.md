@@ -480,7 +480,7 @@ src-tauri/src/
 ├── auth.rs         # 认证模块（登录/改密/管理员初始化，bcrypt + session_version + 锁定）
 ├── error.rs        # 统一错误类型（AppError: Database/Sqlx/Auth/Business/Io）
 ├── commands/       # IPC 接口层 — 接收前端请求，参数校验，调用 service
-│   ├── mod.rs      # 基础命令：ping / db_init_error / get_db_version / login / change_password / get_user_info / get/set_system_configs / setup_create_warehouses / operation_logs
+│   ├── mod.rs      # 基础命令：ping / db_init_error / get_db_version / login / change_password / logout / get_user_info / get/set_system_configs / setup_create_warehouses / operation_logs
 │   ├── material.rs # 物料 CRUD：get_materials / get_material_by_id / save_material / toggle_material_status / get_categories / get_units
 │   ├── category.rs # 分类 CRUD：get_category_tree / create_category / update_category / delete_category / update_category_order
 │   ├── supplier.rs # 供应商 CRUD：get_suppliers / get_supplier_by_id / get_supplier_detail / save_supplier / delete_supplier / toggle_supplier_status / generate_supplier_code / get_supplier_categories / get_material_reference_options / save_supplier_material / delete_supplier_material
