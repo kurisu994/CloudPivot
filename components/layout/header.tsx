@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, ChevronRight, LogOut, Monitor, Moon, Sun, User } from 'lucide-react'
+import { ChevronRight, LogOut, Monitor, Moon, Sun, User } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useTheme } from 'next-themes'
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
@@ -254,8 +254,8 @@ export function Header({ onToggleSidebar }: HeaderProps) {
         <div className="flex items-center gap-1">
           <LocaleSwitcher />
           <ThemeSwitcher />
-
-          <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200">
+          {/** 暂时先屏蔽通知和帮助 */}
+          {/* <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200">
             <Bell className="h-[18px] w-[18px]" />
             <span className="bg-destructive absolute top-2 right-2 h-1.5 w-1.5 rounded-full" />
           </button>
@@ -276,7 +276,7 @@ export function Header({ onToggleSidebar }: HeaderProps) {
               <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
               <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
-          </button>
+          </button> */}
         </div>
 
         {/* 分隔线 */}

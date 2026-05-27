@@ -40,6 +40,7 @@
   },
   "manualStockMovements": {
     "title": "Xuất nhập tự do",
+    "totalItems": "Tổng {total} mục",
     "subtitle": "Quản lý phiếu xuất nhập tự do",
     "newMovement": "Tạo phiếu mới",
     "editDraft": "Sửa bản nháp",
@@ -165,7 +166,7 @@
     "allSources": "Tất cả nguồn",
     "allBusinessTypes": "Tất cả loại nghiệp vụ",
     "sourceTypes": {
-      "manual_stock_movement": "Phiếu xuất nhập kho hàng loạt",
+      "manual_stock_movement": "Phiếu xuất nhập tự do",
       "purchase_inbound": "Phiếu nhập mua",
       "purchase_return": "Phiếu trả hàng mua",
       "production_order": "Lệnh sản xuất",

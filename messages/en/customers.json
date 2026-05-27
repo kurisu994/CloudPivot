@@ -152,6 +152,7 @@
       "deleteSuccess": "Customer deleted",
       "toggleSuccess": "Status updated successfully",
       "saveError": "Failed to save customer",
+      "deleteError": "Failed to delete customer",
       "loadError": "Failed to load customers",
       "toggleError": "Failed to update status",
       "exportPlanned": "Export is coming soon"

@@ -334,7 +334,10 @@
         "payment": "付款",
         "receipt": "收款",
         "convert_to_sales": "转销售单",
-        "start_production": "开始生产"
+        "start_production": "开始生产",
+        "save_batch_movement": "保存自由出入库",
+        "confirm_batch_movement": "确认自由出入库",
+        "delete_batch_movement": "删除自由出入库"
       }
     }
   }

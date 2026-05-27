@@ -152,6 +152,7 @@
       "deleteSuccess": "Đã xóa khách hàng",
       "toggleSuccess": "Cập nhật trạng thái thành công",
       "saveError": "Lưu khách hàng thất bại",
+      "deleteError": "Xóa khách hàng thất bại",
       "loadError": "Tải dữ liệu khách hàng thất bại",
       "toggleError": "Cập nhật trạng thái thất bại",
       "exportPlanned": "Chức năng xuất dữ liệu sẽ sớm ra mắt"

@@ -334,7 +334,10 @@
         "payment": "Thanh toán",
         "receipt": "Thu tiền",
         "convert_to_sales": "Chuyển thành đơn bán",
-        "start_production": "Bắt đầu sản xuất"
+        "start_production": "Bắt đầu sản xuất",
+        "save_batch_movement": "Lưu xuất nhập tự do",
+        "confirm_batch_movement": "Xác nhận xuất nhập tự do",
+        "delete_batch_movement": "Xóa xuất nhập tự do"
       }
     }
   }

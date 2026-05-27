@@ -40,6 +40,7 @@
   },
   "manualStockMovements": {
     "title": "自由出入库",
+    "totalItems": "共 {total} 条",
     "subtitle": "自由出入库单管理",
     "newMovement": "新建出入库单",
     "editDraft": "编辑草稿",
@@ -165,7 +166,7 @@
     "allSources": "全部来源",
     "allBusinessTypes": "全部业务类型",
     "sourceTypes": {
-      "manual_stock_movement": "批量出入库单",
+      "manual_stock_movement": "自由出入库单",
       "purchase_inbound": "采购入库单",
       "purchase_return": "采购退货单",
       "production_order": "生产工单",

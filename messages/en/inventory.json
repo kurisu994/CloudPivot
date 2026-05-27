@@ -40,6 +40,7 @@
   },
   "manualStockMovements": {
     "title": "Manual Stock Movement",
+    "totalItems": "{total} items",
     "subtitle": "Manual Stock Movement Management",
     "newMovement": "New Movement",
     "editDraft": "Edit Draft",
@@ -165,7 +166,7 @@
     "allSources": "All Sources",
     "allBusinessTypes": "All Business Types",
     "sourceTypes": {
-      "manual_stock_movement": "Batch Stock Movement",
+      "manual_stock_movement": "Manual Stock Movement",
       "purchase_inbound": "Purchase Inbound",
       "purchase_return": "Purchase Return",
       "production_order": "Production Order",

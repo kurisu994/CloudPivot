@@ -44,8 +44,11 @@
     "notFoundTitle": "Không tìm thấy trang",
     "notFoundDesc": "Trang bạn đang tìm không tồn tại hoặc đã bị xóa",
     "loadFailed": "Tải dữ liệu thất bại",
-    "perPage": "{count} / trang",
-    "goFirstPage": "Về trang đầu"
+    "unit": "Đơn vị",
+    "page": "Trang",
+    "prev": "Trước",
+    "next": "Sau",
+    "perPage": "{count} / trang"
   },
   "nav": {
     "dashboard": "Bảng điều khiển",

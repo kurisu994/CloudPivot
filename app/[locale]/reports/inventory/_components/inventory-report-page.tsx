@@ -67,7 +67,11 @@ async function exportToExcel(headers: string[], rows: string[][], filename: stri
   XLSX.writeFile(wb, filename)
 }
 
-const MOVEMENT_COL_COUNT = 10
+/** 金额列开关：暂时隐藏成本/金额相关列与卡片，数据可靠后改为 true 即可整体恢复 */
+const SHOW_AMOUNT_COLUMNS = false
+
+const MOVEMENT_COL_COUNT = SHOW_AMOUNT_COLUMNS ? 10 : 7
+const AGING_COL_COUNT = SHOW_AMOUNT_COLUMNS ? 7 : 6
 
 /** 库龄区间选项 */
 const AGING_RANGES = [
@@ -350,9 +354,7 @@ export function InventoryReportPage() {
           t('inboundQty'),
           t('outboundQty'),
           t('closingQty'),
-          t('inboundValue'),
-          t('outboundValue'),
-          t('closingValue'),
+          ...(SHOW_AMOUNT_COLUMNS ? [t('inboundValue'), t('outboundValue'), t('closingValue')] : []),
         ]
         const rows = res.items.map(i => [
           i.materialCode,
@@ -362,9 +364,7 @@ export function InventoryReportPage() {
           i.inboundQty.toFixed(2),
           i.outboundQty.toFixed(2),
           i.closingQty.toFixed(2),
-          (i.inboundValue / 100).toFixed(2),
-          (i.outboundValue / 100).toFixed(2),
-          (i.closingValue / 100).toFixed(2),
+          ...(SHOW_AMOUNT_COLUMNS ? [(i.inboundValue / 100).toFixed(2), (i.outboundValue / 100).toFixed(2), (i.closingValue / 100).toFixed(2)] : []),
         ])
         await exportToExcel(headers, rows, `inventory_report_${startDate}_${endDate}.xlsx`)
       } else if (activeTab === 'aging') {
@@ -379,7 +379,15 @@ export function InventoryReportPage() {
           pageSize: 99999,
         }
         const res = await getInventoryAgingAnalysis(filter)
-        const headers = [t('materialCode'), t('materialName'), t('lotNo'), t('receivedDate'), t('daysInStock'), t('qty'), t('value')]
+        const headers = [
+          t('materialCode'),
+          t('materialName'),
+          t('lotNo'),
+          t('receivedDate'),
+          t('daysInStock'),
+          t('qty'),
+          ...(SHOW_AMOUNT_COLUMNS ? [t('value')] : []),
+        ]
         const rows = res.items.map(i => [
           i.materialCode,
           i.materialName,
@@ -387,7 +395,7 @@ export function InventoryReportPage() {
           i.receivedDate,
           String(i.daysInStock),
           i.qtyOnHand.toFixed(2),
-          (i.value / 100).toFixed(2),
+          ...(SHOW_AMOUNT_COLUMNS ? [(i.value / 100).toFixed(2)] : []),
         ])
         await exportToExcel(headers, rows, 'inventory_aging.xlsx')
       } else if (activeTab === 'slowMoving') {
@@ -472,45 +480,47 @@ export function InventoryReportPage() {
         </div>
       </div>
 
-      {/* KPI 卡片 */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-          <div className="rounded-lg bg-blue-100 p-2.5 dark:bg-blue-900/50">
-            <Package className="size-5 text-blue-600 dark:text-blue-400" />
+      {/* KPI 卡片（金额相关，暂时隐藏） */}
+      {SHOW_AMOUNT_COLUMNS && (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+            <div className="rounded-lg bg-blue-100 p-2.5 dark:bg-blue-900/50">
+              <Package className="size-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">{t('openingStock')}</p>
+              <p className="text-foreground text-lg font-bold">{formatAmount(stats?.openingValue ?? 0, 'USD' as Currency)}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-muted-foreground text-xs">{t('openingStock')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(stats?.openingValue ?? 0, 'USD' as Currency)}</p>
+          <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+            <div className="rounded-lg bg-emerald-100 p-2.5 dark:bg-emerald-900/50">
+              <TrendingUp className="size-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">{t('inbound')}</p>
+              <p className="text-foreground text-lg font-bold">{formatAmount(stats?.inboundValue ?? 0, 'USD' as Currency)}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+            <div className="rounded-lg bg-amber-100 p-2.5 dark:bg-amber-900/50">
+              <TrendingDown className="size-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">{t('outbound')}</p>
+              <p className="text-foreground text-lg font-bold">{formatAmount(stats?.outboundValue ?? 0, 'USD' as Currency)}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+            <div className="rounded-lg bg-purple-100 p-2.5 dark:bg-purple-900/50">
+              <Box className="size-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">{t('closingStock')}</p>
+              <p className="text-foreground text-lg font-bold">{formatAmount(stats?.closingValue ?? 0, 'USD' as Currency)}</p>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-          <div className="rounded-lg bg-emerald-100 p-2.5 dark:bg-emerald-900/50">
-            <TrendingUp className="size-5 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <div>
-            <p className="text-muted-foreground text-xs">{t('inbound')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(stats?.inboundValue ?? 0, 'USD' as Currency)}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-          <div className="rounded-lg bg-amber-100 p-2.5 dark:bg-amber-900/50">
-            <TrendingDown className="size-5 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div>
-            <p className="text-muted-foreground text-xs">{t('outbound')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(stats?.outboundValue ?? 0, 'USD' as Currency)}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-          <div className="rounded-lg bg-purple-100 p-2.5 dark:bg-purple-900/50">
-            <Box className="size-5 text-purple-600 dark:text-purple-400" />
-          </div>
-          <div>
-            <p className="text-muted-foreground text-xs">{t('closingStock')}</p>
-            <p className="text-foreground text-lg font-bold">{formatAmount(stats?.closingValue ?? 0, 'USD' as Currency)}</p>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* 筛选栏 */}
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
@@ -729,7 +739,7 @@ function StockMovementTable({
 }) {
   return (
     <>
-      <BusinessListTableShell tableClassName="min-w-[1200px]">
+      <BusinessListTableShell tableClassName={SHOW_AMOUNT_COLUMNS ? 'min-w-[1200px]' : 'min-w-[760px]'}>
         <TableHeader>
           <TableRow>
             <TableHead className="sticky left-0 z-10 w-[100px] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
@@ -739,9 +749,13 @@ function StockMovementTable({
             <TableHead className="w-[90px] text-right">{t('inboundQty')}</TableHead>
             <TableHead className="w-[90px] text-right">{t('outboundQty')}</TableHead>
             <TableHead className="w-[90px] text-right">{t('closingQty')}</TableHead>
-            <TableHead className="w-[110px] text-right">{t('inboundValue')}</TableHead>
-            <TableHead className="w-[110px] text-right">{t('outboundValue')}</TableHead>
-            <TableHead className="w-[110px] text-right">{t('closingValue')}</TableHead>
+            {SHOW_AMOUNT_COLUMNS && (
+              <>
+                <TableHead className="w-[110px] text-right">{t('inboundValue')}</TableHead>
+                <TableHead className="w-[110px] text-right">{t('outboundValue')}</TableHead>
+                <TableHead className="w-[110px] text-right">{t('closingValue')}</TableHead>
+              </>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -763,9 +777,13 @@ function StockMovementTable({
                   {item.outboundQty > 0 ? `-${item.outboundQty.toFixed(2)}` : '0.00'}
                 </TableCell>
                 <TableCell className="text-right font-mono font-semibold">{item.closingQty.toFixed(2)}</TableCell>
-                <TableCell className="text-right font-mono">{formatAmount(item.inboundValue, 'USD' as Currency)}</TableCell>
-                <TableCell className="text-right font-mono">{formatAmount(item.outboundValue, 'USD' as Currency)}</TableCell>
-                <TableCell className="text-right font-mono font-semibold">{formatAmount(item.closingValue, 'USD' as Currency)}</TableCell>
+                {SHOW_AMOUNT_COLUMNS && (
+                  <>
+                    <TableCell className="text-right font-mono">{formatAmount(item.inboundValue, 'USD' as Currency)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatAmount(item.outboundValue, 'USD' as Currency)}</TableCell>
+                    <TableCell className="text-right font-mono font-semibold">{formatAmount(item.closingValue, 'USD' as Currency)}</TableCell>
+                  </>
+                )}
               </TableRow>
             ))
           )}
@@ -833,7 +851,7 @@ function AgingTable({
 
   return (
     <>
-      <BusinessListTableShell tableClassName="min-w-[900px]">
+      <BusinessListTableShell tableClassName={SHOW_AMOUNT_COLUMNS ? 'min-w-[900px]' : 'min-w-[700px]'}>
         <TableHeader>
           <TableRow>
             <TableHead className="sticky left-0 z-10 w-[100px] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
@@ -842,14 +860,14 @@ function AgingTable({
             <TableHead className="w-[100px]">{t('receivedDate')}</TableHead>
             <TableHead className="w-[100px]">{t('daysInStock')}</TableHead>
             <TableHead className="w-[90px] text-right">{t('qty')}</TableHead>
-            <TableHead className="w-[110px] text-right">{t('value')}</TableHead>
+            {SHOW_AMOUNT_COLUMNS && <TableHead className="w-[110px] text-right">{t('value')}</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {loading ? (
-            <BusinessListTableLoadingRows colSpan={7} />
+            <BusinessListTableLoadingRows colSpan={AGING_COL_COUNT} />
           ) : items.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={7} message={tc('noData')} />
+            <BusinessListTableEmptyRow colSpan={AGING_COL_COUNT} message={tc('noData')} />
           ) : (
             items.map(item => (
               <TableRow key={`${item.materialId}-${item.lotNo}`}>
@@ -859,7 +877,7 @@ function AgingTable({
                 <TableCell className="text-sm">{item.receivedDate}</TableCell>
                 <TableCell>{agingBadge(item.daysInStock)}</TableCell>
                 <TableCell className="text-right font-mono">{item.qtyOnHand.toFixed(2)}</TableCell>
-                <TableCell className="text-right font-mono">{formatAmount(item.value, 'USD' as Currency)}</TableCell>
+                {SHOW_AMOUNT_COLUMNS && <TableCell className="text-right font-mono">{formatAmount(item.value, 'USD' as Currency)}</TableCell>}
               </TableRow>
             ))
           )}

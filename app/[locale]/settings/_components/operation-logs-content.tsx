@@ -44,6 +44,9 @@ const ACTION_KEYS = [
   'receipt',
   'convert_to_sales',
   'start_production',
+  'save_batch_movement',
+  'confirm_batch_movement',
+  'delete_batch_movement',
 ]
 
 /** 操作日志内容 */

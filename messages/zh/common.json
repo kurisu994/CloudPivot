@@ -44,8 +44,11 @@
     "notFoundTitle": "页面不存在",
     "notFoundDesc": "您访问的页面不存在或已被移除",
     "loadFailed": "数据加载失败",
-    "perPage": "{count} 条/页",
-    "goFirstPage": "回到首页"
+    "unit": "单位",
+    "page": "页",
+    "prev": "上一页",
+    "next": "下一页",
+    "perPage": "{count} 条/页"
   },
   "nav": {
     "dashboard": "首页看板",

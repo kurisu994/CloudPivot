@@ -456,7 +456,7 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
       {/* 分页控制 */}
       {total > 0 && (
         <BusinessListTableFooter>
-          <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
+          <span className="text-xs font-bold text-slate-400">{t('manualStockMovements.totalItems', { total })}</span>
           <PaginationControls
             currentPage={page}
             totalPages={Math.ceil(total / pageSize)}

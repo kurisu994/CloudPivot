@@ -334,7 +334,10 @@
         "payment": "Payment",
         "receipt": "Receipt",
         "convert_to_sales": "Convert to Sales Order",
-        "start_production": "Start Production"
+        "start_production": "Start Production",
+        "save_batch_movement": "Save Manual Stock Movement",
+        "confirm_batch_movement": "Confirm Manual Stock Movement",
+        "delete_batch_movement": "Delete Manual Stock Movement"
       }
     }
   }

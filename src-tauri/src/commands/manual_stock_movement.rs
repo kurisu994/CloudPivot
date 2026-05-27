@@ -984,7 +984,8 @@ pub async fn confirm_manual_stock_movement(
                         warehouse_id,
                         Some(lot_id),
                         mapped_tx_type,
-                        deduct_qty,
+                        // 出库流水数量记为负数，与销售/生产出库符号约定保持一致
+                        -deduct_qty,
                         before_qty - (item.quantity - remaining_qty),
                         before_qty - (item.quantity - remaining_qty) - deduct_qty,
                         avg_cost, // 出库采用移动加权平均成本快照
@@ -1014,7 +1015,8 @@ pub async fn confirm_manual_stock_movement(
                     warehouse_id,
                     None,
                     mapped_tx_type,
-                    item.quantity,
+                    // 出库流水数量记为负数，与销售/生产出库符号约定保持一致
+                    -item.quantity,
                     before_qty,
                     before_qty - item.quantity,
                     avg_cost,

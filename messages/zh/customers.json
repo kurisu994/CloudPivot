@@ -152,6 +152,7 @@
       "deleteSuccess": "客户已删除",
       "toggleSuccess": "状态更新成功",
       "saveError": "客户保存失败",
+      "deleteError": "客户删除失败",
       "loadError": "加载客户数据失败",
       "toggleError": "状态更新失败",
       "exportPlanned": "导出功能即将上线"

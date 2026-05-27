@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, ChevronsLeft } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
@@ -48,7 +48,7 @@ interface PaginationControlsProps {
 }
 
 /**
- * 分页控件（回首页 / 上一页 / 页码 / 下一页 / 每页条数）
+ * 分页控件（上一页 / 页码 / 下一页 / 每页条数）
  *
  * 统一样式，采用操作日志组件一致的精致边框设计。
  */
@@ -99,17 +99,6 @@ export function PaginationControls({
 
       {/* 分页按钮容器 */}
       <div className="ml-auto flex items-center gap-1">
-        {/* 回到首页 */}
-        {currentPage > 3 && (
-          <button
-            className="flex size-8 items-center justify-center rounded border border-slate-200 text-slate-400 transition-colors hover:bg-white dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 disabled:opacity-40"
-            onClick={() => onPageChange(1)}
-            title={t('goFirstPage')}
-          >
-            <ChevronsLeft className="size-4" />
-          </button>
-        )}
-
         {/* 上一页 */}
         <button
           className="flex size-8 items-center justify-center rounded border border-slate-200 text-slate-400 transition-colors hover:bg-white dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 disabled:opacity-40"
