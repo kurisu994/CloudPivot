@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { SplashScreen } from '@/components/common/splash-screen'
 import { usePathname, useRouter } from '@/i18n/navigation'
 import { getErrorMessage } from '@/lib/error'
@@ -255,6 +256,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initLogger()
   }, [])
 
+  /** 注册全局认证失效处理：任意 IPC 返回 AUTH 错误时清会话并跳转登录页 */
+  useEffect(() => {
+    tauriApi.setAuthErrorHandler(() => {
+      // 仅在"自以为已登录"时处理，避免登录页或恢复阶段误触发
+      if (!cachedUser) return
+      void clearAuth()
+      updateNeedsSetup(false)
+      authInitialized = false
+      toast.error('登录已失效，请重新登录')
+      router.push('/login')
+    })
+    return () => tauriApi.setAuthErrorHandler(null)
+  }, [clearAuth, updateNeedsSetup, router])
+
   /** 启动时恢复认证状态（仅首次挂载时执行，locale 切换时从缓存同步恢复） */
   useEffect(() => {
     // 如果已经初始化过（locale 切换导致重新挂载），跳过异步恢复
@@ -284,12 +299,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         let restoredUser: UserInfo | null = null
 
         if (isTauriEnv()) {
-          // 从后端验证会话是否有效
-          const userInfo = await tauriApi.getUserInfo(data.userId)
-          if (userInfo.session_version === data.sessionVersion) {
-            restoredUser = userInfo
-          } else {
-            // session_version 不匹配（已改密），清除会话
+          // 校验会话并重新激活后端登录态（CurrentUser）。
+          // 必须调用 restoreSession：进程重启后后端 is_authenticated 会重置，
+          // 仅恢复前端状态会导致写命令报「未登录」。会话失效（已改密/停用）则抛错清除。
+          try {
+            restoredUser = await tauriApi.restoreSession(data.userId, data.sessionVersion)
+          } catch {
             await clearAuth()
           }
         } else {

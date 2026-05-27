@@ -220,6 +220,26 @@ pub async fn get_user_info(db: State<'_, DbState>, user_id: i64) -> Result<UserI
     auth::get_user_info(&db.pool, user_id).await
 }
 
+/// 恢复会话并重新激活后端登录态
+///
+/// 应用启动或刷新时，前端用持久化的「记住我」会话调用本命令：校验用户存在且启用、
+/// `session_version` 与持久化值一致后，重新写入 `CurrentUser`。否则依赖 `require_auth`
+/// 的写命令在进程重启后会因后端 `is_authenticated=false` 而被拒绝（即使前端显示已登录）。
+#[tauri::command]
+pub async fn restore_session(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    user_id: i64,
+    session_version: i32,
+) -> Result<UserInfo, AppError> {
+    let user = auth::get_user_info(&db.pool, user_id).await?;
+    if user.session_version != session_version {
+        return Err(AppError::Auth("会话已失效，请重新登录".into()));
+    }
+    current_user.set(user.id, user.display_name.clone());
+    Ok(user)
+}
+
 // ================================================================
 // 系统配置命令
 // ================================================================

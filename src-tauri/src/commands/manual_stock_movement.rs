@@ -481,14 +481,8 @@ pub async fn save_manual_stock_movement(
 
     // 获取当前操作人（强制校验登录，与 confirm/delete 保持一致）
     let (operator_id, operator_name) = {
-        let user_inner = current_user
-            .inner
-            .read()
-            .map_err(|_| AppError::Business("读取用户状态失败".to_string()))?;
-        if !user_inner.is_authenticated {
-            return Err(AppError::Business("未登录或登录已失效".to_string()));
-        }
-        (user_inner.user_id, user_inner.display_name.clone())
+        current_user.require_auth()?;
+        (current_user.user_id(), current_user.display_name())
     };
 
     let mut tx = db
@@ -732,14 +726,8 @@ pub async fn confirm_manual_stock_movement(
 ) -> Result<String, AppError> {
     // 强制检验登录
     let (operator_id, operator_name) = {
-        let user_inner = current_user
-            .inner
-            .read()
-            .map_err(|_| AppError::Business("读取用户状态失败".to_string()))?;
-        if !user_inner.is_authenticated {
-            return Err(AppError::Business("未登录或登录已失效".to_string()));
-        }
-        (user_inner.user_id, user_inner.display_name.clone())
+        current_user.require_auth()?;
+        (current_user.user_id(), current_user.display_name())
     };
 
     let mut tx = db
@@ -1093,14 +1081,8 @@ pub async fn delete_manual_stock_movement(
 ) -> Result<(), AppError> {
     // 强制检验登录
     let (operator_id, operator_name) = {
-        let user_inner = current_user
-            .inner
-            .read()
-            .map_err(|_| AppError::Business("读取用户状态失败".to_string()))?;
-        if !user_inner.is_authenticated {
-            return Err(AppError::Business("未登录或登录已失效".to_string()));
-        }
-        (user_inner.user_id, user_inner.display_name.clone())
+        current_user.require_auth()?;
+        (current_user.user_id(), current_user.display_name())
     };
 
     let mut tx = db

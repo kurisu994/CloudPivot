@@ -170,6 +170,7 @@ pub fn run() {
             commands::change_password,
             commands::logout,
             commands::get_user_info,
+            commands::restore_session,
             commands::get_system_configs,
             commands::set_system_config,
             commands::set_system_configs,

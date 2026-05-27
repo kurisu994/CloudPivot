@@ -29,6 +29,16 @@ export async function getUserInfo(userId: number): Promise<UserInfo> {
   return invoke<UserInfo>('get_user_info', { userId })
 }
 
+/**
+ * 恢复会话并重新激活后端登录态。
+ *
+ * 应用启动/刷新时用持久化会话调用：后端校验用户与 session_version 后重设 CurrentUser，
+ * 使写命令在「记住我」会话下无需重新登录即可使用。会话失效时抛出错误。
+ */
+export async function restoreSession(userId: number, sessionVersion: number): Promise<UserInfo> {
+  return invoke<UserInfo>('restore_session', { userId, sessionVersion })
+}
+
 /** 认证数据在 localStorage 中的存储键（Web 调试模式降级用） */
 const AUTH_STORAGE_KEY = 'cloudpivot_auth'
 

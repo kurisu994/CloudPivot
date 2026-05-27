@@ -63,6 +63,18 @@ export function isTauriEnv(): boolean {
  * @param args - 传递给命令的参数
  * @returns 命令返回值
  */
+/** 认证失效处理器：由 AuthProvider 注册，IPC 返回 AUTH 错误时触发（清会话并跳登录页） */
+type AuthErrorHandler = () => void
+let authErrorHandler: AuthErrorHandler | null = null
+
+/** 注册认证失效处理器（AuthProvider 挂载时调用，卸载时传 null 注销） */
+export function setAuthErrorHandler(handler: AuthErrorHandler | null): void {
+  authErrorHandler = handler
+}
+
+/** 这些命令本身就是凭证操作，其 AUTH 失败（密码错误/会话校验）不应触发"跳登录页" */
+const AUTH_REDIRECT_EXCLUDED = new Set(['login', 'change_password', 'restore_session'])
+
 export async function invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
   if (!isTauriEnv()) {
     // 智能 mock 常见的数据结构，避免 dev-web 下页面崩溃
@@ -123,6 +135,11 @@ export async function invoke<T>(command: string, args?: Record<string, unknown>)
     // 新的结构化格式为 { code, message, details? }
     // 直接抛出，前端使用 getErrorMessage() 解析
     console.error(`[Tauri IPC] 命令 "${command}" 调用失败:`, error)
+    // 认证失效（后端 require_auth 拒绝，code=AUTH）：通知上层清会话并跳转登录页。
+    // 排除登录/改密/恢复会话等凭证命令，避免输错密码也被踢到登录页。
+    if (authErrorHandler && !AUTH_REDIRECT_EXCLUDED.has(command) && (error as AppErrorResponse | null)?.code === 'AUTH') {
+      authErrorHandler()
+    }
     throw error as AppErrorResponse
   }
 }
