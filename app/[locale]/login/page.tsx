@@ -239,7 +239,8 @@ export default function LoginPage() {
             </CardContent>
           </Card>
 
-          {/* 提示信息 */}
+          {/* 提示信息（已隐藏） */}
+          {/*
           <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3.5 dark:border-blue-900/30 dark:bg-blue-950/30">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#294985] dark:text-[#6b85c1]" />
             <p className="text-[13px] leading-relaxed text-[#294985] dark:text-[#8ba3d4]">
@@ -249,6 +250,7 @@ export default function LoginPage() {
               })}
             </p>
           </div>
+          */}
         </div>
       </main>
 
