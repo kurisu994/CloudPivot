@@ -5,7 +5,7 @@ import { SettingsTabNav } from './_components/settings-tab-nav'
  */
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <SettingsTabNav />
       {children}
     </div>
