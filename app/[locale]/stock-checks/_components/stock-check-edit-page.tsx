@@ -46,7 +46,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
       // 初始化编辑值
       const vals: Record<number, string> = {}
       for (const item of d.items) {
-        vals[item.id] = item.actualQty !== null ? String(item.actualQty) : ''
+        vals[item.id] = String(item.actualQty ?? item.systemQty)
       }
       setEditValues(vals)
     } catch (error) {

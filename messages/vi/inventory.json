@@ -207,6 +207,7 @@
     "loss": "Thiếu",
     "createSuccess": "Tạo phiếu kiểm kê thành công",
     "createFailed": "Tạo thất bại",
+    "creatingSnapshot": "Đang tạo chi tiết kiểm kê...",
     "warehouse": "Kho",
     "totalItems": "Tổng {total} mục"
   },

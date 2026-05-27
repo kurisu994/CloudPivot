@@ -311,22 +311,25 @@ pub async fn get_manual_stock_movement_detail(
     id: i64,
 ) -> Result<ManualMovementDetail, AppError> {
     // 1. 查询单头
-    let header_row = sqlx::query_as::<_, (
-        i64,
-        String,
-        String,
-        String,
-        i64,
-        String,
-        String,
-        Option<String>,
-        Option<String>,
-        String,
-        Option<String>,
-        Option<String>,
-        Option<String>,
-        Option<String>,
-    )>(
+    let header_row = sqlx::query_as::<
+        _,
+        (
+            i64,
+            String,
+            String,
+            String,
+            i64,
+            String,
+            String,
+            Option<String>,
+            Option<String>,
+            String,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+        ),
+    >(
         r#"
         SELECT 
             m.id, m.movement_no, m.direction, m.business_type, m.warehouse_id, 
@@ -790,7 +793,9 @@ pub async fn confirm_manual_stock_movement(
 
     // 3. 校验业务规则
     if COUNTERPARTY_REQUIRED_TYPES.contains(&business_type.as_str())
-        && counterparty_name.as_ref().is_none_or(|c| c.trim().is_empty())
+        && counterparty_name
+            .as_ref()
+            .is_none_or(|c| c.trim().is_empty())
     {
         return Err(AppError::Business(
             "借料及归还类业务必须填写往来对象".to_string(),

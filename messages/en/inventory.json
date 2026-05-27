@@ -207,6 +207,7 @@
     "loss": "Loss",
     "createSuccess": "Stock check created successfully",
     "createFailed": "Failed to create",
+    "creatingSnapshot": "Generating check items...",
     "warehouse": "Warehouse",
     "totalItems": "{total} items"
   },

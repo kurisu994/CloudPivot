@@ -1019,6 +1019,40 @@ pub async fn get_stock_check_detail(
     })
 }
 
+// 创建盘点单时在数据库内直接生成明细快照，避免随库存规模增加逐条写入。
+const STOCK_CHECK_INVENTORY_SNAPSHOT_SQL: &str = r#"
+    INSERT INTO stock_check_items (check_id, material_id, system_qty, actual_qty, unit_price)
+    SELECT $1, inv.material_id, inv.quantity, inv.quantity, inv.avg_cost
+    FROM inventory inv
+    WHERE inv.warehouse_id = $2
+      AND (
+          $3::BIGINT IS NULL
+          OR EXISTS (
+              SELECT 1
+              FROM materials m
+              WHERE m.id = inv.material_id AND m.category_id = $3
+          )
+      )
+"#;
+
+const STOCK_CHECK_LOT_SNAPSHOT_SQL: &str = r#"
+    INSERT INTO stock_check_items (
+        check_id, material_id, lot_id, lot_no_snapshot, system_qty, actual_qty, unit_price
+    )
+    SELECT $1, il.material_id, il.id, il.lot_no, il.qty_on_hand, il.qty_on_hand, il.receipt_unit_cost
+    FROM inventory_lots il
+    WHERE il.warehouse_id = $2
+      AND il.qty_on_hand > 0
+      AND (
+          $3::BIGINT IS NULL
+          OR EXISTS (
+              SELECT 1
+              FROM materials m
+              WHERE m.id = il.material_id AND m.category_id = $3
+          )
+      )
+"#;
+
 /// 创建盘点单（自动快照系统库存）
 #[tauri::command]
 pub async fn create_stock_check(
@@ -1065,97 +1099,29 @@ pub async fn create_stock_check(
     .await
     .map_err(|e| AppError::Database(format!("创建盘点单失败: {}", e)))?;
 
-    // 根据范围查询物料并快照库存
-    let inv_rows = if params.scope_type == "category"
-        && let Some(cat_id) = params.scope_category_id
-    {
-        sqlx::query_as::<_, (i64, f64, i64)>(
-            r#"
-            SELECT inv.material_id, inv.quantity, inv.avg_cost
-            FROM inventory inv
-            JOIN materials m ON m.id = inv.material_id
-            WHERE inv.warehouse_id = $1 AND m.category_id = $2
-            "#,
-        )
-        .bind(params.warehouse_id)
-        .bind(cat_id)
-        .fetch_all(&mut *tx)
-        .await
-        .map_err(|e| AppError::Database(format!("查询库存快照失败: {}", e)))?
+    let scope_category_id = if params.scope_type == "category" {
+        params.scope_category_id
     } else {
-        sqlx::query_as::<_, (i64, f64, i64)>(
-            "SELECT material_id, quantity, avg_cost FROM inventory WHERE warehouse_id = $1",
-        )
-        .bind(params.warehouse_id)
-        .fetch_all(&mut *tx)
-        .await
-        .map_err(|e| AppError::Database(format!("查询库存快照失败: {}", e)))?
+        None
     };
 
-    // 为每个物料生成盘点明细行
-    for (material_id, qty, cost) in &inv_rows {
-        sqlx::query(
-            r#"
-            INSERT INTO stock_check_items (check_id, material_id, system_qty, unit_price)
-            VALUES ($1, $2, $3, $4)
-            "#,
-        )
+    // 在数据库内批量生成快照，避免每条明细产生一次事务内往返。
+    sqlx::query(STOCK_CHECK_INVENTORY_SNAPSHOT_SQL)
         .bind(check_id)
-        .bind(material_id)
-        .bind(qty)
-        .bind(cost)
+        .bind(params.warehouse_id)
+        .bind(scope_category_id)
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("插入盘点明细失败: {}", e)))?;
-    }
 
-    // 同时为批次物料生成批次级明细行
-    let lot_query = if params.scope_type == "category"
-        && let Some(cat_id) = params.scope_category_id
-    {
-        format!(
-            r#"
-            SELECT il.material_id, il.id AS lot_id, il.lot_no, il.qty_on_hand, il.receipt_unit_cost
-            FROM inventory_lots il
-            JOIN materials m ON m.id = il.material_id
-            WHERE il.warehouse_id = {} AND m.category_id = {} AND il.qty_on_hand > 0
-            "#,
-            params.warehouse_id, cat_id
-        )
-    } else {
-        format!(
-            r#"
-            SELECT material_id, id AS lot_id, lot_no, qty_on_hand, receipt_unit_cost
-            FROM inventory_lots
-            WHERE warehouse_id = {} AND qty_on_hand > 0
-            "#,
-            params.warehouse_id
-        )
-    };
-
-    let lot_rows = sqlx::query_as::<_, (i64, i64, String, f64, i64)>(&lot_query)
-        .fetch_all(&mut *tx)
-        .await
-        .map_err(|e| AppError::Database(format!("查询批次快照失败: {}", e)))?;
-
-    for (material_id, lot_id, lot_no, qty, cost) in &lot_rows {
-        // 仅在物料级明细之外追加批次级明细行（同一 material_id 有批次时）
-        sqlx::query(
-            r#"
-            INSERT INTO stock_check_items (check_id, material_id, lot_id, lot_no_snapshot, system_qty, unit_price)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            "#,
-        )
+    // 保持现有批次快照语义，并让批次明细同样默认无盘点差异。
+    sqlx::query(STOCK_CHECK_LOT_SNAPSHOT_SQL)
         .bind(check_id)
-        .bind(material_id)
-        .bind(lot_id)
-        .bind(lot_no)
-        .bind(qty)
-        .bind(cost)
+        .bind(params.warehouse_id)
+        .bind(scope_category_id)
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("插入批次盘点明细失败: {}", e)))?;
-    }
 
     tx.commit()
         .await
@@ -2048,5 +2014,19 @@ mod tests {
         assert_eq!(transfer.items.len(), 1);
         assert_eq!(transfer.items[0].material_id, 7);
         assert_eq!(transfer.items[0].unit_name_snapshot, "件");
+    }
+
+    #[test]
+    fn stock_check_snapshot_sql_bulk_inserts_with_default_actual_quantity() {
+        // 创建盘点单必须使用集合插入，并将默认实盘数初始化为库存快照数。
+        assert!(STOCK_CHECK_INVENTORY_SNAPSHOT_SQL.contains("INSERT INTO stock_check_items"));
+        assert!(STOCK_CHECK_INVENTORY_SNAPSHOT_SQL.contains("SELECT"));
+        assert!(STOCK_CHECK_INVENTORY_SNAPSHOT_SQL.contains("actual_qty"));
+        assert!(STOCK_CHECK_INVENTORY_SNAPSHOT_SQL.contains("inv.quantity, inv.quantity"));
+
+        assert!(STOCK_CHECK_LOT_SNAPSHOT_SQL.contains("INSERT INTO stock_check_items"));
+        assert!(STOCK_CHECK_LOT_SNAPSHOT_SQL.contains("SELECT"));
+        assert!(STOCK_CHECK_LOT_SNAPSHOT_SQL.contains("actual_qty"));
+        assert!(STOCK_CHECK_LOT_SNAPSHOT_SQL.contains("il.qty_on_hand, il.qty_on_hand"));
     }
 }

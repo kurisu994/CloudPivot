@@ -207,6 +207,7 @@
     "loss": "盘亏",
     "createSuccess": "盘点单创建成功",
     "createFailed": "创建失败",
+    "creatingSnapshot": "正在生成盘点明细...",
     "warehouse": "仓库",
     "totalItems": "共 {total} 条"
   },

@@ -10,6 +10,7 @@ import {
   BusinessListTableLoadingRows,
   BusinessListTableShell,
 } from '@/components/common/business-list-table'
+import { InlineLoading } from '@/components/common/loading'
 import { PaginationControls } from '@/components/common/pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -271,7 +272,7 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
       </BusinessListTableShell>
 
       {/* 新建盘点单弹窗 */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <Dialog open={createOpen} onOpenChange={open => !creating && setCreateOpen(open)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('createCheck')}</DialogTitle>
@@ -330,11 +331,11 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>
               {tc('cancel')}
             </Button>
             <Button onClick={handleCreate} disabled={creating}>
-              {creating ? tc('loading') : tc('confirm')}
+              {creating ? <InlineLoading size="sm" text={t('creatingSnapshot')} /> : tc('confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>

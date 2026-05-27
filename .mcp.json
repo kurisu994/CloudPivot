@@ -2,11 +2,7 @@
   "mcpServers": {
     "PostgreSQL": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-postgres",
-        "postgresql://postgres:Mygvo0oq0818@223.109.200.42:15432/cloudpivot"
-      ]
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://postgres:Mygvo0oq0818@223.109.200.42:15432/cloudpivot"]
     }
   }
 }
