@@ -209,7 +209,8 @@
     "createFailed": "创建失败",
     "creatingSnapshot": "正在生成盘点明细...",
     "warehouse": "仓库",
-    "totalItems": "共 {total} 条"
+    "totalItems": "共 {total} 条",
+    "searchMaterial": "搜索物料名称/编码..."
   },
   "stockTransfers": {
     "title": "库存调拨",

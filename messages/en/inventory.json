@@ -209,7 +209,8 @@
     "createFailed": "Failed to create",
     "creatingSnapshot": "Generating check items...",
     "warehouse": "Warehouse",
-    "totalItems": "{total} items"
+    "totalItems": "{total} items",
+    "searchMaterial": "Search material name/code..."
   },
   "stockTransfers": {
     "title": "Stock Transfer",

@@ -40,7 +40,7 @@
       "unit": "Đơn vị",
       "refCost": "Giá nhập",
       "salePrice": "Giá bán",
-      "stock": "Tồn kho",
+      "stock": "Tồn kho an toàn",
       "status": "Trạng thái",
       "operations": "Thao tác",
       "totalRecords": "Tổng {total} bản ghi",

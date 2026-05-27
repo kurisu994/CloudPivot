@@ -40,7 +40,7 @@
       "unit": "Unit",
       "refCost": "Cost",
       "salePrice": "Price",
-      "stock": "Stock",
+      "stock": "Safety Stock",
       "status": "Status",
       "operations": "Action",
       "totalRecords": "{total} records",

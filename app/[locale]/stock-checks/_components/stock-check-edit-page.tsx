@@ -1,8 +1,8 @@
 'use client'
 
-import { ArrowLeft, CheckCircle, Save } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Save, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
@@ -36,6 +36,17 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
 
   // 实盘数量编辑
   const [editValues, setEditValues] = useState<Record<number, string>>({})
+
+  // 物料搜索筛选
+  const [searchTerm, setSearchTerm] = useState('')
+  const filteredItems = useMemo(() => {
+    if (!detail) return []
+    if (!searchTerm.trim()) return detail.items
+    const keyword = searchTerm.trim().toLowerCase()
+    return detail.items.filter(
+      item => item.materialName.toLowerCase().includes(keyword) || item.materialCode.toLowerCase().includes(keyword),
+    )
+  }, [detail, searchTerm])
 
   const loadDetail = useCallback(async () => {
     if (!checkId) return
@@ -162,6 +173,17 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
       {loading ? (
         <div className="py-12 text-center text-muted-foreground">{tc('loading')}</div>
       ) : detail ? (
+        <>
+        {/* 物料搜索框 */}
+        <div className="relative w-72">
+          <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <Input
+            placeholder={t('searchMaterial')}
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
         <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 overflow-x-auto">
           <Table>
             <TableHeader>
@@ -177,14 +199,14 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
               </TableRow>
             </TableHeader>
             <TableBody>
-              {detail.items.length === 0 ? (
+              {filteredItems.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
                     {t('noItems')}
                   </TableCell>
                 </TableRow>
               ) : (
-                detail.items.map(item => {
+                filteredItems.map(item => {
                   const actualVal = editValues[item.id] ?? ''
                   const actualQty = actualVal !== '' ? Number(actualVal) : null
                   const diff = actualQty !== null ? actualQty - item.systemQty : 0
@@ -226,6 +248,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
             </TableBody>
           </Table>
         </div>
+        </>
       ) : null}
 
       {/* 盘点确认对话框 */}

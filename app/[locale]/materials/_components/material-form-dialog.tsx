@@ -358,76 +358,32 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                 </div>
               </FieldGroup>
 
-              {/* ━━━ 价格信息 / 库存设置 ━━━ */}
-              <div className="grid grid-cols-2 gap-8">
-                <div>
-                  <SectionTitle title={t('form.sectionPrice')} />
-                  <FieldGroup className="mt-3">
-                    <div className="grid grid-cols-2 gap-4">
-                      <Field>
-                        <FieldLabel htmlFor="ref_cost">{t('form.refCostPrice')}</FieldLabel>
-                        <div className="relative">
-                          <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm">
-                            {getCurrencyConfig(BASE_CURRENCY).symbol}
-                          </span>
-                          <Input
-                            id="ref_cost"
-                            type="number"
-                            step="0.01"
-                            className="pl-7"
-                            value={form.refCostPrice ? toDisplayAmount(form.refCostPrice, BASE_CURRENCY) : ''}
-                            onChange={e => setField('refCostPrice', toStorageAmount(parseFloat(e.target.value) || 0, BASE_CURRENCY))}
-                          />
-                        </div>
-                      </Field>
-                      <Field>
-                        <FieldLabel htmlFor="sale_price">{t('form.salePrice')}</FieldLabel>
-                        <div className="relative">
-                          <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm">
-                            {getCurrencyConfig(BASE_CURRENCY).symbol}
-                          </span>
-                          <Input
-                            id="sale_price"
-                            type="number"
-                            step="0.01"
-                            className="pl-7"
-                            value={form.salePrice ? toDisplayAmount(form.salePrice, BASE_CURRENCY) : ''}
-                            onChange={e => setField('salePrice', toStorageAmount(parseFloat(e.target.value) || 0, BASE_CURRENCY))}
-                          />
-                        </div>
-                      </Field>
-                    </div>
-                  </FieldGroup>
+              {/* ━━━ 库存设置 ━━━ */}
+              <SectionTitle title={t('form.sectionStock')} />
+              <FieldGroup className="mt-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="safety_stock">{t('form.safetyStock')}</FieldLabel>
+                    <Input
+                      id="safety_stock"
+                      type="number"
+                      placeholder={t('form.safetyStockPlaceholder')}
+                      value={form.safetyStock || ''}
+                      onChange={e => setField('safetyStock', parseFloat(e.target.value) || 0)}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="max_stock">{t('form.maxStock')}</FieldLabel>
+                    <Input
+                      id="max_stock"
+                      type="number"
+                      placeholder={t('form.maxStockPlaceholder')}
+                      value={form.maxStock || ''}
+                      onChange={e => setField('maxStock', parseFloat(e.target.value) || 0)}
+                    />
+                  </Field>
                 </div>
-
-                <div>
-                  <SectionTitle title={t('form.sectionStock')} />
-                  <FieldGroup className="mt-3">
-                    <div className="grid grid-cols-2 gap-4">
-                      <Field>
-                        <FieldLabel htmlFor="safety_stock">{t('form.safetyStock')}</FieldLabel>
-                        <Input
-                          id="safety_stock"
-                          type="number"
-                          placeholder={t('form.safetyStockPlaceholder')}
-                          value={form.safetyStock || ''}
-                          onChange={e => setField('safetyStock', parseFloat(e.target.value) || 0)}
-                        />
-                      </Field>
-                      <Field>
-                        <FieldLabel htmlFor="max_stock">{t('form.maxStock')}</FieldLabel>
-                        <Input
-                          id="max_stock"
-                          type="number"
-                          placeholder={t('form.maxStockPlaceholder')}
-                          value={form.maxStock || ''}
-                          onChange={e => setField('maxStock', parseFloat(e.target.value) || 0)}
-                        />
-                      </Field>
-                    </div>
-                  </FieldGroup>
-                </div>
-              </div>
+              </FieldGroup>
 
               {/* ━━━ 计量与追踪 ━━━ */}
               <SectionTitle title={t('form.sectionTracking')} />

@@ -136,8 +136,7 @@ export function MaterialTable({ data, loading, total, page, pageSize, onPageChan
           <TableHead className="w-[120px]">{t('table.category')}</TableHead>
           <TableHead className="w-[140px]">{t('table.spec')}</TableHead>
           <TableHead className="w-[72px] text-center">{t('table.unit')}</TableHead>
-          <TableHead className="w-[120px] text-right">{t('table.refCost')}</TableHead>
-          <TableHead className="w-[120px] text-right">{t('table.salePrice')}</TableHead>
+          {/* 进价/售价暂时隐藏 */}
           <TableHead className="w-[72px] text-center">{t('table.stock')}</TableHead>
           <TableHead className="w-[96px] text-center">{t('table.status')}</TableHead>
           <TableHead className="w-[144px] text-right">{t('table.operations')}</TableHead>
@@ -146,9 +145,9 @@ export function MaterialTable({ data, loading, total, page, pageSize, onPageChan
 
       <TableBody>
         {loading ? (
-          <BusinessListTableLoadingRows colSpan={10} rows={4} />
+          <BusinessListTableLoadingRows colSpan={8} rows={4} />
         ) : data.length === 0 ? (
-          <BusinessListTableEmptyRow colSpan={10} message={t('table.noResults')} />
+          <BusinessListTableEmptyRow colSpan={8} message={t('table.noResults')} />
         ) : (
           /* 数据行 */
           data.map(row => (
@@ -180,26 +179,12 @@ export function MaterialTable({ data, loading, total, page, pageSize, onPageChan
               {/* 单位 */}
               <TableCell className="text-center">{row.unitName || '—'}</TableCell>
 
-              {/* 进价 */}
-              <TableCell className="text-right">
-                {row.refCostPrice > 0 ? (
-                  <span className="font-bold">{formatAmount(row.refCostPrice, 'USD')}</span>
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </TableCell>
+              {/* 进价/售价暂时隐藏 */}
 
-              {/* 售价 */}
-              <TableCell className="text-right">
-                {row.salePrice > 0 ? (
-                  <span className="font-bold">{formatAmount(row.salePrice, 'USD')}</span>
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
+              {/* 安全库存 */}
+              <TableCell className="text-center">
+                {row.safetyStock > 0 ? row.safetyStock : <span className="text-muted-foreground">—</span>}
               </TableCell>
-
-              {/* 库存 */}
-              <TableCell className="text-center">0</TableCell>
 
               {/* 状态 */}
               <TableCell className="text-center">
@@ -221,20 +206,14 @@ export function MaterialTable({ data, loading, total, page, pageSize, onPageChan
                 <Button variant="link" size="sm" className="text-primary h-auto p-0 font-bold" onClick={() => onEdit(row.id)}>
                   {t('actions.edit')}
                 </Button>
-                {row.materialType === 'finished' || row.materialType === 'semi' ? (
-                  <Button variant="link" size="sm" className="ml-3 h-auto p-0 font-bold text-amber-600 dark:text-amber-400">
-                    {t('actions.bom')}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="text-muted-foreground hover:text-destructive ml-3 h-auto p-0 font-bold"
-                    onClick={() => onToggleStatus(row.id, row.isEnabled)}
-                  >
-                    {row.isEnabled ? t('actions.disable') : t('actions.enable')}
-                  </Button>
-                )}
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="text-muted-foreground hover:text-destructive ml-3 h-auto p-0 font-bold"
+                  onClick={() => onToggleStatus(row.id, row.isEnabled)}
+                >
+                  {row.isEnabled ? t('actions.disable') : t('actions.enable')}
+                </Button>
               </TableCell>
             </TableRow>
           ))

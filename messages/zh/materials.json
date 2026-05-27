@@ -40,7 +40,7 @@
       "unit": "单位",
       "refCost": "进价",
       "salePrice": "售价",
-      "stock": "库存",
+      "stock": "安全库存",
       "status": "状态",
       "operations": "操作",
       "totalRecords": "共 {total} 条记录",
