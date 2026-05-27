@@ -1,5 +1,7 @@
 import {
   ArrowLeftRight,
+  // ── 以下图标对应阶段性隐藏的菜单，后续分批开放时连同菜单一并恢复 ──
+  BarChart3,
   Box,
   ClipboardList,
   FileText,
@@ -10,10 +12,6 @@ import {
   Package,
   PackagePlus,
   Paintbrush,
-  Ruler,
-  Settings,
-  // ── 以下图标对应阶段性隐藏的菜单，后续分批开放时连同菜单一并恢复 ──
-  // BarChart3,
   // Building2,
   // ClipboardCheck,
   // CreditCard,
@@ -26,7 +24,9 @@ import {
   // PackageOpen,
   // PackageSearch,
   // Palette,
-  // PieChart,
+  PieChart,
+  Ruler,
+  Settings,
   // Printer,
   // Receipt,
   // RotateCcw,
@@ -195,12 +195,13 @@ export const navConfig: NavItem[] = [
     ],
   },
   */
-  /* ── 阶段性隐藏（报表中心），后续分批开放 ──
+  // 报表中心（阶段性仅开放：库存报表）
   {
     titleKey: 'nav.reports',
-    href: '/reports/purchase',
+    href: '/reports/inventory',
     icon: BarChart3,
     children: [
+      /* 阶段性隐藏，后续分批开放：
       {
         titleKey: 'nav.purchaseReport',
         href: '/reports/purchase',
@@ -211,6 +212,7 @@ export const navConfig: NavItem[] = [
         href: '/reports/sales',
         icon: TrendingUp,
       },
+      */
       {
         titleKey: 'nav.inventoryReport',
         href: '/reports/inventory',
@@ -218,7 +220,6 @@ export const navConfig: NavItem[] = [
       },
     ],
   },
-  */
   // 系统设置（阶段性仅开放：操作日志 / 外观设置）
   {
     titleKey: 'nav.settings',

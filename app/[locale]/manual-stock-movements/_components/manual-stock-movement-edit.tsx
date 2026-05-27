@@ -603,8 +603,6 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
               {/* 快速添加明细：整合进单据信息卡片，只读时隐藏 */}
               {!isReadOnly && (
                 <div className="space-y-3 sm:col-span-2">
-                  <Separator />
-                  <Label className="text-sm font-semibold">{t('manualStockMovements.quickAdd')}</Label>
                   <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                     {/* 物料：可搜索下拉，输入编码/名称/规格即时过滤 */}
                     <div className="space-y-1.5 md:col-span-2">

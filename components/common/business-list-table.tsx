@@ -10,6 +10,12 @@ export const BUSINESS_LIST_STICKY_HEAD_CLASS =
 export const BUSINESS_LIST_STICKY_CELL_CLASS =
   'sticky left-0 z-10 bg-card group-hover:bg-muted after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-border/50'
 
+/** 固定在右侧的表头/单元格（如操作列），分隔线在左边缘 */
+export const BUSINESS_LIST_STICKY_HEAD_RIGHT_CLASS =
+  'sticky right-0 z-20 bg-muted before:absolute before:left-0 before:top-0 before:bottom-0 before:w-px before:bg-border'
+export const BUSINESS_LIST_STICKY_CELL_RIGHT_CLASS =
+  'sticky right-0 z-10 bg-card group-hover:bg-muted before:absolute before:left-0 before:top-0 before:bottom-0 before:w-px before:bg-border/50'
+
 interface BusinessListTableShellProps {
   children: ReactNode
   className?: string

@@ -5,6 +5,10 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import {
+  BUSINESS_LIST_STICKY_CELL_CLASS,
+  BUSINESS_LIST_STICKY_CELL_RIGHT_CLASS,
+  BUSINESS_LIST_STICKY_HEAD_CLASS,
+  BUSINESS_LIST_STICKY_HEAD_RIGHT_CLASS,
   BusinessListTableEmptyRow,
   BusinessListTableFooter,
   BusinessListTableLoadingRows,
@@ -337,10 +341,12 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
       </Card>
 
       {/* 数据列表表格 */}
-      <BusinessListTableShell tableClassName="min-w-[1000px]">
+      <BusinessListTableShell tableClassName="min-w-[1280px]">
         <thead>
           <tr className="border-b bg-muted/40">
-            <th className="w-[160px] px-4 py-3 text-left text-sm font-semibold text-foreground sticky left-0 bg-muted-flat z-10">
+            <th
+              className={`w-[180px] px-4 py-3 text-left text-sm font-semibold text-foreground whitespace-nowrap ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}
+            >
               {t('manualStockMovements.movementNo')}
             </th>
             <th className="w-[90px] px-4 py-3 text-center text-sm font-semibold text-foreground">{t('manualStockMovements.direction')}</th>
@@ -348,10 +354,16 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
             <th className="w-[150px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.warehouse')}</th>
             <th className="w-[150px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.counterpartyName')}</th>
             <th className="w-[120px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.movementDate')}</th>
-            <th className="w-[80px] px-4 py-3 text-right text-sm font-semibold text-foreground">{t('manualStockMovements.itemCount')}</th>
+            <th className="w-[88px] px-4 py-3 text-right text-sm font-semibold text-foreground whitespace-nowrap">
+              {t('manualStockMovements.itemCount')}
+            </th>
             <th className="w-[100px] px-4 py-3 text-center text-sm font-semibold text-foreground">{t('manualStockMovements.status')}</th>
-            <th className="w-[100px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.createdBy')}</th>
-            <th className="w-[160px] px-4 py-3 text-center text-sm font-semibold text-foreground sticky right-0 bg-muted-flat z-10">
+            <th className="w-[110px] px-4 py-3 text-left text-sm font-semibold text-foreground whitespace-nowrap">
+              {t('manualStockMovements.createdBy')}
+            </th>
+            <th
+              className={`w-[150px] px-4 py-3 text-center text-sm font-semibold text-foreground whitespace-nowrap ${BUSINESS_LIST_STICKY_HEAD_RIGHT_CLASS}`}
+            >
               {t('manualStockMovements.operations')}
             </th>
           </tr>
@@ -364,7 +376,9 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
           ) : (
             items.map(item => (
               <tr key={item.id} className="border-b transition-colors hover:bg-muted/30">
-                <td className="px-4 py-3 text-sm font-medium text-foreground sticky left-0 bg-background-flat z-10">{item.movementNo}</td>
+                <td className={`px-4 py-3 text-sm font-medium text-foreground whitespace-nowrap ${BUSINESS_LIST_STICKY_CELL_CLASS}`}>
+                  {item.movementNo}
+                </td>
                 <td className="px-4 py-3 text-center">
                   <Badge variant={item.direction === 'in' ? 'default' : 'destructive'}>
                     {item.direction === 'in' ? t('manualStockMovements.directionIn') : t('manualStockMovements.directionOut')}
@@ -381,7 +395,7 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{item.createdByName || '-'}</td>
-                <td className="px-4 py-3 text-center sticky right-0 bg-background-flat z-10">
+                <td className={`px-4 py-3 text-center ${BUSINESS_LIST_STICKY_CELL_RIGHT_CLASS}`}>
                   <div className="flex items-center justify-center gap-1.5">
                     {item.status === 'draft' ? (
                       <>

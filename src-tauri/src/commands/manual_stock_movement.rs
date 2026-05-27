@@ -378,7 +378,7 @@ pub async fn get_manual_stock_movement_detail(
             i.supplier_batch_no
         FROM manual_stock_movement_items i
         INNER JOIN materials m ON i.material_id = m.id
-        LEFT JOIN units u ON m.unit_id = u.id
+        LEFT JOIN units u ON u.id = m.base_unit_id
         WHERE i.movement_id = $1
         ORDER BY i.sort_order ASC, i.id ASC
         "#,
