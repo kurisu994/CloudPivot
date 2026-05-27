@@ -939,6 +939,58 @@ CREATE INDEX idx_invt_type ON inventory_transactions(transaction_type);
 CREATE INDEX idx_invt_related ON inventory_transactions(related_order_no);
 ```
 
+#### manual_stock_movements — 批量出入库单（头）
+
+> 实际运行库为 PostgreSQL，迁移文件 `005_manual_stock_movements.sql` 使用 `BIGSERIAL`/`TIMESTAMP`/`NOW()`；此处沿用本文档 SQLite 风格示意，字段语义一致。承载最多 100 条明细的草稿单据，确认时在单事务内整单过账。
+
+```sql
+CREATE TABLE manual_stock_movements (
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    movement_no          TEXT    NOT NULL UNIQUE,        -- 单号 FM-YYYYMMDD-XXX
+    direction            TEXT    NOT NULL CHECK (direction IN ('in', 'out')),  -- 方向，一张单不混合
+    business_type        TEXT    NOT NULL,               -- 手工固定业务类型编码（见需求 3.6.2a 及规格 §6）
+    warehouse_id         INTEGER NOT NULL,               -- 整单仓库
+    movement_date        TEXT    NOT NULL,               -- 业务日期 YYYY-MM-DD（后端保存时校验格式）
+    counterparty_name    TEXT,                           -- 往来对象（借料类确认前必填）
+    remark               TEXT,                           -- 整单备注（其他入库/出库确认前必填）
+    status               TEXT    NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'confirmed')),
+    created_by_user_id   INTEGER,                        -- 创建人 ID
+    created_by_name      TEXT,                           -- 创建人名称快照
+    confirmed_by_user_id INTEGER,                        -- 确认人 ID
+    confirmed_by_name    TEXT,                           -- 确认人名称快照
+    confirmed_at         TEXT,                           -- 确认时间
+    created_at           TEXT    DEFAULT (datetime('now')),
+    updated_at           TEXT    DEFAULT (datetime('now'))
+);
+
+CREATE INDEX idx_msm_status ON manual_stock_movements(status);
+CREATE INDEX idx_msm_warehouse ON manual_stock_movements(warehouse_id);
+CREATE INDEX idx_msm_date ON manual_stock_movements(movement_date);
+CREATE INDEX idx_msm_direction ON manual_stock_movements(direction);
+```
+
+#### manual_stock_movement_items — 批量出入库单（明细）
+
+```sql
+CREATE TABLE manual_stock_movement_items (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    movement_id       INTEGER NOT NULL,                  -- 关联 manual_stock_movements.id
+    sort_order        INTEGER NOT NULL DEFAULT 0,        -- 显示顺序
+    material_id       INTEGER NOT NULL,                  -- 关联 materials.id
+    quantity          REAL    NOT NULL,                  -- 基本单位数量
+    unit_cost_usd     INTEGER,                           -- 入库单位成本（USD 最小货币单位）
+    lot_no            TEXT,                              -- 入库批次号（批次追踪物料为空则自动生成）
+    supplier_batch_no TEXT,                              -- 供应商批次号
+    created_at        TEXT    DEFAULT (datetime('now')),
+    updated_at        TEXT    DEFAULT (datetime('now'))
+);
+
+CREATE INDEX idx_msmi_movement ON manual_stock_movement_items(movement_id);
+CREATE INDEX idx_msmi_material ON manual_stock_movement_items(material_id);
+```
+
+> **库存流水关联策略**（见需求规格 §9.3）：批量单确认过账时为每条明细写 `inventory_transactions`，统一 `source_type = 'manual_stock_movement'`、`source_id = manual_stock_movements.id`、`related_order_no = movement_no`。为复用现有 CHECK 约束与统计口径：手工「采购入库」写 `transaction_type = 'purchase_in'`、手工「生产领料」写 `production_out`，其余手工入库写 `other_in`、出库写 `other_out`。流水页通过 `source_id` 关联单据头并以 `business_type` 显示用户所选类型，从而区分同名的正式与手工记录。项目约定不建外键，关联完整性由命令层校验并通过索引保证查询性能。
+
 #### stock_checks — 盘点单
 
 ```sql

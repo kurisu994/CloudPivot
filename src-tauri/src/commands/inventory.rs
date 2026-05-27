@@ -142,6 +142,9 @@ pub struct TransactionListItem {
     pub after_qty: f64,
     pub unit_cost: i64,
     pub related_order_no: Option<String>,
+    pub source_type: Option<String>,
+    // 手工批量出入库单的业务类型（仅当来源为 manual_stock_movement 时有值，用于显示自然名称）
+    pub business_type: Option<String>,
     pub operator_name: Option<String>,
     pub remark: Option<String>,
     pub created_at: Option<String>,
@@ -157,6 +160,10 @@ pub struct TransactionFilter {
     pub material_id: Option<i64>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
+    // 来源单据类型筛选（如 manual_stock_movement、purchase_inbound 等）
+    pub source_type: Option<String>,
+    // 手工批量单业务类型筛选（仅匹配批量出入库单产生的流水）
+    pub business_type: Option<String>,
     pub page: i32,
     pub page_size: i32,
 }
@@ -346,25 +353,6 @@ pub struct SaveTransferItemParams {
     pub conversion_rate_snapshot: f64,
     pub quantity: f64,
     pub lot_id: Option<i64>,
-    pub remark: Option<String>,
-}
-
-// ================================================================
-// 数据结构 — 自由出入库
-// ================================================================
-
-/// 自由出入库参数
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ManualStockMovementParams {
-    pub movement_type: String,
-    pub material_id: i64,
-    pub warehouse_id: i64,
-    pub movement_date: String,
-    pub quantity: f64,
-    pub unit_cost_usd: Option<i64>,
-    pub lot_no: Option<String>,
-    pub supplier_batch_no: Option<String>,
     pub remark: Option<String>,
 }
 
@@ -628,11 +616,14 @@ pub async fn get_inventory_transactions(
     db: State<'_, DbState>,
     filter: TransactionFilter,
 ) -> Result<PaginatedResponse<TransactionListItem>, AppError> {
+    // 关联手工批量出入库单，带出业务类型用于流水页显示自然名称与来源区分（设计 §10.4）
     let base_from = r#"
         FROM inventory_transactions it
         JOIN materials m ON m.id = it.material_id
         JOIN warehouses w ON w.id = it.warehouse_id
         LEFT JOIN inventory_lots il ON il.id = it.lot_id
+        LEFT JOIN manual_stock_movements msm
+            ON it.source_type = 'manual_stock_movement' AND msm.id = it.source_id
     "#;
 
     let mut count_query =
@@ -644,7 +635,9 @@ pub async fn get_inventory_transactions(
                it.warehouse_id, w.name AS warehouse_name,
                il.lot_no AS lot_no,
                it.transaction_type, it.quantity, it.before_qty, it.after_qty,
-               it.unit_cost, it.related_order_no, it.operator_name,
+               it.unit_cost, it.related_order_no,
+               it.source_type, msm.business_type AS business_type,
+               it.operator_name,
                it.remark, it.created_at::TEXT
         {}
         "#,
@@ -726,6 +719,34 @@ pub async fn get_inventory_transactions(
         }
     }
 
+    // 来源单据类型筛选
+    if let Some(st) = &filter.source_type {
+        if !st.trim().is_empty() {
+            add_cond!(&mut count_query);
+            count_query.push("it.source_type = ");
+            count_query.push_bind(st.trim().to_string());
+            add_cond!(&mut data_query);
+            data_query.push("it.source_type = ");
+            data_query.push_bind(st.trim().to_string());
+            has_where = true;
+        }
+    }
+
+    // 手工批量单业务类型筛选（仅匹配批量出入库单产生的流水）
+    if let Some(bt) = &filter.business_type {
+        if !bt.trim().is_empty() {
+            add_cond!(&mut count_query);
+            count_query.push("(it.source_type = 'manual_stock_movement' AND msm.business_type = ");
+            count_query.push_bind(bt.trim().to_string());
+            count_query.push(")");
+            add_cond!(&mut data_query);
+            data_query.push("(it.source_type = 'manual_stock_movement' AND msm.business_type = ");
+            data_query.push_bind(bt.trim().to_string());
+            data_query.push(")");
+            has_where = true;
+        }
+    }
+
     if let Some(df) = &filter.date_from {
         if !df.trim().is_empty() {
             add_cond!(&mut count_query);
@@ -779,253 +800,6 @@ pub async fn get_inventory_transactions(
         page,
         page_size,
     })
-}
-
-/// 生成自由出入库单号：FM-YYYYMMDD-XXX
-async fn generate_manual_movement_no(
-    tx: &mut sqlx::PgConnection,
-    movement_date: &str,
-) -> Result<String, AppError> {
-    let date_part = movement_date.replace('-', "");
-    let prefix = format!("FM-{}-", date_part);
-
-    let max_no: Option<String> = sqlx::query_scalar(
-        "SELECT related_order_no FROM inventory_transactions WHERE related_order_no LIKE $1 ORDER BY related_order_no DESC LIMIT 1",
-    )
-    .bind(format!("{}%", prefix))
-    .fetch_optional(&mut *tx)
-    .await
-    .map_err(|e| AppError::Database(format!("查询自由出入库单号失败: {}", e)))?;
-
-    let next_seq = if let Some(last_no) = max_no {
-        last_no
-            .trim_start_matches(&prefix)
-            .parse::<i64>()
-            .unwrap_or(0)
-            + 1
-    } else {
-        1
-    };
-
-    Ok(format!("{}{:03}", prefix, next_seq))
-}
-
-/// 自由出入库（不关联采购/销售单，仅更新库存、批次和流水）
-#[tauri::command]
-pub async fn create_manual_stock_movement(
-    db: State<'_, DbState>,
-    current_user: State<'_, CurrentUser>,
-    params: ManualStockMovementParams,
-) -> Result<String, AppError> {
-    let movement_type = params.movement_type.trim();
-    if movement_type != "in" && movement_type != "out" {
-        return Err(AppError::Business("请选择入库或出库类型".to_string()));
-    }
-    if params.material_id <= 0 {
-        return Err(AppError::Business("请选择物料".to_string()));
-    }
-    if params.warehouse_id <= 0 {
-        return Err(AppError::Business("请选择仓库".to_string()));
-    }
-    if params.movement_date.trim().is_empty() {
-        return Err(AppError::Business("请选择变动日期".to_string()));
-    }
-    if params.quantity <= 0.0 {
-        return Err(AppError::Business("数量必须大于 0".to_string()));
-    }
-
-    let mut tx = db
-        .pool
-        .begin()
-        .await
-        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
-
-    let (material_name, lot_tracking_mode): (String, String) = sqlx::query_as(
-        "SELECT name, COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = $1 AND is_enabled = TRUE",
-    )
-    .bind(params.material_id)
-    .fetch_optional(&mut *tx)
-    .await
-    .map_err(|e| AppError::Database(format!("查询物料失败: {}", e)))?
-    .ok_or_else(|| AppError::Business("物料不存在或已停用".to_string()))?;
-
-    let warehouse_exists: Option<(i64,)> =
-        sqlx::query_as("SELECT id FROM warehouses WHERE id = $1 AND is_enabled = TRUE")
-            .bind(params.warehouse_id)
-            .fetch_optional(&mut *tx)
-            .await
-            .map_err(|e| AppError::Database(format!("查询仓库失败: {}", e)))?;
-    if warehouse_exists.is_none() {
-        return Err(AppError::Business("仓库不存在或已停用".to_string()));
-    }
-
-    let movement_no = generate_manual_movement_no(&mut *tx, &params.movement_date).await?;
-    let lot_id = if movement_type == "in" {
-        let unit_cost = params
-            .unit_cost_usd
-            .ok_or_else(|| AppError::Business("入库必须填写单位成本".to_string()))?;
-        if unit_cost < 0 {
-            return Err(AppError::Business("单位成本不能为负数".to_string()));
-        }
-
-        let (before_qty, after_qty) = inventory_ops::increase_inventory(
-            &mut *tx,
-            params.material_id,
-            params.warehouse_id,
-            params.quantity,
-            unit_cost,
-            &params.movement_date,
-        )
-        .await?;
-
-        let lot_id = if lot_tracking_mode != "none" {
-            let lot_no = if let Some(lot_no) = params
-                .lot_no
-                .as_deref()
-                .map(str::trim)
-                .filter(|v| !v.is_empty())
-            {
-                lot_no.to_string()
-            } else {
-                inventory_ops::generate_lot_no(&mut *tx, &params.movement_date).await?
-            };
-
-            Some(
-                inventory_ops::create_inventory_lot(
-                    &mut *tx,
-                    &lot_no,
-                    params.material_id,
-                    params.warehouse_id,
-                    0,
-                    None,
-                    &params.movement_date,
-                    params.supplier_batch_no.as_deref(),
-                    None,
-                    params.quantity,
-                    unit_cost,
-                )
-                .await?,
-            )
-        } else {
-            None
-        };
-
-        inventory_ops::record_transaction(
-            &mut *tx,
-            &params.movement_date,
-            params.material_id,
-            params.warehouse_id,
-            lot_id,
-            "other_in",
-            params.quantity,
-            before_qty,
-            after_qty,
-            unit_cost,
-            Some("manual_stock_movement"),
-            None,
-            None,
-            Some(&movement_no),
-            params.remark.as_deref(),
-            current_user.user_id(),
-            &current_user.display_name(),
-        )
-        .await?;
-
-        lot_id
-    } else {
-        let mut lot_id: Option<i64> = None;
-        if lot_tracking_mode != "none" {
-            let lots = inventory_ops::get_available_lots(
-                &mut *tx,
-                params.material_id,
-                params.warehouse_id,
-            )
-            .await?;
-            let total_available: f64 = lots.iter().map(|(_, _, qty)| qty).sum();
-            if total_available < params.quantity {
-                return Err(AppError::Business(format!(
-                    "{} 批次库存不足：当前可用 {:.2}，需出库 {:.2}",
-                    material_name, total_available, params.quantity
-                )));
-            }
-            if lots.len() == 1 {
-                lot_id = Some(lots[0].0);
-            }
-
-            let mut remaining = params.quantity;
-            for (lid, _, available_qty) in lots {
-                if remaining <= 0.0 {
-                    break;
-                }
-                let deduct_qty = remaining.min(available_qty);
-                inventory_ops::decrease_lot_inventory(&mut *tx, lid, deduct_qty).await?;
-                remaining -= deduct_qty;
-            }
-        }
-
-        let (before_qty, after_qty, avg_cost) = inventory_ops::decrease_inventory(
-            &mut *tx,
-            params.material_id,
-            params.warehouse_id,
-            params.quantity,
-            &params.movement_date,
-        )
-        .await?;
-
-        inventory_ops::record_transaction(
-            &mut *tx,
-            &params.movement_date,
-            params.material_id,
-            params.warehouse_id,
-            lot_id,
-            "other_out",
-            -params.quantity,
-            before_qty,
-            after_qty,
-            avg_cost,
-            Some("manual_stock_movement"),
-            None,
-            None,
-            Some(&movement_no),
-            params.remark.as_deref(),
-            current_user.user_id(),
-            &current_user.display_name(),
-        )
-        .await?;
-
-        lot_id
-    };
-
-    tx.commit()
-        .await
-        .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
-
-    operation_log::write_log(
-        &db.pool,
-        operation_log::OperationLogEntry {
-            module: "inventory".to_string(),
-            action: format!("manual_{}", movement_type),
-            target_type: Some("manual_stock_movement".to_string()),
-            target_id: lot_id,
-            target_no: Some(movement_no.clone()),
-            detail: format!(
-                "自由{} {}，物料 {}，数量 {}",
-                if movement_type == "in" {
-                    "入库"
-                } else {
-                    "出库"
-                },
-                movement_no,
-                material_name,
-                params.quantity
-            ),
-            operator_user_id: Some(current_user.user_id()),
-            operator_name: Some(current_user.display_name()),
-        },
-    )
-    .await;
-
-    Ok(movement_no)
 }
 
 // ================================================================

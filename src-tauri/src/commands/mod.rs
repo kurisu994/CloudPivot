@@ -11,6 +11,7 @@ pub mod data_management;
 pub mod finance;
 pub mod inventory;
 pub mod inventory_ops;
+pub mod manual_stock_movement;
 pub mod material;
 pub mod order_shared;
 pub mod production_order;

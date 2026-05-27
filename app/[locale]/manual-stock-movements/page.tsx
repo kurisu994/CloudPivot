@@ -1,11 +1,11 @@
 import { setRequestLocale } from 'next-intl/server'
-import { ManualStockMovementContent } from './_components/manual-stock-movement-content'
+import { ManualStockMovementsPage } from './_components/manual-stock-movements-page'
 
 /**
- * 自由出入库页面
+ * 批量出入库页面
  */
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   setRequestLocale(locale)
-  return <ManualStockMovementContent />
+  return <ManualStockMovementsPage />
 }

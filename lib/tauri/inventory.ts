@@ -108,6 +108,10 @@ export interface TransactionListItem {
   afterQty: number
   unitCost: number
   relatedOrderNo: string | null
+  /** 来源单据类型（如 manual_stock_movement、purchase_inbound 等） */
+  sourceType: string | null
+  /** 手工批量单业务类型（仅来源为批量出入库单时有值） */
+  businessType: string | null
   operatorName: string | null
   remark: string | null
   createdAt: string | null
@@ -121,6 +125,10 @@ export interface TransactionFilter {
   materialId?: number
   dateFrom?: string
   dateTo?: string
+  /** 来源单据类型筛选 */
+  sourceType?: string
+  /** 手工批量单业务类型筛选 */
+  businessType?: string
   page: number
   pageSize: number
 }
@@ -280,20 +288,6 @@ export interface SaveTransferParams {
   remark?: string | null
   items: SaveTransferItemParams[]
 }
-
-/** 自由出入库参数 */
-export interface ManualStockMovementParams {
-  movementType: 'in' | 'out'
-  materialId: number
-  warehouseId: number
-  movementDate: string
-  quantity: number
-  unitCostUsd?: number | null
-  lotNo?: string | null
-  supplierBatchNo?: string | null
-  remark?: string | null
-}
-
 // ---- 库存查询 ----
 
 /** 获取库存列表 */
@@ -318,15 +312,6 @@ export async function getInventoryTransactions(filter: TransactionFilter): Promi
   }
   return { total: 0, items: [], page: filter.page, pageSize: filter.pageSize }
 }
-
-/** 创建自由出入库记录 */
-export async function createManualStockMovement(params: ManualStockMovementParams): Promise<string> {
-  if (isTauriEnv()) {
-    return invoke<string>('create_manual_stock_movement', { params })
-  }
-  return `FM-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-001`
-}
-
 // ---- 库存盘点 ----
 
 /** 获取盘点单列表 */

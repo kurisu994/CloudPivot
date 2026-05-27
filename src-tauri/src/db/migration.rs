@@ -44,6 +44,11 @@ fn get_migrations() -> Vec<Migration> {
             name: "drop_legacy_work_orders",
             sql: include_str!("../../migrations/postgres/004_drop_legacy_work_orders.sql"),
         },
+        Migration {
+            version: 5,
+            name: "manual_stock_movements",
+            sql: include_str!("../../migrations/postgres/005_manual_stock_movements.sql"),
+        },
     ]
 }
 

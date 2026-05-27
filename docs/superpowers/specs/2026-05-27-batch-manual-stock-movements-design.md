@@ -102,7 +102,7 @@
 | 业务类型 | 必选；可选项随方向变化 |
 | 仓库 | 必选；所有明细在同一仓库过账 |
 | 变动日期 | 必选；所有明细使用同一业务日期 |
-| 往来对象 | 仅借料类类型在确认前必填 |
+| 往来对象 | 仅借料类类型在确认前必填（`borrowed_material_in`、`lent_material_return_in`、`borrowed_material_return_out`、`lent_material_out` 共 4 种） |
 | 备注 | 「其他入库」「其他出库」在确认前必填，其他类型可选 |
 
 ### 5.1 草稿保存校验
@@ -123,7 +123,7 @@
 
 | 内部编码 | 显示名称 | 往来对象 | 统计口径 |
 | --- | --- | --- | --- |
-| `manual_purchase_in` | 采购入库 | 不填写 | 计入库存收发存；不计入正式采购、供应商或应付统计 |
+| `manual_purchase_in` | 采购入库 | 不填写 | 流水写入 `purchase_in`，自动归入采购入库大类统计；通过 `source_type` 区分正式采购，不计入采购报表、供应商排行或应付统计 |
 | `borrowed_material_in` | 借入入库 | 必填 | 计入库存，不计入采购 |
 | `lent_material_return_in` | 外借归还入库 | 必填 | 计入库存，不计入采购 |
 | `adjustment_in` | 调整入库 | 不填写 | 计入库存 |
@@ -168,7 +168,7 @@
 | --- | --- | --- | --- |
 | 物料 | 必填 | 必填 | 必须为启用状态 |
 | 数量 | 必填 | 必填 | 大于零，使用物料基本单位 |
-| 单位成本 (USD) | 确认前必填 | 不适用 | 不得小于零 |
+| 单位成本 (USD) | 确认前必填 | 不适用 (FIFO 自动计算) | 整数存储（USD cents，最小货币单位）；不得小于零 |
 | 批次号 | 可选 | 不适用 | 批次追踪物料为空则自动生成 |
 | 供应商批次 | 可选 | 不适用 | 仅作为批次追溯信息 |
 
@@ -183,7 +183,7 @@
 | 入库添加或修改为相同物料，且单位成本、批次号、供应商批次均一致 | 自动合并，数量相加 |
 | 入库为相同物料，但单位成本或任一批次字段不同 | 保留多行，不合并 |
 
-合并后界面提示用户，例如：「已合并至第 2 行，数量更新为 35」。
+合并后界面以 toast 提示用户，包含合并前后的数量变化，例如：「物料 XXX 已合并至第 2 行，数量 10 + 25 = 35」。
 
 前端负责提供即时交互反馈，后端保存时仍需按同一规则规范化或拒绝不满足约束的数据，不能仅依赖前端保证一致性。
 
@@ -207,9 +207,9 @@
 - 明细数量汇总超过 `1,000`。
 - 入库明细总金额超过等值 `10,000 USD`。
 
-数量汇总用于误操作提醒，即使不同物料的基本单位不同也按保守阈值触发，不作为报表指标。
+数量汇总用于误操作提醒，即使不同物料的基本单位不同也按保守阈值触发，不作为报表指标。例如 50 kg 原材料 + 960 个螺丝 = 1010 > 1000，触发二次确认。
 
-后端确认命令必须再次计算风险条件；达到阈值而请求未携带用户已确认标记时，拒绝过账，防止绕过前端提示。
+后端确认命令必须再次计算风险条件；达到阈值而请求未携带用户已确认标记时，拒绝过账，防止绕过前端提示。阈值首版以后端常量定义，后续可纳入系统配置。
 
 ### 8.3 原子过账
 
@@ -236,7 +236,7 @@
 | `direction` | `TEXT NOT NULL` | `in` / `out` |
 | `business_type` | `TEXT NOT NULL` | 第 6 节固定业务类型编码 |
 | `warehouse_id` | `BIGINT NOT NULL` | 整单仓库 |
-| `movement_date` | `TEXT NOT NULL` | 业务日期 |
+| `movement_date` | `TEXT NOT NULL` | 业务日期，格式 `YYYY-MM-DD`，后端保存时校验格式 |
 | `counterparty_name` | `TEXT` | 借料类往来对象 |
 | `remark` | `TEXT` | 整单备注 |
 | `status` | `TEXT NOT NULL` | `draft` / `confirmed` |
@@ -263,18 +263,32 @@
 | `supplier_batch_no` | `TEXT` | 供应商批次号 |
 | `created_at` / `updated_at` | `TIMESTAMP` | 审计时间 |
 
-项目约定不增加数据库外键约束；关联完整性由命令层校验并通过索引保证查询性能。
+项目约定不增加数据库外键约束；关联完整性由命令层校验并通过索引保证查询性能。建议为 `movement_id` 和 `material_id` 创建索引。
 
 ### 9.3 库存流水兼容策略
 
-现有 `inventory_transactions.transaction_type` 表达系统库存变动分类，正式流程已经依赖该字段做统计。为避免手工记录污染正式业务，首版采用以下策略：
+现有 `inventory_transactions.transaction_type` 有 CHECK 约束，取值限定为 12 种（`purchase_in`、`sales_out`、`purchase_return`、`sales_return`、`check_gain`、`check_loss`、`transfer_in`、`transfer_out`、`production_out`、`production_in`、`other_in`、`other_out`）。正式流程已依赖该字段做统计。
 
-- 批量手工入库流水继续写入 `transaction_type = 'other_in'`。
-- 批量手工出库流水继续写入 `transaction_type = 'other_out'`。
-- 流水写入 `source_type = 'manual_stock_movement'`、`source_id = manual_stock_movements.id` 和 `related_order_no = movement_no`。
+为兼顾统计口径和避免 CHECK 约束变更，首版采用以下策略：
+
+- 手工「采购入库」（`manual_purchase_in`）写入 `transaction_type = 'purchase_in'`，复用现有 CHECK 值。这使得库存流水按类型分组统计时，手工采购入库自然归入「采购入库」大类。采购报表、供应商排行和应付账款均查询 `purchase_orders` 表，不受流水 `transaction_type` 影响。通过 `source_type = 'manual_stock_movement'` 区分正式采购入库和手工采购入库。
+- 手工「生产领料」（`manual_production_out`）写入 `transaction_type = 'production_out'`，复用现有 CHECK 值。这使得补货消耗分析和滞销分析现有查询（`WHERE transaction_type IN ('sales_out', 'production_out')`）无需修改即可自动纳入手工生产领料。通过 `source_type = 'manual_stock_movement'` 区分正式工单领料和手工领料。
+- 其他所有手工入库类型写入 `transaction_type = 'other_in'`。
+- 其他所有手工出库类型写入 `transaction_type = 'other_out'`。
+- 所有流水统一写入 `source_type = 'manual_stock_movement'`、`source_id = manual_stock_movements.id` 和 `related_order_no = movement_no`。
 - 查询列表时通过 `source_id` 关联单据头，使用 `business_type` 显示用户选择的类型。
 
-历史上已经生成、但没有单据头记录的单笔自由出入库流水不迁移原因分类，继续显示为「其他入库」或「其他出库」。
+历史上已经生成、但没有单据头记录的单笔自由出入库流水不迁移原因分类（其 `source_type` 已经是 `'manual_stock_movement'`，但 `source_id` 为空），继续显示为「其他入库」或「其他出库」。
+
+### 9.4 迁移文件
+
+新增迁移文件 `005_manual_stock_movements.sql`，包含两张新表的 CREATE TABLE 和索引。需在 `src-tauri/src/db/migration.rs` 的 `get_migrations()` 函数中注册：
+
+```rust
+Migration { version: 5, name: "manual_stock_movements", sql: include_str!("../../migrations/postgres/005_manual_stock_movements.sql") },
+```
+
+说明：项目迁移通过 `include_str!()` 在编译时嵌入二进制，运行时无需文件查找。
 
 ## 10. 页面与交互结构
 
@@ -310,7 +324,7 @@
 4. 汇总与风险提示：明细行数、数量汇总、入库金额汇总、缺失必填提示。
 5. 操作区：保存草稿、确认过账、返回列表。
 
-业务类型选择项随方向切换。切换方向会导致已录入明细的字段语义变化，因此有明细时必须提示用户确认清空明细后再切换。
+业务类型选择项随方向切换。切换方向会导致已录入明细的字段语义变化，因此有明细时必须提示用户确认清空明细后再切换。切换业务类型时，若新类型不属于借料类则自动清空已填写的往来对象字段；若从非借料类切换为借料类，往来对象在确认前补填即可。
 
 ### 10.4 库存流水页
 
@@ -324,7 +338,7 @@
 
 ### 11.1 命令边界
 
-建议新增或重构为以下 IPC 命令：
+建议在 `src-tauri/src/commands/manual_stock_movement.rs` 中新建独立模块（现有 `inventory.rs` 已超过 1000 行），在 `commands/mod.rs` 中声明 `pub mod manual_stock_movement;`，在 `lib.rs` 的 `generate_handler![]` 中注册以下 5 个命令：
 
 | 命令 | 用途 |
 | --- | --- |
@@ -334,7 +348,9 @@
 | `confirm_manual_stock_movement` | 校验并整单过账 |
 | `delete_manual_stock_movement` | 删除草稿 |
 
-现有 `create_manual_stock_movement` 的即时过账路径在新页面替换后不再作为用户入口；是否保留兼容由实施阶段按调用方检索结果处理。
+现有 `create_manual_stock_movement` 的即时过账路径在新页面替换后废弃，实施时从 `lib.rs` 注册、前端 IPC 封装和页面组件中一并清理。
+
+前端 IPC 封装在 `lib/tauri/` 下新建 `manual-stock-movement.ts`，封装 5 个 invoke 调用并在 `lib/tauri.ts` 中统一导出。
 
 ### 11.2 确认过账数据流
 
@@ -342,14 +358,14 @@
 
 1. 为每条明细调用现有增加库存及移动加权平均成本逻辑。
 2. 批次追踪物料创建批次记录，批次号为空时自动生成。
-3. 为每条明细创建 `other_in` 流水，挂接同一批量单。
+3. 为每条明细创建流水，挂接同一批量单。业务类型为 `manual_purchase_in` 时 `transaction_type = 'purchase_in'`，其他入库类型 `transaction_type = 'other_in'`（详见 §9.3）。
 
 出库确认：
 
 1. 为每条明细校验库存数量。
 2. 批次追踪物料按 FIFO 查询并锁定可用批次，不允许占用预留数量。
 3. 扣减批次和汇总库存。
-4. 为每条明细创建 `other_out` 流水，挂接同一批量单。
+4. 为每条明细创建流水，挂接同一批量单。业务类型为 `manual_production_out` 时 `transaction_type = 'production_out'`，其他出库类型 `transaction_type = 'other_out'`（详见 §9.3）。
 
 ### 11.3 操作日志
 
@@ -364,14 +380,14 @@
 
 ## 12. 报表与统计调整
 
-| 模块 | 调整 |
-| --- | --- |
-| 库存收发存、趋势 | 所有已确认手工流水原本即按数量进入统计，继续保留 |
-| 智能补货消耗分析 | 在现有正式销售/生产出库之外，纳入业务类型为 `manual_production_out` 的手工出库 |
-| 滞销分析中的消耗口径 | 与补货一致，纳入 `manual_production_out` |
-| 采购报表 | 不纳入 `manual_purchase_in` |
-| 应付账款 | 不纳入 `manual_purchase_in` |
-| 生产工单执行与成本 | 不纳入 `manual_production_out` |
+| 模块 | 调整 | 技术实现 |
+| --- | --- | --- |
+| 库存收发存、趋势 | 所有已确认手工流水原本即按数量进入统计，继续保留 | 现有查询按 `quantity > 0 / < 0` 汇总，不按 `transaction_type` 过滤，无需修改 |
+| 智能补货消耗分析 | 手工「生产领料」自动纳入消耗计算 | 因流水 `transaction_type = 'production_out'`，现有补货 SQL（`WHERE transaction_type IN ('sales_out', 'production_out')`）无需修改 |
+| 滞销分析中的消耗口径 | 与补货一致，手工「生产领料」自动纳入 | 同上，现有查询无需修改 |
+| 采购报表 | 不纳入 `manual_purchase_in` | 采购报表查 `purchase_orders` 表，不按 `transaction_type` 过滤，手工单 `source_type = 'manual_stock_movement'` 不影响统计 |
+| 应付账款 | 不纳入 `manual_purchase_in` | 应付查询基于 `purchase_orders` 表 |
+| 生产工单执行与成本 | 不纳入 `manual_production_out` | 工单成本查询通过 `source_type = 'production_order'` 过滤，手工单 `source_type = 'manual_stock_movement'` 不会被纳入 |
 
 ## 13. 错误处理
 
@@ -427,11 +443,14 @@
 | 文件 | 更新内容 |
 | --- | --- |
 | `docs/01-requirements.md` | 其他出入库需求、业务类型、草稿和统计口径 |
-| `docs/02-database-design.md` | 新增单据头/明细表及流水关联说明 |
+| `docs/02-database-design.md` | 新增单据头/明细表及流水关联说明（注意：设计文档使用 PostgreSQL DDL 语法，与现有文档 SQLite 风格不同，按实际运行环境 PostgreSQL 为准） |
 | `docs/03-ui-prototype.md` | 批量单列表与编辑页原型 |
 | `docs/04-development-plan.md` | 新增实施任务与验收范围 |
 | `docs/05-page-todo-list.md` | 页面能力状态 |
+| `AGENTS.md` | 更新 IPC 命令表（新增 5 个命令、废弃 1 个旧命令）、模块状态 |
 | `CHANGELOG.md` 的 `[Unreleased]` | 记录库存事务与 IPC 安全边界变更 |
+| `messages/{zh,vi,en}/` | 新增或更新翻译域，覆盖 12 个业务类型显示名称的三语翻译 |
+| `src-tauri/src/db/migration.rs` | 在 `get_migrations()` 中注册新迁移 `005_manual_stock_movements.sql` |
 
 ## 16. 已确认决策摘要
 

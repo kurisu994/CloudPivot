@@ -276,7 +276,12 @@ pub fn run() {
             commands::inventory::get_inventory_list,
             commands::inventory::get_inventory_detail,
             commands::inventory::get_inventory_transactions,
-            commands::inventory::create_manual_stock_movement,
+            // 批量出入库
+            commands::manual_stock_movement::get_manual_stock_movements,
+            commands::manual_stock_movement::get_manual_stock_movement_detail,
+            commands::manual_stock_movement::save_manual_stock_movement,
+            commands::manual_stock_movement::confirm_manual_stock_movement,
+            commands::manual_stock_movement::delete_manual_stock_movement,
             // 库存盘点
             commands::inventory::get_stock_checks,
             commands::inventory::get_stock_check_detail,

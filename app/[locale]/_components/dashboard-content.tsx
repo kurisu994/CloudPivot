@@ -8,7 +8,8 @@ import { InventoryDonut } from './dashboard/inventory-donut'
 import { MetricsCards } from './dashboard/metrics-cards'
 import { PendingTasks } from './dashboard/pending-tasks'
 import { PurchaseTrendChart } from './dashboard/purchase-trend-chart'
-import { QuickActions } from './dashboard/quick-actions'
+// 快捷操作暂时隐藏：其链接的采购/销售等菜单尚未开放，待菜单分批开放后恢复
+// import { QuickActions } from './dashboard/quick-actions'
 import { SalesTrendChart } from './dashboard/sales-trend-chart'
 
 export function DashboardContent() {
@@ -33,8 +34,8 @@ export function DashboardContent() {
       {/* Row 1 & 2: Primary and Secondary KPIs */}
       <MetricsCards />
 
-      {/* Quick Action Bar */}
-      <QuickActions />
+      {/* Quick Action Bar —— 暂时隐藏：对应采购/销售等菜单尚未开放，待菜单分批开放后恢复 */}
+      {/* <QuickActions /> */}
 
       {/* Row 3: Sales Trend & Inventory Distribution */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-12">

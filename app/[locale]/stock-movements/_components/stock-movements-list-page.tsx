@@ -21,7 +21,7 @@ import type { TransactionFilter, TransactionListItem, WarehouseItem } from '@/li
 import { getInventoryTransactions, getWarehouses } from '@/lib/tauri'
 
 const DEFAULT_PAGE_SIZE = 20
-const COL_COUNT = 10
+const COL_COUNT = 11
 
 /** 变动类型选项 */
 const TYPE_OPTIONS = [
@@ -39,6 +39,34 @@ const TYPE_OPTIONS = [
   { value: 'other_out', labelKey: 'otherOut' },
 ] as const
 
+/** 来源单据类型筛选项（值与后端 source_type 一致，标签取 stockMovements.sourceTypes.*） */
+const SOURCE_TYPE_OPTIONS = [
+  'manual_stock_movement',
+  'purchase_inbound',
+  'purchase_return',
+  'production_order',
+  'stock_check',
+  'transfer',
+  'outbound',
+  'sales_return',
+] as const
+
+/** 手工批量单业务类型（用于流水页业务类型筛选与自然名称显示） */
+const MANUAL_BUSINESS_TYPES = [
+  'manual_purchase_in',
+  'borrowed_material_in',
+  'lent_material_return_in',
+  'adjustment_in',
+  'other_in',
+  'manual_production_out',
+  'borrowed_material_return_out',
+  'lent_material_out',
+  'scrap_out',
+  'sample_out',
+  'adjustment_out',
+  'other_out',
+] as const
+
 /**
  * 出入库流水列表页
  */
@@ -46,6 +74,7 @@ export function StockMovementsListPage() {
   const t = useTranslations('stockMovements')
   const tc = useTranslations('common')
   const ti = useTranslations('inventory')
+  const tm = useTranslations('manualStockMovements')
 
   const [items, setItems] = useState<TransactionListItem[]>([])
   const [total, setTotal] = useState(0)
@@ -54,6 +83,8 @@ export function StockMovementsListPage() {
   const [draftKeyword, setDraftKeyword] = useState('')
   const [draftWarehouse, setDraftWarehouse] = useState('all')
   const [draftType, setDraftType] = useState('all')
+  const [draftSource, setDraftSource] = useState('all')
+  const [draftBusinessType, setDraftBusinessType] = useState('all')
   const [draftDateFrom, setDraftDateFrom] = useState('')
   const [draftDateTo, setDraftDateTo] = useState('')
 
@@ -93,11 +124,36 @@ export function StockMovementsListPage() {
   )
   const typeItems = useMemo(() => [{ value: 'all', label: t('allTypes') }, ...TYPE_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey) }))], [t])
 
+  /** 手工批量单业务类型自然名称（复用 manualStockMovements.typeXxx） */
+  const getBusinessTypeLabel = useCallback(
+    (bt: string) =>
+      tm(
+        `type${bt
+          .split('_')
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join('')}`,
+      ),
+    [tm],
+  )
+
+  const sourceItems = useMemo(
+    () => [{ value: 'all', label: t('allSources') }, ...SOURCE_TYPE_OPTIONS.map(s => ({ value: s, label: t(`sourceTypes.${s}`) }))],
+    [t],
+  )
+  const businessTypeItems = useMemo(
+    () => [{ value: 'all', label: t('allBusinessTypes') }, ...MANUAL_BUSINESS_TYPES.map(b => ({ value: b, label: getBusinessTypeLabel(b) }))],
+    [t, getBusinessTypeLabel],
+  )
+
   /** 获取变动类型的显示文案 */
   const getTypeName = (type: string) => {
     const opt = TYPE_OPTIONS.find(o => o.value === type)
     return opt ? t(opt.labelKey) : type
   }
+
+  /** 来源单据类型标签；未知来源返回 null（回退为仅显示单据号） */
+  const getSourceLabel = (sourceType: string | null) =>
+    sourceType && (SOURCE_TYPE_OPTIONS as readonly string[]).includes(sourceType) ? t(`sourceTypes.${sourceType}`) : null
 
   const handleSearch = () => {
     setCurrentPage(1)
@@ -105,6 +161,8 @@ export function StockMovementsListPage() {
       keyword: draftKeyword.trim() || undefined,
       warehouseId: draftWarehouse !== 'all' ? Number(draftWarehouse) : undefined,
       transactionType: draftType !== 'all' ? draftType : undefined,
+      sourceType: draftSource !== 'all' ? draftSource : undefined,
+      businessType: draftBusinessType !== 'all' ? draftBusinessType : undefined,
       dateFrom: draftDateFrom || undefined,
       dateTo: draftDateTo || undefined,
       page: 1,
@@ -116,6 +174,8 @@ export function StockMovementsListPage() {
     setDraftKeyword('')
     setDraftWarehouse('all')
     setDraftType('all')
+    setDraftSource('all')
+    setDraftBusinessType('all')
     setDraftDateFrom('')
     setDraftDateTo('')
     setCurrentPage(1)
@@ -171,6 +231,34 @@ export function StockMovementsListPage() {
               </SelectContent>
             </Select>
           </div>
+          <div className="w-[150px]">
+            <Select value={draftSource} onValueChange={v => v && setDraftSource(v)} items={sourceItems}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {sourceItems.map(i => (
+                  <SelectItem key={i.value} value={i.value}>
+                    {i.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-[150px]">
+            <Select value={draftBusinessType} onValueChange={v => v && setDraftBusinessType(v)} items={businessTypeItems}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {businessTypeItems.map(i => (
+                  <SelectItem key={i.value} value={i.value}>
+                    {i.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="flex items-center gap-2">
             <Input type="date" value={draftDateFrom} onChange={e => setDraftDateFrom(e.target.value)} className="w-[140px]" />
             <span className="text-muted-foreground text-sm">~</span>
@@ -209,6 +297,7 @@ export function StockMovementsListPage() {
             <TableHead className="w-[80px] text-right">{t('beforeQty')}</TableHead>
             <TableHead className="w-[80px] text-right">{t('afterQty')}</TableHead>
             <TableHead className="w-[160px]">{t('relatedOrderNo')}</TableHead>
+            <TableHead className="w-[150px]">{t('source')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -222,7 +311,9 @@ export function StockMovementsListPage() {
                 <TableCell className={`${BUSINESS_LIST_STICKY_CELL_CLASS} font-mono text-sm`}>{item.transactionNo}</TableCell>
                 <TableCell className="text-sm">{item.transactionDate}</TableCell>
                 <TableCell>
-                  <Badge variant={item.quantity > 0 ? 'default' : 'secondary'}>{getTypeName(item.transactionType)}</Badge>
+                  <Badge variant={item.quantity > 0 ? 'default' : 'secondary'}>
+                    {item.businessType ? getBusinessTypeLabel(item.businessType) : getTypeName(item.transactionType)}
+                  </Badge>
                 </TableCell>
                 <TableCell className="font-mono text-sm">{item.materialCode}</TableCell>
                 <TableCell>{item.materialName}</TableCell>
@@ -234,6 +325,7 @@ export function StockMovementsListPage() {
                 <TableCell className="text-right font-mono text-sm">{item.beforeQty}</TableCell>
                 <TableCell className="text-right font-mono text-sm">{item.afterQty}</TableCell>
                 <TableCell className="text-muted-foreground font-mono text-sm">{item.relatedOrderNo || '-'}</TableCell>
+                <TableCell className="text-sm">{getSourceLabel(item.sourceType) ?? '-'}</TableCell>
               </TableRow>
             ))
           )}
