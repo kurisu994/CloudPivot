@@ -461,8 +461,11 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
   return (
     <div className="flex flex-col gap-6">
       {/* 头部面板 */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
-        <div>
+      <div className="flex items-center gap-4 border-b pb-4">
+        <Button variant="ghost" size="sm" onClick={onBack} disabled={saving || posting}>
+          <ArrowLeft className="size-4" />
+        </Button>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {movementId
               ? isReadOnly
@@ -483,23 +486,19 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
               {t('manualStockMovements.statusDraft')}
             </Badge>
           )}
-          <Button variant="outline" onClick={onBack} disabled={saving || posting}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {t('manualStockMovements.backToList')}
-          </Button>
         </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-6">
           {/* 1. 单头表单 */}
-          <Card className="border-muted bg-card shadow-sm">
+          <Card size="sm" className="border-muted bg-card shadow-sm">
             <CardHeader>
               <CardTitle className="text-base font-semibold">{t('manualStockMovements.headerInfo')}</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
+            <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {/* 方向 */}
-              <div className="space-y-2">
+              <div className="flex flex-col gap-1.5">
                 <Label>{t('manualStockMovements.direction')}</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
@@ -524,7 +523,7 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
               </div>
 
               {/* 业务类型 */}
-              <div className="space-y-2">
+              <div className="flex flex-col gap-1.5">
                 <Label>{t('manualStockMovements.businessType')}</Label>
                 <Select
                   value={businessType}
@@ -546,7 +545,7 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
               </div>
 
               {/* 仓库 */}
-              <div className="space-y-2">
+              <div className="flex flex-col gap-1.5">
                 <Label>{t('manualStockMovements.warehouse')}</Label>
                 <Select value={warehouseId} onValueChange={val => setWarehouseId(val || '')} disabled={isReadOnly} items={warehouseOptions}>
                   <SelectTrigger>
@@ -563,14 +562,14 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
               </div>
 
               {/* 变动日期 */}
-              <div className="space-y-2">
+              <div className="flex flex-col gap-1.5">
                 <Label>{t('manualStockMovements.movementDate')}</Label>
                 <Input type="date" value={movementDate} onChange={e => setMovementDate(e.target.value)} disabled={isReadOnly} />
               </div>
 
               {/* 往来对象：仅借料类业务（必填）时显示，其余类型隐藏以压缩表单空间 */}
               {isCounterpartyRequired && (
-                <div className="space-y-2 sm:col-span-2">
+                <div className="flex flex-col gap-1.5 sm:col-span-2">
                   <Label className="flex items-center gap-1">
                     {t('manualStockMovements.counterpartyName')}
                     <span className="text-red-500">*</span>
@@ -585,7 +584,7 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
               )}
 
               {/* 备注 (其他类型必填) */}
-              <div className="space-y-2 sm:col-span-2">
+              <div className="flex flex-col gap-1.5 sm:col-span-2 xl:col-span-2">
                 <Label className="flex items-center gap-1">
                   {t('manualStockMovements.remark')}
                   {isRemarkRequired && <span className="text-red-500">*</span>}
@@ -595,17 +594,17 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                   value={remark}
                   onChange={e => setRemark(e.target.value)}
                   disabled={isReadOnly}
-                  rows={2}
-                  className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  rows={1}
+                  className="flex min-h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
 
               {/* 快速添加明细：整合进单据信息卡片，只读时隐藏 */}
               {!isReadOnly && (
-                <div className="space-y-3 sm:col-span-2">
-                  <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                <div className="flex flex-col gap-3 border-t pt-3 sm:col-span-2 xl:col-span-4">
+                  <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[minmax(12rem,2fr)_minmax(6rem,0.75fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_auto]">
                     {/* 物料：可搜索下拉，输入编码/名称/规格即时过滤 */}
-                    <div className="space-y-1.5 md:col-span-2">
+                    <div className="flex flex-col gap-1.5 md:col-span-2 xl:col-span-1">
                       <Label>{t('manualStockMovements.material')}</Label>
                       <Combobox
                         items={materialOptions}
@@ -616,22 +615,14 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                     </div>
 
                     {/* 数量 */}
-                    <div className="space-y-1.5">
+                    <div className="flex flex-col gap-1.5">
                       <Label>{t('manualStockMovements.quantity')}</Label>
                       <Input type="number" min="0.001" step="any" value={addQty} onChange={e => setAddQty(e.target.value)} />
                     </div>
 
-                    {/* 入库专用：成本单价 */}
-                    {isInbound && (
-                      <div className="space-y-1.5">
-                        <Label>{t('manualStockMovements.unitCostUsd')}</Label>
-                        <Input type="number" min="0" step="any" value={addUnitCost} onChange={e => setAddUnitCost(e.target.value)} />
-                      </div>
-                    )}
-
                     {/* 入库专用：批次号 */}
                     {isInbound && (
-                      <div className="space-y-1.5">
+                      <div className="flex flex-col gap-1.5">
                         <Label className="flex items-center gap-1">
                           {t('manualStockMovements.lotNo')}
                           <span className="text-xs text-muted-foreground">({t('manualStockMovements.autoLotNo')})</span>
@@ -642,18 +633,18 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
 
                     {/* 入库专用：供应商批次 */}
                     {isInbound && (
-                      <div className="space-y-1.5">
+                      <div className="flex flex-col gap-1.5">
                         <Label>{t('manualStockMovements.supplierBatchNo')}</Label>
                         <Input placeholder="选填" value={addSupplierBatchNo} onChange={e => setAddSupplierBatchNo(e.target.value)} />
                       </div>
                     )}
-                  </div>
 
-                  <div className="flex justify-end">
-                    <Button type="button" onClick={handleAddItem}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      {t('manualStockMovements.addItem')}
-                    </Button>
+                    <div className="flex justify-end sm:col-span-2 md:col-span-3 xl:col-span-1 xl:items-end">
+                      <Button type="button" onClick={handleAddItem}>
+                        <Plus data-icon="inline-start" />
+                        {t('manualStockMovements.addItem')}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -678,7 +669,6 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                     <th className="w-[100px] px-3 py-2 text-left text-xs font-semibold text-muted-foreground">规格</th>
                     <th className="w-[60px] px-3 py-2 text-left text-xs font-semibold text-muted-foreground">单位</th>
                     <th className="w-[100px] px-3 py-2 text-right text-xs font-semibold text-muted-foreground">数量</th>
-                    {isInbound && <th className="w-[120px] px-3 py-2 text-right text-xs font-semibold text-muted-foreground">单位成本(USD)</th>}
                     {isInbound && <th className="w-[120px] px-3 py-2 text-left text-xs font-semibold text-muted-foreground">批次号</th>}
                     {isInbound && <th className="w-[120px] px-3 py-2 text-left text-xs font-semibold text-muted-foreground">供应商批次</th>}
                     {!isReadOnly && <th className="w-[60px] px-3 py-2 text-center text-xs font-semibold text-muted-foreground">操作</th>}
@@ -687,7 +677,7 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                 <tbody>
                   {items.length === 0 ? (
                     <tr>
-                      <td colSpan={isInbound ? 10 : 7} className="h-24 text-center text-sm text-muted-foreground">
+                      <td colSpan={(isInbound ? 8 : 6) + (isReadOnly ? 0 : 1)} className="h-24 text-center text-sm text-muted-foreground">
                         {t('manualStockMovements.noItems')}
                       </td>
                     </tr>
@@ -700,29 +690,18 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                         <td className="px-3 py-2 text-sm text-muted-foreground">{item.spec || '-'}</td>
                         <td className="px-3 py-2 text-sm text-muted-foreground">{item.unitName || '-'}</td>
                         <td className="px-3 py-2">
-                          <Input
-                            type="number"
-                            min="0.001"
-                            step="any"
-                            value={item.quantity}
-                            onChange={e => handleItemFieldChange(idx, 'quantity', Number(e.target.value))}
-                            disabled={isReadOnly}
-                            className="h-8 py-1 text-right max-w-[100px] ml-auto font-medium"
-                          />
-                        </td>
-                        {isInbound && (
-                          <td className="px-3 py-2">
+                          <div className="flex justify-end">
                             <Input
                               type="number"
-                              min="0"
+                              min="0.001"
                               step="any"
-                              value={item.unitCostUsd || 0}
-                              onChange={e => handleItemFieldChange(idx, 'unitCostUsd', Number(e.target.value))}
+                              value={item.quantity}
+                              onChange={e => handleItemFieldChange(idx, 'quantity', Number(e.target.value))}
                               disabled={isReadOnly}
-                              className="h-8 py-1 text-right max-w-[100px] ml-auto"
+                              className="h-8 max-w-[100px] py-1 text-right font-medium"
                             />
-                          </td>
-                        )}
+                          </div>
+                        </td>
                         {isInbound && (
                           <td className="px-3 py-2">
                             <Input

@@ -328,7 +328,7 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
 
             {/* 按钮控制 */}
             <div className="flex items-center gap-2 md:col-span-2 lg:col-span-2 lg:col-start-5">
-              <Button type="submit" variant="secondary" className="w-full">
+              <Button type="submit" className="w-full">
                 {tc('search')}
               </Button>
               <Button type="button" variant="outline" onClick={handleReset} className="w-full">

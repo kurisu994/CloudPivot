@@ -20,13 +20,28 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { formatAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
 import type { CategoryNode, InventoryDetail, InventoryFilter, InventoryListItem, WarehouseItem } from '@/lib/tauri'
 import { getCategoryTree, getInventoryDetail, getInventoryList, getWarehouses } from '@/lib/tauri'
 
 const DEFAULT_PAGE_SIZE = 20
-const COL_COUNT = 12
+const COL_COUNT = 11
+
+/** 截断表格文本，并在悬浮时显示完整内容。 */
+function Truncated({ text }: { text: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="block truncate">{text}</span>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{text}</p>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
 
 /** 预警状态选项 */
 const ALERT_OPTIONS = [
@@ -227,63 +242,71 @@ export function InventoryListPage() {
       </div>
 
       {/* 数据表格 */}
-      <BusinessListTableShell
-        tableClassName="min-w-[1400px]"
-        footer={
-          <BusinessListTableFooter>
-            <span>{t('totalItems', { total })}</span>
-            <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-          </BusinessListTableFooter>
-        }
-      >
-        <TableHeader>
-          <TableRow>
-            <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[140px]`}>{t('materialCode')}</TableHead>
-            <TableHead className="w-[160px]">{t('materialName')}</TableHead>
-            <TableHead className="w-[100px]">{t('category')}</TableHead>
-            <TableHead className="w-[120px]">{t('warehouse')}</TableHead>
-            <TableHead className="w-[100px] text-right">{t('quantity')}</TableHead>
-            <TableHead className="w-[100px] text-right">{t('reservedQty')}</TableHead>
-            <TableHead className="w-[100px] text-right">{t('availableQty')}</TableHead>
-            <TableHead className="w-[120px] text-right">{t('inventoryValue')}</TableHead>
-            <TableHead className="w-[80px]">{t('alertStatus')}</TableHead>
-            <TableHead className="w-[100px]">{t('lastInDate')}</TableHead>
-            <TableHead className="w-[100px]">{t('lastOutDate')}</TableHead>
-            <TableHead className="w-[80px]">{tc('actions')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={COL_COUNT} />
-          ) : items.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={COL_COUNT} message={t('noInventory')} />
-          ) : (
-            items.map(item => (
-              <TableRow
-                key={item.id}
-                className={`group ${item.alertStatus === 'low' ? 'bg-red-50/50 dark:bg-red-950/20' : item.alertStatus === 'high' ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`}
-              >
-                <TableCell className={`${BUSINESS_LIST_STICKY_CELL_CLASS} font-mono text-sm`}>{item.materialCode}</TableCell>
-                <TableCell>{item.materialName}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.categoryName || '-'}</TableCell>
-                <TableCell>{item.warehouseName}</TableCell>
-                <TableCell className="text-right font-mono">{item.quantity}</TableCell>
-                <TableCell className="text-right font-mono">{item.reservedQty}</TableCell>
-                <TableCell className="text-right font-mono">{item.availableQty}</TableCell>
-                <TableCell className="text-right font-mono text-sm">{formatAmount(item.inventoryValue, 'USD')}</TableCell>
-                <TableCell>{alertBadge(item.alertStatus)}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.lastInDate || '-'}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.lastOutDate || '-'}</TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="sm" onClick={() => handleViewDetail(item.materialId)}>
-                    <Eye className="size-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </BusinessListTableShell>
+      <TooltipProvider>
+        <BusinessListTableShell
+          tableClassName="min-w-[1200px]"
+          footer={
+            <BusinessListTableFooter>
+              <span>{t('totalItems', { total })}</span>
+              <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+            </BusinessListTableFooter>
+          }
+        >
+          <TableHeader>
+            <TableRow>
+              <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[140px]`}>{t('materialCode')}</TableHead>
+              <TableHead className="w-[160px]">{t('materialName')}</TableHead>
+              <TableHead className="w-[100px]">{t('category')}</TableHead>
+              <TableHead className="w-[120px]">{t('warehouse')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('quantity')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('reservedQty')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('availableQty')}</TableHead>
+              <TableHead className="w-[80px]">{t('alertStatus')}</TableHead>
+              <TableHead className="w-[100px]">{t('lastInDate')}</TableHead>
+              <TableHead className="w-[100px]">{t('lastOutDate')}</TableHead>
+              <TableHead className="w-[80px]">{tc('actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={COL_COUNT} />
+            ) : items.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={COL_COUNT} message={t('noInventory')} />
+            ) : (
+              items.map(item => (
+                <TableRow
+                  key={item.id}
+                  className={`group ${item.alertStatus === 'low' ? 'bg-red-50/50 dark:bg-red-950/20' : item.alertStatus === 'high' ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`}
+                >
+                  <TableCell className={`${BUSINESS_LIST_STICKY_CELL_CLASS} font-mono text-sm`}>
+                    <Truncated text={item.materialCode} />
+                  </TableCell>
+                  <TableCell>
+                    <Truncated text={item.materialName} />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    <Truncated text={item.categoryName || '-'} />
+                  </TableCell>
+                  <TableCell>
+                    <Truncated text={item.warehouseName} />
+                  </TableCell>
+                  <TableCell className="text-right font-mono">{item.quantity}</TableCell>
+                  <TableCell className="text-right font-mono">{item.reservedQty}</TableCell>
+                  <TableCell className="text-right font-mono">{item.availableQty}</TableCell>
+                  <TableCell>{alertBadge(item.alertStatus)}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{item.lastInDate || '-'}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{item.lastOutDate || '-'}</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" onClick={() => handleViewDetail(item.materialId)}>
+                      <Eye className="size-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </TooltipProvider>
 
       {/* 详情弹窗 */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
