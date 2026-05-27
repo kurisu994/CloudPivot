@@ -939,7 +939,7 @@ CREATE INDEX idx_invt_type ON inventory_transactions(transaction_type);
 CREATE INDEX idx_invt_related ON inventory_transactions(related_order_no);
 ```
 
-#### manual_stock_movements — 批量出入库单（头）
+#### manual_stock_movements — 自由出入库单（头）
 
 > 实际运行库为 PostgreSQL，迁移文件 `005_manual_stock_movements.sql` 使用 `BIGSERIAL`/`TIMESTAMP`/`NOW()`；此处沿用本文档 SQLite 风格示意，字段语义一致。承载最多 100 条明细的草稿单据，确认时在单事务内整单过账。
 
@@ -969,7 +969,7 @@ CREATE INDEX idx_msm_date ON manual_stock_movements(movement_date);
 CREATE INDEX idx_msm_direction ON manual_stock_movements(direction);
 ```
 
-#### manual_stock_movement_items — 批量出入库单（明细）
+#### manual_stock_movement_items — 自由出入库单（明细）
 
 ```sql
 CREATE TABLE manual_stock_movement_items (
