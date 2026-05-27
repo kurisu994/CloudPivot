@@ -107,12 +107,6 @@ export function CustomOrderTable({
   const t = useTranslations('customOrders')
   const tc = useTranslations('common')
 
-  const pageSizeItems = [
-    { value: '10', label: t('perPage', { count: '10' }) },
-    { value: '20', label: t('perPage', { count: '20' }) },
-    { value: '50', label: t('perPage', { count: '50' }) },
-  ]
-
   /** 根据状态渲染操作按钮 */
   const renderActions = (order: CustomOrderListItem) => {
     const actions: React.ReactNode[] = []
@@ -158,22 +152,14 @@ export function CustomOrderTable({
       tableClassName="min-w-[1100px]"
       footer={
         <BusinessListTableFooter>
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <span className="font-medium">{t('totalRecords', { count: total })}</span>
-            <Select value={pageSize.toString()} onValueChange={v => v && onPageSizeChange(parseInt(v))} items={pageSizeItems}>
-              <SelectTrigger className="h-7 w-[120px] text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {pageSizeItems.map(item => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={onPageChange} />
+          <span className="text-xs font-bold text-slate-400">{t('totalRecords', { count: total })}</span>
+          <PaginationControls
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+            pageSize={pageSize}
+            onPageSizeChange={onPageSizeChange}
+          />
         </BusinessListTableFooter>
       }
     >

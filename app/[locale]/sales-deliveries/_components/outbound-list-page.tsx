@@ -24,7 +24,7 @@ import type { OutboundOrderFilter, OutboundOrderListItem } from '@/lib/tauri'
 import { getOutboundOrders, invoke } from '@/lib/tauri'
 import type { SalesOrderListItem } from '../../sales-orders/_components/sales-order-table'
 
-const DEFAULT_PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 50
 
 interface OutboundListPageProps {
   onNewOutbound: (salesId: number) => void
@@ -128,12 +128,6 @@ export function OutboundListPage({ onNewOutbound }: OutboundListPageProps) {
     [pendingSOs],
   )
 
-  const pageSizeItems = [
-    { value: '10', label: t('perPage', { count: '10' }) },
-    { value: '20', label: t('perPage', { count: '20' }) },
-    { value: '50', label: t('perPage', { count: '50' }) },
-  ]
-
   const outboundTypeLabel = (type: string) => {
     const map: Record<string, string> = {
       sales: t('typeSales'),
@@ -230,22 +224,14 @@ export function OutboundListPage({ onNewOutbound }: OutboundListPageProps) {
         tableClassName="min-w-[1100px]"
         footer={
           <BusinessListTableFooter>
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-              <span className="font-medium">{t('totalRecords', { count: total })}</span>
-              <Select value={pageSize.toString()} onValueChange={v => v && onPageSizeChange(parseInt(v))} items={pageSizeItems}>
-                <SelectTrigger className="h-7 w-[120px] text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {pageSizeItems.map(item => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
+            <span className="text-xs font-bold text-slate-400">{t('totalRecords', { count: total })}</span>
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+            />
           </BusinessListTableFooter>
         }
       >
@@ -296,13 +282,4 @@ export function OutboundListPage({ onNewOutbound }: OutboundListPageProps) {
       </BusinessListTableShell>
     </div>
   )
-
-  // 分页回调
-  function onPageChange(p: number) {
-    setCurrentPage(p)
-  }
-  function onPageSizeChange(s: number) {
-    setPageSize(s)
-    setCurrentPage(1)
-  }
 }

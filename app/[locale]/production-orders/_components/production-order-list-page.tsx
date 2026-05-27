@@ -35,7 +35,7 @@ interface Props {
   onNew: () => void
 }
 
-const PAGE_SIZE = 15
+const PAGE_SIZE = 50
 
 const STATUS_OPTIONS = ['all', 'draft', 'picking', 'producing', 'completed', 'cancelled'] as const
 
@@ -56,6 +56,7 @@ export function ProductionOrderListPage({ onEdit, onNew }: Props) {
   const [items, setItems] = useState<ProductionOrderListItem[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
   const [loading, setLoading] = useState(true)
 
   /** 加载数据 */
@@ -74,7 +75,7 @@ export function ProductionOrderListPage({ onEdit, onNew }: Props) {
           dateFrom: dateFrom || null,
           dateTo: dateTo || null,
           page,
-          pageSize: PAGE_SIZE,
+          pageSize: pageSize,
         },
       })
       setItems(result.items)
@@ -84,7 +85,7 @@ export function ProductionOrderListPage({ onEdit, onNew }: Props) {
     } finally {
       setLoading(false)
     }
-  }, [keyword, statusFilter, dateFrom, dateTo, page])
+  }, [keyword, statusFilter, dateFrom, dateTo, page, pageSize])
 
   useEffect(() => {
     loadData()
@@ -101,7 +102,7 @@ export function ProductionOrderListPage({ onEdit, onNew }: Props) {
     }
   }
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
+  const totalPages = Math.ceil(total / pageSize)
 
   /** 状态选项列表 */
   const statusItems = STATUS_OPTIONS.map(s => ({
@@ -182,7 +183,9 @@ export function ProductionOrderListPage({ onEdit, onNew }: Props) {
       <ProductionOrderTable items={items} loading={loading} onEdit={onEdit} onDelete={handleDelete} />
 
       {/* 分页 */}
-      {totalPages > 1 && <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={setPage} />}
+      {totalPages > 1 && (
+        <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={setPage} pageSize={pageSize} onPageSizeChange={setPageSize} />
+      )}
     </div>
   )
 }

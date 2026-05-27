@@ -43,7 +43,9 @@
     "backHome": "返回首页",
     "notFoundTitle": "页面不存在",
     "notFoundDesc": "您访问的页面不存在或已被移除",
-    "loadFailed": "数据加载失败"
+    "loadFailed": "数据加载失败",
+    "perPage": "{count} 条/页",
+    "goFirstPage": "回到首页"
   },
   "nav": {
     "dashboard": "首页看板",

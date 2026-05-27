@@ -20,7 +20,7 @@ import { getErrorMessage } from '@/lib/error'
 import type { TransferFilter, TransferListItem, WarehouseItem } from '@/lib/tauri'
 import { confirmTransfer, deleteTransfer, getTransfers, getWarehouses } from '@/lib/tauri'
 
-const DEFAULT_PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 50
 const COL_COUNT = 9
 
 interface StockTransferListPageProps {
@@ -44,7 +44,7 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
 
   const [filters, setFilters] = useState<TransferFilter>({ page: 1, pageSize: DEFAULT_PAGE_SIZE })
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
   const [warehouses, setWarehouses] = useState<WarehouseItem[]>([])
 
@@ -198,8 +198,14 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
         tableClassName="min-w-[900px]"
         footer={
           <BusinessListTableFooter>
-            <span>{t('totalItems', { total })}</span>
-            <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+            <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+            />
           </BusinessListTableFooter>
         }
       >

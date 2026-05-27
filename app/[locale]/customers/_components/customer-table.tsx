@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Eye, Pencil, Power, Trash2 } from 'lucide-react'
+import { Eye, Pencil, Power, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import {
   BUSINESS_LIST_STICKY_CELL_CLASS,
@@ -10,9 +10,9 @@ import {
   BusinessListTableLoadingRows,
   BusinessListTableShell,
 } from '@/components/common/business-list-table'
+import { PaginationControls } from '@/components/common/pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount } from '@/lib/currency'
 import type { CustomerListItem } from '@/lib/tauri'
@@ -40,21 +40,6 @@ interface CustomerTableProps {
   onToggleStatus: (customer: CustomerListItem) => void
 }
 
-/** 分页器页码生成 */
-function buildPageNumbers(current: number, total: number): (number | '...')[] {
-  const pages: (number | '...')[] = []
-  const maxVisible = 5
-  let start = Math.max(1, current - Math.floor(maxVisible / 2))
-  const end = Math.min(total, start + maxVisible - 1)
-  if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1)
-  for (let i = start; i <= end; i++) pages.push(i)
-  if (end < total) {
-    pages.push('...')
-    pages.push(total)
-  }
-  return pages
-}
-
 export function CustomerTable({
   customers,
   loading,
@@ -71,58 +56,20 @@ export function CustomerTable({
 }: CustomerTableProps) {
   const t = useTranslations('customers')
 
-  const pageSizeItems = [
-    { value: '10', label: t('perPage', { count: '10' }) },
-    { value: '20', label: t('perPage', { count: '20' }) },
-    { value: '50', label: t('perPage', { count: '50' }) },
-  ]
-
   return (
     <BusinessListTableShell
       className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
       tableClassName="min-w-[1120px]"
       footer={
         <BusinessListTableFooter>
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <span className="font-medium">{t('totalRecords', { count: total })}</span>
-            <Select value={pageSize.toString()} onValueChange={v => v && onPageSizeChange(parseInt(v))} items={pageSizeItems}>
-              <SelectTrigger className="h-7 w-[120px] text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {pageSizeItems.map(item => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="ml-auto flex items-center gap-1">
-            <Button variant="ghost" size="icon-sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
-              <ChevronLeft className="size-4" />
-            </Button>
-            {buildPageNumbers(page, totalPages).map((p, idx) =>
-              p === '...' ? (
-                <span key={`dots-${idx}`} className="text-muted-foreground/50 px-2">
-                  …
-                </span>
-              ) : (
-                <Button
-                  key={p}
-                  variant={page === p ? 'default' : 'ghost'}
-                  size="icon-sm"
-                  className="font-bold"
-                  onClick={() => onPageChange(p as number)}
-                >
-                  {p}
-                </Button>
-              ),
-            )}
-            <Button variant="ghost" size="icon-sm" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
+          <span className="text-xs font-bold text-slate-400">{t('totalRecords', { count: total })}</span>
+          <PaginationControls
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+            pageSize={pageSize}
+            onPageSizeChange={onPageSizeChange}
+          />
         </BusinessListTableFooter>
       }
     >

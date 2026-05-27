@@ -41,7 +41,7 @@ interface CustomOrderFilter {
   pageSize: number
 }
 
-const DEFAULT_PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 50
 
 interface CustomOrderListPageProps {
   onEdit: (id: number) => void

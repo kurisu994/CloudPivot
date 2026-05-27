@@ -19,9 +19,6 @@ import type { CategoryOption, UnitOption } from './materials-client-page'
 /*  类型                                                               */
 /* ------------------------------------------------------------------ */
 
-/** 系统本位币（与系统设置一致） */
-const BASE_CURRENCY: Currency = 'USD'
-
 interface MaterialFormData {
   id: number | null
   code: string

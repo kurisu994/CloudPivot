@@ -61,7 +61,7 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
   const [items, setItems] = useState<ManualMovementListItem[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const pageSize = 15
+  const [pageSize, setPageSize] = useState(50)
 
   // 仓库和下拉选项状态
   const [warehouses, setWarehouses] = useState<WarehouseItem[]>([])
@@ -456,7 +456,14 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
       {/* 分页控制 */}
       {total > 0 && (
         <BusinessListTableFooter>
-          <PaginationControls currentPage={page} totalPages={Math.ceil(total / pageSize)} onPageChange={setPage} />
+          <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
+          <PaginationControls
+            currentPage={page}
+            totalPages={Math.ceil(total / pageSize)}
+            onPageChange={setPage}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
         </BusinessListTableFooter>
       )}
 

@@ -47,7 +47,7 @@ export function PayablesPage() {
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
-  const pageSize = 20
+  const [pageSize, setPageSize] = useState(50)
 
   // 付款弹窗
   const [payDialogOpen, setPayDialogOpen] = useState(false)
@@ -348,7 +348,13 @@ export function PayablesPage() {
       </BusinessListTableShell>
 
       {/* 分页 */}
-      <PaginationControls currentPage={page} totalPages={Math.ceil(total / pageSize)} onPageChange={setPage} />
+      <PaginationControls
+        currentPage={page}
+        totalPages={Math.ceil(total / pageSize)}
+        onPageChange={setPage}
+        pageSize={pageSize}
+        onPageSizeChange={setPageSize}
+      />
 
       {/* 登记付款弹窗 */}
       <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>

@@ -43,9 +43,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
     if (!detail) return []
     if (!searchTerm.trim()) return detail.items
     const keyword = searchTerm.trim().toLowerCase()
-    return detail.items.filter(
-      item => item.materialName.toLowerCase().includes(keyword) || item.materialCode.toLowerCase().includes(keyword),
-    )
+    return detail.items.filter(item => item.materialName.toLowerCase().includes(keyword) || item.materialCode.toLowerCase().includes(keyword))
   }, [detail, searchTerm])
 
   const loadDetail = useCallback(async () => {
@@ -174,80 +172,75 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
         <div className="py-12 text-center text-muted-foreground">{tc('loading')}</div>
       ) : detail ? (
         <>
-        {/* 物料搜索框 */}
-        <div className="relative w-72">
-          <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-          <Input
-            placeholder={t('searchMaterial')}
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[120px]">{ti('materialCode')}</TableHead>
-                <TableHead className="w-[160px]">{ti('materialName')}</TableHead>
-                <TableHead className="w-[80px]">{ti('spec')}</TableHead>
-                <TableHead className="w-[60px]">{ti('unit')}</TableHead>
-                <TableHead className="w-[90px] text-right">{t('systemQty')}</TableHead>
-                <TableHead className="w-[120px] text-right">{t('actualQty')}</TableHead>
-                <TableHead className="w-[90px] text-right">{t('diffQty')}</TableHead>
-                <TableHead className="w-[100px] text-right">{t('diffAmount')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredItems.length === 0 ? (
+          {/* 物料搜索框 */}
+          <div className="relative w-72">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <Input placeholder={t('searchMaterial')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
-                    {t('noItems')}
-                  </TableCell>
+                  <TableHead className="w-[120px]">{ti('materialCode')}</TableHead>
+                  <TableHead className="w-[160px]">{ti('materialName')}</TableHead>
+                  <TableHead className="w-[80px]">{ti('spec')}</TableHead>
+                  <TableHead className="w-[60px]">{ti('unit')}</TableHead>
+                  <TableHead className="w-[90px] text-right">{t('systemQty')}</TableHead>
+                  <TableHead className="w-[120px] text-right">{t('actualQty')}</TableHead>
+                  <TableHead className="w-[90px] text-right">{t('diffQty')}</TableHead>
+                  <TableHead className="w-[100px] text-right">{t('diffAmount')}</TableHead>
                 </TableRow>
-              ) : (
-                filteredItems.map(item => {
-                  const actualVal = editValues[item.id] ?? ''
-                  const actualQty = actualVal !== '' ? Number(actualVal) : null
-                  const diff = actualQty !== null ? actualQty - item.systemQty : 0
-                  return (
-                    <TableRow
-                      key={item.id}
-                      className={diff !== 0 ? (diff > 0 ? 'bg-green-50/50 dark:bg-green-950/20' : 'bg-red-50/50 dark:bg-red-950/20') : ''}
-                    >
-                      <TableCell className="font-mono text-sm">{item.materialCode}</TableCell>
-                      <TableCell>{item.materialName}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{item.spec || '-'}</TableCell>
-                      <TableCell>{item.unitName}</TableCell>
-                      <TableCell className="text-right font-mono">{item.systemQty}</TableCell>
-                      <TableCell className="text-right">
-                        {isEditable ? (
-                          <Input
-                            type="number"
-                            value={actualVal}
-                            onChange={e => setEditValues(prev => ({ ...prev, [item.id]: e.target.value }))}
-                            className="w-[100px] ml-auto text-right"
-                            placeholder={t('inputActualQty')}
-                          />
-                        ) : (
-                          <span className="font-mono">{item.actualQty ?? '-'}</span>
-                        )}
-                      </TableCell>
-                      <TableCell className={`text-right font-mono ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : ''}`}>
-                        {actualQty !== null ? (diff > 0 ? '+' : '') + diff : '-'}
-                      </TableCell>
-                      <TableCell
-                        className={`text-right font-mono text-sm ${item.diffAmount > 0 ? 'text-green-600' : item.diffAmount < 0 ? 'text-red-600' : ''}`}
+              </TableHeader>
+              <TableBody>
+                {filteredItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                      {t('noItems')}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredItems.map(item => {
+                    const actualVal = editValues[item.id] ?? ''
+                    const actualQty = actualVal !== '' ? Number(actualVal) : null
+                    const diff = actualQty !== null ? actualQty - item.systemQty : 0
+                    return (
+                      <TableRow
+                        key={item.id}
+                        className={diff !== 0 ? (diff > 0 ? 'bg-green-50/50 dark:bg-green-950/20' : 'bg-red-50/50 dark:bg-red-950/20') : ''}
                       >
-                        {item.actualQty !== null ? formatAmount(item.diffAmount, 'USD', { showSymbol: false }) : '-'}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                        <TableCell className="font-mono text-sm">{item.materialCode}</TableCell>
+                        <TableCell>{item.materialName}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{item.spec || '-'}</TableCell>
+                        <TableCell>{item.unitName}</TableCell>
+                        <TableCell className="text-right font-mono">{item.systemQty}</TableCell>
+                        <TableCell className="text-right">
+                          {isEditable ? (
+                            <Input
+                              type="number"
+                              value={actualVal}
+                              onChange={e => setEditValues(prev => ({ ...prev, [item.id]: e.target.value }))}
+                              className="w-[100px] ml-auto text-right"
+                              placeholder={t('inputActualQty')}
+                            />
+                          ) : (
+                            <span className="font-mono">{item.actualQty ?? '-'}</span>
+                          )}
+                        </TableCell>
+                        <TableCell className={`text-right font-mono ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : ''}`}>
+                          {actualQty !== null ? (diff > 0 ? '+' : '') + diff : '-'}
+                        </TableCell>
+                        <TableCell
+                          className={`text-right font-mono text-sm ${item.diffAmount > 0 ? 'text-green-600' : item.diffAmount < 0 ? 'text-red-600' : ''}`}
+                        >
+                          {item.actualQty !== null ? formatAmount(item.diffAmount, 'USD', { showSymbol: false }) : '-'}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </>
       ) : null}
 

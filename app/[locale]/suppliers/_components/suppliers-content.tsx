@@ -46,7 +46,7 @@ export const CURRENCY_OPTIONS = [
   { value: 'USD', label: 'USD ($)' },
 ] as const
 
-const DEFAULT_PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 50
 
 export function SuppliersContent() {
   const t = useTranslations('suppliers')

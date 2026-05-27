@@ -47,7 +47,7 @@ export function ReceivablesPage() {
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
-  const pageSize = 20
+  const [pageSize, setPageSize] = useState(50)
 
   // 收款弹窗
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false)
@@ -348,7 +348,13 @@ export function ReceivablesPage() {
       </BusinessListTableShell>
 
       {/* 分页 */}
-      <PaginationControls currentPage={page} totalPages={Math.ceil(total / pageSize)} onPageChange={setPage} />
+      <PaginationControls
+        currentPage={page}
+        totalPages={Math.ceil(total / pageSize)}
+        onPageChange={setPage}
+        pageSize={pageSize}
+        onPageSizeChange={setPageSize}
+      />
 
       {/* 登记收款弹窗 */}
       <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>

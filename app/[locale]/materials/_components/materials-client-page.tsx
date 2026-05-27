@@ -166,7 +166,7 @@ export function MaterialsClientPage() {
   const [materialType, setMaterialType] = useState<string>('all')
   const [status, setStatus] = useState<string>('all')
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(50)
 
   // 弹窗
   const [dialogOpen, setDialogOpen] = useState(false)

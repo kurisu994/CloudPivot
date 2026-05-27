@@ -23,7 +23,7 @@ import { formatAmount } from '@/lib/currency'
 import type { OutboundOrderListItem, SalesReturnFilter, SalesReturnListItem } from '@/lib/tauri'
 import { getOutboundOrders, getSalesReturns } from '@/lib/tauri'
 
-const DEFAULT_PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 50
 
 interface ReturnListPageProps {
   onNewReturn: (outboundId: number) => void
@@ -120,12 +120,6 @@ export function ReturnListPage({ onNewReturn }: ReturnListPageProps) {
     setFilters({ page: 1, pageSize })
   }
 
-  const pageSizeItems = [
-    { value: '10', label: t('perPage', { count: '10' }) },
-    { value: '20', label: t('perPage', { count: '20' }) },
-    { value: '50', label: t('perPage', { count: '50' }) },
-  ]
-
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -212,22 +206,14 @@ export function ReturnListPage({ onNewReturn }: ReturnListPageProps) {
         tableClassName="min-w-[1000px]"
         footer={
           <BusinessListTableFooter>
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-              <span className="font-medium">{t('totalRecords', { count: total })}</span>
-              <Select value={pageSize.toString()} onValueChange={v => v && setPageSize(parseInt(v))} items={pageSizeItems}>
-                <SelectTrigger className="h-7 w-[120px] text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {pageSizeItems.map(item => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+            <span className="text-xs font-bold text-slate-400">{t('totalRecords', { count: total })}</span>
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+            />
           </BusinessListTableFooter>
         }
       >

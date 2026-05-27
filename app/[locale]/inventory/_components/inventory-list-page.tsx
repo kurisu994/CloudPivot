@@ -26,7 +26,7 @@ import { getErrorMessage } from '@/lib/error'
 import type { CategoryNode, InventoryDetail, InventoryFilter, InventoryListItem, WarehouseItem } from '@/lib/tauri'
 import { getCategoryTree, getInventoryDetail, getInventoryList, getWarehouses } from '@/lib/tauri'
 
-const DEFAULT_PAGE_SIZE = 20
+const DEFAULT_PAGE_SIZE = 50
 const COL_COUNT = 11
 
 /** 截断表格文本，并在悬浮时显示完整内容。 */
@@ -69,7 +69,7 @@ export function InventoryListPage() {
 
   const [filters, setFilters] = useState<InventoryFilter>({ page: 1, pageSize: DEFAULT_PAGE_SIZE })
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
   const [warehouses, setWarehouses] = useState<WarehouseItem[]>([])
   const [categories, setCategories] = useState<CategoryNode[]>([])
@@ -247,8 +247,14 @@ export function InventoryListPage() {
           tableClassName="min-w-[1200px]"
           footer={
             <BusinessListTableFooter>
-              <span>{t('totalItems', { total })}</span>
-              <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+              <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                pageSize={pageSize}
+                onPageSizeChange={setPageSize}
+              />
             </BusinessListTableFooter>
           }
         >

@@ -22,7 +22,7 @@ import { getErrorMessage } from '@/lib/error'
 import type { CategoryNode, StockCheckFilter, StockCheckListItem, WarehouseItem } from '@/lib/tauri'
 import { createStockCheck, getCategoryTree, getStockChecks, getWarehouses } from '@/lib/tauri'
 
-const DEFAULT_PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 50
 const COL_COUNT = 9
 
 interface StockCheckListPageProps {
@@ -52,7 +52,7 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
 
   const [filters, setFilters] = useState<StockCheckFilter>({ page: 1, pageSize: DEFAULT_PAGE_SIZE })
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
   const [warehouses, setWarehouses] = useState<WarehouseItem[]>([])
   const [categories, setCategories] = useState<CategoryNode[]>([])
@@ -224,8 +224,14 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
         tableClassName="min-w-[900px]"
         footer={
           <BusinessListTableFooter>
-            <span>{t('totalItems', { total })}</span>
-            <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+            <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+            />
           </BusinessListTableFooter>
         }
       >

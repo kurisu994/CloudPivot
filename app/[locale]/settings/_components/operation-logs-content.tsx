@@ -1,8 +1,9 @@
 'use client'
 
-import { CalendarDays, ChevronLeft, ChevronRight, Download, Layers, Search, User, Zap } from 'lucide-react'
+import { CalendarDays, Download, Layers, Search, User, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
+import { PaginationControls } from '@/components/common/pagination'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -52,7 +53,7 @@ export function OperationLogsContent() {
   const [logs, setLogs] = useState<OperationLogItem[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const [pageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(50)
   const [loading, setLoading] = useState(false)
 
   // 筛选状态
@@ -102,31 +103,6 @@ export function OperationLogsContent() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const fromCount = total === 0 ? 0 : (page - 1) * pageSize + 1
   const toCount = Math.min(page * pageSize, total)
-
-  /** 生成分页页码 */
-  const getPageNumbers = () => {
-    const pages: (number | string)[] = []
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i)
-    } else {
-      if (page <= 4) {
-        for (let i = 1; i <= 5; i++) pages.push(i)
-        pages.push('...')
-        pages.push(totalPages)
-      } else if (page >= totalPages - 3) {
-        pages.push(1)
-        pages.push('...')
-        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i)
-      } else {
-        pages.push(1)
-        pages.push('...')
-        for (let i = page - 1; i <= page + 1; i++) pages.push(i)
-        pages.push('...')
-        pages.push(totalPages)
-      }
-    }
-    return pages
-  }
 
   /** 获取用户缩写 */
   const getInitials = (name: string | null) => {
@@ -356,42 +332,7 @@ export function OperationLogsContent() {
         {/* 分页 */}
         <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/50">
           <p className="text-xs font-bold text-slate-400">{t('showingRange', { from: fromCount, to: toCount, total })}</p>
-          <div className="flex items-center gap-1">
-            <button
-              className="flex size-8 items-center justify-center rounded border border-slate-200 text-slate-400 transition-colors hover:bg-white dark:border-slate-700 dark:hover:bg-slate-800 disabled:opacity-40"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page <= 1}
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            {getPageNumbers().map((n, idx) =>
-              n === '...' ? (
-                <span key={`dots-${idx}`} className="px-2 text-xs text-slate-300 dark:text-slate-600">
-                  ...
-                </span>
-              ) : (
-                <button
-                  key={n}
-                  onClick={() => setPage(n as number)}
-                  className={cn(
-                    'flex size-8 items-center justify-center rounded text-xs font-bold transition-colors',
-                    page === n
-                      ? 'bg-primary text-white'
-                      : 'border border-slate-200 text-slate-600 hover:bg-white dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800',
-                  )}
-                >
-                  {n}
-                </button>
-              ),
-            )}
-            <button
-              className="flex size-8 items-center justify-center rounded border border-slate-200 text-slate-400 transition-colors hover:bg-white dark:border-slate-700 dark:hover:bg-slate-800 disabled:opacity-40"
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-            >
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
+          <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={setPage} pageSize={pageSize} onPageSizeChange={setPageSize} />
         </div>
       </section>
     </div>

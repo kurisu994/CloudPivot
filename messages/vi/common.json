@@ -43,7 +43,9 @@
     "backHome": "Về trang chủ",
     "notFoundTitle": "Không tìm thấy trang",
     "notFoundDesc": "Trang bạn đang tìm không tồn tại hoặc đã bị xóa",
-    "loadFailed": "Tải dữ liệu thất bại"
+    "loadFailed": "Tải dữ liệu thất bại",
+    "perPage": "{count} / trang",
+    "goFirstPage": "Về trang đầu"
   },
   "nav": {
     "dashboard": "Bảng điều khiển",

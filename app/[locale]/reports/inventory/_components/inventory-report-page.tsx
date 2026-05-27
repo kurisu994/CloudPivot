@@ -110,7 +110,7 @@ export function InventoryReportPage() {
   const [materialType, setMaterialType] = useState('all')
   const [keyword, setKeyword] = useState('')
   const [page, setPage] = useState(1)
-  const pageSize = 20
+  const [pageSize, setPageSize] = useState(50)
 
   // 下拉数据
   const [warehouses, setWarehouses] = useState<{ id: number; name: string }[]>([])
@@ -603,6 +603,7 @@ export function InventoryReportPage() {
             page={page}
             pageSize={pageSize}
             onPageChange={setPage}
+            onPageSizeChange={setPageSize}
             t={t}
             tc={tc}
           />
@@ -669,6 +670,7 @@ export function InventoryReportPage() {
             page={agingPage}
             pageSize={pageSize}
             onPageChange={setAgingPage}
+            onPageSizeChange={setPageSize}
             t={t}
             tc={tc}
           />
@@ -687,6 +689,7 @@ export function InventoryReportPage() {
             page={slowPage}
             pageSize={pageSize}
             onPageChange={setSlowPage}
+            onPageSizeChange={setPageSize}
             t={t}
             tc={tc}
           />
@@ -710,6 +713,7 @@ function StockMovementTable({
   page,
   pageSize,
   onPageChange,
+  onPageSizeChange,
   t,
   tc,
 }: {
@@ -719,6 +723,7 @@ function StockMovementTable({
   page: number
   pageSize: number
   onPageChange: (p: number) => void
+  onPageSizeChange: (size: number) => void
   t: ReturnType<typeof useTranslations>
   tc: ReturnType<typeof useTranslations>
 }) {
@@ -767,7 +772,13 @@ function StockMovementTable({
         </TableBody>
       </BusinessListTableShell>
       <div className="mt-4">
-        <PaginationControls currentPage={page} totalPages={Math.ceil(total / pageSize)} onPageChange={onPageChange} />
+        <PaginationControls
+          currentPage={page}
+          totalPages={Math.ceil(total / pageSize)}
+          onPageChange={onPageChange}
+          pageSize={pageSize}
+          onPageSizeChange={onPageSizeChange}
+        />
       </div>
     </>
   )
@@ -784,6 +795,7 @@ function AgingTable({
   page,
   pageSize,
   onPageChange,
+  onPageSizeChange,
   t,
   tc,
 }: {
@@ -793,6 +805,7 @@ function AgingTable({
   page: number
   pageSize: number
   onPageChange: (p: number) => void
+  onPageSizeChange: (size: number) => void
   t: ReturnType<typeof useTranslations>
   tc: ReturnType<typeof useTranslations>
 }) {
@@ -853,7 +866,13 @@ function AgingTable({
         </TableBody>
       </BusinessListTableShell>
       <div className="mt-4">
-        <PaginationControls currentPage={page} totalPages={Math.ceil(total / pageSize)} onPageChange={onPageChange} />
+        <PaginationControls
+          currentPage={page}
+          totalPages={Math.ceil(total / pageSize)}
+          onPageChange={onPageChange}
+          pageSize={pageSize}
+          onPageSizeChange={onPageSizeChange}
+        />
       </div>
     </>
   )
@@ -870,6 +889,7 @@ function SlowMovingTable({
   page,
   pageSize,
   onPageChange,
+  onPageSizeChange,
   t,
   tc,
 }: {
@@ -879,6 +899,7 @@ function SlowMovingTable({
   page: number
   pageSize: number
   onPageChange: (p: number) => void
+  onPageSizeChange: (size: number) => void
   t: ReturnType<typeof useTranslations>
   tc: ReturnType<typeof useTranslations>
 }) {
@@ -921,7 +942,13 @@ function SlowMovingTable({
         </TableBody>
       </BusinessListTableShell>
       <div className="mt-4">
-        <PaginationControls currentPage={page} totalPages={Math.ceil(total / pageSize)} onPageChange={onPageChange} />
+        <PaginationControls
+          currentPage={page}
+          totalPages={Math.ceil(total / pageSize)}
+          onPageChange={onPageChange}
+          pageSize={pageSize}
+          onPageSizeChange={onPageSizeChange}
+        />
       </div>
     </>
   )

@@ -40,7 +40,7 @@ export const COUNTRY_OPTIONS = [
   { value: 'OTHER', labelKey: 'country.OTHER' },
 ] as const
 
-const DEFAULT_PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 50
 
 export function CustomersContent() {
   const t = useTranslations('customers')

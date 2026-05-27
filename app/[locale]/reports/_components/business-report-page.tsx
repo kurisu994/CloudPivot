@@ -113,7 +113,7 @@ function makeSummaryFilter(
 export function BusinessReportPage({ kind }: { kind: ReportKind }) {
   const t = useTranslations(`reports.${kind}`)
   const tc = useTranslations('common')
-  const pageSize = 20
+  const [pageSize, setPageSize] = useState(50)
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('summary')
   const [refreshKey, setRefreshKey] = useState(0)
@@ -417,6 +417,7 @@ export function BusinessReportPage({ kind }: { kind: ReportKind }) {
             page={rankingPage}
             pageSize={pageSize}
             onPageChange={setRankingPage}
+            onPageSizeChange={setPageSize}
             t={t}
             tc={tc}
           />
@@ -429,6 +430,7 @@ export function BusinessReportPage({ kind }: { kind: ReportKind }) {
             page={detailPage}
             pageSize={pageSize}
             onPageChange={setDetailPage}
+            onPageSizeChange={setPageSize}
             t={t}
             tc={tc}
           />
@@ -514,6 +516,7 @@ function RankingTable({
   page,
   pageSize,
   onPageChange,
+  onPageSizeChange,
   t,
   tc,
 }: {
@@ -523,6 +526,7 @@ function RankingTable({
   page: number
   pageSize: number
   onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
   t: ReturnType<typeof useTranslations>
   tc: ReturnType<typeof useTranslations>
 }) {
@@ -559,7 +563,13 @@ function RankingTable({
         </TableBody>
       </BusinessListTableShell>
       <div className="mt-4">
-        <PaginationControls currentPage={page} totalPages={Math.ceil(total / pageSize)} onPageChange={onPageChange} />
+        <PaginationControls
+          currentPage={page}
+          totalPages={Math.ceil(total / pageSize)}
+          onPageChange={onPageChange}
+          pageSize={pageSize}
+          onPageSizeChange={onPageSizeChange}
+        />
       </div>
     </>
   )
@@ -572,6 +582,7 @@ function MaterialTable({
   page,
   pageSize,
   onPageChange,
+  onPageSizeChange,
   t,
   tc,
 }: {
@@ -581,6 +592,7 @@ function MaterialTable({
   page: number
   pageSize: number
   onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
   t: ReturnType<typeof useTranslations>
   tc: ReturnType<typeof useTranslations>
 }) {
@@ -619,7 +631,13 @@ function MaterialTable({
         </TableBody>
       </BusinessListTableShell>
       <div className="mt-4">
-        <PaginationControls currentPage={page} totalPages={Math.ceil(total / pageSize)} onPageChange={onPageChange} />
+        <PaginationControls
+          currentPage={page}
+          totalPages={Math.ceil(total / pageSize)}
+          onPageChange={onPageChange}
+          pageSize={pageSize}
+          onPageSizeChange={onPageSizeChange}
+        />
       </div>
     </>
   )

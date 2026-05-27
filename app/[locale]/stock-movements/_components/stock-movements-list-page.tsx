@@ -40,7 +40,7 @@ function Truncated({ text, className }: { text: string; className?: string }) {
   )
 }
 
-const DEFAULT_PAGE_SIZE = 20
+const DEFAULT_PAGE_SIZE = 50
 const COL_COUNT = 11
 
 /** 变动类型选项 */
@@ -110,7 +110,7 @@ export function StockMovementsListPage() {
 
   const [filters, setFilters] = useState<TransactionFilter>({ page: 1, pageSize: DEFAULT_PAGE_SIZE })
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
   const [warehouses, setWarehouses] = useState<WarehouseItem[]>([])
 
@@ -301,8 +301,14 @@ export function StockMovementsListPage() {
           tableClassName="min-w-[1400px]"
           footer={
             <BusinessListTableFooter>
-              <span>{t('totalItems', { total })}</span>
-              <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+              <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                pageSize={pageSize}
+                onPageSizeChange={setPageSize}
+              />
             </BusinessListTableFooter>
           }
         >

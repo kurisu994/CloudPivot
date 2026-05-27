@@ -22,7 +22,7 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', labelKey: 'statusCancelled' },
 ] as const
 
-const DEFAULT_PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 50
 
 interface PurchaseOrderListPageProps {
   onEdit: (id: number) => void

@@ -13,6 +13,7 @@ import {
   BusinessListTableShell,
 } from '@/components/common/business-list-table'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
+import { PaginationControls } from '@/components/common/pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -131,7 +132,7 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState<string>('all')
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(50)
 
   // 复制弹窗
   const [copyDialogOpen, setCopyDialogOpen] = useState(false)
@@ -278,21 +279,6 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
-  /** 分页器页码生成 */
-  const renderPages = () => {
-    const pages: (number | '...')[] = []
-    const maxVisible = 5
-    let start = Math.max(1, page - Math.floor(maxVisible / 2))
-    const end = Math.min(totalPages, start + maxVisible - 1)
-    if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1)
-    for (let i = start; i <= end; i++) pages.push(i)
-    if (end < totalPages) {
-      pages.push('...')
-      pages.push(totalPages)
-    }
-    return pages
-  }
-
   return (
     <div className="flex flex-col gap-6">
       {/* 页面标题 */}
@@ -353,57 +339,14 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
         footer={
           total > 0 ? (
             <BusinessListTableFooter>
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                <span className="font-medium">{t('table.totalRecords', { total: String(total) })}</span>
-                <Select
-                  value={pageSize.toString()}
-                  onValueChange={v => {
-                    if (v) {
-                      setPageSize(parseInt(v))
-                      setPage(1)
-                    }
-                  }}
-                  items={[
-                    { value: '20', label: t('table.perPage', { count: '20' }) },
-                    { value: '50', label: t('table.perPage', { count: '50' }) },
-                    { value: '100', label: t('table.perPage', { count: '100' }) },
-                  ]}
-                >
-                  <SelectTrigger className="h-7 w-[120px] text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="20">{t('table.perPage', { count: '20' })}</SelectItem>
-                    <SelectItem value="50">{t('table.perPage', { count: '50' })}</SelectItem>
-                    <SelectItem value="100">{t('table.perPage', { count: '100' })}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="ml-auto flex items-center gap-1">
-                <Button variant="ghost" size="icon-sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                  <ChevronLeft className="size-4" />
-                </Button>
-                {renderPages().map((p, idx) =>
-                  p === '...' ? (
-                    <span key={`dots-${idx}`} className="text-muted-foreground/50 px-2">
-                      …
-                    </span>
-                  ) : (
-                    <Button
-                      key={p}
-                      variant={page === p ? 'default' : 'ghost'}
-                      size="icon-sm"
-                      className="font-bold"
-                      onClick={() => setPage(p as number)}
-                    >
-                      {p}
-                    </Button>
-                  ),
-                )}
-                <Button variant="ghost" size="icon-sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-                  <ChevronRight className="size-4" />
-                </Button>
-              </div>
+              <span className="text-xs font-bold text-slate-400">{t('table.totalRecords', { total: String(total) })}</span>
+              <PaginationControls
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                pageSize={pageSize}
+                onPageSizeChange={setPageSize}
+              />
             </BusinessListTableFooter>
           ) : undefined
         }

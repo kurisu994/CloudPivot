@@ -23,7 +23,7 @@ import { formatAmount } from '@/lib/currency'
 import type { InboundOrderFilter, InboundOrderListItem, PurchaseOrderListItem } from '@/lib/tauri'
 import { getInboundOrders, getPurchaseOrders } from '@/lib/tauri'
 
-const DEFAULT_PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 50
 
 interface InboundListPageProps {
   onNewInbound: (purchaseId: number) => void
@@ -124,12 +124,6 @@ export function InboundListPage({ onNewInbound, onNewFreeInbound }: InboundListP
     [pendingPOs],
   )
 
-  const pageSizeItems = [
-    { value: '10', label: t('perPage', { count: '10' }) },
-    { value: '20', label: t('perPage', { count: '20' }) },
-    { value: '50', label: t('perPage', { count: '50' }) },
-  ]
-
   const inboundTypeLabel = (type: string) => {
     const map: Record<string, string> = {
       purchase: t('typePurchase'),
@@ -226,22 +220,14 @@ export function InboundListPage({ onNewInbound, onNewFreeInbound }: InboundListP
         tableClassName="min-w-[1100px]"
         footer={
           <BusinessListTableFooter>
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-              <span className="font-medium">{t('totalRecords', { count: total })}</span>
-              <Select value={pageSize.toString()} onValueChange={v => v && onPageSizeChange(parseInt(v))} items={pageSizeItems}>
-                <SelectTrigger className="h-7 w-[120px] text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {pageSizeItems.map(item => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
+            <span className="text-xs font-bold text-slate-400">{t('totalRecords', { count: total })}</span>
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+            />
           </BusinessListTableFooter>
         }
       >
@@ -292,13 +278,4 @@ export function InboundListPage({ onNewInbound, onNewFreeInbound }: InboundListP
       </BusinessListTableShell>
     </div>
   )
-
-  // 分页回调（在组件内部使用）
-  function onPageChange(p: number) {
-    setCurrentPage(p)
-  }
-  function onPageSizeChange(s: number) {
-    setPageSize(s)
-    setCurrentPage(1)
-  }
 }
