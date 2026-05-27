@@ -101,8 +101,6 @@ export function OperationLogsContent() {
   }, [fetchLogs])
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
-  const fromCount = total === 0 ? 0 : (page - 1) * pageSize + 1
-  const toCount = Math.min(page * pageSize, total)
 
   /** 获取用户缩写 */
   const getInitials = (name: string | null) => {
@@ -331,7 +329,7 @@ export function OperationLogsContent() {
 
         {/* 分页 */}
         <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/50">
-          <p className="text-xs font-bold text-slate-400">{t('showingRange', { from: fromCount, to: toCount, total })}</p>
+          <span className="text-xs font-bold text-slate-400">{t('totalRecords', { count: total })}</span>
           <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={setPage} pageSize={pageSize} onPageSizeChange={setPageSize} />
         </div>
       </section>

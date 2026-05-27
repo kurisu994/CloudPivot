@@ -288,6 +288,7 @@
       "loading": "加载中...",
       "noData": "暂无数据",
       "showingRange": "显示 {from} 到 {to} 条，共 {total} 条记录",
+      "totalRecords": "共 {count} 条记录",
       "actionCreate": "新建",
       "actionUpdate": "更新",
       "actionAudit": "审核",

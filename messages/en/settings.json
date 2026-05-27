@@ -288,6 +288,7 @@
       "loading": "Loading...",
       "noData": "No data",
       "showingRange": "Showing {from} to {to} of {total} entries",
+      "totalRecords": "Total {count} records",
       "actionCreate": "Create",
       "actionUpdate": "Update",
       "actionAudit": "Audit",

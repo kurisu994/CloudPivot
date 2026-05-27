@@ -288,6 +288,7 @@
       "loading": "Đang tải...",
       "noData": "Không có dữ liệu",
       "showingRange": "Hiển thị {from} đến {to}, tổng cộng {total} bản ghi",
+      "totalRecords": "Tổng {count} bản ghi",
       "actionCreate": "Tạo mới",
       "actionUpdate": "Cập nhật",
       "actionAudit": "Duyệt",
