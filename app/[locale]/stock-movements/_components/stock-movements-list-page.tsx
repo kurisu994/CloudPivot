@@ -17,8 +17,28 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { TransactionFilter, TransactionListItem, WarehouseItem } from '@/lib/tauri'
 import { getInventoryTransactions, getWarehouses } from '@/lib/tauri'
+
+/** 格式化数量显示，消除 JS 浮点精度噪声 */
+function fmtQty(v: number): string {
+  return Number(v.toFixed(6)).toString()
+}
+
+/** 截断 + Tooltip：列宽不足时省略号，hover 显示完整文本 */
+function Truncated({ text, className }: { text: string; className?: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={`block truncate ${className || ''}`}>{text}</span>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{text}</p>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
 
 const DEFAULT_PAGE_SIZE = 20
 const COL_COUNT = 11
@@ -183,154 +203,173 @@ export function StockMovementsListPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-foreground text-2xl font-bold">{t('title')}</h1>
-      </div>
-
-      {/* 筛选区 */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-[220px] flex-1">
-            <div className="relative">
-              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-              <Input
-                value={draftKeyword}
-                onChange={e => setDraftKeyword(e.target.value)}
-                placeholder={t('searchPlaceholder')}
-                className="pl-9"
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              />
-            </div>
-          </div>
-          <div className="w-[160px]">
-            <Select value={draftWarehouse} onValueChange={v => v && setDraftWarehouse(v)} items={warehouseItems}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {warehouseItems.map(i => (
-                  <SelectItem key={i.value} value={i.value}>
-                    {i.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="w-[140px]">
-            <Select value={draftType} onValueChange={v => v && setDraftType(v)} items={typeItems}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {typeItems.map(i => (
-                  <SelectItem key={i.value} value={i.value}>
-                    {i.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="w-[150px]">
-            <Select value={draftSource} onValueChange={v => v && setDraftSource(v)} items={sourceItems}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {sourceItems.map(i => (
-                  <SelectItem key={i.value} value={i.value}>
-                    {i.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="w-[150px]">
-            <Select value={draftBusinessType} onValueChange={v => v && setDraftBusinessType(v)} items={businessTypeItems}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {businessTypeItems.map(i => (
-                  <SelectItem key={i.value} value={i.value}>
-                    {i.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            <Input type="date" value={draftDateFrom} onChange={e => setDraftDateFrom(e.target.value)} className="w-[140px]" />
-            <span className="text-muted-foreground text-sm">~</span>
-            <Input type="date" value={draftDateTo} onChange={e => setDraftDateTo(e.target.value)} className="w-[140px]" />
-          </div>
-          <Button variant="outline" size="sm" onClick={handleReset}>
-            <RotateCcw data-icon="inline-start" />
-            {tc('reset')}
-          </Button>
-          <Button size="sm" onClick={handleSearch}>
-            <Search data-icon="inline-start" />
-            {tc('search')}
-          </Button>
+    <TooltipProvider>
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className="text-foreground text-2xl font-bold">{t('title')}</h1>
         </div>
-      </div>
 
-      {/* 表格 */}
-      <BusinessListTableShell
-        tableClassName="min-w-[1400px]"
-        footer={
-          <BusinessListTableFooter>
-            <span>{t('totalItems', { total })}</span>
-            <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-          </BusinessListTableFooter>
-        }
-      >
-        <TableHeader>
-          <TableRow>
-            <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[240px]`}>{t('transactionNo')}</TableHead>
-            <TableHead className="w-[100px]">{t('transactionDate')}</TableHead>
-            <TableHead className="w-[120px]">{t('transactionType')}</TableHead>
-            <TableHead className="w-[120px]">{ti('materialCode')}</TableHead>
-            <TableHead className="w-[140px]">{ti('materialName')}</TableHead>
-            <TableHead className="w-[100px]">{ti('warehouse')}</TableHead>
-            <TableHead className="w-[90px] text-right">{t('changeQty')}</TableHead>
-            <TableHead className="w-[80px] text-right">{t('beforeQty')}</TableHead>
-            <TableHead className="w-[80px] text-right">{t('afterQty')}</TableHead>
-            <TableHead className="w-[160px]">{t('relatedOrderNo')}</TableHead>
-            <TableHead className="w-[150px]">{t('source')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={COL_COUNT} />
-          ) : items.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={COL_COUNT} message={t('noRecords')} />
-          ) : (
-            items.map(item => (
-              <TableRow key={item.id} className="group">
-                <TableCell className={`${BUSINESS_LIST_STICKY_CELL_CLASS} font-mono text-sm`}>{item.transactionNo}</TableCell>
-                <TableCell className="text-sm">{item.transactionDate}</TableCell>
-                <TableCell>
-                  <Badge variant={item.quantity > 0 ? 'default' : 'secondary'}>
-                    {item.businessType ? getBusinessTypeLabel(item.businessType) : getTypeName(item.transactionType)}
-                  </Badge>
-                </TableCell>
-                <TableCell className="font-mono text-sm">{item.materialCode}</TableCell>
-                <TableCell>{item.materialName}</TableCell>
-                <TableCell>{item.warehouseName}</TableCell>
-                <TableCell className={`text-right font-mono ${item.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {item.quantity > 0 ? '+' : ''}
-                  {item.quantity}
-                </TableCell>
-                <TableCell className="text-right font-mono text-sm">{item.beforeQty}</TableCell>
-                <TableCell className="text-right font-mono text-sm">{item.afterQty}</TableCell>
-                <TableCell className="text-muted-foreground font-mono text-sm">{item.relatedOrderNo || '-'}</TableCell>
-                <TableCell className="text-sm">{getSourceLabel(item.sourceType) ?? '-'}</TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </BusinessListTableShell>
-    </div>
+        {/* 筛选区 */}
+        <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-[220px] flex-1">
+              <div className="relative">
+                <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                <Input
+                  value={draftKeyword}
+                  onChange={e => setDraftKeyword(e.target.value)}
+                  placeholder={t('searchPlaceholder')}
+                  className="pl-9"
+                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+            </div>
+            <div className="w-[160px]">
+              <Select value={draftWarehouse} onValueChange={v => v && setDraftWarehouse(v)} items={warehouseItems}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {warehouseItems.map(i => (
+                    <SelectItem key={i.value} value={i.value}>
+                      {i.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-[140px]">
+              <Select value={draftType} onValueChange={v => v && setDraftType(v)} items={typeItems}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {typeItems.map(i => (
+                    <SelectItem key={i.value} value={i.value}>
+                      {i.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-[150px]">
+              <Select value={draftSource} onValueChange={v => v && setDraftSource(v)} items={sourceItems}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sourceItems.map(i => (
+                    <SelectItem key={i.value} value={i.value}>
+                      {i.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-[150px]">
+              <Select value={draftBusinessType} onValueChange={v => v && setDraftBusinessType(v)} items={businessTypeItems}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {businessTypeItems.map(i => (
+                    <SelectItem key={i.value} value={i.value}>
+                      {i.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input type="date" value={draftDateFrom} onChange={e => setDraftDateFrom(e.target.value)} className="w-[140px]" />
+              <span className="text-muted-foreground text-sm">~</span>
+              <Input type="date" value={draftDateTo} onChange={e => setDraftDateTo(e.target.value)} className="w-[140px]" />
+            </div>
+            <Button variant="outline" size="sm" onClick={handleReset}>
+              <RotateCcw data-icon="inline-start" />
+              {tc('reset')}
+            </Button>
+            <Button size="sm" onClick={handleSearch}>
+              <Search data-icon="inline-start" />
+              {tc('search')}
+            </Button>
+          </div>
+        </div>
+
+        {/* 表格 */}
+        <BusinessListTableShell
+          tableClassName="min-w-[1400px]"
+          footer={
+            <BusinessListTableFooter>
+              <span>{t('totalItems', { total })}</span>
+              <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+            </BusinessListTableFooter>
+          }
+        >
+          <TableHeader>
+            <TableRow>
+              <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[240px]`}>{t('transactionNo')}</TableHead>
+              <TableHead className="w-[100px]">{t('transactionDate')}</TableHead>
+              <TableHead className="w-[120px]">{t('transactionType')}</TableHead>
+              <TableHead className="w-[120px]">{ti('materialCode')}</TableHead>
+              <TableHead className="w-[140px]">{ti('materialName')}</TableHead>
+              <TableHead className="w-[100px]">{ti('warehouse')}</TableHead>
+              <TableHead className="w-[90px] text-right">{t('changeQty')}</TableHead>
+              <TableHead className="w-[80px] text-right">{t('beforeQty')}</TableHead>
+              <TableHead className="w-[80px] text-right">{t('afterQty')}</TableHead>
+              <TableHead className="w-[160px]">{t('relatedOrderNo')}</TableHead>
+              <TableHead className="w-[150px]">{t('source')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={COL_COUNT} />
+            ) : items.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={COL_COUNT} message={t('noRecords')} />
+            ) : (
+              items.map(item => (
+                <TableRow key={item.id} className="group">
+                  <TableCell className={`${BUSINESS_LIST_STICKY_CELL_CLASS} font-mono text-sm`}>
+                    <Truncated text={item.transactionNo} />
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    <Truncated text={item.transactionDate} />
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={item.quantity > 0 ? 'default' : 'secondary'}>
+                      {item.businessType ? getBusinessTypeLabel(item.businessType) : getTypeName(item.transactionType)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">
+                    <Truncated text={item.materialCode} />
+                  </TableCell>
+                  <TableCell>
+                    <Truncated text={item.materialName} />
+                  </TableCell>
+                  <TableCell>
+                    <Truncated text={item.warehouseName} />
+                  </TableCell>
+                  <TableCell className={`text-right font-mono ${item.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <Truncated text={`${item.quantity > 0 ? '+' : ''}${fmtQty(item.quantity)}`} />
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm">
+                    <Truncated text={fmtQty(item.beforeQty)} />
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm">
+                    <Truncated text={fmtQty(item.afterQty)} />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground font-mono text-sm">
+                    <Truncated text={item.relatedOrderNo || '-'} />
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    <Truncated text={getSourceLabel(item.sourceType) ?? '-'} />
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
+    </TooltipProvider>
   )
 }
