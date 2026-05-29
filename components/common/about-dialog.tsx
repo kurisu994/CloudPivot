@@ -8,7 +8,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { isTauriEnv } from '@/lib/tauri/core'
 import { checkUpdate, downloadAndInstall, type UpdateInfo } from '@/lib/tauri/updater'
 
-const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '0.1.9'
+const FALLBACK_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '0.1.9'
 
 type CheckState = 'idle' | 'checking' | 'available' | 'latest' | 'downloading' | 'error'
 
@@ -28,6 +28,14 @@ export function AboutDialog() {
   const [state, setState] = useState<CheckState>('idle')
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
   const [downloadProgress, setDownloadProgress] = useState(0)
+  const [appVersion, setAppVersion] = useState(FALLBACK_VERSION)
+
+  useEffect(() => {
+    if (!isTauriEnv()) return
+    import('@tauri-apps/api/app').then(({ getVersion }) => {
+      getVersion().then(v => setAppVersion(v))
+    })
+  }, [])
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -112,7 +120,7 @@ export function AboutDialog() {
           </div>
 
           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-            {t('version')} {APP_VERSION}
+            {t('version')} {appVersion}
           </span>
         </div>
 

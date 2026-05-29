@@ -1,3 +1,4 @@
+import type { Update } from '@tauri-apps/plugin-updater'
 import { isTauriEnv } from './core'
 
 /** 更新信息 */
@@ -16,6 +17,9 @@ export interface UpdateProgress {
   total: number | null
 }
 
+// checkUpdate() 缓存的原始 Update 对象，供 downloadAndInstall() 复用
+let pendingUpdate: Update | null = null
+
 /**
  * 检查是否有可用更新
  *
@@ -28,6 +32,7 @@ export async function checkUpdate(): Promise<UpdateInfo> {
 
   const { check } = await import('@tauri-apps/plugin-updater')
   const update = await check()
+  pendingUpdate = update
 
   if (!update) {
     return { available: false }
@@ -44,13 +49,13 @@ export async function checkUpdate(): Promise<UpdateInfo> {
 /**
  * 下载并安装更新
  *
- * 下载完成后自动重启应用。
+ * 复用 checkUpdate() 缓存的 Update 对象，下载完成后自动重启应用。
  */
 export async function downloadAndInstall(onProgress?: (progress: UpdateProgress) => void): Promise<void> {
   if (!isTauriEnv()) return
 
-  const { check } = await import('@tauri-apps/plugin-updater')
-  const update = await check()
+  const update = pendingUpdate
+  pendingUpdate = null
   if (!update) return
 
   await update.downloadAndInstall(event => {
