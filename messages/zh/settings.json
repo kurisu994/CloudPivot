@@ -339,6 +339,19 @@
         "confirm_batch_movement": "确认自由出入库",
         "delete_batch_movement": "删除自由出入库"
       }
+    },
+    "about": {
+      "title": "关于",
+      "version": "版本",
+      "updateTitle": "软件更新",
+      "checkUpdate": "检查更新",
+      "checking": "正在检查...",
+      "isLatest": "当前已是最新版本",
+      "newVersion": "发现新版本 v{version}",
+      "downloadInstall": "下载并安装",
+      "downloading": "正在下载更新...",
+      "checkFailed": "检查更新失败，请稍后重试",
+      "copyright": "© {year} 云枢 (CloudPivot IMS). 保留所有权利。"
     }
   }
 }

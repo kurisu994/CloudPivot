@@ -7,6 +7,7 @@ mod commands;
 mod db;
 mod error;
 mod keychain;
+mod menu;
 mod operation_log;
 
 use db::DbState;
@@ -126,6 +127,14 @@ pub fn run() {
                     .build(),
             )?;
 
+            // 注册更新与进程插件
+            app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
+            app.handle().plugin(tauri_plugin_process::init())?;
+
+            // 构建原生菜单栏（默认中文，前端初始化后按实际语言刷新）
+            let app_menu = menu::build_menu(app.handle(), "zh")?;
+            app.set_menu(app_menu)?;
+
             // 注入当前用户状态（默认 admin）
             app.manage(commands::CurrentUser::default());
 
@@ -161,8 +170,13 @@ pub fn run() {
 
             Ok(())
         })
+        // 处理原生菜单点击事件
+        .on_menu_event(|app, event| {
+            menu::handle_menu_event(app, &event);
+        })
         // 注册 IPC 命令
         .invoke_handler(tauri::generate_handler![
+            menu::set_menu_locale,
             commands::ping,
             commands::get_db_init_error,
             commands::get_db_version,

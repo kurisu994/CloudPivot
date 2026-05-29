@@ -339,6 +339,19 @@
         "confirm_batch_movement": "Confirm Manual Stock Movement",
         "delete_batch_movement": "Delete Manual Stock Movement"
       }
+    },
+    "about": {
+      "title": "About",
+      "version": "Version",
+      "updateTitle": "Software Update",
+      "checkUpdate": "Check for Updates",
+      "checking": "Checking...",
+      "isLatest": "You are using the latest version",
+      "newVersion": "New version v{version} available",
+      "downloadInstall": "Download & Install",
+      "downloading": "Downloading update...",
+      "checkFailed": "Failed to check for updates, please try again later",
+      "copyright": "© {year} CloudPivot IMS. All rights reserved."
     }
   }
 }

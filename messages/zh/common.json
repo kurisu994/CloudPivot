@@ -93,13 +93,15 @@
     "dataManagement": "数据管理",
     "operationLogs": "操作日志",
     "appearance": "外观设置",
-    "userManagement": "用户管理"
+    "userManagement": "用户管理",
+    "about": "关于"
   },
   "header": {
     "search": "搜索功能、页面...",
     "notifications": "通知",
     "profile": "个人信息",
     "logout": "退出登录",
+    "about": "关于",
     "theme": "主题切换",
     "themeLight": "浅色模式",
     "themeDark": "深色模式",

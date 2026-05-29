@@ -339,6 +339,19 @@
         "confirm_batch_movement": "Xác nhận xuất nhập tự do",
         "delete_batch_movement": "Xóa xuất nhập tự do"
       }
+    },
+    "about": {
+      "title": "Giới thiệu",
+      "version": "Phiên bản",
+      "updateTitle": "Cập nhật phần mềm",
+      "checkUpdate": "Kiểm tra cập nhật",
+      "checking": "Đang kiểm tra...",
+      "isLatest": "Bạn đang sử dụng phiên bản mới nhất",
+      "newVersion": "Phiên bản mới v{version} có sẵn",
+      "downloadInstall": "Tải & Cài đặt",
+      "downloading": "Đang tải bản cập nhật...",
+      "checkFailed": "Kiểm tra cập nhật thất bại, vui lòng thử lại sau",
+      "copyright": "© {year} CloudPivot IMS. Bảo lưu mọi quyền."
     }
   }
 }

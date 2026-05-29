@@ -1,5 +1,7 @@
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, setRequestLocale } from 'next-intl/server'
+import { AboutDialog } from '@/components/common/about-dialog'
+import { NativeMenuBridge } from '@/components/common/native-menu-bridge'
 import { AppLayout } from '@/components/layout/app-layout'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import { DisplayPreferencesProvider } from '@/components/providers/display-preferences-provider'
@@ -38,6 +40,8 @@ export default async function LocaleLayout({ children, params }: { children: Rea
           </DisplayPreferencesProvider>
         </AuthProvider>
       </ThemeProvider>
+      <AboutDialog />
+      <NativeMenuBridge />
       <Toaster />
     </NextIntlClientProvider>
   )

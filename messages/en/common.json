@@ -93,13 +93,15 @@
     "dataManagement": "Data Management",
     "operationLogs": "Operation Logs",
     "appearance": "Appearance",
-    "userManagement": "User Management"
+    "userManagement": "User Management",
+    "about": "About"
   },
   "header": {
     "search": "Search features, pages...",
     "notifications": "Notifications",
     "profile": "Profile",
     "logout": "Logout",
+    "about": "About",
     "theme": "Toggle Theme",
     "themeLight": "Light",
     "themeDark": "Dark",

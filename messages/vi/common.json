@@ -93,13 +93,15 @@
     "dataManagement": "Quản lý dữ liệu",
     "operationLogs": "Nhật ký thao tác",
     "appearance": "Giao diện",
-    "userManagement": "Quản lý người dùng"
+    "userManagement": "Quản lý người dùng",
+    "about": "Giới thiệu"
   },
   "header": {
     "search": "Tìm kiếm chức năng, trang...",
     "notifications": "Thông báo",
     "profile": "Thông tin cá nhân",
     "logout": "Đăng xuất",
+    "about": "Giới thiệu",
     "theme": "Chuyển đổi giao diện",
     "themeLight": "Sáng",
     "themeDark": "Tối",

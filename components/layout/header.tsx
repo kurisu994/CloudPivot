@@ -1,9 +1,10 @@
 'use client'
 
-import { ChevronRight, LogOut, Monitor, Moon, Sun, User } from 'lucide-react'
+import { ChevronRight, Info, LogOut, Monitor, Moon, Sun, User } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useTheme } from 'next-themes'
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { openAboutDialog } from '@/components/common/about-dialog'
 import { useAuth } from '@/components/providers/auth-provider'
 import { navConfig } from '@/config/nav'
 import { Link, usePathname } from '@/i18n/navigation'
@@ -176,6 +177,16 @@ function UserMenu() {
 
       {open && (
         <div className="border-border bg-popover absolute top-full right-0 mt-1 w-44 rounded-lg border p-1 shadow-lg">
+          <button
+            onClick={() => {
+              setOpen(false)
+              openAboutDialog()
+            }}
+            className="text-popover-foreground hover:bg-accent flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors"
+          >
+            <Info className="h-4 w-4" />
+            <span>{t('header.about')}</span>
+          </button>
           <button
             onClick={() => {
               setOpen(false)
