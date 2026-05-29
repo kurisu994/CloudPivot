@@ -1,8 +1,8 @@
 # 云枢 (CloudPivot IMS) — 数据库设计
 
-> **版本**：v1.6 &nbsp;|&nbsp; **日期**：2026-05-29
+> **版本**：v1.7 &nbsp;|&nbsp; **日期**：2026-05-29
 
-> **当前代码对齐说明**：以 `src-tauri/migrations/postgres/*.sql` 为权威来源。当前 PostgreSQL 迁移链已包含 `001_init`、`002_seed_data`、`003_production_orders`、`004_drop_legacy_work_orders`、`005_manual_stock_movements`。本文全部 DDL 按 PostgreSQL 语法描述，与迁移脚本保持一致。
+> **当前代码对齐说明**：以 `src-tauri/migrations/postgres/*.sql` 为权威来源。当前 PostgreSQL 迁移链已包含 `001_init`、`002_seed_data`、`003_production_orders`、`004_drop_legacy_work_orders`、`005_manual_stock_movements`。当前有效业务表 48 张：001 初始化 45 张，003 新增 3 张生产工单表，004 删除旧 `work_orders` / `work_order_materials`，005 新增 2 张自由出入库表。本文全部 DDL 按 PostgreSQL 语法描述，与迁移脚本保持一致。
 
 ---
 
@@ -84,7 +84,9 @@ erDiagram
     %% ── 生产工单模块 ──
     BOM ||--o{ PRODUCTION_ORDERS : "生产执行"
     PRODUCTION_ORDERS ||--o{ PRODUCTION_ORDER_MATERIALS : "领料明细"
+    PRODUCTION_ORDERS ||--o{ PRODUCTION_COMPLETIONS : "完工记录"
     MATERIALS ||--o{ PRODUCTION_ORDER_MATERIALS : "被领料"
+    WAREHOUSES ||--o{ PRODUCTION_COMPLETIONS : "完工入库"
     CUSTOM_ORDERS ||--o{ PRODUCTION_ORDERS : "触发生产"
 
     %% ── 自由出入库草稿单据 ──
@@ -133,7 +135,7 @@ erDiagram
 
 > **关联约束策略**：`v1.0` 全表**不启用数据库级 `FOREIGN KEY` 约束**。所有关联关系仅在字段注释和代码模型中表达，完整性统一由 Rust service 层校验，迁移脚本保持无外键 DDL。
 
-> **PostgreSQL 迁移状态**：✅ 已完成。项目已完全迁移至 PostgreSQL，支持多终端局域网访问。当前使用 `migrations/postgres/` 目录下的迁移脚本，`migrations/sqlite/` 保留为历史参考。本文全部 DDL 采用 PostgreSQL 语法，与迁移脚本保持一致。
+> **PostgreSQL 迁移状态**：✅ 已完成。项目已完全迁移至 PostgreSQL，支持多终端局域网访问。当前使用 `src-tauri/migrations/postgres/` 目录下的迁移脚本，`src-tauri/migrations/sqlite/` 保留为历史参考。本文全部 DDL 采用 PostgreSQL 语法，与迁移脚本保持一致。
 
 > **应用层完整性校验清单**：service 层至少校验关联对象存在性、单据状态合法性、删除/禁用前引用检查、业务链路来源单一致性、仓库/批次/库存可用性以及历史快照写入完整性。
 
@@ -1561,12 +1563,14 @@ CREATE INDEX idx_oplog_operator ON operation_logs(operator_user_id);
 
 ```
 migrations/postgres/
-├── 001_init.sql                        # 初始化全部 45 张表 + 索引
-├── 002_seed_data.sql                   # 预置数据（分类、单位、系统配置等）
+├── 001_init.sql                        # 初始化 45 张基础表 + 索引
+├── 002_seed_data.sql                   # 预置数据（53 个系统配置项、初始汇率、常用单位）
 ├── 003_production_orders.sql           # 生产工单相关表
 ├── 004_drop_legacy_work_orders.sql     # 废弃旧 work_orders 表
 └── 005_manual_stock_movements.sql      # 自由出入库草稿单据表
 ```
+
+> 当前有效业务表为 48 张：001 的旧 `work_orders` / `work_order_materials` 已由 004 删除，003 的 `production_orders` / `production_order_materials` / `production_completions` 与 005 的 `manual_stock_movements` / `manual_stock_movement_items` 为当前增量表。
 
 迁移注意事项：
 
@@ -1579,7 +1583,7 @@ migrations/postgres/
 ```sql
 -- 数据库 Schema 版本跟踪（由应用在执行迁移脚本后自动写入）
 CREATE TABLE IF NOT EXISTS schema_migrations (
-  version    INTEGER PRIMARY KEY,              -- 迁移版本号
+  version    BIGINT PRIMARY KEY,               -- 迁移版本号
   name       TEXT NOT NULL,                    -- 迁移脚本名称
   applied_at TIMESTAMP DEFAULT NOW()           -- 执行时间
 );
@@ -1589,22 +1593,23 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
 #### PostgreSQL 连接初始化说明
 
-应用使用 `sqlx` + `deadpool-postgres` 连接池管理 PostgreSQL 连接。连接初始化由 `src-tauri/src/db.rs` 统一处理，无需手动执行 PRAGMA。关键配置项：
+应用使用 `sqlx::postgres::PgPoolOptions` 管理 PostgreSQL 连接。连接初始化由 `src-tauri/src/db/mod.rs` 统一处理，`build.rs` 从 `.env` 或环境变量拼接 `DATABASE_URL` 并编译期注入。关键配置项：
 
-- 连接池大小：根据并发需求自动管理
+- 连接池大小：主连接池 `max_connections = 5`；初始化失败时创建 1 连接的降级连接池并记录错误状态
+- 会话时区：每条连接在 `after_connect` 中执行 `SET TIME ZONE 'Asia/Ho_Chi_Minh'`
 - 事务隔离级别：默认 `READ COMMITTED`
 - 全表不启用数据库级 `FOREIGN KEY`，统一由 Rust service 层校验
 
 ### 3.3 数据量预估
 
 | 表                     | 预估年增量 | 5 年数据量 |
-| ---------------------- | ---------- | ---------- | --- |
+| ---------------------- | ---------- | ---------- |
 | materials              | 500        | 2,500      |
 | purchase_orders        | 1,000      | 5,000      |
 | sales_orders           | 2,000      | 10,000     |
 | inventory_transactions | 50,000     | 250,000    |
 | operation_logs         | 100,000    | 500,000    |
-| inventory_lots         | ~5,000     | ~25,000    | 低  |
+| inventory_lots         | ~5,000     | ~25,000    |
 
 PostgreSQL 在百万级数据量下有良好性能，配合适当的索引即可满足需求。
 
@@ -1620,7 +1625,7 @@ PostgreSQL 在百万级数据量下有良好性能，配合适当的索引即可
 | 金额存储 | `BIGINT` | 最小货币单位整数，与 Rust `i64` 对应 |
 | 状态约束 | `CHECK(status IN (...))` | 保持简单 CHECK，未引入自定义 ENUM |
 | 计算列 | `GENERATED ALWAYS AS ... STORED` | `available_qty`、`diff_qty`、`diff_amount`、`unpaid_amount` 等 |
-| 连接管理 | `sqlx` + `deadpool-postgres` | 连接池由 `src-tauri/src/db.rs` 统一管理 |
+| 连接管理 | `sqlx::postgres::PgPoolOptions` | 连接池由 `src-tauri/src/db/mod.rs` 统一管理 |
 | 事务隔离 | `READ COMMITTED` | 默认级别，库存操作使用 `FOR UPDATE` 行锁防止并发覆盖 |
 
 ---

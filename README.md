@@ -4,7 +4,7 @@
 
 > **工厂所在地**：🇻🇳 越南
 
-> **文档版本**：v2.3
+> **文档版本**：v2.4
 
 > **更新日期**：2026-05-29
 
@@ -22,7 +22,7 @@
 
 **一句话描述**：面向越南家具生产工厂的桌面端进销存管理系统，支持多语言（中/越/英）、多币种（VND/CNY/USD）、轻量批次追溯、定制单管理、智能补货等核心业务。
 
-**技术栈**：Tauri 2 + Next.js 16 + TypeScript + shadcn/ui + Tailwind CSS 4 + PostgreSQL
+**技术栈**：Tauri 2 + Next.js 16 + TypeScript + shadcn/ui base-nova（@base-ui/react）+ Tailwind CSS 4 + PostgreSQL
 
 **目标平台**：Windows 10/11、macOS
 
@@ -30,7 +30,7 @@
 
 **范围边界**：`v1.0` 提供业务单据、库存、报表、打印与基础财务辅助能力，不替代专业财务软件，也不等同于越南法定税务/发票系统。
 
-**当前实现说明**：业务路由与后端命令已覆盖采购、销售、库存、定制、工单、财务、报表和数据管理；侧边栏当前按阶段性策略仅开放部分入口，隐藏项的页面路由与 IPC 仍保留。`/settings/user-management` 当前为单管理员模式提示页，不是多账号管理页。
+**当前实现说明**：业务路由与后端命令已覆盖采购、销售、库存、定制、工单、财务、报表和数据管理；当前注册 163 个 Tauri IPC 命令。侧边栏按阶段性策略仅开放部分入口，隐藏项的页面路由与 IPC 仍保留。`/settings/user-management` 当前为单管理员模式提示页，不是多账号管理页。
 
 ## 功能模块一览
 
@@ -48,7 +48,7 @@
 📈 报表中心 — 采购报表、销售报表、库存报表、标准/实际毛利分析
 ⚙️ 系统设置 — 企业信息、编码规则、库存规则、汇率、打印、数据管理、操作日志、外观设置
 🌐 国际化 — 中/越/英三语切换、VND/CNY/USD 多币种
-🖨️ 打印模板 — 9 种固定单据模板、多语言/双语打印、PDF 导出
+🖨️ 打印设置 — 语言/双语组合、纸张、边距、Logo/企业信息开关；业务单据固定模板仍在后续收口
 ```
 
 ## 技术架构
@@ -239,7 +239,7 @@ src-tauri/                  # Rust 后端
       data_management.rs    # 数据管理命令：备份/恢复/导入导出（7 个命令）
   migrations/
     postgres/               # PostgreSQL 迁移文件（当前使用）
-      001_init.sql          # 建表迁移（45 张表 DDL）
+      001_init.sql          # 建表迁移（45 张基础表 DDL；003/004/005 后当前有效业务表 48 张）
       002_seed_data.sql     # 种子数据（系统配置、默认分类等）
       003_production_orders.sql # 生产工单增量迁移
       004_drop_legacy_work_orders.sql # 清理旧版 work_orders 表
@@ -251,7 +251,7 @@ src-tauri/                  # Rust 后端
       004_production_orders.sql # 生产工单表
       005_drop_legacy_work_orders.sql # 清理旧工单表
 .github/workflows/
-  ci.yml                    # CI 流水线：lint + test + 四平台构建验证
+  ci.yml                    # CI 流水线：lint + test + Linux Tauri 构建验证
   release.yml               # 发布流水线：tag 触发 → 四平台出包 → GitHub Release
 docs/                       # 设计文档（共约 6000 行）
 justfile                    # 任务运行器（just）
@@ -301,7 +301,7 @@ just clean                  # 清理构建产物
 - [x] 系统设置模块 — 「企业信息」及「显示偏好」页面 UI 及双向数据联调
 - [x] 首次使用向导 — 拦截新用户强制配置核心参数与基础仓库
 - [x] 品牌闪屏 — Splash Screen 加载动画组件
-- [x] Rust 数据库层 — PostgreSQL 连接池 + 迁移引擎 + 45 张表（从 SQLite 迁移至 PostgreSQL）
+- [x] Rust 数据库层 — PostgreSQL 连接池 + 迁移引擎 + 当前有效业务表 48 张（从 SQLite 迁移至 PostgreSQL）
 - [x] IPC 通信层 — ping / db_version / 认证命令
 - [x] 用户认证 — bcrypt + 锁定 + 改密 + AuthProvider + 路由守卫
 - [x] 前端工具库 — 多币种格式化 + 系统配置类型
@@ -339,7 +339,7 @@ just clean                  # 清理构建产物
 
 **阶段五**（工程化）：✅ 已完成
 
-- [x] CI/CD 流水线 — GitHub Actions 四平台自动化检查与构建
+- [x] CI/CD 流水线 — GitHub Actions 常规 CI（lint/test/Linux 构建验证）+ tag Release 四平台出包
 - [x] 安装包构建与分发 — tag 触发出包 + Updater 签名 + `just release` 一键发布
 
 ## 路线图
