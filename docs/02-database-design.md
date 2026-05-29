@@ -1,6 +1,8 @@
 # 云枢 (CloudPivot IMS) — 数据库设计
 
-> **版本**：v1.4 &nbsp;|&nbsp; **日期**：2026-03-30
+> **版本**：v1.5 &nbsp;|&nbsp; **日期**：2026-05-29
+
+> **当前代码对齐说明**：以 `src-tauri/migrations/postgres/*.sql` 为权威来源。当前 PostgreSQL 迁移链已包含 `001_init`、`002_seed_data`、`003_production_orders`、`004_drop_legacy_work_orders`、`005_manual_stock_movements`；本文涉及生产工单、自定义出入库与认证相关结构时，均按当前有效结构描述。
 
 ---
 
@@ -80,10 +82,15 @@ erDiagram
     BOM ||--o{ CUSTOM_ORDERS : "参考/定制BOM"
 
     %% ── 生产工单模块 ──
-    BOM ||--o{ WORK_ORDERS : "生产执行"
-    WORK_ORDERS ||--o{ WORK_ORDER_MATERIALS : "领料明细"
-    MATERIALS ||--o{ WORK_ORDER_MATERIALS : "被领料"
-    CUSTOM_ORDERS ||--o{ WORK_ORDERS : "触发生产"
+    BOM ||--o{ PRODUCTION_ORDERS : "生产执行"
+    PRODUCTION_ORDERS ||--o{ PRODUCTION_ORDER_MATERIALS : "领料明细"
+    MATERIALS ||--o{ PRODUCTION_ORDER_MATERIALS : "被领料"
+    CUSTOM_ORDERS ||--o{ PRODUCTION_ORDERS : "触发生产"
+
+    %% ── 自由出入库草稿单据 ──
+    WAREHOUSES ||--o{ MANUAL_STOCK_MOVEMENTS : "发生于"
+    MANUAL_STOCK_MOVEMENTS ||--o{ MANUAL_STOCK_MOVEMENT_ITEMS : "包含明细"
+    MATERIALS ||--o{ MANUAL_STOCK_MOVEMENT_ITEMS : "被手工出入库"
 
     %% ── 智能补货模块 ──
     MATERIALS ||--o{ REPLENISHMENT_RULES : "补货规则"
@@ -1398,28 +1405,29 @@ CREATE INDEX idx_rl_status ON replenishment_logs(status);
 
 ```sql
 CREATE TABLE users (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    id                  BIGSERIAL PRIMARY KEY,
     username            TEXT    NOT NULL UNIQUE,         -- 登录账号
     display_name        TEXT    NOT NULL,                -- 显示名
     password_hash       TEXT    NOT NULL,                -- bcrypt 哈希
     role                TEXT    NOT NULL CHECK (role IN ('admin', 'operator')),
                                                        -- admin=管理员 operator=操作员
-    is_enabled          INTEGER DEFAULT 1,               -- 是否启用
-    must_change_password INTEGER DEFAULT 1,              -- 首次登录强制改密
+    is_enabled          BOOLEAN DEFAULT TRUE,            -- 是否启用
+    must_change_password BOOLEAN DEFAULT TRUE,           -- 首次登录强制改密
     failed_login_count  INTEGER DEFAULT 0,               -- 连续失败次数
     locked_until        TEXT,                            -- 锁定截止时间
     password_changed_at TEXT,                            -- 最近改密时间
     session_version     INTEGER DEFAULT 1,               -- 本地会话版本号，改密后递增
     last_login_at       TEXT,
-    created_at          TEXT    DEFAULT (datetime('now')),
-    updated_at          TEXT    DEFAULT (datetime('now'))
+    created_at          TIMESTAMP DEFAULT NOW(),
+    updated_at          TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_enabled ON users(is_enabled);
 
--- 初始管理员账号由应用初始化逻辑写入（默认 admin / 初始密码 admin123，首次登录强制改密）
--- v1.0 仅此一条记录（单帐号模式），v2.0 启用多帐号后可通过用户管理页面新增用户
+-- 初始管理员账号由应用初始化逻辑写入（默认 admin，首次登录强制改密）
+-- v1.0 当前仅使用 admin 单帐号；代码保留 /settings/user-management 提示页，
+-- 但未开放真实用户 CRUD，多帐号能力仍按 v2.0 规划推进
 ```
 
 #### system_config — 系统配置

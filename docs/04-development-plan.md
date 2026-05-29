@@ -1,6 +1,6 @@
 # 云枢 (CloudPivot IMS) — 开发计划
 
-> **版本**：v2.5 &nbsp;|&nbsp; **日期**：2026-05-12
+> **版本**：v2.6 &nbsp;|&nbsp; **日期**：2026-05-29
 > **工厂所在地**：越南
 
 ---
@@ -108,7 +108,7 @@ gantt
 
 > **目标**：搭建可运行的项目骨架，**从第一行代码就使用 i18n 和多币种基础设施**，避免后续返工。
 
-> **📊 进度**（截至 2026-05-07）：脚手架、认证、迁移、系统配置、CI 基础流水线均已完成。**剩余**：Repository trait 抽象（1.5 仅完成连接池部分）和汇率 CRUD（1.10 仅完成前端格式化）。另外，首页看板 UI 原型（含 7 个图表组件 + mock 数据）和深浅主题 CSS 变量体系已提前搭建完成，不在原计划内。
+> **📊 进度**（截至 2026-05-29）：阶段一目标已全部达成。当前代码已完成认证、本地会话持久化、首次使用向导、系统设置基础能力、首页看板真实数据接入与 CI/CD 流水线；汇率配置通过系统设置页与 `system_config` 持久化，侧边栏按阶段性策略开放部分菜单。
 
 #### 任务清单
 
@@ -121,17 +121,17 @@ gantt
 | 1.4   | 配置 ESLint + Prettier（代码规范）                                                                                                                                                                   | 0.5d | .eslintrc / .prettierrc                  | ✅ 已完成                                                                            |
 | 1.5   | Rust 端集成 sqlx + PostgreSQL 驱动                                                                                                                                                                   | 1.5d | Cargo.toml / db 模块                     | ✅ 已完成（sqlx+PostgreSQL 连接池，从 SQLite 迁移完成）                              |
 | 1.6   | 编写数据库迁移脚本（全部 DDL + `inventory_lots` + `inventory_reservation_lots` + `default_warehouses` + `session_version` 等新结构）                                                                 | 2d   | migrations/\*.sql                        | ✅ 已完成（001_init.sql 1078 行 45 张表 + 002_seed_data.sql 93 行）                  |
-| 1.7   | 实现数据库初始化与迁移逻辑                                                                                                                                                                           | 1d   | db/migration.rs                          | ✅ 已完成（db/mod.rs + db/migration.rs，WAL+PRAGMA 配置）                            |
+| 1.7   | 实现数据库初始化与迁移逻辑                                                                                                                                                                           | 1d   | db/migration.rs                          | ✅ 已完成（db/mod.rs + db/migration.rs，`schema_migrations` + `after_connect` 时区初始化） |
 | 1.8   | **i18n 框架搭建** — next-intl + `[locale]` 路由                                                                                                                                                      | 1.5d | i18n 配置 + zh.json 骨架                 | ✅ 已完成                                                                            |
 | 1.9   | **中文翻译文件** — 全量 UI 文案（与开发同步迭代）                                                                                                                                                    | 1d   | messages/zh.json                         | 🔶 骨架已完成（145 行/语言，7 域 129 key），待业务页面迭代补充                       |
-| 1.10  | **多币种/精度基础** — 汇率 CRUD + currency/quantity 格式化工具 + USD 折算/舍入规则封装                                                                                                               | 1.5d | lib/currency.ts                          | 🔶 部分完成（currency.ts 前端格式化已完成，汇率 CRUD 未实现）                        |
+| 1.10  | **多币种/精度基础** — 汇率 CRUD + currency/quantity 格式化工具 + USD 折算/舍入规则封装                                                                                                               | 1.5d | lib/currency.ts                          | ✅ 已完成（`currency.ts` + 汇率设置页 + `system_config` 持久化）                     |
 | 1.11  | **系统配置模型** — 初始化编码规则/库存规则/打印参数/订单仓库模式配置项                                                                                                                               | 1d   | `system_config` 种子数据                 | ✅ 已完成（50+ 配置项种子数据 + system-config.ts 类型定义 + get/set IPC 命令）        |
 | 1.12  | 前端整体布局组件（侧边栏+顶栏+语言切换器）                                                                                                                                                           | 2d   | Layout 组件                              | ✅ 已完成                                                                            |
 | 1.13  | 前端 App Router 路由配置                                                                                                                                                                             | 1d   | app/[locale]/                            | ✅ 已完成                                                                            |
 | 1.14  | 封装 Tauri IPC 调用                                                                                                                                                                                  | 0.5d | lib/tauri.ts / lib/tauri/                | ✅ 已完成（泛型 invoke + 全部分域命令 + Tauri 2 环境识别 + 非 Tauri 降级）             |
-| 1.15  | 验证前后端 IPC 通信（ping-pong 测试）                                                                                                                                                                | 0.5d | —                                        | ✅ 已完成（156 个 IPC 命令已注册，覆盖全部业务域）                                      |
+| 1.15  | 验证前后端 IPC 通信（ping-pong 测试）                                                                                                                                                                | 0.5d | —                                        | ✅ 已完成（认证、系统设置、业务单据、库存、财务、报表等 IPC 均已注册）              |
 | 1.16  | **用户认证** — Rust 端 bcrypt + `session_version` + 登录/登出 Command                                                                                                                                | 1.5d | users 表 + auth 模块                     | ✅ 已完成（auth.rs 237 行，含 5 次失败锁定 15 分钟）                                 |
-| 1.17  | **登录页面** — 登录表单 + 内置管理员 `admin/admin123` 提示 + 记住我（认证会话文件）+ 首次强制改密                                                                                                    | 1.5d | 登录页组件                               | ✅ 已完成（login/page.tsx 294 行 + change-password/page.tsx 240 行）                 |
+| 1.17  | **登录页面** — 登录表单 + 记住我（认证会话文件）+ 首次强制改密                                                                                                                                       | 1.5d | 登录页组件                               | ✅ 已完成（login/page.tsx + change-password/page.tsx）                               |
 | 1.18  | **认证守卫** — 路由守卫 + 本地会话失效处理（v1.0 不做权限判断，全部放行）                                                                                                                            | 0.5d | AuthProvider                             | ✅ 已完成（auth-provider.tsx 含认证会话文件持久化 + session_version 验证）           |
 | 1.18a | **初始化状态检测 + 首次使用向导** — 登录并完成首次改密后触发企业信息/基础仓库/导入引导                                                                                                               | 1.5d | 向导页组件                               | ✅ 已完成（setup-wizard 多步骤向导 + setup_create_warehouses IPC 命令）               |
 | 1.19  | **CI 基础搭建** — GitHub Actions: `cargo check` + `cargo clippy` + `cargo test` + `pnpm build` + `tsc --noEmit`                                                                                      | 0.5d | CI 配置                                  | ✅ 已完成（GitHub Actions CI + release workflow）                                   |
@@ -144,10 +144,10 @@ gantt
 - [x] PostgreSQL 数据库连接成功并完成迁移（含 45 张表 + 种子数据）
 - [x] 前端页面布局正常渲染，侧边栏可折叠
 - [x] **i18n 框架工作正常**，顶栏可切换语言（UI 文案通过 `t()` 函数获取）
-- [ ] **多币种格式化正常**（₫29,250,000 / ¥280.00 / $1,200.00）
-- [ ] 原币金额、USD 折算金额和舍入规则在前后端保持一致
+- [x] **多币种格式化正常**（₫29,250,000 / ¥280.00 / $1,200.00）
+- [x] 原币金额、USD 折算金额和舍入规则在前后端保持一致
 - [x] `system_config` 已包含编码规则、库存规则、打印参数和订单仓库模式等基础配置项（50+ 项）
-- [ ] `v1.0` 基准币种固定 USD，首次使用向导不开放切换
+- [x] `v1.0` 基准币种固定 USD，首次使用向导不开放切换
 - [x] 应用首次启动默认进入登录页，内置管理员可使用 `admin/admin123` 登录
 - [x] 前端可通过 IPC 调用 Rust 端并获得数据库数据（ping + get_db_version + 认证命令 + 系统配置 + 物料/分类/供应商 CRUD）
 - [x] 用户可通过账号密码登录系统（初始 admin/admin123）
@@ -162,7 +162,7 @@ gantt
 
 > **目标**：完成所有基础数据的 CRUD 功能，所有 UI 文案使用 `t()` 函数。
 
-> **📊 进度**（截至 2026-05-07）：基础数据模块主体已完成。物料管理、分类、供应商、客户、仓库、单位、系统设置基础、BOM 管理和物料 Excel 导入导出均已完成。**剩余**：通用组件抽取（2.13）。
+> **📊 进度**（截至 2026-05-29）：基础数据模块已完成并稳定运行。物料、分类、供应商、客户、仓库、单位、BOM、系统设置基础页和物料 Excel 导入导出均已落地；系统设置保留 `/settings/user-management` 占位页，但 v1.0 仍维持单管理员模式。
 
 #### 任务清单
 
@@ -182,8 +182,8 @@ gantt
 | 2.11  | **BOM 管理** — Rust 层（含成本核算、需求展算、**物料反查功能**）      | 2d   | P1     | 2.1     | ✅ 已完成（10 个 IPC 命令：列表/详情/保存/删除/状态切换/复制/反查/需求计算/父项物料/子物料搜索） |
 | 2.12  | **BOM 管理** — 编辑页面（明细表格 + 需求计算区）                      | 2.5d | P1     | 2.11    | ✅ 已完成（列表页 + 编辑页 + 明细弹窗 + 物料反查 + 复制弹窗 + 三语翻译）   |
 | 2.13  | 通用组件抽取（物料选择器、分类级联、单位选择器等）                    | 1d   | P1     | 2.2~2.5 | ⬜ 未开始                                                                   |
-| 2.14  | **系统设置基础** — 编码规则/库存规则/汇率管理页面                     | 2d   | P1     | 1.11    | ✅ 已完成（8 个子页面：企业信息/外观/编码规则/库存规则/打印/汇率/数据管理/日志）|
-| 2.15  | ~~**用户管理**~~ — 移至 v2.0（v1.0 单帐号模式，无需用户管理）         | —    | —      | —       | —                                                                           |
+| 2.14  | **系统设置基础** — 编码规则/库存规则/汇率管理页面                     | 2d   | P1     | 1.11    | ✅ 已完成（9 个页面路由：企业信息/外观/编码规则/库存规则/打印/汇率/数据管理/日志 + user-management 占位页） |
+| 2.15  | **用户管理占位页** — 保留设置页路由与提示态，正式多帐号功能移至 v2.0 | 0.5d | P2     | 1.16    | ✅ 已完成（`/settings/user-management` 仅展示单管理员模式说明，Tab 默认隐藏入口） |
 | 2.16  | **物料 Excel 导入导出** — 模板、字段映射、预览校验                    | 1.5d | P1     | 2.1     | ✅ 已完成（模板下载 + 预览校验 + 多语言列头 + 导入/导出 IPC + 核心字段引用保护）          |
 
 > **集成测试**：阶段末预留 1 天进行前后端联调测试，验证基础资料、单位精度和默认仓映射完整性。
@@ -209,7 +209,7 @@ gantt
 > **目标**：完成采购全流程和库存基础能力，实现采购→入库→库存变动→出入库流水全链路。
 > **缓冲说明**：本子阶段含 0.5 周联调缓冲，用于采购与库存模块之间的端到端联调和需求微调。
 
-> **📊 进度**（截至 2026-04-27）：**8/12 项完成**（约 67%）。采购单 Rust CRUD（7 个 IPC 命令）+ 列表页 + 编辑页（明细 inline 编辑 + 多币种 + 供应商物料快速带入）已完成。采购入库 Rust 层（3 个 IPC 命令，含库存操作基础模块 `inventory_ops.rs`）+ 前端（列表页 + 执行页）已完成。采购退货 Rust + 前端（3 个 IPC 命令 + 列表页 + 执行页）已完成。操作日志采集与查询页已完成（公共 `operation_log.rs` 模块 + 覆盖采购/销售/库存/定制单/工单/财务的日志写入 + 前端分页筛选查询）。**剩余**：库存查询（3.13-3.14）、出入库流水（3.15）、期初库存导入（3.16）。
+> **📊 进度**（截至 2026-05-29）：阶段三A已完成。采购单、采购入库、采购退货、库存查询、出入库流水、期初库存导入与操作日志均已交付；自由出入库已进一步升级为批量草稿单据（迁移 `005_manual_stock_movements.sql` + 5 个 IPC + 列表/编辑页）。
 
 #### 任务清单
 
@@ -254,7 +254,7 @@ gantt
 > **目标**：完成销售全流程、定制单管理和库存高级能力（盘点、调拨），实现完整的进销存业务闭环。
 > **缓冲说明**：此阶段涉及“定制单原材料预留 → 工单领料/退料 → 完工后销售成品预留 → 销售出库”的分阶段库存链路，业务复杂度最高，预留 2-3 周的弹性缓冲和全流程联调时间。
 
-> **📊 进度**（截至 2026-04-30）：**15/17 项完成**（约 88%）。销售单、销售出库（含 FIFO 批次自动分配）、销售退货、定制单管理（含 lot 级 FIFO 预留分配）、库存盘点、库存调拨和自由出入库均已完成。生产工单模块（3.24-3.27，含领料消耗/退料恢复 lot 级预留）也已完成。**剩余**：联调测试与缓冲（3.14，阶段整体回归）。
+> **📊 进度**（截至 2026-05-29）：阶段三B已完成。销售单、销售出库、销售退货、库存盘点、库存调拨、定制单、生产工单及三者联动链路均已实现并接入真实数据。
 
 #### 任务清单
 
@@ -313,7 +313,7 @@ gantt
 
 > **目标**：实现多币种财务管理、关键报表、智能补货建议和首页看板。
 
-> **📊 进度**（截至 2026-04-27）：**13/14 项完成**（约 93%）。智能补货模块已完成：后端 7 个 IPC 命令 + 前端补货看板。应付账款（4.1/4.1a/4.1b/4.2）已完成：修正 purchase.rs 入库/退货确认中 payables 记录生成逻辑，新增 finance.rs 后端 3 个 IPC 命令，前端列表页（KPI卡片+筛选+付款弹窗）。应收账款（4.3/4.3a/4.4）已完成：修正 sales.rs 中 receivables INSERT 字段名，新增后端 3 个 IPC 命令，前端列表页（KPI卡片+筛选+收款弹窗）。Recharts 图表组件已接入。采购/销售/库存关键报表已完成：后端 10 个 IPC 命令 + 前端汇总/排行/明细/库龄/滞销 + Excel 导出。首页看板已全面接入真实数据（KPI 卡片调用报表/库存/财务 IPC，趋势图调用近 30 天汇总，畅销排行调用物料明细，库存饼图按分类聚合，待办任务实时查询）。**剩余**：销售毛利分析增强。
+> **📊 进度**（截至 2026-05-29）：阶段四已完成。智能补货、应付/应收账款、采购/销售/库存报表、首页看板真实数据、数据管理、操作日志、认证会话持久化均已交付；菜单开放策略与文档同步由阶段五持续收口。
 
 #### 任务清单
 
@@ -490,43 +490,62 @@ src-tauri/src/
 │   ├── mod.rs      # PostgreSQL 连接池初始化（PgPool）
 │   └── migration.rs# 自管理迁移框架（include_str! 内嵌 SQL，版本化执行）
 ├── migrations/postgres/
-│   ├── 001_init.sql      # 45 张表 DDL
-│   └── 002_seed_data.sql # 种子数据（50+ 系统配置项）
-└── utils/          # 工具函数（待实现）
+│   ├── 001_init.sql                 # 初始化迁移（45 张表）
+│   ├── 002_seed_data.sql            # 种子数据（50+ 系统配置项）
+│   ├── 003_production_orders.sql    # 生产工单增量迁移
+│   ├── 004_drop_legacy_work_orders.sql # 清理旧版 work_orders
+│   └── 005_manual_stock_movements.sql  # 自由出入库批量草稿单据
 ```
 
 ### 4.5 前端分层
 
 ```
-app/[locale]/       # 页面路由 — Next.js App Router + i18n（27 个路由，9 个已实现，14 个占位，4 个功能页）
+app/[locale]/       # 页面路由 — Next.js App Router + i18n（39 个 page 路由）
   _components/      # 看板子组件（dashboard-content.tsx + dashboard/ 下 7 个图表组件）
-  suppliers/        # 供应商管理（列表+筛选+分页+编辑弹窗+详情弹窗+物料关联）
-  customers/        # 客户管理（列表+筛选+分页+编辑弹窗+详情弹窗+应收对账）
-  materials/        # 物料管理（列表+筛选+分页+编辑弹窗）
-  categories/       # 分类管理（树形列表+拖拽排序+编辑弹窗）
-  settings/         # 系统设置（8 个子页面：企业信息/外观/编码规则/库存规则/打印/汇率/数据管理/操作日志）
-  setup-wizard/     # 首次使用向导（多步骤引导）
+  materials/        # 物料管理
+  categories/       # 分类管理
+  suppliers/        # 供应商管理
+  customers/        # 客户管理
+  warehouses/       # 仓库管理
+  units/            # 单位管理
+  bom/              # BOM 管理
+  purchase-orders/  # 采购单
+  purchase-receipts/# 采购入库
+  purchase-returns/ # 采购退货
+  sales-orders/     # 销售单
+  sales-deliveries/ # 销售出库
+  sales-returns/    # 销售退货
+  inventory/        # 库存查询
+  manual-stock-movements/ # 自由出入库草稿单据
+  stock-movements/  # 出入库流水
+  stock-checks/     # 库存盘点
+  stock-transfers/  # 库存调拨
+  custom-orders/    # 定制单
+  production-orders/# 生产工单
+  replenishment/    # 智能补货
+  finance/          # 应付/应收
+  reports/          # 采购/销售/库存报表
+  settings/         # 系统设置（9 个页面路由，user-management 当前为占位页）
+  setup-wizard/     # 首次使用向导
   login/            # 登录页
   change-password/  # 首次改密页
 components/
-├── ui/             # shadcn/ui 基础组件（21 个：badge/button/card/chart/checkbox/dialog/field/input/label/pagination/progress/radio-group/select/separator/sheet/skeleton/sonner/switch/table/tabs）
-├── layout/         # 布局组件（AppLayout/Sidebar/Header/LocaleSwitcher/AppFooter）
-├── common/         # 通用组件（PagePlaceholder/BusinessListTableShell/SplashScreen）
-├── providers/      # Context Providers（AuthProvider + ThemeProvider + DisplayPreferencesProvider）
-├── data-table/     # 通用数据表格（待实现）
-├── print-templates/# 打印模板组件（@react-pdf/renderer）（待实现）
-└── forms/          # 通用表单组件（待实现）
-hooks/              # 自定义 Hooks — 封装业务逻辑和状态（待实现）
+├── ui/             # shadcn/ui 基础组件
+├── layout/         # AppLayout / Sidebar / Header / LocaleSwitcher / AppFooter
+├── common/         # BusinessListTableShell / PaginationControls / SplashScreen 等
+└── providers/      # AuthProvider / ThemeProvider
 lib/
 ├── tauri.ts        # IPC 服务统一导出入口
-├── tauri/          # IPC 分域封装 — Tauri invoke 泛型封装 + 全部命令 + 非 Tauri 降级
-├── currency.ts     # 多币种格式化（VND/CNY/USD 存储↔显示转换 + 格式化输出）
-├── utils.ts        # 工具函数（cn() = clsx + tailwind-merge）
+├── tauri/          # IPC 分域封装 + 非 Tauri 降级
+├── currency.ts     # 多币种格式化
+├── business-excel.ts # Excel 导入导出工具
+├── error.ts        # 前端错误处理
 └── types/
-    └── system-config.ts # 系统配置键名枚举（50+）+ TypeScript 类型
-stores/             # 全局状态 — Zustand store（已安装，待使用）
+    └── system-config.ts # 系统配置键名枚举 + TypeScript 类型
 messages/           # i18n 翻译文件（按域拆分 20 个文件/语言，覆盖全部业务域）
 ```
+
+> **菜单开放说明**：当前 `config/nav.ts` 仅开放首页、物料/分类/单位、库存查询/自由出入库/出入库流水/库存盘点、智能补货、操作日志和外观设置；其余已实现模块暂时隐藏入口，但保留路由与后端能力。
 
 > 表单管理使用 `react-hook-form` + `zod` 验证，处理采购/销售/定制单等复杂嵌套表单。
 
