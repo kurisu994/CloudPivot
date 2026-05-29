@@ -1,8 +1,8 @@
 //! 原生菜单栏：构建、国际化、事件分发
 
 use tauri::{
-    menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
     AppHandle, Emitter, Wry,
+    menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
 };
 
 const MENU_ABOUT: &str = "menu_about";

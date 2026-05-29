@@ -128,7 +128,8 @@ pub fn run() {
             )?;
 
             // 注册更新与进程插件
-            app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
             app.handle().plugin(tauri_plugin_process::init())?;
 
             // 构建原生菜单栏（默认中文，前端初始化后按实际语言刷新）
