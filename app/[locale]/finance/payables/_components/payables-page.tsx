@@ -8,6 +8,7 @@ import { BusinessListTableEmptyRow, BusinessListTableLoadingRows, BusinessListTa
 import { PaginationControls } from '@/components/common/pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -384,7 +385,7 @@ export function PayablesPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>{t('payables.dialog.paymentDate')} *</Label>
-              <Input type="date" value={payDate} onChange={e => setPayDate(e.target.value)} />
+              <DatePicker value={payDate} onChange={setPayDate} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>{t('payables.dialog.paymentMethod')}</Label>

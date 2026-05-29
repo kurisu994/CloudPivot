@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -738,19 +739,11 @@ export function SupplierDialog({ open, onOpenChange, supplierId, onSaved }: Supp
               </Field>
               <Field>
                 <FieldLabel>{t('validFrom')}</FieldLabel>
-                <Input
-                  type="date"
-                  value={materialForm.validFrom}
-                  onChange={event => setMaterialForm(prev => ({ ...prev, validFrom: event.target.value }))}
-                />
+                <DatePicker value={materialForm.validFrom} onChange={value => setMaterialForm(prev => ({ ...prev, validFrom: value }))} />
               </Field>
               <Field>
                 <FieldLabel>{t('validTo')}</FieldLabel>
-                <Input
-                  type="date"
-                  value={materialForm.validTo}
-                  onChange={event => setMaterialForm(prev => ({ ...prev, validTo: event.target.value }))}
-                />
+                <DatePicker value={materialForm.validTo} onChange={value => setMaterialForm(prev => ({ ...prev, validTo: value }))} />
               </Field>
               <Field className="col-span-2">
                 <FieldLabel>{t('remark')}</FieldLabel>

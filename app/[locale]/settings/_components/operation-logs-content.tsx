@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
 import { PaginationControls } from '@/components/common/pagination'
 import { Button } from '@/components/ui/button'
+import { DateRangePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -210,11 +211,15 @@ export function OperationLogsContent() {
               <CalendarDays className="mr-1 size-3.5" />
               {t('dateRange')}
             </Label>
-            <div className="flex items-center gap-2">
-              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-10 bg-slate-50 dark:bg-slate-900/50" />
-              <span className="text-slate-300">~</span>
-              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-10 bg-slate-50 dark:bg-slate-900/50" />
-            </div>
+            <DateRangePicker
+              fromValue={dateFrom}
+              toValue={dateTo}
+              onChange={(from, to) => {
+                setDateFrom(from)
+                setDateTo(to)
+              }}
+              className="h-10 bg-slate-50 dark:bg-slate-900/50"
+            />
           </div>
 
           <div className="flex-1" />

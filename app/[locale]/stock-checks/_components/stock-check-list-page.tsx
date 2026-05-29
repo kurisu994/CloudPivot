@@ -14,6 +14,7 @@ import { InlineLoading } from '@/components/common/loading'
 import { PaginationControls } from '@/components/common/pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -301,7 +302,7 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">{t('checkDate')}</label>
-              <Input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} />
+              <DatePicker value={newDate} onChange={setNewDate} />
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">{t('selectScope')}</label>

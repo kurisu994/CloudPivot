@@ -8,6 +8,7 @@ import { BusinessListTableEmptyRow, BusinessListTableShell } from '@/components/
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -402,11 +403,11 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
             </div>
             <div className="space-y-2">
               <Label>{t('plannedStartDate')}</Label>
-              <Input type="date" value={formStartDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormStartDate(e.target.value)} />
+              <DatePicker value={formStartDate} onChange={setFormStartDate} />
             </div>
             <div className="space-y-2">
               <Label>{t('plannedEndDate')}</Label>
-              <Input type="date" value={formEndDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormEndDate(e.target.value)} />
+              <DatePicker value={formEndDate} onChange={setFormEndDate} />
             </div>
             <div className="col-span-2 space-y-2">
               <Label>{t('remark')}</Label>

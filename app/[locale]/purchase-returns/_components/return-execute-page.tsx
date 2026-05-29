@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -227,7 +228,7 @@ export function ReturnExecutePage({ inboundId, onBack }: ReturnExecutePageProps)
             </div>
             <div>
               <Label className="text-xs">{t('returnDate')}</Label>
-              <Input type="date" value={returnDate} onChange={e => setReturnDate(e.target.value)} className="mt-1 h-8" />
+              <DatePicker value={returnDate} onChange={setReturnDate} className="mt-1" />
             </div>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-3">

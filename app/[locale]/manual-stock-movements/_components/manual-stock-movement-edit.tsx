@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Combobox } from '@/components/ui/combobox'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -564,7 +565,7 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
               {/* 变动日期 */}
               <div className="flex flex-col gap-1.5">
                 <Label>{t('manualStockMovements.movementDate')}</Label>
-                <Input type="date" value={movementDate} onChange={e => setMovementDate(e.target.value)} disabled={isReadOnly} />
+                <DatePicker value={movementDate} onChange={setMovementDate} disabled={isReadOnly} />
               </div>
 
               {/* 往来对象：仅借料类业务（必填）时显示，其余类型隐藏以压缩表单空间 */}

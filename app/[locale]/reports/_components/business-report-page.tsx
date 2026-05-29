@@ -8,6 +8,7 @@ import { BusinessListTableEmptyRow, BusinessListTableLoadingRows, BusinessListTa
 import { PaginationControls } from '@/components/common/pagination'
 import { Button } from '@/components/ui/button'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { DateRangePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -354,9 +355,15 @@ export function BusinessReportPage({ kind }: { kind: ReportKind }) {
               {t(preset)}
             </Button>
           ))}
-          <Input type="date" value={draftStart} onChange={event => setDraftStart(event.target.value)} className="w-[140px]" />
-          <span className="text-muted-foreground">~</span>
-          <Input type="date" value={draftEnd} onChange={event => setDraftEnd(event.target.value)} className="w-[140px]" />
+          <DateRangePicker
+            fromValue={draftStart}
+            toValue={draftEnd}
+            onChange={(from, to) => {
+              setDraftStart(from)
+              setDraftEnd(to)
+            }}
+            className="w-[280px]"
+          />
           <Select value={draftPartnerId} onValueChange={value => value && setDraftPartnerId(value)} items={partnerItems}>
             <SelectTrigger className="w-[160px]">
               <SelectValue />

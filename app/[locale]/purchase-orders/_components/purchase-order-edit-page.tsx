@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -375,13 +376,13 @@ export function PurchaseOrderEditPage({ orderId, onBack }: PurchaseOrderEditPage
           {/* 采购日期 */}
           <div className="grid gap-2">
             <Label>{t('orderDate')} *</Label>
-            <Input type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} />
+            <DatePicker value={orderDate} onChange={setOrderDate} />
           </div>
 
           {/* 预计到货日 */}
           <div className="grid gap-2">
             <Label>{t('expectedDate')}</Label>
-            <Input type="date" value={expectedDate} onChange={e => setExpectedDate(e.target.value)} />
+            <DatePicker value={expectedDate} onChange={setExpectedDate} />
           </div>
 
           {/* 入库仓库 */}

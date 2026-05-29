@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -286,7 +287,7 @@ export function InboundExecutePage({ purchaseId, onBack }: InboundExecutePagePro
             </div>
             <div>
               <Label className="text-xs">{t('inboundDate')}</Label>
-              <Input type="date" value={inboundDate} onChange={e => setInboundDate(e.target.value)} className="mt-1 h-8" />
+              <DatePicker value={inboundDate} onChange={setInboundDate} className="mt-1" />
             </div>
           </div>
         </div>

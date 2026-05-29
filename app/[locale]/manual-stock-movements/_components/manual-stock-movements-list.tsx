@@ -18,6 +18,7 @@ import { PaginationControls } from '@/components/common/pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { DateRangePicker } from '@/components/ui/date-picker'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -320,10 +321,15 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
             </div>
 
             {/* 日期范围 */}
-            <div className="md:col-span-2 lg:col-span-2 flex items-center gap-2">
-              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-full" />
-              <span className="text-muted-foreground text-xs">~</span>
-              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-full" />
+            <div className="md:col-span-2 lg:col-span-2">
+              <DateRangePicker
+                fromValue={dateFrom}
+                toValue={dateTo}
+                onChange={(from, to) => {
+                  setDateFrom(from)
+                  setDateTo(to)
+                }}
+              />
             </div>
 
             {/* 按钮控制 */}

@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -305,7 +306,7 @@ export function OutboundExecutePage({ salesId, onBack }: OutboundExecutePageProp
             </div>
             <div>
               <Label className="text-xs">{t('outboundDate')}</Label>
-              <Input type="date" value={outboundDate} onChange={e => setOutboundDate(e.target.value)} className="mt-1 h-8" />
+              <DatePicker value={outboundDate} onChange={setOutboundDate} className="mt-1" />
             </div>
           </div>
         </div>

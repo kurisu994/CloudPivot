@@ -48,7 +48,9 @@
     "page": "页",
     "prev": "上一页",
     "next": "下一页",
-    "perPage": "{count} 条/页"
+    "perPage": "{count} 条/页",
+    "selectDate": "选择日期",
+    "selectDateRange": "选择日期范围"
   },
   "nav": {
     "dashboard": "首页看板",

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Button } from '@/components/ui/button'
+import { DateRangePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getErrorMessage } from '@/lib/error'
@@ -229,11 +230,15 @@ export function PurchaseOrderListPage({ onEdit, onNew }: PurchaseOrderListPagePr
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-2">
-            <Input type="date" value={draftDateFrom} onChange={e => setDraftDateFrom(e.target.value)} className="w-[140px]" />
-            <span className="text-muted-foreground text-sm">~</span>
-            <Input type="date" value={draftDateTo} onChange={e => setDraftDateTo(e.target.value)} className="w-[140px]" />
-          </div>
+          <DateRangePicker
+            fromValue={draftDateFrom}
+            toValue={draftDateTo}
+            onChange={(from, to) => {
+              setDraftDateFrom(from)
+              setDraftDateTo(to)
+            }}
+            className="w-[280px]"
+          />
           <Button variant="outline" size="sm" onClick={handleReset}>
             <RotateCcw data-icon="inline-start" />
             {tc('reset')}

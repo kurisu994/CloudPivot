@@ -8,6 +8,7 @@ import { BusinessListTableEmptyRow, BusinessListTableLoadingRows, BusinessListTa
 import { PaginationControls } from '@/components/common/pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -386,7 +387,7 @@ export function ReceivablesPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>{t('receivables.dialog.receiptDate')} *</Label>
-              <Input type="date" value={receiptDate} onChange={e => setReceiptDate(e.target.value)} />
+              <DatePicker value={receiptDate} onChange={setReceiptDate} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>{t('receivables.dialog.receiptMethod')}</Label>

@@ -48,7 +48,9 @@
     "page": "Trang",
     "prev": "Trước",
     "next": "Sau",
-    "perPage": "{count} / trang"
+    "perPage": "{count} / trang",
+    "selectDate": "Chọn ngày",
+    "selectDateRange": "Chọn khoảng ngày"
   },
   "nav": {
     "dashboard": "Bảng điều khiển",

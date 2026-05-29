@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { PaginationControls } from '@/components/common/pagination'
 import { Button } from '@/components/ui/button'
+import { DateRangePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getErrorMessage } from '@/lib/error'
@@ -156,26 +157,15 @@ export function ProductionOrderListPage({ onEdit, onNew }: Props) {
           </SelectContent>
         </Select>
 
-        <Input
-          type="date"
-          value={dateFrom}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setDateFrom(e.target.value)
+        <DateRangePicker
+          fromValue={dateFrom}
+          toValue={dateTo}
+          onChange={(from, to) => {
+            setDateFrom(from)
+            setDateTo(to)
             setPage(1)
           }}
-          className="w-40"
-          placeholder={t('filter.startDate')}
-        />
-        <span className="text-muted-foreground">~</span>
-        <Input
-          type="date"
-          value={dateTo}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setDateTo(e.target.value)
-            setPage(1)
-          }}
-          className="w-40"
-          placeholder={t('filter.endDate')}
+          className="w-[280px]"
         />
       </div>
 

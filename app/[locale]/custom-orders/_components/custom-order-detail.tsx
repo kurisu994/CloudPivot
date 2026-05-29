@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -546,13 +547,13 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
           {/* 定制日期 */}
           <div className="grid gap-2">
             <Label>{t('orderDate')} *</Label>
-            <Input type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} disabled={isReadonly} />
+            <DatePicker value={orderDate} onChange={setOrderDate} disabled={isReadonly} />
           </div>
 
           {/* 交货日期 */}
           <div className="grid gap-2">
             <Label>{t('deliveryDate')}</Label>
-            <Input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} disabled={isReadonly} />
+            <DatePicker value={deliveryDate} onChange={setDeliveryDate} disabled={isReadonly} />
           </div>
 
           {/* 定制类型 */}

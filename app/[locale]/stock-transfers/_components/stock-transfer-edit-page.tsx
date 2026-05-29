@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -302,7 +303,7 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
               <div>
                 <label className="text-sm font-medium mb-1 block">{t('transferDate')}</label>
                 {isEditable ? (
-                  <Input type="date" value={transferDate} onChange={e => setTransferDate(e.target.value)} />
+                  <DatePicker value={transferDate} onChange={setTransferDate} />
                 ) : (
                   <span className="text-sm">{detail?.transferDate}</span>
                 )}

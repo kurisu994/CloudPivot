@@ -48,7 +48,9 @@
     "page": "Page",
     "prev": "Previous",
     "next": "Next",
-    "perPage": "{count} / page"
+    "perPage": "{count} / page",
+    "selectDate": "Select date",
+    "selectDateRange": "Select date range"
   },
   "nav": {
     "dashboard": "Dashboard",

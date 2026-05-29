@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -469,7 +470,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
           </div>
           <div className="grid gap-2">
             <Label>{t('form.effectiveDate')}</Label>
-            <Input type="date" value={effectiveDate} onChange={e => setEffectiveDate(e.target.value)} />
+            <DatePicker value={effectiveDate} onChange={setEffectiveDate} />
           </div>
           <div className="col-span-2 grid gap-2 lg:col-span-3">
             <Label>{t('form.remark')}</Label>
