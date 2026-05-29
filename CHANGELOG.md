@@ -8,6 +8,10 @@
 
 ## [Unreleased]
 
+### 新增
+
+- **应用自动更新与关于页面**：集成 Tauri 2 官方更新插件 (`tauri-plugin-updater`)，实现启动后自动检查更新、原生菜单「检查更新」入口、顶栏用户下拉菜单「关于」入口。关于弹窗展示应用 Logo、版本号、版权信息，支持手动检查更新、下载进度展示与一键安装重启。新增 `lib/tauri/updater.ts` 封装更新检查与下载安装逻辑，`components/common/about-dialog.tsx` 实现关于弹窗 UI，`components/common/native-menu-bridge.tsx` 负责启动自动检查与菜单事件桥接，`src-tauri/src/menu.rs` 构建跨语言原生菜单栏（含 About / Check for Updates）。三语翻译键统一归入 `settings.about` 命名空间。
+
 ### 修复
 
 - **隐藏登录页初始账号密码提示**：将登录页底部提示框用 JSX 注释包裹隐藏，避免默认凭证信息直接暴露在生产环境中。翻译键 `login.hint` 仍保留在 messages 中，后续如需恢复可直接取消注释。
