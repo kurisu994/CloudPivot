@@ -1,8 +1,8 @@
 # 云枢 (CloudPivot IMS) — 数据库设计
 
-> **版本**：v1.5 &nbsp;|&nbsp; **日期**：2026-05-29
+> **版本**：v1.6 &nbsp;|&nbsp; **日期**：2026-05-29
 
-> **当前代码对齐说明**：以 `src-tauri/migrations/postgres/*.sql` 为权威来源。当前 PostgreSQL 迁移链已包含 `001_init`、`002_seed_data`、`003_production_orders`、`004_drop_legacy_work_orders`、`005_manual_stock_movements`；本文涉及生产工单、自定义出入库与认证相关结构时，均按当前有效结构描述。
+> **当前代码对齐说明**：以 `src-tauri/migrations/postgres/*.sql` 为权威来源。当前 PostgreSQL 迁移链已包含 `001_init`、`002_seed_data`、`003_production_orders`、`004_drop_legacy_work_orders`、`005_manual_stock_movements`。本文全部 DDL 按 PostgreSQL 语法描述，与迁移脚本保持一致。
 
 ---
 
@@ -121,7 +121,7 @@ erDiagram
 
 > **毛利历史口径约定**：销售出库确认时必须同时固化标准成本快照和实际成本快照。标准成本快照来自出库当时命中的 BOM 版本及其标准成本结果；实际成本快照来自当时的库存移动平均成本。销售毛利报表统一基于出库明细上的快照字段计算，不回查当前 BOM 重算历史数据。
 
-> **数量精度规约**：数量字段继续使用 `REAL` 存储，但数量录入、导入、运算和展示必须遵循 `units.decimal_places` 约束；应用层在写入前按单位精度统一四舍五入，避免不同页面出现数量口径漂移。
+> **数量精度规约**：数量字段使用 `DOUBLE PRECISION` 存储，但数量录入、导入、运算和展示必须遵循 `units.decimal_places` 约束；应用层在写入前按单位精度统一四舍五入，避免不同页面出现数量口径漂移。
 
 > **批次模型约定**：`v1.0` 对需要追溯的物料采用轻量批次模型。入库时生成 `inventory_lots` 记录；出库、退货、调拨、盘点和库存流水可回指到批次层，满足库龄分析和原单追溯要求。
 
@@ -133,7 +133,7 @@ erDiagram
 
 > **关联约束策略**：`v1.0` 全表**不启用数据库级 `FOREIGN KEY` 约束**。所有关联关系仅在字段注释和代码模型中表达，完整性统一由 Rust service 层校验，迁移脚本保持无外键 DDL。
 
-> **PostgreSQL 迁移状态**：✅ 已完成。项目已从 SQLite 迁移至 PostgreSQL，支持多终端局域网访问。当前使用 `migrations/postgres/` 目录下的迁移脚本，`migrations/sqlite/` 保留为历史参考。
+> **PostgreSQL 迁移状态**：✅ 已完成。项目已完全迁移至 PostgreSQL，支持多终端局域网访问。当前使用 `migrations/postgres/` 目录下的迁移脚本，`migrations/sqlite/` 保留为历史参考。本文全部 DDL 采用 PostgreSQL 语法，与迁移脚本保持一致。
 
 > **应用层完整性校验清单**：service 层至少校验关联对象存在性、单据状态合法性、删除/禁用前引用检查、业务链路来源单一致性、仓库/批次/库存可用性以及历史快照写入完整性。
 
@@ -147,17 +147,17 @@ erDiagram
 
 ```sql
 CREATE TABLE categories (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    parent_id   INTEGER,                              -- 父分类，NULL 为顶级（关联 categories.id）
+    id          BIGSERIAL PRIMARY KEY,
+    parent_id   BIGINT,                               -- 父分类，NULL 为顶级（关联 categories.id）
     name        TEXT    NOT NULL,                     -- 分类名称
     code        TEXT    NOT NULL UNIQUE,              -- 分类编码
     sort_order  INTEGER DEFAULT 0,                   -- 排序序号
     level       INTEGER DEFAULT 1,                   -- 层级深度
     path        TEXT,                                 -- 层级路径，如 "1/3/7"
     remark      TEXT,
-    is_enabled  INTEGER DEFAULT 1,                   -- 1=启用, 0=禁用
-    created_at  TEXT    DEFAULT (datetime('now')),
-    updated_at  TEXT    DEFAULT (datetime('now'))
+    is_enabled  BOOLEAN DEFAULT TRUE,                -- 启用/禁用
+    created_at  TIMESTAMP DEFAULT NOW(),
+    updated_at  TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_categories_parent ON categories(parent_id);
@@ -168,34 +168,34 @@ CREATE INDEX idx_categories_path ON categories(path);
 
 ```sql
 CREATE TABLE materials (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    id              BIGSERIAL PRIMARY KEY,
     code            TEXT    NOT NULL UNIQUE,           -- 物料编码
     name            TEXT    NOT NULL,                  -- 物料名称
     material_type   TEXT    NOT NULL CHECK (material_type IN ('raw', 'semi', 'finished')),
                                                       -- raw=原材料, semi=半成品, finished=成品
-    category_id     INTEGER,                           -- 叶子分类（关联 categories.id）
+    category_id     BIGINT,                            -- 叶子分类（关联 categories.id）
     spec            TEXT,                              -- 规格型号
-    base_unit_id    INTEGER NOT NULL,                  -- 基本计量单位（关联 units.id）
-    aux_unit_id     INTEGER,                           -- 辅助计量单位（关联 units.id）
-    conversion_rate REAL CHECK(conversion_rate IS NULL OR conversion_rate > 0),  -- 辅助单位换算率（1 辅助单位 = ? 基本单位）
-    ref_cost_price  INTEGER DEFAULT 0,                 -- 参考进价（USD，最小货币单位）
-    sale_price      INTEGER DEFAULT 0,                 -- 销售价格（USD，最小货币单位）
-    safety_stock    REAL    DEFAULT 0,                 -- 安全库存
-    max_stock       REAL    DEFAULT 0,                 -- 最高库存
+    base_unit_id    BIGINT  NOT NULL,                  -- 基本计量单位（关联 units.id）
+    aux_unit_id     BIGINT,                            -- 辅助计量单位（关联 units.id）
+    conversion_rate DOUBLE PRECISION CHECK(conversion_rate IS NULL OR conversion_rate > 0),  -- 辅助单位换算率（1 辅助单位 = ? 基本单位）
+    ref_cost_price  BIGINT  DEFAULT 0,                 -- 参考进价（USD，最小货币单位）
+    sale_price      BIGINT  DEFAULT 0,                 -- 销售价格（USD，最小货币单位）
+    safety_stock    DOUBLE PRECISION DEFAULT 0,        -- 安全库存
+    max_stock       DOUBLE PRECISION DEFAULT 0,        -- 最高库存
     lot_tracking_mode TEXT DEFAULT 'none' CHECK (lot_tracking_mode IN ('none', 'optional', 'required')),
                                                       -- 批次追踪模式：none=不追踪 optional=可选 required=必填
     texture         TEXT,                              -- 材质：白橡、黑胡桃等
     color           TEXT,                              -- 颜色
     surface_craft   TEXT,                              -- 表面工艺
-    length_mm       REAL,                              -- 长(mm)
-    width_mm        REAL,                              -- 宽(mm)
-    height_mm       REAL,                              -- 高(mm)
+    length_mm       DOUBLE PRECISION,                  -- 长(mm)
+    width_mm        DOUBLE PRECISION,                  -- 宽(mm)
+    height_mm       DOUBLE PRECISION,                  -- 高(mm)
     barcode         TEXT,                              -- 条形码
     image_path      TEXT,                              -- 图片本地路径
     remark          TEXT,
-    is_enabled      INTEGER DEFAULT 1,
-    created_at      TEXT    DEFAULT (datetime('now')),
-    updated_at      TEXT    DEFAULT (datetime('now'))
+    is_enabled      BOOLEAN DEFAULT TRUE,
+    created_at      TIMESTAMP DEFAULT NOW(),
+    updated_at      TIMESTAMP DEFAULT NOW()
 );
 
 -- idx_materials_code: 已由 UNIQUE(code) 约束隐式创建，无需额外索引
@@ -209,7 +209,7 @@ CREATE INDEX idx_materials_lot_track ON materials(lot_tracking_mode);
 
 ```sql
 CREATE TABLE suppliers (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    id                  BIGSERIAL PRIMARY KEY,
     code                TEXT    NOT NULL UNIQUE,       -- 供应商编码
     name                TEXT    NOT NULL,              -- 供应商全称
     short_name          TEXT,                          -- 简称
@@ -233,9 +233,9 @@ CREATE TABLE suppliers (
     grade               TEXT    DEFAULT 'B' CHECK (grade IN ('A', 'B', 'C', 'D')),
                                                       -- 供应商等级
     remark              TEXT,
-    is_enabled          INTEGER DEFAULT 1,
-    created_at          TEXT    DEFAULT (datetime('now')),
-    updated_at          TEXT    DEFAULT (datetime('now'))
+    is_enabled          BOOLEAN DEFAULT TRUE,
+    created_at          TIMESTAMP DEFAULT NOW(),
+    updated_at          TIMESTAMP DEFAULT NOW()
 );
 
 -- idx_suppliers_code: 已由 UNIQUE(code) 约束隐式创建，无需额外索引
@@ -245,7 +245,7 @@ CREATE TABLE suppliers (
 
 ```sql
 CREATE TABLE customers (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    id                  BIGSERIAL PRIMARY KEY,
     code                TEXT    NOT NULL UNIQUE,       -- 客户编码
     name                TEXT    NOT NULL,              -- 客户名称
     customer_type       TEXT    NOT NULL CHECK (customer_type IN ('dealer', 'retail', 'project', 'export')),
@@ -258,15 +258,15 @@ CREATE TABLE customers (
     shipping_address    TEXT,                          -- 默认收货地址
     currency            TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
                                                       -- 结算币种
-    credit_limit        INTEGER DEFAULT 0,             -- 信用额度（最小货币单位，按结算币种）
+    credit_limit        BIGINT  DEFAULT 0,             -- 信用额度（最小货币单位，按结算币种）
     settlement_type     TEXT    DEFAULT 'cash' CHECK (settlement_type IN ('cash', 'monthly', 'quarterly')),
     credit_days         INTEGER DEFAULT 0,
     grade               TEXT    DEFAULT 'normal' CHECK (grade IN ('vip', 'normal', 'new')),
-    default_discount    REAL    DEFAULT 0,             -- 默认折扣率(%)，0=无折扣，10=打九折
+    default_discount    DOUBLE PRECISION DEFAULT 0,    -- 默认折扣率(%)，0=无折扣，10=打九折
     remark              TEXT,
-    is_enabled          INTEGER DEFAULT 1,
-    created_at          TEXT    DEFAULT (datetime('now')),
-    updated_at          TEXT    DEFAULT (datetime('now'))
+    is_enabled          BOOLEAN DEFAULT TRUE,
+    created_at          TIMESTAMP DEFAULT NOW(),
+    updated_at          TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_customers_code ON customers(code);
@@ -277,7 +277,7 @@ CREATE INDEX idx_customers_type ON customers(customer_type);
 
 ```sql
 CREATE TABLE warehouses (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    id              BIGSERIAL PRIMARY KEY,
     code            TEXT    NOT NULL UNIQUE,
     name            TEXT    NOT NULL,
     warehouse_type  TEXT    NOT NULL CHECK (warehouse_type IN ('raw', 'semi', 'finished', 'return')),
@@ -286,9 +286,9 @@ CREATE TABLE warehouses (
     phone           TEXT,
     address         TEXT,
     remark          TEXT,
-    is_enabled      INTEGER DEFAULT 1,
-    created_at      TEXT    DEFAULT (datetime('now')),
-    updated_at      TEXT    DEFAULT (datetime('now'))
+    is_enabled      BOOLEAN DEFAULT TRUE,
+    created_at      TIMESTAMP DEFAULT NOW(),
+    updated_at      TIMESTAMP DEFAULT NOW()
 );
 ```
 
@@ -296,13 +296,13 @@ CREATE TABLE warehouses (
 
 ```sql
 CREATE TABLE default_warehouses (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    id              BIGSERIAL PRIMARY KEY,
     material_type   TEXT    NOT NULL CHECK (material_type IN ('raw', 'semi', 'finished')),
                                                       -- 按物料类型配置默认仓
-    warehouse_id    INTEGER NOT NULL,                  -- 关联 warehouses.id
+    warehouse_id    BIGINT  NOT NULL,                  -- 关联 warehouses.id
     remark          TEXT,
-    created_at      TEXT    DEFAULT (datetime('now')),
-    updated_at      TEXT    DEFAULT (datetime('now')),
+    created_at      TIMESTAMP DEFAULT NOW(),
+    updated_at      TIMESTAMP DEFAULT NOW(),
 
     UNIQUE(material_type)
 );
@@ -314,16 +314,16 @@ CREATE INDEX idx_dw_warehouse ON default_warehouses(warehouse_id);
 
 ```sql
 CREATE TABLE units (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    id          BIGSERIAL PRIMARY KEY,
     name        TEXT    NOT NULL UNIQUE,              -- 单位名称（中文）：张、个、千克
     name_en     TEXT,                                 -- 英文名称：pcs、kg、m
     name_vi     TEXT,                                 -- 越南语名称：cái、kg、m
     symbol      TEXT,                                 -- 符号：kg、m、㎡
     decimal_places INTEGER DEFAULT 0,                 -- 数量小数位
     sort_order  INTEGER DEFAULT 0,
-    is_enabled  INTEGER DEFAULT 1,
-    created_at  TEXT DEFAULT (datetime('now')),
-    updated_at  TEXT DEFAULT (datetime('now'))
+    is_enabled  BOOLEAN DEFAULT TRUE,
+    created_at  TIMESTAMP DEFAULT NOW(),
+    updated_at  TIMESTAMP DEFAULT NOW()
 );
 ```
 
@@ -333,20 +333,20 @@ CREATE TABLE units (
 
 ```sql
 CREATE TABLE supplier_materials (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    supplier_id     INTEGER NOT NULL,                   -- 关联 suppliers.id
-    material_id     INTEGER NOT NULL,                   -- 关联 materials.id
-    supply_price    INTEGER,                           -- 该供应商的报价（最小货币单位）
+    id              BIGSERIAL PRIMARY KEY,
+    supplier_id     BIGINT  NOT NULL,                   -- 关联 suppliers.id
+    material_id     BIGINT  NOT NULL,                   -- 关联 materials.id
+    supply_price    BIGINT,                            -- 该供应商的报价（最小货币单位）
     currency        TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),              -- 报价币种
     lead_days       INTEGER DEFAULT 7,                 -- 交货周期(天)
-    min_order_qty   REAL,                              -- 最小起订量
-    is_preferred    INTEGER DEFAULT 0,                 -- 是否首选供应商
+    min_order_qty   DOUBLE PRECISION,                  -- 最小起订量
+    is_preferred    BOOLEAN DEFAULT FALSE,             -- 是否首选供应商
     valid_from      TEXT,                               -- 报价有效期起始
     valid_to        TEXT,                               -- 报价有效期截止
     last_purchase_date TEXT,                           -- 最近采购日期
     remark          TEXT,
-    created_at      TEXT    DEFAULT (datetime('now')),
-    updated_at      TEXT    DEFAULT (datetime('now')),
+    created_at      TIMESTAMP DEFAULT NOW(),
+    updated_at      TIMESTAMP DEFAULT NOW(),
 
     UNIQUE(supplier_id, material_id)                   -- 供应商+物料唯一
 );
@@ -364,17 +364,17 @@ CREATE INDEX idx_sm_preferred ON supplier_materials(is_preferred);
 
 ```sql
 CREATE TABLE bom (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    id              BIGSERIAL PRIMARY KEY,
     bom_code        TEXT    NOT NULL UNIQUE,           -- BOM 编号
-    material_id     INTEGER NOT NULL,                   -- 父项物料 ID（允许 semi/finished，关联 materials.id）
+    material_id     BIGINT  NOT NULL,                   -- 父项物料 ID（允许 semi/finished，关联 materials.id）
     version         TEXT    NOT NULL DEFAULT 'V1.0',   -- BOM 版本
     effective_date  TEXT,                              -- 生效日期
     status          TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'inactive')),
-    total_standard_cost INTEGER DEFAULT 0,             -- 汇总标准材料成本（USD，最小货币单位）
-    custom_order_id INTEGER,                           -- 定制单关联，NULL=标准BOM（关联 custom_orders.id）
+    total_standard_cost BIGINT DEFAULT 0,              -- 汇总标准材料成本（USD，最小货币单位）
+    custom_order_id BIGINT,                            -- 定制单关联，NULL=标准BOM（关联 custom_orders.id）
     remark          TEXT,
-    created_at      TEXT    DEFAULT (datetime('now')),
-    updated_at      TEXT    DEFAULT (datetime('now'))
+    created_at      TIMESTAMP DEFAULT NOW(),
+    updated_at      TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_bom_material ON bom(material_id);
@@ -384,20 +384,20 @@ CREATE INDEX idx_bom_material ON bom(material_id);
 
 ```sql
 CREATE TABLE bom_items (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    bom_id              INTEGER NOT NULL,                -- 关联 bom.id（应用层级联删除）
-    child_material_id   INTEGER NOT NULL,                -- 子物料 ID（关联 materials.id）
-    standard_qty        REAL    NOT NULL,              -- 标准用量
-    wastage_rate        REAL    DEFAULT 0,             -- 损耗率(%)
-    actual_qty          REAL    GENERATED ALWAYS AS (standard_qty * (1 + wastage_rate / 100.0)) STORED,
+    id                  BIGSERIAL PRIMARY KEY,
+    bom_id              BIGINT  NOT NULL,                -- 关联 bom.id（应用层级联删除）
+    child_material_id   BIGINT  NOT NULL,                -- 子物料 ID（关联 materials.id）
+    standard_qty        DOUBLE PRECISION NOT NULL,     -- 标准用量
+    wastage_rate        DOUBLE PRECISION DEFAULT 0,    -- 损耗率(%)
+    actual_qty          DOUBLE PRECISION GENERATED ALWAYS AS (standard_qty * (1 + wastage_rate / 100.0)) STORED,
                                                       -- 实际用量（含损耗）
     process_step        TEXT,                          -- 所属工序
-    is_key_part         INTEGER DEFAULT 0,             -- 是否关键件
-    substitute_id       INTEGER,                        -- 替代物料（关联 materials.id）
+    is_key_part         BOOLEAN DEFAULT FALSE,         -- 是否关键件
+    substitute_id       BIGINT,                        -- 替代物料（关联 materials.id）
     remark              TEXT,
     sort_order          INTEGER DEFAULT 0,
-    created_at          TEXT    DEFAULT (datetime('now')),
-    updated_at          TEXT    DEFAULT (datetime('now'))
+    created_at          TIMESTAMP DEFAULT NOW(),
+    updated_at          TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_bom_items_bom ON bom_items(bom_id);
@@ -412,34 +412,34 @@ CREATE INDEX idx_bom_items_child ON bom_items(child_material_id);
 
 ```sql
 CREATE TABLE purchase_orders (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    id                  BIGSERIAL PRIMARY KEY,
     order_no            TEXT    NOT NULL UNIQUE,        -- 采购单号: PO-YYYYMMDD-XXX
-    supplier_id         INTEGER NOT NULL,                -- 关联 suppliers.id
+    supplier_id         BIGINT  NOT NULL,                -- 关联 suppliers.id
     order_date          TEXT    NOT NULL,               -- 采购日期
     expected_date       TEXT,                           -- 预计到货日
-    warehouse_id        INTEGER NOT NULL,               -- 单头入库仓库（关联 warehouses.id，v1.0 单仓）
+    warehouse_id        BIGINT  NOT NULL,               -- 单头入库仓库（关联 warehouses.id，v1.0 单仓）
     currency            TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
                                                        -- 结算币种，从供应商默认带出
-    exchange_rate       REAL    DEFAULT 1,              -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
+    exchange_rate       DOUBLE PRECISION DEFAULT 1,     -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
     status              TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'approved', 'partial_in', 'completed', 'cancelled')),
                                                        -- draft=草稿 approved=已审核 partial_in=部分入库 completed=已入库 cancelled=已作废
-    total_amount        INTEGER DEFAULT 0,              -- 采购货款小计（原币，最小货币单位，仅明细行合计）
-    total_amount_base   INTEGER DEFAULT 0,              -- 合计金额（基准币种，默认 USD）
-    discount_amount     INTEGER DEFAULT 0,              -- 折扣金额（最小货币单位）
-    freight_amount      INTEGER DEFAULT 0,              -- 运费（跨国采购常用）
-    other_charges       INTEGER DEFAULT 0,              -- 其他费用（关税、报关费、保险等）
-    payable_amount      INTEGER DEFAULT 0,              -- 订单级预估应付 = total_amount - discount + freight + other
+    total_amount        BIGINT  DEFAULT 0,              -- 采购货款小计（原币，最小货币单位，仅明细行合计）
+    total_amount_base   BIGINT  DEFAULT 0,              -- 合计金额（基准币种，默认 USD）
+    discount_amount     BIGINT  DEFAULT 0,              -- 折扣金额（最小货币单位）
+    freight_amount      BIGINT  DEFAULT 0,              -- 运费（跨国采购常用）
+    other_charges       BIGINT  DEFAULT 0,              -- 其他费用（关税、报关费、保险等）
+    payable_amount      BIGINT  DEFAULT 0,              -- 订单级预估应付 = total_amount - discount + freight + other
     remark              TEXT,
-    created_by_user_id  INTEGER,                        -- 创建人（关联 users.id）
+    created_by_user_id  BIGINT,                         -- 创建人（关联 users.id）
     created_by_name     TEXT,                           -- 创建人快照
-    approved_by_user_id INTEGER,                        -- 审核人（关联 users.id）
+    approved_by_user_id BIGINT,                         -- 审核人（关联 users.id）
     approved_by_name    TEXT,                           -- 审核人快照
-    approved_at         TEXT,
-    cancelled_by_user_id INTEGER,                       -- 作废人（关联 users.id）
+    approved_at         TIMESTAMP,
+    cancelled_by_user_id BIGINT,                        -- 作废人（关联 users.id）
     cancelled_by_name   TEXT,                           -- 作废人快照
-    cancelled_at        TEXT,
-    created_at          TEXT    DEFAULT (datetime('now')),
-    updated_at          TEXT    DEFAULT (datetime('now'))
+    cancelled_at        TIMESTAMP,
+    created_at          TIMESTAMP DEFAULT NOW(),
+    updated_at          TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_po_supplier ON purchase_orders(supplier_id);
@@ -452,21 +452,21 @@ CREATE INDEX idx_po_warehouse ON purchase_orders(warehouse_id);
 
 ```sql
 CREATE TABLE purchase_order_items (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    order_id        INTEGER NOT NULL,                   -- 关联 purchase_orders.id（应用层级联删除）
-    material_id     INTEGER NOT NULL,                   -- 关联 materials.id
-    spec            TEXT,                              -- 规格型号（可覆盖）
-    unit_id         INTEGER NOT NULL,                  -- 关联 units.id
-    unit_name_snapshot TEXT NOT NULL,                  -- 单位名称快照
-    conversion_rate_snapshot REAL NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
-    base_quantity   REAL    NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
-    quantity        REAL    NOT NULL,                  -- 采购数量
-    unit_price      INTEGER NOT NULL,                  -- 单价（最小货币单位）
-    amount          INTEGER NOT NULL DEFAULT 0,         -- 金额（由应用层计算: 数量 × 单价）
-    received_qty    REAL    DEFAULT 0,                 -- 已入库数量
-    warehouse_id    INTEGER NOT NULL,                  -- 目标仓库快照（关联 warehouses.id，v1.0 强制等于单头仓库）
-    remark          TEXT,
-    sort_order      INTEGER DEFAULT 0
+    id                       BIGSERIAL PRIMARY KEY,
+    order_id                 BIGINT  NOT NULL,                   -- 关联 purchase_orders.id（应用层级联删除）
+    material_id              BIGINT  NOT NULL,                   -- 关联 materials.id
+    spec                     TEXT,                              -- 规格型号（可覆盖）
+    unit_id                  BIGINT  NOT NULL,                  -- 关联 units.id
+    unit_name_snapshot       TEXT NOT NULL,                  -- 单位名称快照
+    conversion_rate_snapshot DOUBLE PRECISION NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
+    base_quantity            DOUBLE PRECISION NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
+    quantity                 DOUBLE PRECISION NOT NULL,                  -- 采购数量
+    unit_price               BIGINT  NOT NULL,                  -- 单价（最小货币单位）
+    amount                   BIGINT  NOT NULL DEFAULT 0,         -- 金额（由应用层计算: 数量 × 单价）
+    received_qty             DOUBLE PRECISION DEFAULT 0,                 -- 已入库数量
+    warehouse_id             BIGINT  NOT NULL,                  -- 目标仓库快照（关联 warehouses.id，v1.0 强制等于单头仓库）
+    remark                   TEXT,
+    sort_order               INTEGER DEFAULT 0
 );
 
 CREATE INDEX idx_poi_order ON purchase_order_items(order_id);
@@ -478,34 +478,34 @@ CREATE INDEX idx_po_items_material ON purchase_order_items(material_id);
 
 ```sql
 CREATE TABLE inbound_orders (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    order_no        TEXT    NOT NULL UNIQUE,            -- 入库单号: PI-YYYYMMDD-XXX
-    purchase_id     INTEGER,                            -- 关联采购单，可选（关联 purchase_orders.id）
-    supplier_id     INTEGER,                            -- 关联 suppliers.id
-    inbound_date    TEXT    NOT NULL,
-    warehouse_id    INTEGER NOT NULL,                   -- 关联 warehouses.id
-    inbound_type    TEXT    DEFAULT 'purchase' CHECK (inbound_type IN ('purchase', 'return', 'production', 'other')),
+    id                   BIGSERIAL PRIMARY KEY,
+    order_no             TEXT    NOT NULL UNIQUE,            -- 入库单号: PI-YYYYMMDD-XXX
+    purchase_id          BIGINT,                            -- 关联采购单，可选（关联 purchase_orders.id）
+    supplier_id          BIGINT,                            -- 关联 suppliers.id
+    inbound_date         TEXT    NOT NULL,
+    warehouse_id         BIGINT  NOT NULL,                   -- 关联 warehouses.id
+    inbound_type         TEXT    DEFAULT 'purchase' CHECK (inbound_type IN ('purchase', 'return', 'production', 'other')),
                                                        -- purchase=采购入库 return=退货入库 production=完工入库/退料入库 other=其他入库
                                                        -- 当 inbound_type = 'return' 时，表示销售退货入库，由 sales_returns 流程触发自动创建，不应由用户手动创建此类型的入库单
-    source_type     TEXT,                              -- 来源单据类型（如 'sales_return', 'work_order'），用于非采购场景的回溯
-    source_id       INTEGER,                           -- 来源单据 ID
-    currency        TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
+    source_type          TEXT,                              -- 来源单据类型（如 'sales_return', 'work_order'），用于非采购场景的回溯
+    source_id            BIGINT,                           -- 来源单据 ID
+    currency             TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
                                                        -- 币种（继承采购单币种）
-    exchange_rate   REAL    DEFAULT 1,                  -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
-    total_amount    INTEGER DEFAULT 0,                  -- 本次入库货款小计（最小货币单位，仅明细行合计）
-    allocated_discount    INTEGER DEFAULT 0,            -- 按比例分摊的采购单折扣金额（正数，最小货币单位）
-    allocated_freight     INTEGER DEFAULT 0,            -- 按比例分摊的采购单运费（最小货币单位）
-    allocated_other       INTEGER DEFAULT 0,            -- 按比例分摊的采购单其他费用（最小货币单位）
-    payable_amount        INTEGER DEFAULT 0,            -- 应付金额 = total_amount - allocated_discount + allocated_freight + allocated_other
-    status          TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'confirmed')),
-    remark          TEXT,
-    created_by_user_id  INTEGER,                        -- 创建人（关联 users.id）
-    created_by_name     TEXT,                           -- 创建人快照
-    confirmed_by_user_id INTEGER,                       -- 确认人（关联 users.id）
-    confirmed_by_name   TEXT,                           -- 确认人快照
-    confirmed_at        TEXT,
-    created_at      TEXT    DEFAULT (datetime('now')),
-    updated_at      TEXT    DEFAULT (datetime('now'))
+    exchange_rate        DOUBLE PRECISION DEFAULT 1,        -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
+    total_amount         BIGINT  DEFAULT 0,                  -- 本次入库货款小计（最小货币单位，仅明细行合计）
+    allocated_discount   BIGINT  DEFAULT 0,            -- 按比例分摊的采购单折扣金额（正数，最小货币单位）
+    allocated_freight    BIGINT  DEFAULT 0,            -- 按比例分摊的采购单运费（最小货币单位）
+    allocated_other      BIGINT  DEFAULT 0,            -- 按比例分摊的采购单其他费用（最小货币单位）
+    payable_amount       BIGINT  DEFAULT 0,            -- 应付金额 = total_amount - allocated_discount + allocated_freight + allocated_other
+    status               TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'confirmed')),
+    remark               TEXT,
+    created_by_user_id   BIGINT,                        -- 创建人（关联 users.id）
+    created_by_name      TEXT,                           -- 创建人快照
+    confirmed_by_user_id BIGINT,                       -- 确认人（关联 users.id）
+    confirmed_by_name    TEXT,                           -- 确认人快照
+    confirmed_at         TIMESTAMP,
+    created_at           TIMESTAMP DEFAULT NOW(),
+    updated_at           TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_inbound_purchase ON inbound_orders(purchase_id);
@@ -519,22 +519,22 @@ CREATE INDEX idx_io_supplier ON inbound_orders(supplier_id);
 
 ```sql
 CREATE TABLE inbound_order_items (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    inbound_id      INTEGER NOT NULL,                   -- 关联 inbound_orders.id（应用层级联删除）
-    purchase_order_item_id INTEGER,                     -- 关联采购单明细行ID（应用层外键 → purchase_order_items.id）；非采购入库时为 NULL
-    material_id     INTEGER NOT NULL,                   -- 关联 materials.id
-    unit_id         INTEGER NOT NULL,                  -- 关联 units.id
-    unit_name_snapshot TEXT NOT NULL,                  -- 单位名称快照
-    conversion_rate_snapshot REAL NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
-    base_quantity   REAL    NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
-    quantity        REAL    NOT NULL,                   -- 入库数量
-    unit_price      INTEGER NOT NULL,                   -- 单价（最小货币单位）
-    amount          INTEGER NOT NULL DEFAULT 0,         -- 金额（由应用层计算）
-    lot_no          TEXT,                               -- 系统批次号
-    supplier_batch_no TEXT,                             -- 供应商批次号
-    trace_attrs_json TEXT,                              -- 批次追溯属性 JSON（含水率/等级等）
-    remark          TEXT,
-    sort_order      INTEGER DEFAULT 0
+    id                       BIGSERIAL PRIMARY KEY,
+    inbound_id               BIGINT  NOT NULL,                   -- 关联 inbound_orders.id（应用层级联删除）
+    purchase_order_item_id   BIGINT,                     -- 关联采购单明细行ID（应用层外键 → purchase_order_items.id）；非采购入库时为 NULL
+    material_id              BIGINT  NOT NULL,                   -- 关联 materials.id
+    unit_id                  BIGINT  NOT NULL,                  -- 关联 units.id
+    unit_name_snapshot       TEXT NOT NULL,                  -- 单位名称快照
+    conversion_rate_snapshot DOUBLE PRECISION NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
+    base_quantity            DOUBLE PRECISION NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
+    quantity                 DOUBLE PRECISION NOT NULL,                   -- 入库数量
+    unit_price               BIGINT  NOT NULL,                   -- 单价（最小货币单位）
+    amount                   BIGINT  NOT NULL DEFAULT 0,         -- 金额（由应用层计算）
+    lot_no                   TEXT,                               -- 系统批次号
+    supplier_batch_no        TEXT,                             -- 供应商批次号
+    trace_attrs_json         TEXT,                              -- 批次追溯属性 JSON（含水率/等级等）
+    remark                   TEXT,
+    sort_order               INTEGER DEFAULT 0
 );
 
 CREATE INDEX idx_ioi_inbound ON inbound_order_items(inbound_id);
@@ -546,26 +546,26 @@ CREATE INDEX idx_inbound_items_material ON inbound_order_items(material_id);
 
 ```sql
 CREATE TABLE purchase_returns (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    return_no       TEXT    NOT NULL UNIQUE,            -- 退货单号: PR-YYYYMMDD-XXX
-    inbound_id      INTEGER NOT NULL,                   -- 原入库单（关联 inbound_orders.id，v1.0 必填）
-    supplier_id     INTEGER NOT NULL,                   -- 关联 suppliers.id
-    return_date     TEXT    NOT NULL,
-    currency        TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
+    id                   BIGSERIAL PRIMARY KEY,
+    return_no            TEXT    NOT NULL UNIQUE,            -- 退货单号: PR-YYYYMMDD-XXX
+    inbound_id           BIGINT  NOT NULL,                   -- 原入库单（关联 inbound_orders.id，v1.0 必填）
+    supplier_id          BIGINT  NOT NULL,                   -- 关联 suppliers.id
+    return_date          TEXT    NOT NULL,
+    currency             TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
                                                        -- 币种（继承原入库单币种）
-    exchange_rate   REAL    DEFAULT 1,                  -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
-    return_reason   TEXT,
-    total_amount    INTEGER DEFAULT 0,                  -- 退货金额（最小货币单位）
-    total_amount_base INTEGER DEFAULT 0,                -- 退货金额（基准币种，默认 USD）
-    status          TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'confirmed')),
-    remark          TEXT,
-    created_by_user_id  INTEGER,                        -- 创建人（关联 users.id）
-    created_by_name     TEXT,                           -- 创建人快照
-    confirmed_by_user_id INTEGER,                       -- 确认人（关联 users.id）
-    confirmed_by_name   TEXT,                           -- 确认人快照
-    confirmed_at        TEXT,
-    created_at      TEXT    DEFAULT (datetime('now')),
-    updated_at      TEXT    DEFAULT (datetime('now'))
+    exchange_rate        DOUBLE PRECISION DEFAULT 1,        -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
+    return_reason        TEXT,
+    total_amount         BIGINT  DEFAULT 0,                  -- 退货金额（最小货币单位）
+    total_amount_base    BIGINT  DEFAULT 0,                -- 退货金额（基准币种，默认 USD）
+    status               TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'confirmed')),
+    remark               TEXT,
+    created_by_user_id   BIGINT,                        -- 创建人（关联 users.id）
+    created_by_name      TEXT,                           -- 创建人快照
+    confirmed_by_user_id BIGINT,                       -- 确认人（关联 users.id）
+    confirmed_by_name    TEXT,                           -- 确认人快照
+    confirmed_at         TIMESTAMP,
+    created_at           TIMESTAMP DEFAULT NOW(),
+    updated_at           TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_pr_supplier ON purchase_returns(supplier_id);
@@ -578,19 +578,19 @@ CREATE INDEX idx_pr_date ON purchase_returns(return_date);
 
 ```sql
 CREATE TABLE purchase_return_items (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    return_id       INTEGER NOT NULL,                   -- 关联 purchase_returns.id（应用层级联删除）
-    source_inbound_item_id INTEGER NOT NULL,           -- 原入库明细（关联 inbound_order_items.id）
-    lot_id          INTEGER,                            -- 原批次（关联 inventory_lots.id）
-    material_id     INTEGER NOT NULL,                   -- 关联 materials.id
-    unit_id         INTEGER NOT NULL,                  -- 关联 units.id
-    unit_name_snapshot TEXT NOT NULL,                  -- 单位名称快照
-    conversion_rate_snapshot REAL NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
-    base_quantity   REAL    NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
-    quantity        REAL    NOT NULL,
-    unit_price      INTEGER NOT NULL,                   -- 单价（最小货币单位）
-    amount          INTEGER NOT NULL DEFAULT 0,         -- 金额（由应用层计算）
-    remark          TEXT
+    id                       BIGSERIAL PRIMARY KEY,
+    return_id                BIGINT  NOT NULL,                   -- 关联 purchase_returns.id（应用层级联删除）
+    source_inbound_item_id   BIGINT  NOT NULL,           -- 原入库明细（关联 inbound_order_items.id）
+    lot_id                   BIGINT,                            -- 原批次（关联 inventory_lots.id）
+    material_id              BIGINT  NOT NULL,                   -- 关联 materials.id
+    unit_id                  BIGINT  NOT NULL,                  -- 关联 units.id
+    unit_name_snapshot       TEXT NOT NULL,                  -- 单位名称快照
+    conversion_rate_snapshot DOUBLE PRECISION NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
+    base_quantity            DOUBLE PRECISION NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
+    quantity                 DOUBLE PRECISION NOT NULL,
+    unit_price               BIGINT  NOT NULL,                   -- 单价（最小货币单位）
+    amount                   BIGINT  NOT NULL DEFAULT 0,         -- 金额（由应用层计算）
+    remark                   TEXT
 );
 
 CREATE INDEX idx_pri_return ON purchase_return_items(return_id);
@@ -606,35 +606,35 @@ CREATE INDEX idx_pri_lot ON purchase_return_items(lot_id);
 
 ```sql
 CREATE TABLE sales_orders (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    id                  BIGSERIAL PRIMARY KEY,
     order_no            TEXT    NOT NULL UNIQUE,        -- 销售单号: SO-YYYYMMDD-XXX
-    customer_id         INTEGER NOT NULL,                -- 关联 customers.id
+    customer_id         BIGINT  NOT NULL,                -- 关联 customers.id
     order_date          TEXT    NOT NULL,
     delivery_date       TEXT,                           -- 交货日期
-    warehouse_id        INTEGER NOT NULL,               -- 单头出库仓库（关联 warehouses.id，v1.0 单仓）
+    warehouse_id        BIGINT  NOT NULL,               -- 单头出库仓库（关联 warehouses.id，v1.0 单仓）
     currency            TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
                                                        -- 结算币种，从客户默认带出
-    exchange_rate       REAL    DEFAULT 1,              -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
+    exchange_rate       DOUBLE PRECISION DEFAULT 1,     -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
     status              TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'approved', 'partial_out', 'completed', 'cancelled')),
-    total_amount        INTEGER DEFAULT 0,              -- 销售货款小计（原币，最小货币单位，仅明细行合计，已含行折扣）
-    total_amount_base   INTEGER DEFAULT 0,              -- 合计金额（基准币种，默认 USD）
-    discount_rate       REAL    DEFAULT 0,              -- 整单折扣率(%)
-    discount_amount     INTEGER DEFAULT 0,              -- 整单折扣金额（最小货币单位，正数）
-    freight_amount      INTEGER DEFAULT 0,              -- 运费
-    other_charges       INTEGER DEFAULT 0,              -- 其他费用
-    receivable_amount   INTEGER DEFAULT 0,              -- 订单级预估应收 = total_amount - discount + freight + other
+    total_amount        BIGINT  DEFAULT 0,              -- 销售货款小计（原币，最小货币单位，仅明细行合计，已含行折扣）
+    total_amount_base   BIGINT  DEFAULT 0,              -- 合计金额（基准币种，默认 USD）
+    discount_rate       DOUBLE PRECISION DEFAULT 0,     -- 整单折扣率(%)
+    discount_amount     BIGINT  DEFAULT 0,              -- 整单折扣金额（最小货币单位，正数）
+    freight_amount      BIGINT  DEFAULT 0,              -- 运费
+    other_charges       BIGINT  DEFAULT 0,              -- 其他费用
+    receivable_amount   BIGINT  DEFAULT 0,              -- 订单级预估应收 = total_amount - discount + freight + other
     shipping_address    TEXT,                           -- 收货地址
     remark              TEXT,
-    created_by_user_id  INTEGER,                        -- 创建人（关联 users.id）
+    created_by_user_id  BIGINT,                         -- 创建人（关联 users.id）
     created_by_name     TEXT,                           -- 创建人快照
-    approved_by_user_id INTEGER,                        -- 审核人（关联 users.id）
+    approved_by_user_id BIGINT,                         -- 审核人（关联 users.id）
     approved_by_name    TEXT,                           -- 审核人快照
-    approved_at         TEXT,
-    cancelled_by_user_id INTEGER,                       -- 作废人（关联 users.id）
+    approved_at         TIMESTAMP,
+    cancelled_by_user_id BIGINT,                        -- 作废人（关联 users.id）
     cancelled_by_name   TEXT,                           -- 作废人快照
-    cancelled_at        TEXT,
-    created_at          TEXT    DEFAULT (datetime('now')),
-    updated_at          TEXT    DEFAULT (datetime('now'))
+    cancelled_at        TIMESTAMP,
+    created_at          TIMESTAMP DEFAULT NOW(),
+    updated_at          TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_so_customer ON sales_orders(customer_id);
@@ -647,22 +647,22 @@ CREATE INDEX idx_so_warehouse ON sales_orders(warehouse_id);
 
 ```sql
 CREATE TABLE sales_order_items (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    order_id        INTEGER NOT NULL,                   -- 关联 sales_orders.id（应用层级联删除）
-    material_id     INTEGER NOT NULL,                   -- 关联 materials.id
-    spec            TEXT,
-    unit_id         INTEGER NOT NULL,                  -- 关联 units.id
-    unit_name_snapshot TEXT NOT NULL,                  -- 单位名称快照
-    conversion_rate_snapshot REAL NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
-    base_quantity   REAL    NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
-    quantity        REAL    NOT NULL,
-    unit_price      INTEGER NOT NULL,                  -- 单价（最小货币单位）
-    discount_rate   REAL    DEFAULT 0,                 -- 行折扣率(%)，0=无折扣，10=打九折
-    amount          INTEGER NOT NULL DEFAULT 0,         -- 金额（由应用层计算，已含行折扣）
-    shipped_qty     REAL    DEFAULT 0,                 -- 已出库数量
-    warehouse_id    INTEGER NOT NULL,                  -- 出库仓库快照（关联 warehouses.id，v1.0 强制等于单头仓库）
-    remark          TEXT,
-    sort_order      INTEGER DEFAULT 0
+    id                       BIGSERIAL PRIMARY KEY,
+    order_id                 BIGINT  NOT NULL,                   -- 关联 sales_orders.id（应用层级联删除）
+    material_id              BIGINT  NOT NULL,                   -- 关联 materials.id
+    spec                     TEXT,
+    unit_id                  BIGINT  NOT NULL,                  -- 关联 units.id
+    unit_name_snapshot       TEXT NOT NULL,                  -- 单位名称快照
+    conversion_rate_snapshot DOUBLE PRECISION NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
+    base_quantity            DOUBLE PRECISION NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
+    quantity                 DOUBLE PRECISION NOT NULL,
+    unit_price               BIGINT  NOT NULL,                  -- 单价（最小货币单位）
+    discount_rate            DOUBLE PRECISION DEFAULT 0,                 -- 行折扣率(%)，0=无折扣，10=打九折
+    amount                   BIGINT  NOT NULL DEFAULT 0,         -- 金额（由应用层计算，已含行折扣）
+    shipped_qty              DOUBLE PRECISION DEFAULT 0,                 -- 已出库数量
+    warehouse_id             BIGINT  NOT NULL,                  -- 出库仓库快照（关联 warehouses.id，v1.0 强制等于单头仓库）
+    remark                   TEXT,
+    sort_order               INTEGER DEFAULT 0
 );
 
 CREATE INDEX idx_soi_order ON sales_order_items(order_id);
@@ -674,34 +674,34 @@ CREATE INDEX idx_so_items_material ON sales_order_items(material_id);
 
 ```sql
 CREATE TABLE outbound_orders (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    order_no        TEXT    NOT NULL UNIQUE,            -- 出库单号: SD-YYYYMMDD-XXX
-    sales_id        INTEGER,                            -- 关联 sales_orders.id
-    customer_id     INTEGER,                            -- 关联 customers.id
-    outbound_date   TEXT    NOT NULL,
-    warehouse_id    INTEGER NOT NULL,                   -- 关联 warehouses.id
-    outbound_type   TEXT    DEFAULT 'sales' CHECK (outbound_type IN ('sales', 'return', 'production', 'other')),
+    id                   BIGSERIAL PRIMARY KEY,
+    order_no             TEXT    NOT NULL UNIQUE,            -- 出库单号: SD-YYYYMMDD-XXX
+    sales_id             BIGINT,                            -- 关联 sales_orders.id
+    customer_id          BIGINT,                            -- 关联 customers.id
+    outbound_date        TEXT    NOT NULL,
+    warehouse_id         BIGINT  NOT NULL,                   -- 关联 warehouses.id
+    outbound_type        TEXT    DEFAULT 'sales' CHECK (outbound_type IN ('sales', 'return', 'production', 'other')),
                                                        -- sales=销售出库 return=退货出库 production=领料出库 other=其他出库
                                                        -- 当 outbound_type = 'return' 时，表示采购退货出库，由 purchase_returns 流程触发自动创建
-    source_type     TEXT,                              -- 来源单据类型（如 'purchase_return', 'work_order'），用于非销售场景的回溯
-    source_id       INTEGER,                           -- 来源单据 ID
-    currency        TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
+    source_type          TEXT,                              -- 来源单据类型（如 'purchase_return', 'work_order'），用于非销售场景的回溯
+    source_id            BIGINT,                           -- 来源单据 ID
+    currency             TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
                                                        -- 币种（继承销售单币种）
-    exchange_rate   REAL    DEFAULT 1,                  -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
-    total_amount    INTEGER DEFAULT 0,                  -- 本次出库货款小计（最小货币单位，仅明细行合计，已含行折扣份额）
-    allocated_discount    INTEGER DEFAULT 0,            -- 按比例分摊的销售单整单折扣金额（正数，最小货币单位）
-    allocated_freight     INTEGER DEFAULT 0,            -- 按比例分摊的销售单运费（最小货币单位）
-    allocated_other       INTEGER DEFAULT 0,            -- 按比例分摊的销售单其他费用（最小货币单位）
-    receivable_amount     INTEGER DEFAULT 0,            -- 应收金额 = total_amount - allocated_discount + allocated_freight + allocated_other
-    status          TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'confirmed')),
-    remark          TEXT,
-    created_by_user_id  INTEGER,                        -- 创建人（关联 users.id）
-    created_by_name     TEXT,                           -- 创建人快照
-    confirmed_by_user_id INTEGER,                       -- 确认人（关联 users.id）
-    confirmed_by_name   TEXT,                           -- 确认人快照
-    confirmed_at        TEXT,
-    created_at      TEXT    DEFAULT (datetime('now')),
-    updated_at      TEXT    DEFAULT (datetime('now'))
+    exchange_rate        DOUBLE PRECISION DEFAULT 1,        -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
+    total_amount         BIGINT  DEFAULT 0,                  -- 本次出库货款小计（最小货币单位，仅明细行合计，已含行折扣份额）
+    allocated_discount   BIGINT  DEFAULT 0,            -- 按比例分摊的销售单整单折扣金额（正数，最小货币单位）
+    allocated_freight    BIGINT  DEFAULT 0,            -- 按比例分摊的销售单运费（最小货币单位）
+    allocated_other      BIGINT  DEFAULT 0,            -- 按比例分摊的销售单其他费用（最小货币单位）
+    receivable_amount    BIGINT  DEFAULT 0,            -- 应收金额 = total_amount - allocated_discount + allocated_freight + allocated_other
+    status               TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'confirmed')),
+    remark               TEXT,
+    created_by_user_id   BIGINT,                        -- 创建人（关联 users.id）
+    created_by_name      TEXT,                           -- 创建人快照
+    confirmed_by_user_id BIGINT,                       -- 确认人（关联 users.id）
+    confirmed_by_name    TEXT,                           -- 确认人快照
+    confirmed_at         TIMESTAMP,
+    created_at           TIMESTAMP DEFAULT NOW(),
+    updated_at           TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_oo_sales ON outbound_orders(sales_id);
@@ -715,26 +715,26 @@ CREATE INDEX idx_oo_customer ON outbound_orders(customer_id);
 
 ```sql
 CREATE TABLE outbound_order_items (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    outbound_id     INTEGER NOT NULL,                   -- 关联 outbound_orders.id（应用层级联删除）
-    sales_item_id   INTEGER,                            -- 销售单明细（关联 sales_order_items.id）
-    lot_id          INTEGER,                            -- 出库批次（关联 inventory_lots.id）
-    material_id     INTEGER NOT NULL,                   -- 关联 materials.id
-    unit_id         INTEGER NOT NULL,                  -- 关联 units.id
-    unit_name_snapshot TEXT NOT NULL,                  -- 单位名称快照
-    conversion_rate_snapshot REAL NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
-    base_quantity   REAL    NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
-    quantity        REAL    NOT NULL,
-    unit_price      INTEGER NOT NULL,                   -- 单价（最小货币单位）
-    amount          INTEGER NOT NULL DEFAULT 0,         -- 金额（由应用层计算）
-    standard_cost_unit_price_snapshot INTEGER DEFAULT 0, -- 标准成本单价快照（USD，最小货币单位）
-    standard_cost_amount_snapshot INTEGER DEFAULT 0,     -- 标准成本金额快照（USD）
-    standard_cost_bom_id INTEGER,                       -- 标准成本来源 BOM（关联 bom.id，允许为空）
-    standard_cost_bom_version TEXT,                     -- 标准成本来源 BOM 版本快照
-    cost_unit_price INTEGER DEFAULT 0,                  -- 实际成本单价快照（USD，最小货币单位）
-    cost_amount     INTEGER DEFAULT 0,                  -- 实际成本金额快照（USD）
-    remark          TEXT,
-    sort_order      INTEGER DEFAULT 0
+    id                                  BIGSERIAL PRIMARY KEY,
+    outbound_id                         BIGINT  NOT NULL,                   -- 关联 outbound_orders.id（应用层级联删除）
+    sales_item_id                       BIGINT,                            -- 销售单明细（关联 sales_order_items.id）
+    lot_id                              BIGINT,                            -- 出库批次（关联 inventory_lots.id）
+    material_id                         BIGINT  NOT NULL,                   -- 关联 materials.id
+    unit_id                             BIGINT  NOT NULL,                  -- 关联 units.id
+    unit_name_snapshot                  TEXT NOT NULL,                  -- 单位名称快照
+    conversion_rate_snapshot            DOUBLE PRECISION NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
+    base_quantity                       DOUBLE PRECISION NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
+    quantity                            DOUBLE PRECISION NOT NULL,
+    unit_price                          BIGINT  NOT NULL,                   -- 单价（最小货币单位）
+    amount                              BIGINT  NOT NULL DEFAULT 0,         -- 金额（由应用层计算）
+    standard_cost_unit_price_snapshot   BIGINT  DEFAULT 0, -- 标准成本单价快照（USD，最小货币单位）
+    standard_cost_amount_snapshot       BIGINT  DEFAULT 0,     -- 标准成本金额快照（USD）
+    standard_cost_bom_id                BIGINT,                       -- 标准成本来源 BOM（关联 bom.id，允许为空）
+    standard_cost_bom_version           TEXT,                     -- 标准成本来源 BOM 版本快照
+    cost_unit_price                     BIGINT  DEFAULT 0,                  -- 实际成本单价快照（USD，最小货币单位）
+    cost_amount                         BIGINT  DEFAULT 0,                  -- 实际成本金额快照（USD）
+    remark                              TEXT,
+    sort_order                          INTEGER DEFAULT 0
 );
 
 CREATE INDEX idx_ooi_outbound ON outbound_order_items(outbound_id);
@@ -747,26 +747,26 @@ CREATE INDEX idx_ooi_material ON outbound_order_items(material_id);
 
 ```sql
 CREATE TABLE sales_returns (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    return_no       TEXT    NOT NULL UNIQUE,            -- 退货单号: SR-YYYYMMDD-XXX
-    outbound_id     INTEGER NOT NULL,                   -- 关联 outbound_orders.id（v1.0 必填）
-    customer_id     INTEGER NOT NULL,                   -- 关联 customers.id
-    return_date     TEXT    NOT NULL,
-    currency        TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
+    id                   BIGSERIAL PRIMARY KEY,
+    return_no            TEXT    NOT NULL UNIQUE,            -- 退货单号: SR-YYYYMMDD-XXX
+    outbound_id          BIGINT  NOT NULL,                   -- 关联 outbound_orders.id（v1.0 必填）
+    customer_id          BIGINT  NOT NULL,                   -- 关联 customers.id
+    return_date          TEXT    NOT NULL,
+    currency             TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
                                                        -- 币种（继承原出库单币种）
-    exchange_rate   REAL    DEFAULT 1,                  -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
-    return_reason   TEXT,
-    total_amount    INTEGER DEFAULT 0,                  -- 退货金额（最小货币单位）
-    total_amount_base INTEGER DEFAULT 0,                -- 退货金额（基准币种，默认 USD）
-    status          TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'confirmed')),
-    remark          TEXT,
-    created_by_user_id  INTEGER,                        -- 创建人（关联 users.id）
-    created_by_name     TEXT,                           -- 创建人快照
-    confirmed_by_user_id INTEGER,                       -- 确认人（关联 users.id）
-    confirmed_by_name   TEXT,                           -- 确认人快照
-    confirmed_at        TEXT,
-    created_at      TEXT    DEFAULT (datetime('now')),
-    updated_at      TEXT    DEFAULT (datetime('now'))
+    exchange_rate        DOUBLE PRECISION DEFAULT 1,        -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
+    return_reason        TEXT,
+    total_amount         BIGINT  DEFAULT 0,                  -- 退货金额（最小货币单位）
+    total_amount_base    BIGINT  DEFAULT 0,                -- 退货金额（基准币种，默认 USD）
+    status               TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'confirmed')),
+    remark               TEXT,
+    created_by_user_id   BIGINT,                        -- 创建人（关联 users.id）
+    created_by_name      TEXT,                           -- 创建人快照
+    confirmed_by_user_id BIGINT,                       -- 确认人（关联 users.id）
+    confirmed_by_name    TEXT,                           -- 确认人快照
+    confirmed_at         TIMESTAMP,
+    created_at           TIMESTAMP DEFAULT NOW(),
+    updated_at           TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_sr_customer ON sales_returns(customer_id);
@@ -779,19 +779,19 @@ CREATE INDEX idx_sr_status ON sales_returns(status);
 
 ```sql
 CREATE TABLE sales_return_items (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    return_id       INTEGER NOT NULL,                   -- 关联 sales_returns.id（应用层级联删除）
-    source_outbound_item_id INTEGER NOT NULL,          -- 原出库明细（关联 outbound_order_items.id）
-    lot_id          INTEGER,                            -- 原出库批次（关联 inventory_lots.id）
-    material_id     INTEGER NOT NULL,                   -- 关联 materials.id
-    unit_id         INTEGER NOT NULL,                  -- 关联 units.id
-    unit_name_snapshot TEXT NOT NULL,                  -- 单位名称快照
-    conversion_rate_snapshot REAL NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
-    base_quantity   REAL    NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
-    quantity        REAL    NOT NULL,
-    unit_price      INTEGER NOT NULL,                   -- 单价（最小货币单位）
-    amount          INTEGER NOT NULL DEFAULT 0,         -- 金额（由应用层计算）
-    remark          TEXT
+    id                       BIGSERIAL PRIMARY KEY,
+    return_id                BIGINT  NOT NULL,                   -- 关联 sales_returns.id（应用层级联删除）
+    source_outbound_item_id  BIGINT  NOT NULL,          -- 原出库明细（关联 outbound_order_items.id）
+    lot_id                   BIGINT,                            -- 原出库批次（关联 inventory_lots.id）
+    material_id              BIGINT  NOT NULL,                   -- 关联 materials.id
+    unit_id                  BIGINT  NOT NULL,                  -- 关联 units.id
+    unit_name_snapshot       TEXT NOT NULL,                  -- 单位名称快照
+    conversion_rate_snapshot DOUBLE PRECISION NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
+    base_quantity            DOUBLE PRECISION NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
+    quantity                 DOUBLE PRECISION NOT NULL,
+    unit_price               BIGINT  NOT NULL,                   -- 单价（最小货币单位）
+    amount                   BIGINT  NOT NULL DEFAULT 0,         -- 金额（由应用层计算）
+    remark                   TEXT
 );
 
 CREATE INDEX idx_sri_return ON sales_return_items(return_id);
@@ -807,17 +807,17 @@ CREATE INDEX idx_sri_lot ON sales_return_items(lot_id);
 
 ```sql
 CREATE TABLE inventory (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    material_id     INTEGER NOT NULL,                   -- 关联 materials.id
-    warehouse_id    INTEGER NOT NULL,                   -- 关联 warehouses.id
-    quantity        REAL    DEFAULT 0 CHECK(quantity >= 0),  -- 当前库存数量
-    reserved_qty    REAL    DEFAULT 0 CHECK(reserved_qty >= 0),                 -- 已预留库存数量
-    available_qty   REAL    GENERATED ALWAYS AS (quantity - reserved_qty) STORED,
+    id              BIGSERIAL PRIMARY KEY,
+    material_id     BIGINT  NOT NULL,                   -- 关联 materials.id
+    warehouse_id    BIGINT  NOT NULL,                   -- 关联 warehouses.id
+    quantity        DOUBLE PRECISION DEFAULT 0 CHECK(quantity >= 0),  -- 当前库存数量
+    reserved_qty    DOUBLE PRECISION DEFAULT 0 CHECK(reserved_qty >= 0),                 -- 已预留库存数量
+    available_qty   DOUBLE PRECISION GENERATED ALWAYS AS (quantity - reserved_qty) STORED,
                                                       -- 可用库存数量
-    avg_cost        INTEGER DEFAULT 0,                 -- 移动加权平均成本（USD，最小货币单位）
+    avg_cost        BIGINT  DEFAULT 0,                 -- 移动加权平均成本（USD，最小货币单位）
     last_in_date    TEXT,                              -- 最后入库日期
     last_out_date   TEXT,                              -- 最后出库日期
-    updated_at      TEXT    DEFAULT (datetime('now')),
+    updated_at      TIMESTAMP DEFAULT NOW(),
 
     UNIQUE(material_id, warehouse_id)                  -- 物料+仓库唯一
 );
@@ -830,22 +830,22 @@ CREATE INDEX idx_inv_warehouse ON inventory(warehouse_id);
 
 ```sql
 CREATE TABLE inventory_lots (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    lot_no              TEXT    NOT NULL UNIQUE,         -- 系统内部批次号
-    material_id         INTEGER NOT NULL,               -- 关联 materials.id
-    warehouse_id        INTEGER NOT NULL,               -- 关联 warehouses.id
-    source_inbound_item_id INTEGER NOT NULL,            -- 来源入库明细（关联 inbound_order_items.id）
-    supplier_id         INTEGER,                        -- 关联 suppliers.id
-    received_date       TEXT    NOT NULL,               -- 入库确认日期，用于库龄分析
-    supplier_batch_no   TEXT,                           -- 供应商批次号
-    trace_attrs_json    TEXT,                           -- 批次追溯属性 JSON
-    qty_on_hand         REAL    DEFAULT 0 CHECK(qty_on_hand >= 0),  -- 当前批次库存
-    qty_reserved        REAL    DEFAULT 0 CHECK(qty_reserved >= 0),  -- 当前批次预留
-    available_qty       REAL    GENERATED ALWAYS AS (qty_on_hand - qty_reserved) STORED,
-    receipt_unit_cost   INTEGER DEFAULT 0,              -- 入库时单位成本（USD，最小货币单位）
-    remark              TEXT,
-    created_at          TEXT    DEFAULT (datetime('now')),
-    updated_at          TEXT    DEFAULT (datetime('now'))
+    id                     BIGSERIAL PRIMARY KEY,
+    lot_no                 TEXT    NOT NULL UNIQUE,         -- 系统内部批次号
+    material_id            BIGINT  NOT NULL,               -- 关联 materials.id
+    warehouse_id           BIGINT  NOT NULL,               -- 关联 warehouses.id
+    source_inbound_item_id BIGINT  NOT NULL,            -- 来源入库明细（关联 inbound_order_items.id）
+    supplier_id            BIGINT,                        -- 关联 suppliers.id
+    received_date          TEXT    NOT NULL,               -- 入库确认日期，用于库龄分析
+    supplier_batch_no      TEXT,                           -- 供应商批次号
+    trace_attrs_json       TEXT,                           -- 批次追溯属性 JSON
+    qty_on_hand            DOUBLE PRECISION DEFAULT 0 CHECK(qty_on_hand >= 0),  -- 当前批次库存
+    qty_reserved           DOUBLE PRECISION DEFAULT 0 CHECK(qty_reserved >= 0),  -- 当前批次预留
+    available_qty          DOUBLE PRECISION GENERATED ALWAYS AS (qty_on_hand - qty_reserved) STORED,
+    receipt_unit_cost      BIGINT  DEFAULT 0,              -- 入库时单位成本（USD，最小货币单位）
+    remark                 TEXT,
+    created_at             TIMESTAMP DEFAULT NOW(),
+    updated_at             TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_lot_material ON inventory_lots(material_id);
@@ -857,19 +857,19 @@ CREATE INDEX idx_lot_received ON inventory_lots(received_date);
 
 ```sql
 CREATE TABLE inventory_reservations (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    id              BIGSERIAL PRIMARY KEY,
     source_type     TEXT    NOT NULL CHECK (source_type IN ('custom_order', 'sales_order')),
                                                       -- 预留来源：custom_order=定制单原材料预留；sales_order=销售单成品预留
-    source_id       INTEGER NOT NULL,                   -- 来源单据 ID
-    material_id     INTEGER NOT NULL,                   -- 关联 materials.id
-    warehouse_id    INTEGER NOT NULL,                   -- 关联 warehouses.id
-    reserved_qty    REAL    NOT NULL,                  -- 预留数量
-    consumed_qty    REAL    DEFAULT 0,                 -- 已消耗数量
-    released_qty    REAL    DEFAULT 0,                 -- 已释放数量
+    source_id       BIGINT  NOT NULL,                   -- 来源单据 ID
+    material_id     BIGINT  NOT NULL,                   -- 关联 materials.id
+    warehouse_id    BIGINT  NOT NULL,                   -- 关联 warehouses.id
+    reserved_qty    DOUBLE PRECISION NOT NULL,                  -- 预留数量
+    consumed_qty    DOUBLE PRECISION DEFAULT 0,                 -- 已消耗数量
+    released_qty    DOUBLE PRECISION DEFAULT 0,                 -- 已释放数量
     status          TEXT    DEFAULT 'active' CHECK (status IN ('active', 'consumed', 'released', 'cancelled')),
     remark          TEXT,
-    created_at      TEXT    DEFAULT (datetime('now')),
-    updated_at      TEXT    DEFAULT (datetime('now'))
+    created_at      TIMESTAMP DEFAULT NOW(),
+    updated_at      TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_invr_source ON inventory_reservations(source_type, source_id);
@@ -882,17 +882,17 @@ CREATE INDEX idx_invr_status ON inventory_reservations(status);
 
 ```sql
 CREATE TABLE inventory_reservation_lots (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    reservation_id  INTEGER NOT NULL,                   -- 关联 inventory_reservations.id（应用层级联删除）
-    lot_id          INTEGER,                            -- 关联 inventory_lots.id；非批次物料可为空，批次物料预留后必须落到具体 lot
-    reserved_qty    REAL    NOT NULL,                  -- 分配到该批次的预留数量
-    consumed_qty    REAL    DEFAULT 0,                 -- 已随出库消耗数量
-    released_qty    REAL    DEFAULT 0,                 -- 已释放数量
+    id              BIGSERIAL PRIMARY KEY,
+    reservation_id  BIGINT  NOT NULL,                   -- 关联 inventory_reservations.id（应用层级联删除）
+    lot_id          BIGINT,                            -- 关联 inventory_lots.id；非批次物料可为空，批次物料预留后必须落到具体 lot
+    reserved_qty    DOUBLE PRECISION NOT NULL,                  -- 分配到该批次的预留数量
+    consumed_qty    DOUBLE PRECISION DEFAULT 0,                 -- 已随出库消耗数量
+    released_qty    DOUBLE PRECISION DEFAULT 0,                 -- 已释放数量
     status          TEXT    DEFAULT 'allocated' CHECK (status IN ('allocated', 'consumed', 'released', 'cancelled')),
     sort_order      INTEGER DEFAULT 0,
     remark          TEXT,
-    created_at      TEXT    DEFAULT (datetime('now')),
-    updated_at      TEXT    DEFAULT (datetime('now'))
+    created_at      TIMESTAMP DEFAULT NOW(),
+    updated_at      TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_invrl_reservation ON inventory_reservation_lots(reservation_id);
@@ -904,12 +904,12 @@ CREATE INDEX idx_invrl_status ON inventory_reservation_lots(status);
 
 ```sql
 CREATE TABLE inventory_transactions (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    id                  BIGSERIAL PRIMARY KEY,
     transaction_no      TEXT    NOT NULL UNIQUE,         -- 流水号（唯一）
     transaction_date    TEXT    NOT NULL,               -- 变动日期时间
-    material_id         INTEGER NOT NULL,               -- 关联 materials.id
-    warehouse_id        INTEGER NOT NULL,               -- 关联 warehouses.id
-    lot_id              INTEGER,                        -- 关联 inventory_lots.id
+    material_id         BIGINT  NOT NULL,               -- 关联 materials.id
+    warehouse_id        BIGINT  NOT NULL,               -- 关联 warehouses.id
+    lot_id              BIGINT,                        -- 关联 inventory_lots.id
     transaction_type    TEXT    NOT NULL CHECK (transaction_type IN (
         'purchase_in',      -- 采购入库
         'sales_out',        -- 销售出库
@@ -924,18 +924,18 @@ CREATE TABLE inventory_transactions (
         'other_in',         -- 其他入库
         'other_out'         -- 其他出库
     )),
-    quantity            REAL    NOT NULL,               -- 变动数量（正=入库，负=出库）
-    before_qty          REAL    NOT NULL,               -- 变动前库存
-    after_qty           REAL    NOT NULL,               -- 变动后库存
-    unit_cost           INTEGER DEFAULT 0,              -- 成本单价（USD，最小货币单位）
+    quantity            DOUBLE PRECISION NOT NULL,               -- 变动数量（正=入库，负=出库）
+    before_qty          DOUBLE PRECISION NOT NULL,               -- 变动前库存
+    after_qty           DOUBLE PRECISION NOT NULL,               -- 变动后库存
+    unit_cost           BIGINT  DEFAULT 0,              -- 成本单价（USD，最小货币单位）
     source_type         TEXT,                           -- 来源类型：purchase_inbound/outbound/transfer/check/manual_stock_movement...
-    source_id           INTEGER,                        -- 来源单据头 ID
-    source_item_id      INTEGER,                        -- 来源单据明细行 ID
+    source_id           BIGINT,                        -- 来源单据头 ID
+    source_item_id      BIGINT,                        -- 来源单据明细行 ID
     related_order_no    TEXT,                           -- 关联单据号
-    operator_user_id    INTEGER,                        -- 操作人（关联 users.id）
+    operator_user_id    BIGINT,                        -- 操作人（关联 users.id）
     operator_name       TEXT,                           -- 操作人快照
     remark              TEXT,
-    created_at          TEXT    DEFAULT (datetime('now'))
+    created_at          TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_invt_material ON inventory_transactions(material_id);
@@ -948,26 +948,26 @@ CREATE INDEX idx_invt_related ON inventory_transactions(related_order_no);
 
 #### manual_stock_movements — 自由出入库单（头）
 
-> 实际运行库为 PostgreSQL，迁移文件 `005_manual_stock_movements.sql` 使用 `BIGSERIAL`/`TIMESTAMP`/`NOW()`；此处沿用本文档 SQLite 风格示意，字段语义一致。承载最多 100 条明细的草稿单据，确认时在单事务内整单过账。
+> 承载最多 100 条明细的草稿单据，确认时在单事务内整单过账。
 
 ```sql
 CREATE TABLE manual_stock_movements (
-    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    id                   BIGSERIAL PRIMARY KEY,
     movement_no          TEXT    NOT NULL UNIQUE,        -- 单号 FM-YYYYMMDD-XXX
     direction            TEXT    NOT NULL CHECK (direction IN ('in', 'out')),  -- 方向，一张单不混合
     business_type        TEXT    NOT NULL,               -- 手工固定业务类型编码（见需求 3.6.2a 及规格 §6）
-    warehouse_id         INTEGER NOT NULL,               -- 整单仓库
+    warehouse_id         BIGINT  NOT NULL,               -- 整单仓库
     movement_date        TEXT    NOT NULL,               -- 业务日期 YYYY-MM-DD（后端保存时校验格式）
     counterparty_name    TEXT,                           -- 往来对象（借料类确认前必填）
     remark               TEXT,                           -- 整单备注（其他入库/出库确认前必填）
     status               TEXT    NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'confirmed')),
-    created_by_user_id   INTEGER,                        -- 创建人 ID
+    created_by_user_id   BIGINT,                         -- 创建人 ID
     created_by_name      TEXT,                           -- 创建人名称快照
-    confirmed_by_user_id INTEGER,                        -- 确认人 ID
+    confirmed_by_user_id BIGINT,                         -- 确认人 ID
     confirmed_by_name    TEXT,                           -- 确认人名称快照
-    confirmed_at         TEXT,                           -- 确认时间
-    created_at           TEXT    DEFAULT (datetime('now')),
-    updated_at           TEXT    DEFAULT (datetime('now'))
+    confirmed_at         TIMESTAMP,                      -- 确认时间
+    created_at           TIMESTAMP DEFAULT NOW(),
+    updated_at           TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_msm_status ON manual_stock_movements(status);
@@ -980,16 +980,16 @@ CREATE INDEX idx_msm_direction ON manual_stock_movements(direction);
 
 ```sql
 CREATE TABLE manual_stock_movement_items (
-    id                INTEGER PRIMARY KEY AUTOINCREMENT,
-    movement_id       INTEGER NOT NULL,                  -- 关联 manual_stock_movements.id
+    id                BIGSERIAL PRIMARY KEY,
+    movement_id       BIGINT  NOT NULL,                  -- 关联 manual_stock_movements.id
     sort_order        INTEGER NOT NULL DEFAULT 0,        -- 显示顺序
-    material_id       INTEGER NOT NULL,                  -- 关联 materials.id
-    quantity          REAL    NOT NULL,                  -- 基本单位数量
-    unit_cost_usd     INTEGER,                           -- 入库单位成本（USD 最小货币单位）
+    material_id       BIGINT  NOT NULL,                  -- 关联 materials.id
+    quantity          DOUBLE PRECISION NOT NULL,         -- 基本单位数量
+    unit_cost_usd     BIGINT,                            -- 入库单位成本（USD 最小货币单位）
     lot_no            TEXT,                              -- 入库批次号（批次追踪物料为空则自动生成）
     supplier_batch_no TEXT,                              -- 供应商批次号
-    created_at        TEXT    DEFAULT (datetime('now')),
-    updated_at        TEXT    DEFAULT (datetime('now'))
+    created_at        TIMESTAMP DEFAULT NOW(),
+    updated_at        TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_msmi_movement ON manual_stock_movement_items(movement_id);
@@ -1002,23 +1002,23 @@ CREATE INDEX idx_msmi_material ON manual_stock_movement_items(material_id);
 
 ```sql
 CREATE TABLE stock_checks (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    check_no        TEXT    NOT NULL UNIQUE,            -- 盘点单号: SC-YYYYMMDD-XXX
-    warehouse_id    INTEGER NOT NULL,                   -- 关联 warehouses.id
-    check_date      TEXT    NOT NULL,
-    status          TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'checking', 'confirmed')),
-    scope_type      TEXT    DEFAULT 'warehouse' CHECK (scope_type IN ('warehouse', 'category')),
+    id                   BIGSERIAL PRIMARY KEY,
+    check_no             TEXT    NOT NULL UNIQUE,            -- 盘点单号: SC-YYYYMMDD-XXX
+    warehouse_id         BIGINT  NOT NULL,                   -- 关联 warehouses.id
+    check_date           TEXT    NOT NULL,
+    status               TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'checking', 'confirmed')),
+    scope_type           TEXT    DEFAULT 'warehouse' CHECK (scope_type IN ('warehouse', 'category')),
                                                       -- 盘点范围：整仓 / 分类范围
-    scope_category_id INTEGER,                          -- 盘点分类范围（关联 categories.id，可空）
-    scope_snapshot_json TEXT,                           -- 盘点范围快照 JSON
-    remark          TEXT,
-    created_by_user_id  INTEGER,                        -- 创建人（关联 users.id）
-    created_by_name     TEXT,                           -- 创建人快照
-    confirmed_by_user_id INTEGER,                       -- 审核人（关联 users.id）
-    confirmed_by_name   TEXT,                           -- 审核人快照
-    confirmed_at        TEXT,
-    created_at      TEXT    DEFAULT (datetime('now')),
-    updated_at      TEXT    DEFAULT (datetime('now'))
+    scope_category_id    BIGINT,                          -- 盘点分类范围（关联 categories.id，可空）
+    scope_snapshot_json  TEXT,                           -- 盘点范围快照 JSON
+    remark               TEXT,
+    created_by_user_id   BIGINT,                        -- 创建人（关联 users.id）
+    created_by_name      TEXT,                           -- 创建人快照
+    confirmed_by_user_id BIGINT,                       -- 审核人（关联 users.id）
+    confirmed_by_name    TEXT,                           -- 审核人快照
+    confirmed_at         TIMESTAMP,
+    created_at           TIMESTAMP DEFAULT NOW(),
+    updated_at           TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_sc_scope_category ON stock_checks(scope_category_id);
@@ -1031,18 +1031,18 @@ CREATE INDEX idx_sc_status ON stock_checks(status);
 
 ```sql
 CREATE TABLE stock_check_items (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    check_id        INTEGER NOT NULL,                   -- 关联 stock_checks.id（应用层级联删除）
-    material_id     INTEGER NOT NULL,                   -- 关联 materials.id
-    lot_id          INTEGER,                            -- 批次盘点时关联 inventory_lots.id
+    id              BIGSERIAL PRIMARY KEY,
+    check_id        BIGINT  NOT NULL,                   -- 关联 stock_checks.id（应用层级联删除）
+    material_id     BIGINT  NOT NULL,                   -- 关联 materials.id
+    lot_id          BIGINT,                            -- 批次盘点时关联 inventory_lots.id
     lot_no_snapshot TEXT,                               -- 批次号快照
-    system_qty      REAL    NOT NULL,                  -- 系统库存
-    actual_qty      REAL,                              -- 实盘数量
-    diff_qty        REAL    GENERATED ALWAYS AS (COALESCE(actual_qty, 0) - system_qty) STORED,
+    system_qty      DOUBLE PRECISION NOT NULL,                  -- 系统库存
+    actual_qty      DOUBLE PRECISION,                             -- 实盘数量
+    diff_qty        DOUBLE PRECISION GENERATED ALWAYS AS (COALESCE(actual_qty, 0) - system_qty) STORED,
                                                        -- 盈亏数量
-    unit_price      INTEGER DEFAULT 0,                 -- 参考单价（USD，最小货币单位）
-    diff_amount     INTEGER GENERATED ALWAYS AS (
-        CAST(ROUND((COALESCE(actual_qty, 0) - system_qty) * unit_price, 0) AS INTEGER)
+    unit_price      BIGINT  DEFAULT 0,                 -- 参考单价（USD，最小货币单位）
+    diff_amount     BIGINT  GENERATED ALWAYS AS (
+        CAST(ROUND((COALESCE(actual_qty, 0) - system_qty) * unit_price) AS BIGINT)
     ) STORED,
                                                        -- 盈亏金额参考值（USD，四舍五入到最小货币单位，不参与正式财务记账）
     remark          TEXT
@@ -1059,20 +1059,20 @@ CREATE INDEX idx_stock_check_items_material ON stock_check_items(material_id);
 
 ```sql
 CREATE TABLE transfers (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    transfer_no     TEXT    NOT NULL UNIQUE,            -- 调拨单号: TF-YYYYMMDD-XXX
-    from_warehouse_id INTEGER NOT NULL,                   -- 调出仓库（关联 warehouses.id）
-    to_warehouse_id INTEGER NOT NULL,                   -- 调入仓库（关联 warehouses.id）
-    transfer_date   TEXT    NOT NULL,
-    status          TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'confirmed')),
-    remark          TEXT,
-    created_by_user_id  INTEGER,                        -- 创建人（关联 users.id）
-    created_by_name     TEXT,                           -- 创建人快照
-    confirmed_by_user_id INTEGER,                       -- 确认人（关联 users.id）
-    confirmed_by_name   TEXT,                           -- 确认人快照
-    confirmed_at        TEXT,
-    created_at      TEXT    DEFAULT (datetime('now')),
-    updated_at      TEXT    DEFAULT (datetime('now'))
+    id                   BIGSERIAL PRIMARY KEY,
+    transfer_no          TEXT    NOT NULL UNIQUE,            -- 调拨单号: TF-YYYYMMDD-XXX
+    from_warehouse_id    BIGINT  NOT NULL,                   -- 调出仓库（关联 warehouses.id）
+    to_warehouse_id      BIGINT  NOT NULL,                   -- 调入仓库（关联 warehouses.id）
+    transfer_date        TEXT    NOT NULL,
+    status               TEXT    DEFAULT 'draft' CHECK (status IN ('draft', 'confirmed')),
+    remark               TEXT,
+    created_by_user_id   BIGINT,                        -- 创建人（关联 users.id）
+    created_by_name      TEXT,                           -- 创建人快照
+    confirmed_by_user_id BIGINT,                       -- 确认人（关联 users.id）
+    confirmed_by_name    TEXT,                           -- 确认人快照
+    confirmed_at         TIMESTAMP,
+    created_at           TIMESTAMP DEFAULT NOW(),
+    updated_at           TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_transfers_from_wh ON transfers(from_warehouse_id);
@@ -1085,16 +1085,16 @@ CREATE INDEX idx_transfers_status ON transfers(status);
 
 ```sql
 CREATE TABLE transfer_items (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    transfer_id     INTEGER NOT NULL,                   -- 关联 transfers.id（应用层级联删除）
-    lot_id          INTEGER,                            -- 调拨批次（关联 inventory_lots.id）
-    material_id     INTEGER NOT NULL,                   -- 关联 materials.id
-    unit_id         INTEGER NOT NULL,                  -- 关联 units.id
-    unit_name_snapshot TEXT NOT NULL,                  -- 单位名称快照
-    conversion_rate_snapshot REAL NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
-    base_quantity   REAL    NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
-    quantity        REAL    NOT NULL,
-    remark          TEXT
+    id                       BIGSERIAL PRIMARY KEY,
+    transfer_id              BIGINT  NOT NULL,                   -- 关联 transfers.id（应用层级联删除）
+    lot_id                   BIGINT,                            -- 调拨批次（关联 inventory_lots.id）
+    material_id              BIGINT  NOT NULL,                   -- 关联 materials.id
+    unit_id                  BIGINT  NOT NULL,                  -- 关联 units.id
+    unit_name_snapshot       TEXT NOT NULL,                  -- 单位名称快照
+    conversion_rate_snapshot DOUBLE PRECISION NOT NULL DEFAULT 1,  -- 辅助单位→基本单位换算率快照（基本单位时为1）
+    base_quantity            DOUBLE PRECISION NOT NULL,                  -- 基本单位数量（= quantity × conversion_rate_snapshot）
+    quantity                 DOUBLE PRECISION NOT NULL,
+    remark                   TEXT
 );
 
 CREATE INDEX idx_ti_transfer ON transfer_items(transfer_id);
@@ -1110,26 +1110,26 @@ CREATE INDEX idx_transfer_items_material ON transfer_items(material_id);
 
 ```sql
 CREATE TABLE payables (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    supplier_id     INTEGER NOT NULL,                   -- 关联 suppliers.id
-    inbound_id      INTEGER,                            -- 关联入库单（关联 inbound_orders.id）
-    return_id       INTEGER,                            -- 关联采购退货单（关联 purchase_returns.id，仅退货调整记录）
+    id              BIGSERIAL PRIMARY KEY,
+    supplier_id     BIGINT  NOT NULL,                   -- 关联 suppliers.id
+    inbound_id      BIGINT,                            -- 关联入库单（关联 inbound_orders.id）
+    return_id       BIGINT,                            -- 关联采购退货单（关联 purchase_returns.id，仅退货调整记录）
     adjustment_type TEXT    DEFAULT 'normal' CHECK (adjustment_type IN ('normal', 'return_offset')),
                                                        -- normal=正常入库应付 return_offset=退货冲减（负金额）
     order_no        TEXT,                               -- 关联单据号
     payable_date    TEXT    NOT NULL,                    -- 应付日期
     currency        TEXT    NOT NULL DEFAULT 'USD' CHECK(currency IN ('VND', 'CNY', 'USD')),
                                                        -- 币种（继承采购单币种）
-    exchange_rate   REAL    DEFAULT 1,                   -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
-    payable_amount  INTEGER NOT NULL,                   -- 应付金额（原币，最小货币单位）
-    payable_amount_base INTEGER DEFAULT 0,              -- 应付金额（基准币种折算，默认 USD）
-    paid_amount     INTEGER DEFAULT 0,                   -- 已付金额（最小货币单位）
-    unpaid_amount   INTEGER GENERATED ALWAYS AS (payable_amount - paid_amount) STORED,
+    exchange_rate   DOUBLE PRECISION DEFAULT 1,          -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
+    payable_amount  BIGINT  NOT NULL,                   -- 应付金额（原币，最小货币单位）
+    payable_amount_base BIGINT DEFAULT 0,              -- 应付金额（基准币种折算，默认 USD）
+    paid_amount     BIGINT  DEFAULT 0,                   -- 已付金额（最小货币单位）
+    unpaid_amount   BIGINT  GENERATED ALWAYS AS (payable_amount - paid_amount) STORED,
     due_date        TEXT,                                -- 到期日
     status          TEXT    DEFAULT 'unpaid' CHECK (status IN ('unpaid', 'partial', 'paid')),
     remark          TEXT,
-    created_at      TEXT    DEFAULT (datetime('now')),
-    updated_at      TEXT    DEFAULT (datetime('now'))
+    created_at      TIMESTAMP DEFAULT NOW(),
+    updated_at      TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_pay_supplier ON payables(supplier_id);
@@ -1142,15 +1142,15 @@ CREATE INDEX idx_paydt_due ON payables(due_date);
 
 ```sql
 CREATE TABLE payment_records (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    payable_id      INTEGER NOT NULL,                   -- 关联 payables.id
+    id              BIGSERIAL PRIMARY KEY,
+    payable_id      BIGINT  NOT NULL,                   -- 关联 payables.id
     payment_date    TEXT    NOT NULL,
-    payment_amount  INTEGER NOT NULL,                    -- 付款金额（最小货币单位）
+    payment_amount  BIGINT  NOT NULL,                    -- 付款金额（最小货币单位）
     currency        TEXT    NOT NULL CHECK(currency IN ('VND', 'CNY', 'USD')),
                                                         -- 付款币种（v1.0 默认跟随应付币种）
     payment_method  TEXT,                               -- 现金/转账/支票
     remark          TEXT,
-    created_at      TEXT    DEFAULT (datetime('now'))
+    created_at      TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_payment_records_payable ON payment_records(payable_id);
@@ -1160,26 +1160,26 @@ CREATE INDEX idx_payment_records_payable ON payment_records(payable_id);
 
 ```sql
 CREATE TABLE receivables (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_id         INTEGER NOT NULL,                -- 关联 customers.id
-    outbound_id         INTEGER,                        -- 关联 outbound_orders.id
-    return_id           INTEGER,                        -- 关联销售退货单（关联 sales_returns.id，仅退货调整记录）
-    adjustment_type     TEXT    DEFAULT 'normal' CHECK (adjustment_type IN ('normal', 'return_offset')),
+    id                     BIGSERIAL PRIMARY KEY,
+    customer_id            BIGINT  NOT NULL,                -- 关联 customers.id
+    outbound_id            BIGINT,                        -- 关联 outbound_orders.id
+    return_id              BIGINT,                        -- 关联销售退货单（关联 sales_returns.id，仅退货调整记录）
+    adjustment_type        TEXT    DEFAULT 'normal' CHECK (adjustment_type IN ('normal', 'return_offset')),
                                                        -- normal=正常出库应收 return_offset=退货冲减（负金额）
-    order_no            TEXT,
-    receivable_date     TEXT    NOT NULL,
-    currency            TEXT    NOT NULL DEFAULT 'USD' CHECK(currency IN ('VND', 'CNY', 'USD')),
+    order_no               TEXT,
+    receivable_date        TEXT    NOT NULL,
+    currency               TEXT    NOT NULL DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
                                                        -- 币种（继承销售单币种）
-    exchange_rate       REAL    DEFAULT 1,               -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
-    receivable_amount   INTEGER NOT NULL,                -- 应收金额（原币，最小货币单位）
-    receivable_amount_base INTEGER DEFAULT 0,            -- 应收金额（基准币种折算，默认 USD）
-    received_amount     INTEGER DEFAULT 0,               -- 已收金额（最小货币单位）
-    unreceived_amount   INTEGER GENERATED ALWAYS AS (receivable_amount - received_amount) STORED,
-    due_date            TEXT,
-    status              TEXT    DEFAULT 'unpaid' CHECK (status IN ('unpaid', 'partial', 'paid')),
-    remark              TEXT,
-    created_at          TEXT    DEFAULT (datetime('now')),
-    updated_at          TEXT    DEFAULT (datetime('now'))
+    exchange_rate          DOUBLE PRECISION DEFAULT 1,               -- 汇率（存储方向：1 USD = N 外币；USD 时为 1）
+    receivable_amount      BIGINT  NOT NULL,                -- 应收金额（原币，最小货币单位）
+    receivable_amount_base BIGINT DEFAULT 0,            -- 应收金额（基准币种折算，默认 USD）
+    received_amount        BIGINT  DEFAULT 0,               -- 已收金额（最小货币单位）
+    unreceived_amount      BIGINT  GENERATED ALWAYS AS (receivable_amount - received_amount) STORED,
+    due_date               TEXT,
+    status                 TEXT    DEFAULT 'unpaid' CHECK (status IN ('unpaid', 'partial', 'paid')),
+    remark                 TEXT,
+    created_at             TIMESTAMP DEFAULT NOW(),
+    updated_at             TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_recv_customer ON receivables(customer_id);
@@ -1192,15 +1192,15 @@ CREATE INDEX idx_recv_due ON receivables(due_date);
 
 ```sql
 CREATE TABLE receipt_records (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    receivable_id   INTEGER NOT NULL,                   -- 关联 receivables.id
+    id              BIGSERIAL PRIMARY KEY,
+    receivable_id   BIGINT  NOT NULL,                   -- 关联 receivables.id
     receipt_date    TEXT    NOT NULL,
-    receipt_amount  INTEGER NOT NULL,                    -- 收款金额（最小货币单位）
+    receipt_amount  BIGINT  NOT NULL,                    -- 收款金额（最小货币单位）
     currency        TEXT    NOT NULL CHECK(currency IN ('VND', 'CNY', 'USD')),
                                                         -- 收款币种（v1.0 默认跟随应收币种）
     receipt_method  TEXT,
     remark          TEXT,
-    created_at      TEXT    DEFAULT (datetime('now'))
+    created_at      TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_receipt_records_receivable ON receipt_records(receivable_id);
@@ -1214,38 +1214,38 @@ CREATE INDEX idx_receipt_records_receivable ON receipt_records(receivable_id);
 
 ```sql
 CREATE TABLE custom_orders (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    order_no            TEXT    NOT NULL UNIQUE,        -- 定制单号: CO-YYYYMMDD-XXX
-    customer_id         INTEGER NOT NULL,                -- 关联 customers.id
-    order_date          TEXT    NOT NULL,
-    delivery_date       TEXT,                           -- 承诺交付日期
-    currency            TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
-    exchange_rate       REAL    DEFAULT 1,
-    custom_type         TEXT    NOT NULL CHECK (custom_type IN ('size', 'material', 'full')),
+    id                   BIGSERIAL PRIMARY KEY,
+    order_no             TEXT    NOT NULL UNIQUE,        -- 定制单号: CO-YYYYMMDD-XXX
+    customer_id          BIGINT  NOT NULL,                -- 关联 customers.id
+    order_date           TEXT    NOT NULL,
+    delivery_date        TEXT,                           -- 承诺交付日期
+    currency             TEXT    DEFAULT 'USD' CHECK (currency IN ('VND', 'CNY', 'USD')),
+    exchange_rate        DOUBLE PRECISION DEFAULT 1,
+    custom_type          TEXT    NOT NULL CHECK (custom_type IN ('size', 'material', 'full')),
                                                        -- size=尺寸定制 material=材质定制 full=全定制
-    priority            TEXT    DEFAULT 'normal' CHECK (priority IN ('normal', 'urgent', 'critical')),
+    priority             TEXT    DEFAULT 'normal' CHECK (priority IN ('normal', 'urgent', 'critical')),
                                                        -- normal=普通 urgent=加急 critical=特急
-    status              TEXT    DEFAULT 'quoting' CHECK (status IN ('quoting', 'confirmed', 'producing', 'completed', 'cancelled')),
+    status               TEXT    DEFAULT 'quoting' CHECK (status IN ('quoting', 'confirmed', 'producing', 'completed', 'cancelled')),
                                                        -- quoting=报价中 confirmed=已确认 producing=生产中
-    ref_material_id     INTEGER,                        -- 参考标准产品，可选（关联 materials.id）
-    ref_bom_id          INTEGER,                        -- 参考 BOM，可选（关联 bom.id）
-    custom_desc         TEXT,                           -- 定制要求描述
-    quote_amount        INTEGER DEFAULT 0,              -- 报价金额（原币，最小货币单位）
-    quote_amount_base   INTEGER DEFAULT 0,              -- 报价金额（基准币种，默认 USD）
-    cost_amount         INTEGER DEFAULT 0,              -- 成本金额（BOM 核算，USD，最小货币单位）
-    attachment_path     TEXT,                           -- 设计图/参考图路径
-    sales_order_id      INTEGER,                        -- 转销售单后的业务关联（关联 sales_orders.id）；完工后可据此分配成品预留
-    remark              TEXT,
-    created_by_user_id  INTEGER,                        -- 创建人（关联 users.id）
-    created_by_name     TEXT,                           -- 创建人快照
-    confirmed_by_user_id INTEGER,                       -- 确认人（关联 users.id）
-    confirmed_by_name   TEXT,                           -- 确认人快照
-    confirmed_at        TEXT,
-    cancelled_by_user_id INTEGER,                       -- 取消人（关联 users.id）
-    cancelled_by_name   TEXT,                           -- 取消人快照
-    cancelled_at        TEXT,
-    created_at          TEXT    DEFAULT (datetime('now')),
-    updated_at          TEXT    DEFAULT (datetime('now'))
+    ref_material_id      BIGINT,                        -- 参考标准产品，可选（关联 materials.id）
+    ref_bom_id           BIGINT,                        -- 参考 BOM，可选（关联 bom.id）
+    custom_desc          TEXT,                           -- 定制要求描述
+    quote_amount         BIGINT DEFAULT 0,              -- 报价金额（原币，最小货币单位）
+    quote_amount_base    BIGINT DEFAULT 0,              -- 报价金额（基准币种，默认 USD）
+    cost_amount          BIGINT DEFAULT 0,              -- 成本金额（BOM 核算，USD，最小货币单位）
+    attachment_path      TEXT,                           -- 设计图/参考图路径
+    sales_order_id       BIGINT,                        -- 转销售单后的业务关联（关联 sales_orders.id）；完工后可据此分配成品预留
+    remark               TEXT,
+    created_by_user_id   BIGINT,                        -- 创建人（关联 users.id）
+    created_by_name      TEXT,                           -- 创建人快照
+    confirmed_by_user_id BIGINT,                       -- 确认人（关联 users.id）
+    confirmed_by_name    TEXT,                           -- 确认人快照
+    confirmed_at         TIMESTAMP,
+    cancelled_by_user_id BIGINT,                       -- 取消人（关联 users.id）
+    cancelled_by_name    TEXT,                           -- 取消人快照
+    cancelled_at         TIMESTAMP,
+    created_at           TIMESTAMP DEFAULT NOW(),
+    updated_at           TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_co_customer ON custom_orders(customer_id);
@@ -1257,12 +1257,12 @@ CREATE INDEX idx_co_date ON custom_orders(order_date);
 
 ```sql
 CREATE TABLE custom_order_items (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    order_id        INTEGER NOT NULL,                   -- 关联 custom_orders.id（应用层级联删除）
+    id              BIGSERIAL PRIMARY KEY,
+    order_id        BIGINT  NOT NULL,                   -- 关联 custom_orders.id（应用层级联删除）
     config_key      TEXT    NOT NULL,                   -- 配置项：尺寸/材质/颜色/五金件 等
     standard_value  TEXT,                               -- 标准产品的默认配置
     custom_value    TEXT    NOT NULL,                   -- 客户要求的定制配置
-    extra_charge    INTEGER DEFAULT 0,                  -- 因定制产生的加价（最小货币单位）
+    extra_charge    BIGINT  DEFAULT 0,                  -- 因定制产生的加价（最小货币单位）
     remark          TEXT,
     sort_order      INTEGER DEFAULT 0
 );
@@ -1283,13 +1283,13 @@ CREATE INDEX idx_coi_order ON custom_order_items(order_id);
 
 ```sql
 CREATE TABLE IF NOT EXISTS production_orders (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    id                  BIGSERIAL PRIMARY KEY,
     order_no            TEXT    NOT NULL UNIQUE,            -- 工单编号: PO-YYYYMMDD-XXX
-    bom_id              INTEGER NOT NULL,                   -- 关联 boms.id（BOM 版本）
-    custom_order_id     INTEGER,                            -- 关联 custom_orders.id（可选，定制单触发）
-    output_material_id  INTEGER NOT NULL,                   -- 产出物料（关联 materials.id，成品/半成品）
-    planned_qty         REAL    NOT NULL DEFAULT 0,         -- 计划生产数量
-    completed_qty       REAL    NOT NULL DEFAULT 0,         -- 已完工数量
+    bom_id              BIGINT  NOT NULL,                   -- 关联 boms.id（BOM 版本）
+    custom_order_id     BIGINT,                             -- 关联 custom_orders.id（可选，定制单触发）
+    output_material_id  BIGINT  NOT NULL,                   -- 产出物料（关联 materials.id，成品/半成品）
+    planned_qty         DOUBLE PRECISION NOT NULL DEFAULT 0,         -- 计划生产数量
+    completed_qty       DOUBLE PRECISION NOT NULL DEFAULT 0,         -- 已完工数量
     status              TEXT    NOT NULL DEFAULT 'draft'
                         CHECK (status IN ('draft', 'picking', 'producing', 'completed', 'cancelled')),
                                                             -- draft=草稿 picking=领料中 producing=生产中 completed=已完工 cancelled=已取消
@@ -1298,10 +1298,10 @@ CREATE TABLE IF NOT EXISTS production_orders (
     actual_start_date   TEXT,                               -- 实际开始日期（首次领料时自动填充）
     actual_end_date     TEXT,                               -- 实际完成日期（完工入库时自动填充）
     remark              TEXT,
-    created_by_user_id  INTEGER DEFAULT 1,
+    created_by_user_id  BIGINT  DEFAULT 1,
     created_by_name     TEXT    DEFAULT 'admin',
-    created_at          TEXT    DEFAULT (datetime('now')),
-    updated_at          TEXT    DEFAULT (datetime('now'))
+    created_at          TIMESTAMP DEFAULT NOW(),
+    updated_at          TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_po_status ON production_orders(status);
@@ -1314,16 +1314,16 @@ CREATE INDEX IF NOT EXISTS idx_po_output ON production_orders(output_material_id
 
 ```sql
 CREATE TABLE IF NOT EXISTS production_order_materials (
-    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
-    production_order_id   INTEGER NOT NULL,                 -- 关联 production_orders.id
-    material_id           INTEGER NOT NULL,                 -- 领料物料（关联 materials.id，原材料）
+    id                    BIGSERIAL PRIMARY KEY,
+    production_order_id   BIGINT  NOT NULL,                 -- 关联 production_orders.id
+    material_id           BIGINT  NOT NULL,                 -- 领料物料（关联 materials.id，原材料）
     material_name         TEXT    NOT NULL,                 -- 物料名称快照
     material_code         TEXT,                             -- 物料编码快照
-    required_qty          REAL    NOT NULL DEFAULT 0,       -- 计划领料量（BOM 展算，含损耗）
-    picked_qty            REAL    NOT NULL DEFAULT 0,       -- 已领料量
-    returned_qty          REAL    NOT NULL DEFAULT 0,       -- 退料量
+    required_qty          DOUBLE PRECISION NOT NULL DEFAULT 0,       -- 计划领料量（BOM 展算，含损耗）
+    picked_qty            DOUBLE PRECISION NOT NULL DEFAULT 0,       -- 已领料量
+    returned_qty          DOUBLE PRECISION NOT NULL DEFAULT 0,       -- 退料量
     unit_name             TEXT,                             -- 单位名称快照
-    warehouse_id          INTEGER                           -- 默认出库仓库（关联 warehouses.id）
+    warehouse_id          BIGINT                           -- 默认出库仓库（关联 warehouses.id）
 );
 
 CREATE INDEX IF NOT EXISTS idx_pom_order ON production_order_materials(production_order_id);
@@ -1333,15 +1333,15 @@ CREATE INDEX IF NOT EXISTS idx_pom_order ON production_order_materials(productio
 
 ```sql
 CREATE TABLE IF NOT EXISTS production_completions (
-    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
-    production_order_id   INTEGER NOT NULL,                 -- 关联 production_orders.id
+    id                    BIGSERIAL PRIMARY KEY,
+    production_order_id   BIGINT  NOT NULL,                 -- 关联 production_orders.id
     completion_no         TEXT    NOT NULL,                 -- 完工单号
-    quantity              REAL    NOT NULL DEFAULT 0,       -- 完工入库数量
-    warehouse_id          INTEGER NOT NULL,                 -- 入库仓库（关联 warehouses.id）
-    unit_cost             INTEGER NOT NULL DEFAULT 0,       -- 单位成本（整数，最小单位存储）
+    quantity              DOUBLE PRECISION NOT NULL DEFAULT 0,       -- 完工入库数量
+    warehouse_id          BIGINT  NOT NULL,                 -- 入库仓库（关联 warehouses.id）
+    unit_cost             BIGINT  NOT NULL DEFAULT 0,       -- 单位成本（整数，最小单位存储）
     remark                TEXT,
-    completed_at          TEXT    DEFAULT (datetime('now')),
-    created_at            TEXT    DEFAULT (datetime('now'))
+    completed_at          TIMESTAMP DEFAULT NOW(),
+    created_at            TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_pc_order ON production_completions(production_order_id);
@@ -1353,15 +1353,15 @@ CREATE INDEX IF NOT EXISTS idx_pc_order ON production_completions(production_ord
 
 ```sql
 CREATE TABLE replenishment_rules (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    material_id     INTEGER NOT NULL,                   -- 关联 materials.id
+    id              BIGSERIAL PRIMARY KEY,
+    material_id     BIGINT  NOT NULL,                   -- 关联 materials.id
     analysis_days   INTEGER DEFAULT 90,                -- 历史分析天数
     lead_days       INTEGER DEFAULT 7,                 -- 补货周期（天）
     safety_days     INTEGER DEFAULT 3,                 -- 安全天数
-    batch_multiple  REAL    DEFAULT 1,                 -- 批量倍数
-    preferred_supplier_id INTEGER,                     -- 首选供应商（关联 suppliers.id）
-    is_enabled      INTEGER DEFAULT 1,                 -- 是否启用自动建议
-    updated_at      TEXT    DEFAULT (datetime('now')),
+    batch_multiple  DOUBLE PRECISION DEFAULT 1,        -- 批量倍数
+    preferred_supplier_id BIGINT,                     -- 首选供应商（关联 suppliers.id）
+    is_enabled      BOOLEAN DEFAULT TRUE,              -- 是否启用自动建议
+    updated_at      TIMESTAMP DEFAULT NOW(),
 
     UNIQUE(material_id)
 );
@@ -1373,23 +1373,23 @@ CREATE INDEX idx_rr_material ON replenishment_rules(material_id);
 
 ```sql
 CREATE TABLE replenishment_logs (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    material_id         INTEGER NOT NULL,               -- 关联 materials.id
+    id                  BIGSERIAL PRIMARY KEY,
+    material_id         BIGINT  NOT NULL,               -- 关联 materials.id
     suggestion_date     TEXT    NOT NULL,               -- 建议生成日期
-    physical_qty        REAL    NOT NULL,               -- 当时物理库存
-    reserved_qty        REAL    DEFAULT 0,              -- 当时预留库存
-    available_qty       REAL    NOT NULL,               -- 当时可用库存
-    safety_stock        REAL    NOT NULL,               -- 安全库存
-    daily_consumption   REAL    DEFAULT 0,              -- 日均消耗
-    days_until_stockout REAL    DEFAULT 0,              -- 预计断货天数
-    suggested_qty       REAL    NOT NULL,               -- 建议采购量
-    supplier_id         INTEGER,                        -- 推荐供应商（关联 suppliers.id）
-    ref_price           INTEGER,                           -- 参考单价（最小货币单位）
+    physical_qty        DOUBLE PRECISION NOT NULL,               -- 当时物理库存
+    reserved_qty        DOUBLE PRECISION DEFAULT 0,              -- 当时预留库存
+    available_qty       DOUBLE PRECISION NOT NULL,               -- 当时可用库存
+    safety_stock        DOUBLE PRECISION NOT NULL,               -- 安全库存
+    daily_consumption   DOUBLE PRECISION DEFAULT 0,              -- 日均消耗
+    days_until_stockout DOUBLE PRECISION DEFAULT 0,              -- 预计断货天数
+    suggested_qty       DOUBLE PRECISION NOT NULL,               -- 建议采购量
+    supplier_id         BIGINT,                        -- 推荐供应商（关联 suppliers.id）
+    ref_price           BIGINT,                           -- 参考单价（最小货币单位）
     ref_currency        TEXT    DEFAULT 'USD',          -- 参考币种
     status              TEXT    DEFAULT 'pending' CHECK (status IN ('pending', 'ordered', 'ignored')),
                                                        -- pending=待处理 ordered=已下单 ignored=已忽略
-    purchase_order_id   INTEGER,                        -- 关联生成的采购单（关联 purchase_orders.id）
-    created_at          TEXT    DEFAULT (datetime('now'))
+    purchase_order_id   BIGINT,                        -- 关联生成的采购单（关联 purchase_orders.id）
+    created_at          TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_rl_material ON replenishment_logs(material_id);
@@ -1405,21 +1405,21 @@ CREATE INDEX idx_rl_status ON replenishment_logs(status);
 
 ```sql
 CREATE TABLE users (
-    id                  BIGSERIAL PRIMARY KEY,
-    username            TEXT    NOT NULL UNIQUE,         -- 登录账号
-    display_name        TEXT    NOT NULL,                -- 显示名
-    password_hash       TEXT    NOT NULL,                -- bcrypt 哈希
-    role                TEXT    NOT NULL CHECK (role IN ('admin', 'operator')),
-                                                       -- admin=管理员 operator=操作员
-    is_enabled          BOOLEAN DEFAULT TRUE,            -- 是否启用
+    id                   BIGSERIAL PRIMARY KEY,
+    username             TEXT    NOT NULL UNIQUE,         -- 登录账号
+    display_name         TEXT    NOT NULL,                -- 显示名
+    password_hash        TEXT    NOT NULL,                -- bcrypt 哈希
+    role                 TEXT    NOT NULL CHECK (role IN ('admin', 'operator')),
+                                                        -- admin=管理员 operator=操作员
+    is_enabled           BOOLEAN DEFAULT TRUE,            -- 是否启用
     must_change_password BOOLEAN DEFAULT TRUE,           -- 首次登录强制改密
-    failed_login_count  INTEGER DEFAULT 0,               -- 连续失败次数
-    locked_until        TEXT,                            -- 锁定截止时间
-    password_changed_at TEXT,                            -- 最近改密时间
-    session_version     INTEGER DEFAULT 1,               -- 本地会话版本号，改密后递增
-    last_login_at       TEXT,
-    created_at          TIMESTAMP DEFAULT NOW(),
-    updated_at          TIMESTAMP DEFAULT NOW()
+    failed_login_count   INTEGER DEFAULT 0,               -- 连续失败次数
+    locked_until         TEXT,                            -- 锁定截止时间
+    password_changed_at  TIMESTAMP,                       -- 最近改密时间
+    session_version      INTEGER DEFAULT 1,               -- 本地会话版本号，改密后递增
+    last_login_at        TIMESTAMP,
+    created_at           TIMESTAMP DEFAULT NOW(),
+    updated_at           TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_users_role ON users(role);
@@ -1437,7 +1437,7 @@ CREATE TABLE system_config (
     key         TEXT    PRIMARY KEY,
     value       TEXT    NOT NULL,
     remark      TEXT,
-    updated_at  TEXT    DEFAULT (datetime('now'))
+    updated_at  TIMESTAMP DEFAULT NOW()
 );
 
 -- 预置配置项
@@ -1501,15 +1501,15 @@ INSERT INTO system_config (key, value, remark) VALUES
 
 ```sql
 CREATE TABLE exchange_rates (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    id              BIGSERIAL PRIMARY KEY,
     currency        TEXT    NOT NULL CHECK (currency IN ('VND', 'CNY')),
                                                        -- 外币类型（USD 为基准，不需记录）
-    rate            REAL    NOT NULL CHECK(rate > 0),   -- 1 USD = N 外币
+    rate            DOUBLE PRECISION NOT NULL CHECK(rate > 0),   -- 1 USD = N 外币
     effective_date  TEXT    NOT NULL,                   -- 生效日期
-    updated_by_user_id INTEGER,                         -- 更新人（关联 users.id）
+    updated_by_user_id BIGINT,                          -- 更新人（关联 users.id）
     updated_by_name TEXT,                               -- 更新人快照
     remark          TEXT,
-    created_at      TEXT    DEFAULT (datetime('now')),
+    created_at      TIMESTAMP DEFAULT NOW(),
 
     UNIQUE(currency, effective_date)
 );
@@ -1519,24 +1519,24 @@ CREATE INDEX idx_exr_date ON exchange_rates(effective_date);
 
 -- 预置初始汇率
 INSERT INTO exchange_rates (currency, rate, effective_date, remark) VALUES
-    ('VND', 25300, date('now'), '1 USD = 25300 VND'),
-    ('CNY', 7.2, date('now'), '1 USD = 7.2 CNY');
+    ('VND', 25300, CURRENT_DATE, '1 USD = 25300 VND'),
+    ('CNY', 7.2, CURRENT_DATE, '1 USD = 7.2 CNY');
 ```
 
 #### operation_logs — 操作日志
 
 ```sql
 CREATE TABLE operation_logs (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    module          TEXT    NOT NULL,                   -- 模块：purchase/sales/inventory/...
-    action          TEXT    NOT NULL,                   -- 操作：create/update/delete/approve/...
-    target_type     TEXT,                               -- 操作对象类型
-    target_id       INTEGER,                            -- 操作对象 ID
-    target_no       TEXT,                               -- 操作对象编号快照
-    detail          TEXT,                               -- 操作详情
-    operator_user_id INTEGER,                           -- 操作人（关联 users.id）
+    id                     BIGSERIAL PRIMARY KEY,
+    module                 TEXT    NOT NULL,                   -- 模块：purchase/sales/inventory/...
+    action                 TEXT    NOT NULL,                   -- 操作：create/update/delete/approve/...
+    target_type            TEXT,                               -- 操作对象类型
+    target_id              BIGINT,                            -- 操作对象 ID
+    target_no              TEXT,                               -- 操作对象编号快照
+    detail                 TEXT,                               -- 操作详情
+    operator_user_id       BIGINT,                           -- 操作人（关联 users.id）
     operator_name_snapshot TEXT,                        -- 操作人名称快照
-    created_at      TEXT    DEFAULT (datetime('now'))
+    created_at             TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_oplog_module ON operation_logs(module);
@@ -1557,13 +1557,15 @@ CREATE INDEX idx_oplog_operator ON operation_logs(operator_user_id);
 
 ### 3.2 数据迁移
 
-采用版本化迁移脚本，存放在 `src-tauri/migrations/` 目录：
+采用版本化迁移脚本，存放在 `src-tauri/migrations/postgres/` 目录：
 
 ```
-migrations/
-├── 001_init.sql              # 初始化所有表
-├── 002_seed_data.sql         # 预置数据（分类、单位等）
-└── 003_xxx.sql               # 后续升级脚本
+migrations/postgres/
+├── 001_init.sql                        # 初始化全部 45 张表 + 索引
+├── 002_seed_data.sql                   # 预置数据（分类、单位、系统配置等）
+├── 003_production_orders.sql           # 生产工单相关表
+├── 004_drop_legacy_work_orders.sql     # 废弃旧 work_orders 表
+└── 005_manual_stock_movements.sql      # 自由出入库草稿单据表
 ```
 
 迁移注意事项：
@@ -1577,26 +1579,21 @@ migrations/
 ```sql
 -- 数据库 Schema 版本跟踪（由应用在执行迁移脚本后自动写入）
 CREATE TABLE IF NOT EXISTS schema_migrations (
-  version  INTEGER PRIMARY KEY,                              -- 迁移版本号
-  name     TEXT NOT NULL,                                    -- 迁移脚本名称
-  applied_at TEXT DEFAULT (datetime('now'))     -- 执行时间
+  version    INTEGER PRIMARY KEY,              -- 迁移版本号
+  name       TEXT NOT NULL,                    -- 迁移脚本名称
+  applied_at TIMESTAMP DEFAULT NOW()           -- 执行时间
 );
 ```
 
 > 应用启动时检查 `schema_migrations` 中最大 version，依次执行尚未应用的迁移脚本。确保迁移幂等。
 
-#### PRAGMA 初始化清单
+#### PostgreSQL 连接初始化说明
 
-应用每次打开数据库连接时需执行以下 PRAGMA（建议写入 `src-tauri/src/db.rs` 的连接初始化函数）：
+应用使用 `sqlx` + `deadpool-postgres` 连接池管理 PostgreSQL 连接。连接初始化由 `src-tauri/src/db.rs` 统一处理，无需手动执行 PRAGMA。关键配置项：
 
-```sql
-PRAGMA journal_mode = WAL;           -- 启用 WAL 模式，提升读写并发
-PRAGMA busy_timeout = 5000;          -- 写锁等待超时 5 秒
-PRAGMA foreign_keys = OFF;           -- 全表不使用数据库级外键，统一由应用层校验
-PRAGMA synchronous = NORMAL;         -- WAL 模式下 NORMAL 即可保证一致性
-PRAGMA cache_size = -8000;           -- 8MB 页面缓存
-PRAGMA temp_store = MEMORY;          -- 临时表存内存
-```
+- 连接池大小：根据并发需求自动管理
+- 事务隔离级别：默认 `READ COMMITTED`
+- 全表不启用数据库级 `FOREIGN KEY`，统一由 Rust service 层校验
 
 ### 3.3 数据量预估
 
@@ -1611,30 +1608,20 @@ PRAGMA temp_store = MEMORY;          -- 临时表存内存
 
 PostgreSQL 在百万级数据量下有良好性能，配合适当的索引即可满足需求。
 
-### 3.4 PostgreSQL 迁移记录（已完成）
+### 3.4 PostgreSQL 技术要点
 
-> ✅ 数据库已从 SQLite 迁移至 PostgreSQL，以下为迁移时的关键差异和处理方案（保留作为参考）：
+> 项目已完全基于 PostgreSQL 构建，以下为当前使用的关键类型和特性：
 
-| SQLite (原 v1.0)                                 | PostgreSQL (当前)                        | 迁移策略                                                  |
-| ------------------------------------------------ | ---------------------------------------- | --------------------------------------------------------- |
-| `INTEGER PRIMARY KEY AUTOINCREMENT`              | `BIGSERIAL PRIMARY KEY`                  | DDL 替换，应用层通过 trait 获取 ID                        |
-| `TEXT` 存日期 `datetime('now')`                  | `TIMESTAMPTZ` + `NOW()`                  | 历史数据按 UTC 导入后自动兼容                             |
-| `REAL` 存数量                                    | `DOUBLE PRECISION` 或 `NUMERIC`          | 直接兼容                                                  |
-| `INTEGER` 存金额（最小货币单位）                 | `BIGINT`                                 | 直接兼容                                                  |
-| `CHECK(status IN (...))`                         | `CHECK` 或自定义 `ENUM` 类型             | 优先保持 CHECK，复杂场景可引入 ENUM                       |
-| `GENERATED ALWAYS AS ... STORED`                 | `GENERATED ALWAYS AS ... STORED` (PG12+) | 语法基本兼容，表达式需适配（如 `amount - paid` 直接兼容） |
-| `PRAGMA journal_mode = WAL`                      | PostgreSQL WAL 原生支持                  | 无需处理                                                  |
-| `PRAGMA foreign_keys = OFF`                      | v2.0 可启用 `FOREIGN KEY`                | 迁移时根据 ER 图添加外键约束                              |
-| `datetime('now')` → 已改为 `datetime('now')` UTC | `NOW()` 返回 UTC                         | 直接兼容                                                  |
-| 无并发连接池                                     | `deadpool-postgres` 或 `sqlx` pool       | v2.0 新增连接池配置                                       |
-
-**数据迁移流程（已完成）**：
-
-1. 在目标 PostgreSQL 中执行 `postgres/` 目录下的 DDL 迁移脚本
-2. 使用迁移工具从 SQLite `.db` 文件导出数据为标准格式
-3. 批量导入 PostgreSQL，按 `schema_migrations` 版本对齐
-4. 校验数据完整性（行数、金额汇总、关联完整性）
-5. 更新应用配置，切换数据库连接为 PostgreSQL（通过 `DATABASE_URL` 环境变量）
+| 特性 | PostgreSQL 用法 | 说明 |
+|------|----------------|------|
+| 自增主键 | `BIGSERIAL PRIMARY KEY` | 64 位整数，应用层通过 `sqlx` 获取插入后的 ID |
+| 审计时间 | `TIMESTAMP DEFAULT NOW()` | `created_at` / `updated_at` / `confirmed_at` 等统一使用 |
+| 数量存储 | `DOUBLE PRECISION` | 与 Rust `f64` 直接对应，应用层按 `units.decimal_places` 舍入 |
+| 金额存储 | `BIGINT` | 最小货币单位整数，与 Rust `i64` 对应 |
+| 状态约束 | `CHECK(status IN (...))` | 保持简单 CHECK，未引入自定义 ENUM |
+| 计算列 | `GENERATED ALWAYS AS ... STORED` | `available_qty`、`diff_qty`、`diff_amount`、`unpaid_amount` 等 |
+| 连接管理 | `sqlx` + `deadpool-postgres` | 连接池由 `src-tauri/src/db.rs` 统一管理 |
+| 事务隔离 | `READ COMMITTED` | 默认级别，库存操作使用 `FOR UPDATE` 行锁防止并发覆盖 |
 
 ---
 
