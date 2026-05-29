@@ -168,8 +168,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // 勾选"记住我"：持久化会话，7天有效
           await saveAuth(response.user, true)
         } else {
-          // 未勾选：清除之前可能残留的持久化数据，仅内存保持登录
-          await clearAuth()
+          // 未勾选：仅清除之前可能残留的持久化数据，内存中保持登录态
+          // 注意：不能调用 clearAuth()，它会同时清空 user 导致路由守卫误判为未登录
+          try {
+            await tauriApi.clearAuthSession()
+          } catch {
+            // 持久化存储不可用时忽略
+          }
         }
 
         // 不需要改密时检查向导状态
@@ -189,7 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [updateUser, saveAuth, clearAuth, checkSetupCompleted],
+    [updateUser, saveAuth, checkSetupCompleted],
   )
 
   /** 修改密码 */
