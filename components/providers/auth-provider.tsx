@@ -20,6 +20,8 @@ interface AuthState {
   isAuthenticated: boolean
   /** 是否需要完成向导 */
   needsSetup: boolean
+  /** 权限缓存（格式 module:action） */
+  permissions: Set<string>
 }
 
 /** 认证上下文接口 */
@@ -32,6 +34,8 @@ interface AuthContextValue extends AuthState {
   logout: () => void
   /** 完成向导 */
   completeSetup: () => void
+  /** 检查是否有指定权限 */
+  hasPermission: (module: string, action: string) => boolean
 }
 
 /** 登录结果 */
@@ -62,6 +66,7 @@ const REMEMBER_ME_DURATION_MS = 7 * 24 * 60 * 60 * 1000
  */
 let cachedUser: UserInfo | null = null
 let cachedNeedsSetup = false
+let cachedPermissions: Set<string> = new Set()
 let authInitialized = false
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -79,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserInfo | null>(cachedUser)
   const [isLoading, setIsLoading] = useState(!authInitialized)
   const [needsSetup, setNeedsSetup] = useState(cachedNeedsSetup)
+  const [permissions, setPermissions] = useState<Set<string>>(cachedPermissions)
 
   /** 认证相关页面，不需要鉴权 */
   const authRoutes = ['/login', '/change-password', '/setup-wizard']
@@ -95,6 +101,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     cachedNeedsSetup = value
     setNeedsSetup(value)
   }, [])
+
+  /** 更新权限缓存 */
+  const updatePermissions = useCallback((perms: Set<string>) => {
+    cachedPermissions = perms
+    setPermissions(perms)
+  }, [])
+
+  /** 检查是否有指定权限 */
+  const hasPermission = useCallback(
+    (module: string, action: string): boolean => {
+      if (!user) return false
+      // admin 角色拥有全部权限
+      if (user.role === 'admin') return true
+      return permissions.has(`${module}:${action}`)
+    },
+    [user, permissions],
+  )
 
   /** 保存认证会话（Tauri 应用数据目录文件，Web 调试模式 localStorage） */
   const saveAuth = useCallback(async (userInfo: UserInfo, rememberMe: boolean) => {
@@ -149,10 +172,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           username: 'admin',
           display_name: '管理员',
           role: 'admin',
+          role_id: 1,
           must_change_password: false,
           session_version: 1,
         }
         updateUser(mockUser)
+        updatePermissions(new Set()) // admin 角色不需要权限缓存
         // 开发模式下始终持久化，方便调试
         await saveAuth(mockUser, true)
         // 模拟环境也要检查向导状态
@@ -163,6 +188,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const response = await tauriApi.login(username, password)
         updateUser(response.user)
+
+        // 加载权限缓存
+        const permSet = new Set(response.permissions.map(p => `${p.module}:${p.action}`))
+        updatePermissions(permSet)
 
         if (rememberMe) {
           // 勾选"记住我"：持久化会话，7天有效
@@ -177,9 +206,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // 不需要改密时检查向导状态
+        // 不需要改密时检查向导状态（仅 admin 角色走向导）
         if (!response.must_change_password) {
-          await checkSetupCompleted()
+          if (response.user.role === 'admin') {
+            await checkSetupCompleted()
+          }
         }
 
         return {
@@ -194,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [updateUser, saveAuth, checkSetupCompleted],
+    [updateUser, updatePermissions, saveAuth, checkSetupCompleted],
   )
 
   /** 修改密码 */
@@ -247,9 +278,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     await clearAuth()
     updateNeedsSetup(false)
+    updatePermissions(new Set())
     authInitialized = false
     router.push('/login')
-  }, [clearAuth, updateNeedsSetup, router])
+  }, [clearAuth, updateNeedsSetup, updatePermissions, router])
 
   /** 完成向导 — 由向导完成页调用 */
   const completeSetup = useCallback(() => {
@@ -268,12 +300,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!cachedUser) return
       void clearAuth()
       updateNeedsSetup(false)
+      updatePermissions(new Set())
       authInitialized = false
       toast.error('登录已失效，请重新登录')
       router.push('/login')
     })
     return () => tauriApi.setAuthErrorHandler(null)
-  }, [clearAuth, updateNeedsSetup, router])
+  }, [clearAuth, updateNeedsSetup, updatePermissions, router])
 
   /** 启动时恢复认证状态（仅首次挂载时执行，locale 切换时从缓存同步恢复） */
   useEffect(() => {
@@ -319,6 +352,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             username: 'admin',
             display_name: '管理员',
             role: 'admin',
+            role_id: 1,
             must_change_password: false,
             session_version: data.sessionVersion,
           }
@@ -330,9 +364,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (data.rememberMe) {
             await saveAuth(restoredUser, true)
           }
-          // 已登录且不需要改密 → 检查是否需要向导
-          if (!restoredUser.must_change_password) {
+          // 已登录且不需要改密 → 检查是否需要向导（仅 admin）
+          if (!restoredUser.must_change_password && restoredUser.role === 'admin') {
             await checkSetupCompleted()
+          }
+
+          // 加载权限（Tauri 环境下 restore_session 不返回权限，需单独获取）
+          if (isTauriEnv()) {
+            try {
+              const perms = await tauriApi.getCurrentUserPermissions()
+              updatePermissions(new Set(perms.map(p => `${p.module}:${p.action}`)))
+            } catch {
+              console.warn('[Auth] 加载权限失败')
+            }
           }
         }
       } catch {
@@ -377,10 +421,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     isAuthenticated: !!user,
     needsSetup,
+    permissions,
     login,
     changePassword,
     logout,
     completeSetup,
+    hasPermission,
   }
 
   /**

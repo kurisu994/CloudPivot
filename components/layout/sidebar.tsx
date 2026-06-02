@@ -3,8 +3,9 @@
 import { ChevronDown, PanelLeft, PanelLeftClose } from 'lucide-react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { type NavItem, navConfig } from '@/config/nav'
+import { usePermission } from '@/hooks/use-permission'
 import { Link, usePathname } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
 
@@ -25,6 +26,28 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const t = useTranslations()
   const tc = useTranslations('common')
   const pathname = usePathname()
+  const { canAccess, isAdmin } = usePermission()
+
+  /** 根据权限过滤导航项 */
+  const filteredNav = useMemo(() => {
+    return navConfig
+      .filter(item => {
+        // 无权限标注的菜单项默认可见
+        if (!item.permissionModule) return true
+        return canAccess(item.permissionModule)
+      })
+      .map(item => {
+        if (!item.children) return item
+        const filteredChildren = item.children.filter(child => {
+          if (!child.permissionModule) return true
+          return canAccess(child.permissionModule)
+        })
+        // 如果过滤后没有子菜单，隐藏父级
+        if (filteredChildren.length === 0) return null
+        return { ...item, children: filteredChildren }
+      })
+      .filter(Boolean) as NavItem[]
+  }, [canAccess, isAdmin])
 
   return (
     <aside
@@ -76,7 +99,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* 导航菜单 */}
       <nav className="flex-1 overflow-x-hidden overflow-y-auto px-2 py-2.5">
         <ul className="space-y-0.5">
-          {navConfig.map(item => (
+          {filteredNav.map(item => (
             <NavMenuItem key={item.titleKey} item={item} collapsed={collapsed} pathname={pathname} t={t} />
           ))}
         </ul>

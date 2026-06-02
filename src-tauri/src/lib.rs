@@ -358,6 +358,17 @@ pub fn run() {
             commands::reports::get_sales_report_summary,
             commands::reports::get_sales_customer_ranking,
             commands::reports::get_sales_material_detail,
+            // 用户管理
+            commands::user_management::get_users,
+            commands::user_management::get_user_detail,
+            commands::user_management::create_user,
+            commands::user_management::update_user,
+            commands::user_management::delete_user,
+            commands::user_management::toggle_user_status,
+            commands::user_management::reset_user_password,
+            commands::user_management::unlock_user,
+            commands::user_management::get_roles,
+            commands::user_management::get_current_user_permissions,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

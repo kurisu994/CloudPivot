@@ -16,15 +16,23 @@ export interface UserInfo {
   id: number
   username: string
   display_name: string
-  role: 'admin' | 'operator'
+  role: 'admin' | 'operator' | 'viewer'
+  role_id: number
   must_change_password: boolean
   session_version: number
+}
+
+/** 权限项 */
+export interface PermissionItem {
+  module: string
+  action: string
 }
 
 /** 登录响应 */
 export interface LoginResponse {
   user: UserInfo
   must_change_password: boolean
+  permissions: PermissionItem[]
 }
 
 /** 分页响应（通用，对应 Rust PaginatedResponse<T>） */
@@ -99,6 +107,8 @@ export async function invoke<T>(command: string, args?: Record<string, unknown>)
       'get_returnable_outbound_items',
       'get_replenishment_suggestions',
       'get_consumption_trend',
+      'get_roles',
+      'get_current_user_permissions',
     ]
     if (arrayCommands.includes(command)) {
       return [] as unknown as T

@@ -49,6 +49,8 @@ export interface NavItem {
   icon: LucideIcon
   /** 子菜单 */
   children?: NavItem[]
+  /** 对应权限模块（用于前端动态过滤不可见菜单） */
+  permissionModule?: string
 }
 
 /**

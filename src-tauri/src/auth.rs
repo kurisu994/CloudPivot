@@ -9,6 +9,13 @@ use sqlx::PgPool;
 use crate::error::AppError;
 use crate::operation_log;
 
+/// 权限项（返回前端）
+#[derive(Debug, Serialize, Clone)]
+pub struct PermissionItem {
+    pub module: String,
+    pub action: String,
+}
+
 /// 用户信息（返回前端的安全视图，不含密码哈希）
 #[derive(Debug, Serialize, Clone)]
 pub struct UserInfo {
@@ -16,6 +23,7 @@ pub struct UserInfo {
     pub username: String,
     pub display_name: String,
     pub role: String,
+    pub role_id: i64,
     pub must_change_password: bool,
     pub session_version: i32,
 }
@@ -25,10 +33,14 @@ pub struct UserInfo {
 pub struct LoginResponse {
     pub user: UserInfo,
     pub must_change_password: bool,
+    pub permissions: Vec<PermissionItem>,
 }
 
 /// 初始管理员默认密码
 const DEFAULT_ADMIN_PASSWORD: &str = "admin123";
+
+/// 新建用户默认密码（用户管理创建 / 重置密码）
+pub const DEFAULT_USER_PASSWORD: &str = "abc12345";
 
 /// 连续失败锁定阈值
 const MAX_FAILED_ATTEMPTS: i32 = 5;
@@ -85,13 +97,14 @@ pub async fn login(
             String,
             String,
             String,
+            i64,
             bool,
             bool,
             i32,
             Option<String>,
         ),
     >(
-        "SELECT id, username, display_name, password_hash, role,
+        "SELECT id, username, display_name, password_hash, role, role_id,
                 is_enabled, must_change_password, failed_login_count, locked_until
          FROM users WHERE username = $1",
     )
@@ -106,6 +119,7 @@ pub async fn login(
         display_name,
         password_hash,
         role,
+        role_id,
         is_enabled,
         must_change_password,
         failed_count,
@@ -273,9 +287,13 @@ pub async fn login(
         username: uname,
         display_name,
         role,
+        role_id,
         must_change_password,
         session_version,
     };
+
+    // 加载用户权限集合
+    let permissions = load_user_permissions(pool, user.role_id).await?;
 
     // 记录登录成功日志
     operation_log::write_log(
@@ -296,6 +314,7 @@ pub async fn login(
     Ok(LoginResponse {
         must_change_password: user.must_change_password,
         user,
+        permissions,
     })
 }
 
@@ -352,8 +371,8 @@ pub async fn change_password(
         return Err(AppError::Auth("密码长度至少 8 位".into()));
     }
 
-    // 不能使用默认密码
-    if new_password == DEFAULT_ADMIN_PASSWORD {
+    // 不能使用默认密码（admin 初始密码或新用户初始密码）
+    if new_password == DEFAULT_ADMIN_PASSWORD || new_password == DEFAULT_USER_PASSWORD {
         return Err(AppError::Auth("新密码不能与初始密码相同".into()));
     }
 
@@ -408,8 +427,8 @@ pub async fn change_password(
 
 /// 获取用户信息（通过 ID）
 pub async fn get_user_info(pool: &PgPool, user_id: i64) -> Result<UserInfo, AppError> {
-    let row = sqlx::query_as::<_, (i64, String, String, String, bool, i32)>(
-        "SELECT id, username, display_name, role, must_change_password, session_version
+    let row = sqlx::query_as::<_, (i64, String, String, String, i64, bool, i32)>(
+        "SELECT id, username, display_name, role, role_id, must_change_password, session_version
          FROM users WHERE id = $1 AND is_enabled = TRUE",
     )
     .bind(user_id)
@@ -417,7 +436,7 @@ pub async fn get_user_info(pool: &PgPool, user_id: i64) -> Result<UserInfo, AppE
     .await
     .map_err(|e| AppError::Database(format!("查询用户失败: {}", e)))?;
 
-    let (id, username, display_name, role, must_change_password, session_version) =
+    let (id, username, display_name, role, role_id, must_change_password, session_version) =
         row.ok_or_else(|| AppError::Auth("用户不存在或已禁用".into()))?;
 
     Ok(UserInfo {
@@ -425,7 +444,31 @@ pub async fn get_user_info(pool: &PgPool, user_id: i64) -> Result<UserInfo, AppE
         username,
         display_name,
         role,
+        role_id,
         must_change_password,
         session_version,
     })
+}
+
+/// 加载角色权限集合
+pub async fn load_user_permissions(
+    pool: &PgPool,
+    role_id: i64,
+) -> Result<Vec<PermissionItem>, AppError> {
+    let rows = sqlx::query_as::<_, (String, String)>(
+        "SELECT p.module, p.action
+         FROM role_permissions rp
+         JOIN permissions p ON p.id = rp.permission_id
+         WHERE rp.role_id = $1
+         ORDER BY p.sort_order",
+    )
+    .bind(role_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| AppError::Database(format!("加载权限失败: {}", e)))?;
+
+    Ok(rows
+        .into_iter()
+        .map(|(module, action)| PermissionItem { module, action })
+        .collect())
 }

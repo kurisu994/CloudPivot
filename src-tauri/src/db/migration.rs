@@ -49,6 +49,11 @@ fn get_migrations() -> Vec<Migration> {
             name: "manual_stock_movements",
             sql: include_str!("../../migrations/postgres/005_manual_stock_movements.sql"),
         },
+        Migration {
+            version: 6,
+            name: "user_management",
+            sql: include_str!("../../migrations/postgres/006_user_management.sql"),
+        },
     ]
 }
 

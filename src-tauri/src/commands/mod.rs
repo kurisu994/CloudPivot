@@ -21,12 +21,15 @@ pub mod reports;
 pub mod sales;
 pub mod supplier;
 pub mod unit;
+pub mod user_management;
 pub mod warehouse;
+
+use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
-use crate::auth::{self, LoginResponse, UserInfo};
+use crate::auth::{self, LoginResponse, PermissionItem, UserInfo};
 use crate::db::{DbInitError, DbState};
 use crate::error::AppError;
 
@@ -47,7 +50,10 @@ pub struct CurrentUser {
 pub struct CurrentUserInner {
     pub user_id: i64,
     pub display_name: String,
+    pub role: String,
     pub is_authenticated: bool,
+    /// 权限缓存：登录时一次性加载，格式 (module, action)
+    pub permissions: HashSet<(String, String)>,
 }
 
 impl Default for CurrentUser {
@@ -57,7 +63,9 @@ impl Default for CurrentUser {
             inner: std::sync::RwLock::new(CurrentUserInner {
                 user_id: 0,
                 display_name: "未认证".to_string(),
+                role: String::new(),
                 is_authenticated: false,
+                permissions: HashSet::new(),
             }),
         }
     }
@@ -74,6 +82,12 @@ impl CurrentUser {
         self.inner.read().unwrap().display_name.clone()
     }
 
+    /// 获取当前用户角色
+    #[allow(dead_code)]
+    pub fn role(&self) -> String {
+        self.inner.read().unwrap().role.clone()
+    }
+
     /// 校验当前用户已登录
     pub fn require_auth(&self) -> Result<(), AppError> {
         if !self.inner.read().unwrap().is_authenticated {
@@ -82,12 +96,42 @@ impl CurrentUser {
         Ok(())
     }
 
+    /// 校验当前用户拥有指定权限
+    pub fn require_permission(&self, module: &str, action: &str) -> Result<(), AppError> {
+        self.require_auth()?;
+        let inner = self.inner.read().unwrap();
+        // admin 角色默认拥有全部权限
+        if inner.role == "admin" {
+            return Ok(());
+        }
+        if inner
+            .permissions
+            .contains(&(module.to_string(), action.to_string()))
+        {
+            Ok(())
+        } else {
+            Err(AppError::Auth(format!("权限不足：{}.{}", module, action)))
+        }
+    }
+
     /// 更新当前用户（登录成功后调用）
-    pub fn set(&self, user_id: i64, display_name: String) {
+    pub fn set(
+        &self,
+        user_id: i64,
+        display_name: String,
+        role: String,
+        permissions: Vec<PermissionItem>,
+    ) {
+        let perm_set: HashSet<(String, String)> = permissions
+            .into_iter()
+            .map(|p| (p.module, p.action))
+            .collect();
         let mut inner = self.inner.write().unwrap();
         inner.user_id = user_id;
         inner.display_name = display_name;
+        inner.role = role;
         inner.is_authenticated = true;
+        inner.permissions = perm_set;
     }
 
     /// 清除登录状态（登出时调用）
@@ -95,7 +139,9 @@ impl CurrentUser {
         let mut inner = self.inner.write().unwrap();
         inner.user_id = 0;
         inner.display_name = "未认证".to_string();
+        inner.role = String::new();
         inner.is_authenticated = false;
+        inner.permissions.clear();
     }
 }
 
@@ -165,8 +211,13 @@ pub async fn login(
 ) -> Result<LoginResponse, AppError> {
     let response = auth::login(&db.pool, &request.username, &request.password).await?;
 
-    // 登录成功后更新当前用户状态
-    current_user.set(response.user.id, response.user.display_name.clone());
+    // 登录成功后更新当前用户状态（含角色和权限缓存）
+    current_user.set(
+        response.user.id,
+        response.user.display_name.clone(),
+        response.user.role.clone(),
+        response.permissions.clone(),
+    );
 
     Ok(response)
 }
@@ -236,7 +287,14 @@ pub async fn restore_session(
     if user.session_version != session_version {
         return Err(AppError::Auth("会话已失效，请重新登录".into()));
     }
-    current_user.set(user.id, user.display_name.clone());
+    // 加载权限并更新后端状态
+    let permissions = auth::load_user_permissions(&db.pool, user.role_id).await?;
+    current_user.set(
+        user.id,
+        user.display_name.clone(),
+        user.role.clone(),
+        permissions,
+    );
     Ok(user)
 }
 

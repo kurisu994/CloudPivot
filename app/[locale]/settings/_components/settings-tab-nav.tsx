@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 /** 设置模块 Tab 导航配置 */
 const SETTINGS_TABS = [
   { href: '/settings', titleKey: 'nav.companyInfo' },
-  // { href: "/settings/user-management", titleKey: "nav.userManagement" }, // v1.0 暂不开放
+  { href: '/settings/user-management', titleKey: 'nav.userManagement' },
   { href: '/settings/encoding-rules', titleKey: 'nav.encodingRules' },
   { href: '/settings/inventory-rules', titleKey: 'nav.inventoryRules' },
   { href: '/settings/print-settings', titleKey: 'nav.printSettings' },

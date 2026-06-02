@@ -551,11 +551,11 @@ mod tests {
 
     use super::{MATERIAL_CORE_REFERENCE_TABLES, ensure_material_core_fields_editable};
 
-    /// 创建隔离的测试 schema，避免并发测试表名冲突
     async fn setup_material_core_pool() -> sqlx::PgPool {
+        let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| env!("DATABASE_URL").to_string());
         let pool = PgPoolOptions::new()
             .max_connections(1)
-            .connect("postgres://test@localhost/test")
+            .connect(&db_url)
             .await
             .expect("创建物料核心字段测试数据库失败");
 
