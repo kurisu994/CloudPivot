@@ -57,7 +57,9 @@ fn get_migrations() -> Vec<Migration> {
         Migration {
             version: 7,
             name: "viewer_revoke_manual_stock_checks",
-            sql: include_str!("../../migrations/postgres/007_viewer_revoke_manual_stock_checks.sql"),
+            sql: include_str!(
+                "../../migrations/postgres/007_viewer_revoke_manual_stock_checks.sql"
+            ),
         },
         Migration {
             version: 8,

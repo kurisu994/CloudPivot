@@ -38,14 +38,26 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
   return (
     <th
       data-slot="table-head"
-      className={cn('text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0', className)}
+      className={cn(
+        'text-foreground h-[var(--table-head-height,2.5rem)] px-[var(--table-cell-px,0.5rem)] text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0',
+        className,
+      )}
       {...props}
     />
   )
 }
 
 function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
-  return <td data-slot="table-cell" className={cn('p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0', className)} {...props} />
+  return (
+    <td
+      data-slot="table-cell"
+      className={cn(
+        'px-[var(--table-cell-px,0.5rem)] py-[var(--table-cell-py,0.5rem)] align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0',
+        className,
+      )}
+      {...props}
+    />
+  )
 }
 
 function TableCaption({ className, ...props }: React.ComponentProps<'caption'>) {

@@ -181,7 +181,12 @@ export function UnitsContent() {
                             </Button>
                           )}
                           {canDelete && (
-                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(item)}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setDeleteTarget(item)}
+                            >
                               {t('delete')}
                             </Button>
                           )}

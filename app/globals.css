@@ -206,11 +206,11 @@ html[data-large-font="true"] {
   }
 }
 
-/* 紧凑列表视图 — 减小行高和间距 */
+/* 紧凑列表视图 — 减小表头高度与单元格 padding（横向/纵向同时压缩） */
 html[data-compact="true"] {
-  --table-row-height: 36px;
-  --list-item-padding-y: 6px;
-  --list-item-padding-x: 16px;
+  --table-head-height: 2rem; /* 32px，原 40px */
+  --table-cell-py: 0.25rem; /* 4px，原 8px */
+  --table-cell-px: 0.375rem; /* 6px，原 8px */
 }
 
 /* ========================================

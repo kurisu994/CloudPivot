@@ -49,7 +49,18 @@ const TYPE_COLORS: Record<string, string> = {
 /*  组件                                                               */
 /* ------------------------------------------------------------------ */
 
-export function MaterialTable({ data, loading, total, page, pageSize, onPageChange, onPageSizeChange, onEdit, onToggleStatus, canEdit }: MaterialTableProps) {
+export function MaterialTable({
+  data,
+  loading,
+  total,
+  page,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  onEdit,
+  onToggleStatus,
+  canEdit,
+}: MaterialTableProps) {
   const t = useTranslations('materials')
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const columnCount = canEdit ? 8 : 7
