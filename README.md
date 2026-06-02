@@ -16,7 +16,6 @@
 | 2   | [数据库设计](docs/02-database-design.md)  | ER 关系图、PostgreSQL 迁移现状、关键表结构与增量迁移说明                  |
 | 3   | [界面原型设计](docs/03-ui-prototype.md)   | 整体布局、**39 个路由页面**原型、交互规范、当前菜单开放状态               |
 | 4   | [开发计划](docs/04-development-plan.md)   | 5 个开发阶段计划、当前实现状态、技术风险与分层说明                        |
-| 5   | [用户管理设计](docs/07-user-management-design.md) | 多账号 + 三角色权限矩阵设计与已交付实现说明                          |
 
 ## 快速概览
 

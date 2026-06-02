@@ -47,7 +47,6 @@ docs/                      # 设计文档（实现功能前必读）
   04-development-plan.md   # 开发计划：5 阶段 + 当前进度
   05-page-todo-list.md     # 页面开发进度清单
   06-code-review-report.md # 代码审查报告
-  07-user-management-design.md # 用户管理（多账号 + 角色权限矩阵）设计与已实现说明
 ```
 
 ## 常用命令
