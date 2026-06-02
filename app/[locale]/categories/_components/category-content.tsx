@@ -4,6 +4,7 @@ import { FolderTree, Plus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { usePermission } from '@/hooks/use-permission'
 import type { CategoryNode } from '@/lib/tauri'
 import { CategoryEditModal } from './category-edit-modal'
 import { CategoryTree } from './category-tree'
@@ -15,6 +16,8 @@ import { CategoryTree } from './category-tree'
  */
 export function CategoryContent() {
   const t = useTranslations('categories')
+  const { can } = usePermission()
+  const canCreate = can('categories', 'create')
 
   // 弹窗状态
   const [modalOpen, setModalOpen] = useState(false)
@@ -46,12 +49,14 @@ export function CategoryContent() {
   return (
     <div className="flex flex-col gap-6">
       {/* 操作按钮 */}
-      <div className="flex items-center gap-2">
-        <Button onClick={handleAdd}>
-          <Plus data-icon="inline-start" />
-          {t('addCategory')}
-        </Button>
-      </div>
+      {canCreate && (
+        <div className="flex items-center gap-2">
+          <Button onClick={handleAdd}>
+            <Plus data-icon="inline-start" />
+            {t('addCategory')}
+          </Button>
+        </div>
+      )}
 
       {/* 分类树 */}
       <div className="border-border bg-card rounded-xl border p-4 shadow-sm">

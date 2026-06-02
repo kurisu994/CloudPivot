@@ -7,6 +7,7 @@ import { type NodeApi, type NodeRendererProps, Tree } from 'react-arborist'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Button } from '@/components/ui/button'
+import { usePermission } from '@/hooks/use-permission'
 import { getErrorMessage } from '@/lib/error'
 import type { CategoryNode, CategorySortItem } from '@/lib/tauri'
 import { deleteCategory, getCategoryTree, updateCategoryOrder } from '@/lib/tauri'
@@ -87,11 +88,16 @@ function TreeNodeRenderer({
   dragHandle,
   onEdit,
   onDelete,
+  canEdit,
+  canDelete,
 }: NodeRendererProps<TreeNode> & {
   onEdit: (node: NodeApi<TreeNode>) => void
   onDelete: (node: NodeApi<TreeNode>) => void
+  canEdit: boolean
+  canDelete: boolean
 }) {
   const [hovered, setHovered] = useState(false)
+  const showActions = hovered && (canEdit || canDelete)
 
   return (
     <div
@@ -103,10 +109,14 @@ function TreeNodeRenderer({
       onMouseLeave={() => setHovered(false)}
       onClick={() => node.toggle()}
     >
-      {/* 拖拽手柄 */}
-      <div ref={dragHandle} className="flex items-center justify-center py-1" onClick={e => e.stopPropagation()}>
-        <GripVertical className="text-muted-foreground/40 size-3.5 shrink-0 cursor-grab active:cursor-grabbing" />
-      </div>
+      {/* 拖拽手柄（仅当具备编辑权限时渲染） */}
+      {canEdit ? (
+        <div ref={dragHandle} className="flex items-center justify-center py-1" onClick={e => e.stopPropagation()}>
+          <GripVertical className="text-muted-foreground/40 size-3.5 shrink-0 cursor-grab active:cursor-grabbing" />
+        </div>
+      ) : (
+        <span className="size-3.5 shrink-0" />
+      )}
 
       {/* 展开/折叠图标 */}
       <span className="flex size-5 shrink-0 items-center justify-center">
@@ -131,31 +141,35 @@ function TreeNodeRenderer({
       {/* 名称 */}
       <span className="ml-1 flex-1 truncate text-sm font-medium">{node.data.name}</span>
 
-      {/* 操作按钮 — hover 时显示 */}
-      {hovered && (
+      {/* 操作按钮 — hover 时按权限显示 */}
+      {showActions && (
         <div className="flex items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="size-6"
-            onClick={e => {
-              e.stopPropagation()
-              onEdit(node)
-            }}
-          >
-            <Pencil className="size-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-destructive hover:text-destructive size-6"
-            onClick={e => {
-              e.stopPropagation()
-              onDelete(node)
-            }}
-          >
-            <Trash2 className="size-3.5" />
-          </Button>
+          {canEdit && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="size-6"
+              onClick={e => {
+                e.stopPropagation()
+                onEdit(node)
+              }}
+            >
+              <Pencil className="size-3.5" />
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-destructive hover:text-destructive size-6"
+              onClick={e => {
+                e.stopPropagation()
+                onDelete(node)
+              }}
+            >
+              <Trash2 className="size-3.5" />
+            </Button>
+          )}
         </div>
       )}
     </div>
@@ -176,6 +190,9 @@ interface CategoryTreeProps {
 export function CategoryTree({ onEdit, refreshKey }: CategoryTreeProps) {
   const t = useTranslations('categories')
   const tc = useTranslations('common')
+  const { can } = usePermission()
+  const canEdit = can('categories', 'edit')
+  const canDelete = can('categories', 'delete')
   const [treeData, setTreeData] = useState<TreeNode[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -336,11 +353,13 @@ export function CategoryTree({ onEdit, refreshKey }: CategoryTreeProps) {
         height={600}
         indent={24}
         rowHeight={36}
-        onMove={handleMove}
+        onMove={canEdit ? handleMove : undefined}
+        disableDrag={!canEdit}
+        disableDrop={!canEdit}
         dndRootElement={typeof document !== 'undefined' ? document.body : undefined}
         disableMultiSelection
       >
-        {props => <TreeNodeRenderer {...props} onEdit={handleEdit} onDelete={handleDelete} />}
+        {props => <TreeNodeRenderer {...props} onEdit={handleEdit} onDelete={handleDelete} canEdit={canEdit} canDelete={canDelete} />}
       </Tree>
 
       {/* 删除确认弹窗 */}

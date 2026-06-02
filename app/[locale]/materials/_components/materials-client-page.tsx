@@ -12,6 +12,7 @@ import { createMaterialExcelColumns, downloadBusinessWorkbook, readBusinessExcel
 import { getErrorMessage } from '@/lib/error'
 import type { MaterialImportRow } from '@/lib/tauri'
 import { exportMaterials, importMaterials, invoke, isTauriEnv } from '@/lib/tauri'
+import { usePermission } from '@/hooks/use-permission'
 import { buildToggleMaterialStatusArgs } from './material-command-args'
 import { MaterialFormDialog } from './material-form-dialog'
 import { MaterialTable } from './material-table'
@@ -154,6 +155,11 @@ export function MaterialsClientPage() {
   const t = useTranslations('materials')
   const materialExcelColumns = useMemo(() => createMaterialExcelColumns(t), [t])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { can } = usePermission()
+  const canCreate = can('materials', 'create')
+  const canEdit = can('materials', 'edit')
+  const canImport = can('materials', 'import')
+  const canExport = can('materials', 'export')
 
   // 数据
   const [data, setData] = useState<MaterialItem[]>([])
@@ -457,24 +463,30 @@ export function MaterialsClientPage() {
 
       {/* 操作按钮行 */}
       <div className="flex gap-2">
-        <Button
-          onClick={() => {
-            setEditingId(null)
-            setDialogOpen(true)
-          }}
-        >
-          <Plus data-icon="inline-start" />
-          {t('actions.add')}
-        </Button>
+        {canCreate && (
+          <Button
+            onClick={() => {
+              setEditingId(null)
+              setDialogOpen(true)
+            }}
+          >
+            <Plus data-icon="inline-start" />
+            {t('actions.add')}
+          </Button>
+        )}
         <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImportFileChange} />
-        <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-          <Upload data-icon="inline-start" />
-          {t('actions.import')}
-        </Button>
-        <Button variant="outline" onClick={handleExportMaterials}>
-          <Download data-icon="inline-start" />
-          {t('actions.export')}
-        </Button>
+        {canImport && (
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+            <Upload data-icon="inline-start" />
+            {t('actions.import')}
+          </Button>
+        )}
+        {canExport && (
+          <Button variant="outline" onClick={handleExportMaterials}>
+            <Download data-icon="inline-start" />
+            {t('actions.export')}
+          </Button>
+        )}
       </div>
 
       {/* 数据表格 + 分页 */}
@@ -494,6 +506,7 @@ export function MaterialsClientPage() {
           setDialogOpen(true)
         }}
         onToggleStatus={handleToggleStatus}
+        canEdit={canEdit}
       />
 
       {/* 新增/编辑弹窗 */}

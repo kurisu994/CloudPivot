@@ -54,6 +54,30 @@ fn get_migrations() -> Vec<Migration> {
             name: "user_management",
             sql: include_str!("../../migrations/postgres/006_user_management.sql"),
         },
+        Migration {
+            version: 7,
+            name: "viewer_revoke_manual_stock_checks",
+            sql: include_str!("../../migrations/postgres/007_viewer_revoke_manual_stock_checks.sql"),
+        },
+        Migration {
+            version: 8,
+            name: "viewer_revoke_replenishment_and_settings",
+            sql: include_str!(
+                "../../migrations/postgres/008_viewer_revoke_replenishment_and_settings.sql"
+            ),
+        },
+        Migration {
+            version: 9,
+            name: "materials_import_export_permission",
+            sql: include_str!(
+                "../../migrations/postgres/009_materials_import_export_permission.sql"
+            ),
+        },
+        Migration {
+            version: 10,
+            name: "operator_restrict_perms",
+            sql: include_str!("../../migrations/postgres/010_operator_restrict_perms.sql"),
+        },
     ]
 }
 

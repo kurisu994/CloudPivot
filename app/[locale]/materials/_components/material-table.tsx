@@ -31,6 +31,8 @@ interface MaterialTableProps {
   onPageSizeChange: (size: number) => void
   onEdit: (id: number) => void
   onToggleStatus: (id: number, currentEnabled: boolean) => void
+  /** 是否拥有编辑权限，决定操作列是否渲染 */
+  canEdit: boolean
 }
 
 /* ------------------------------------------------------------------ */
@@ -47,9 +49,10 @@ const TYPE_COLORS: Record<string, string> = {
 /*  组件                                                               */
 /* ------------------------------------------------------------------ */
 
-export function MaterialTable({ data, loading, total, page, pageSize, onPageChange, onPageSizeChange, onEdit, onToggleStatus }: MaterialTableProps) {
+export function MaterialTable({ data, loading, total, page, pageSize, onPageChange, onPageSizeChange, onEdit, onToggleStatus, canEdit }: MaterialTableProps) {
   const t = useTranslations('materials')
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const columnCount = canEdit ? 8 : 7
 
   /* 每页条数选项 — 用于 Select items */
   return (
@@ -84,15 +87,15 @@ export function MaterialTable({ data, loading, total, page, pageSize, onPageChan
           {/* 进价/售价暂时隐藏 */}
           <TableHead className="w-[72px] text-center">{t('table.stock')}</TableHead>
           <TableHead className="w-[96px] text-center">{t('table.status')}</TableHead>
-          <TableHead className="w-[144px] text-right">{t('table.operations')}</TableHead>
+          {canEdit && <TableHead className="w-[144px] text-right">{t('table.operations')}</TableHead>}
         </TableRow>
       </TableHeader>
 
       <TableBody>
         {loading ? (
-          <BusinessListTableLoadingRows colSpan={8} rows={4} />
+          <BusinessListTableLoadingRows colSpan={columnCount} rows={4} />
         ) : data.length === 0 ? (
-          <BusinessListTableEmptyRow colSpan={8} message={t('table.noResults')} />
+          <BusinessListTableEmptyRow colSpan={columnCount} message={t('table.noResults')} />
         ) : (
           /* 数据行 */
           data.map(row => (
@@ -146,20 +149,22 @@ export function MaterialTable({ data, loading, total, page, pageSize, onPageChan
                 )}
               </TableCell>
 
-              {/* 操作 */}
-              <TableCell className="pr-4 text-right">
-                <Button variant="link" size="sm" className="text-primary h-auto p-0 font-bold" onClick={() => onEdit(row.id)}>
-                  {t('actions.edit')}
-                </Button>
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="text-muted-foreground hover:text-destructive ml-3 h-auto p-0 font-bold"
-                  onClick={() => onToggleStatus(row.id, row.isEnabled)}
-                >
-                  {row.isEnabled ? t('actions.disable') : t('actions.enable')}
-                </Button>
-              </TableCell>
+              {/* 操作（仅在拥有编辑权限时渲染整列） */}
+              {canEdit && (
+                <TableCell className="pr-4 text-right">
+                  <Button variant="link" size="sm" className="text-primary h-auto p-0 font-bold" onClick={() => onEdit(row.id)}>
+                    {t('actions.edit')}
+                  </Button>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive ml-3 h-auto p-0 font-bold"
+                    onClick={() => onToggleStatus(row.id, row.isEnabled)}
+                  >
+                    {row.isEnabled ? t('actions.disable') : t('actions.enable')}
+                  </Button>
+                </TableCell>
+              )}
             </TableRow>
           ))
         )}

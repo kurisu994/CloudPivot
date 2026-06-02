@@ -44,6 +44,8 @@ INSERT INTO permissions (module, action, description, sort_order) VALUES
     ('materials',           'create',           '创建物料',             201),
     ('materials',           'edit',             '编辑物料',             202),
     ('materials',           'delete',           '删除物料',             203),
+    ('materials',           'import',           '导入物料',             204),
+    ('materials',           'export',           '导出物料',             205),
     -- 分类管理
     ('categories',          'view',             '查看分类',             300),
     ('categories',          'create',           '创建分类',             301),
@@ -202,11 +204,13 @@ WHERE r.code = 'operator'
   AND (
     -- 全权模块
     (p.module = 'dashboard' AND p.action = 'view')
-    -- 基础数据：view/create/edit（无 delete）
-    OR (p.module IN ('materials', 'categories', 'suppliers', 'customers', 'bom')
+    -- 物料：仅 view（不允许创建/编辑/导入导出）
+    OR (p.module = 'materials' AND p.action = 'view')
+    -- 其他基础数据：view/create/edit（无 delete；分类与单位对操作员不开放）
+    OR (p.module IN ('suppliers', 'customers', 'bom')
         AND p.action IN ('view', 'create', 'edit'))
-    -- 仓库和单位：仅 view
-    OR (p.module IN ('warehouses', 'units') AND p.action = 'view')
+    -- 仓库：仅 view（单位、分类对操作员完全不开放）
+    OR (p.module = 'warehouses' AND p.action = 'view')
     -- 采购单：view/create/edit（无 delete/approve/cancel）
     OR (p.module = 'purchase_orders' AND p.action IN ('view', 'create', 'edit'))
     -- 采购入库/退货：view/create/edit/confirm
@@ -233,11 +237,9 @@ WHERE r.code = 'operator'
     -- 财务：view + 登记
     OR (p.module = 'payables' AND p.action IN ('view', 'record_payment'))
     OR (p.module = 'receivables' AND p.action IN ('view', 'record_receipt'))
-    -- 报表：view/export
-    OR (p.module = 'reports' AND p.action IN ('view', 'export'))
-    -- 设置：外观可编辑，通用仅 view
+    -- 报表对操作员不开放
+    -- 设置：仅外观（view/edit），其他设置模块不开放
     OR (p.module = 'settings_appearance' AND p.action IN ('view', 'edit'))
-    OR (p.module = 'settings_general' AND p.action = 'view')
   );
 
 -- 查看者权限分配
@@ -254,18 +256,17 @@ WHERE r.code = 'viewer'
     OR (p.module IN ('purchase_orders', 'purchase_receipts', 'purchase_returns',
                      'sales_orders', 'sales_deliveries', 'sales_returns')
         AND p.action = 'view')
-    -- 库存相关：仅 view（+ export）
+    -- 库存相关：仅 view（+ export），自由出入库和盘点对查看者不开放
     OR (p.module = 'inventory' AND p.action IN ('view', 'export'))
-    OR (p.module IN ('manual_stock', 'stock_checks', 'stock_transfers') AND p.action = 'view')
-    -- 定制单/生产/补货：仅 view
-    OR (p.module IN ('custom_orders', 'production_orders', 'replenishment') AND p.action = 'view')
+    OR (p.module = 'stock_transfers' AND p.action = 'view')
+    -- 定制单/生产：仅 view（智能补货对查看者不开放）
+    OR (p.module IN ('custom_orders', 'production_orders') AND p.action = 'view')
     -- 财务：仅 view
     OR (p.module IN ('payables', 'receivables') AND p.action = 'view')
     -- 报表：view/export
     OR (p.module = 'reports' AND p.action IN ('view', 'export'))
-    -- 设置：外观可编辑，通用仅 view
+    -- 设置：仅外观（view/edit），其他设置模块均不开放
     OR (p.module = 'settings_appearance' AND p.action IN ('view', 'edit'))
-    OR (p.module = 'settings_general' AND p.action = 'view')
   );
 
 -- ================================================================
