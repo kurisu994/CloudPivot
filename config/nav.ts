@@ -3,31 +3,31 @@ import {
   // ── 以下图标对应阶段性隐藏的菜单，后续分批开放时连同菜单一并恢复 ──
   BarChart3,
   Box,
+  Building2,
   ClipboardList,
+  // ClipboardCheck,
+  // CreditCard,
+  Database,
+  DollarSign,
   FileText,
   FolderTree,
+  // Hammer,
+  Hash,
   LayoutDashboard,
   Lightbulb,
   type LucideIcon,
   Package,
   PackagePlus,
-  Paintbrush,
-  // Building2,
-  // ClipboardCheck,
-  // CreditCard,
-  // Database,
-  // DollarSign,
-  // Hammer,
-  // Hash,
   // Layers,
   // PackageCheck,
   // PackageOpen,
-  // PackageSearch,
+  PackageSearch,
+  Paintbrush,
   // Palette,
   PieChart,
+  Printer,
   Ruler,
   Settings,
-  // Printer,
   // Receipt,
   // RotateCcw,
   // ShoppingCart,
@@ -35,6 +35,7 @@ import {
   // Truck,
   // Undo2,
   // Users,
+  UserCog,
   // Wallet,
   // Warehouse,
 } from 'lucide-react'
@@ -67,6 +68,7 @@ export const navConfig: NavItem[] = [
     titleKey: 'nav.dashboard',
     href: '',
     icon: LayoutDashboard,
+    permissionModule: 'dashboard',
   },
   // 基础数据（阶段性仅开放：物料 / 分类 / 单位）
   {
@@ -74,14 +76,14 @@ export const navConfig: NavItem[] = [
     href: '/materials',
     icon: Package,
     children: [
-      { titleKey: 'nav.materials', href: '/materials', icon: Package },
-      { titleKey: 'nav.categories', href: '/categories', icon: FolderTree },
+      { titleKey: 'nav.materials', href: '/materials', icon: Package, permissionModule: 'materials' },
+      { titleKey: 'nav.categories', href: '/categories', icon: FolderTree, permissionModule: 'categories' },
       /* 阶段性隐藏，后续分批开放：
-      { titleKey: 'nav.suppliers', href: '/suppliers', icon: Truck },
-      { titleKey: 'nav.customers', href: '/customers', icon: Users },
-      { titleKey: 'nav.warehouses', href: '/warehouses', icon: Warehouse },
+      { titleKey: 'nav.suppliers', href: '/suppliers', icon: Truck, permissionModule: 'suppliers' },
+      { titleKey: 'nav.customers', href: '/customers', icon: Users, permissionModule: 'customers' },
+      { titleKey: 'nav.warehouses', href: '/warehouses', icon: Warehouse, permissionModule: 'warehouses' },
       */
-      { titleKey: 'nav.units', href: '/units', icon: Ruler },
+      { titleKey: 'nav.units', href: '/units', icon: Ruler, permissionModule: 'units' },
     ],
   },
   /* ── 阶段性隐藏（BOM），后续分批开放 ──
@@ -89,6 +91,7 @@ export const navConfig: NavItem[] = [
     titleKey: 'nav.bom',
     href: '/bom',
     icon: Layers,
+    permissionModule: 'bom',
   },
   */
   /* ── 阶段性隐藏（采购），后续分批开放 ──
@@ -101,16 +104,19 @@ export const navConfig: NavItem[] = [
         titleKey: 'nav.purchaseOrders',
         href: '/purchase-orders',
         icon: ShoppingCart,
+        permissionModule: 'purchase_orders',
       },
       {
         titleKey: 'nav.purchaseReceipts',
         href: '/purchase-receipts',
         icon: PackageCheck,
+        permissionModule: 'purchase_receipts',
       },
       {
         titleKey: 'nav.purchaseReturns',
         href: '/purchase-returns',
         icon: Undo2,
+        permissionModule: 'purchase_returns',
       },
     ],
   },
@@ -121,13 +127,14 @@ export const navConfig: NavItem[] = [
     href: '/sales-orders',
     icon: Receipt,
     children: [
-      { titleKey: 'nav.salesOrders', href: '/sales-orders', icon: Receipt },
+      { titleKey: 'nav.salesOrders', href: '/sales-orders', icon: Receipt, permissionModule: 'sales_orders' },
       {
         titleKey: 'nav.salesDeliveries',
         href: '/sales-deliveries',
         icon: PackageOpen,
+        permissionModule: 'sales_deliveries',
       },
-      { titleKey: 'nav.salesReturns', href: '/sales-returns', icon: RotateCcw },
+      { titleKey: 'nav.salesReturns', href: '/sales-returns', icon: RotateCcw, permissionModule: 'sales_returns' },
     ],
   },
   */
@@ -137,27 +144,31 @@ export const navConfig: NavItem[] = [
     href: '/inventory',
     icon: Box,
     children: [
-      { titleKey: 'nav.inventoryQuery', href: '/inventory', icon: Box },
+      { titleKey: 'nav.inventoryQuery', href: '/inventory', icon: Box, permissionModule: 'inventory' },
       {
         titleKey: 'nav.manualStockMovements',
         href: '/manual-stock-movements',
         icon: PackagePlus,
+        permissionModule: 'manual_stock',
       },
       {
         titleKey: 'nav.stockMovements',
         href: '/stock-movements',
         icon: ArrowLeftRight,
+        permissionModule: 'inventory',
       },
       {
         titleKey: 'nav.stockChecks',
         href: '/stock-checks',
         icon: ClipboardList,
+        permissionModule: 'stock_checks',
       },
       /* 阶段性隐藏，后续分批开放：
       {
         titleKey: 'nav.stockTransfers',
         href: '/stock-transfers',
         icon: ClipboardCheck,
+        permissionModule: 'stock_transfers',
       },
       */
     ],
@@ -167,6 +178,7 @@ export const navConfig: NavItem[] = [
     titleKey: 'nav.customOrders',
     href: '/custom-orders',
     icon: Palette,
+    permissionModule: 'custom_orders',
   },
   */
   /* ── 阶段性隐藏（生产工单），后续分批开放 ──
@@ -174,6 +186,7 @@ export const navConfig: NavItem[] = [
     titleKey: 'nav.productionOrders',
     href: '/production-orders',
     icon: Hammer,
+    permissionModule: 'production_orders',
   },
   */
   // 智能补货
@@ -181,6 +194,7 @@ export const navConfig: NavItem[] = [
     titleKey: 'nav.replenishment',
     href: '/replenishment',
     icon: Lightbulb,
+    permissionModule: 'replenishment',
   },
   /* ── 阶段性隐藏（财务：应付 / 应收），后续分批开放 ──
   {
@@ -188,11 +202,12 @@ export const navConfig: NavItem[] = [
     href: '/finance/payables',
     icon: Wallet,
     children: [
-      { titleKey: 'nav.payables', href: '/finance/payables', icon: Wallet },
+      { titleKey: 'nav.payables', href: '/finance/payables', icon: Wallet, permissionModule: 'payables' },
       {
         titleKey: 'nav.receivables',
         href: '/finance/receivables',
         icon: CreditCard,
+        permissionModule: 'receivables',
       },
     ],
   },
@@ -208,17 +223,20 @@ export const navConfig: NavItem[] = [
         titleKey: 'nav.purchaseReport',
         href: '/reports/purchase',
         icon: BarChart3,
+        permissionModule: 'reports',
       },
       {
         titleKey: 'nav.salesReport',
         href: '/reports/sales',
         icon: TrendingUp,
+        permissionModule: 'reports',
       },
       */
       {
         titleKey: 'nav.inventoryReport',
         href: '/reports/inventory',
         icon: PieChart,
+        permissionModule: 'reports',
       },
     ],
   },
@@ -228,43 +246,54 @@ export const navConfig: NavItem[] = [
     href: '/settings',
     icon: Settings,
     children: [
-      /* 阶段性隐藏，后续分批开放：
-      { titleKey: 'nav.companyInfo', href: '/settings', icon: Building2 },
+      { titleKey: 'nav.companyInfo', href: '/settings', icon: Building2, permissionModule: 'settings_general' },
       {
         titleKey: 'nav.encodingRules',
         href: '/settings/encoding-rules',
         icon: Hash,
+        permissionModule: 'settings_general',
       },
       {
         titleKey: 'nav.inventoryRules',
         href: '/settings/inventory-rules',
         icon: PackageSearch,
+        permissionModule: 'settings_general',
       },
       {
         titleKey: 'nav.printSettings',
         href: '/settings/print-settings',
         icon: Printer,
+        permissionModule: 'settings_general',
       },
       {
         titleKey: 'nav.exchangeRate',
         href: '/settings/exchange-rate',
         icon: DollarSign,
+        permissionModule: 'settings_general',
       },
       {
         titleKey: 'nav.dataManagement',
         href: '/settings/data-management',
         icon: Database,
+        permissionModule: 'data_management',
       },
-      */
+      {
+        titleKey: 'nav.userManagement',
+        href: '/settings/user-management',
+        icon: UserCog,
+        permissionModule: 'user_management',
+      },
       {
         titleKey: 'nav.operationLogs',
         href: '/settings/operation-logs',
         icon: FileText,
+        permissionModule: 'operation_logs',
       },
       {
         titleKey: 'nav.appearance',
         href: '/settings/appearance',
         icon: Paintbrush,
+        permissionModule: 'settings_appearance',
       },
     ],
   },

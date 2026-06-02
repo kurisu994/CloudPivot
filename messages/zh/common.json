@@ -1,6 +1,7 @@
 {
   "common": {
     "save": "保存",
+    "saving": "保存中...",
     "cancel": "取消",
     "confirm": "确认",
     "delete": "删除",
@@ -17,6 +18,7 @@
     "close": "关闭",
     "loading": "加载中...",
     "noData": "暂无数据",
+    "totalRecords": "共 {count} 条记录",
     "actions": "操作",
     "status": "状态",
     "all": "全部",

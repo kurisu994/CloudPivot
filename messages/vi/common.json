@@ -1,6 +1,7 @@
 {
   "common": {
     "save": "Lưu",
+    "saving": "Đang lưu...",
     "cancel": "Hủy",
     "confirm": "Xác nhận",
     "delete": "Xóa",
@@ -17,6 +18,7 @@
     "close": "Đóng",
     "loading": "Đang tải...",
     "noData": "Không có dữ liệu",
+    "totalRecords": "Tổng {count} bản ghi",
     "actions": "Thao tác",
     "status": "Trạng thái",
     "all": "Tất cả",

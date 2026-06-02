@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { usePermission } from '@/hooks/use-permission'
 import { getErrorMessage } from '@/lib/error'
 import {
   createUser,
@@ -34,6 +35,10 @@ export function UserManagementContent() {
   const t = useTranslations('settings.userManagement')
   const tc = useTranslations('common')
   const { user: currentUser } = useAuth()
+  const { isAdmin } = usePermission()
+
+  // 搜索防抖
+  const [debouncedKeyword, setDebouncedKeyword] = useState('')
 
   // 列表状态
   const [users, setUsers] = useState<UserListItem[]>([])
@@ -44,6 +49,12 @@ export function UserManagementContent() {
   const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
+
+  // 搜索防抖 effect
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedKeyword(keyword), 300)
+    return () => clearTimeout(timer)
+  }, [keyword])
 
   // 弹窗状态
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -75,14 +86,14 @@ export function UserManagementContent() {
   /** 角色 Select items */
   const roleFilterOptions = [{ value: '', label: tc('all') }, ...roles.map(r => ({ value: r.code, label: getRoleLabel(r.code, t) }))]
 
-  const roleFormOptions = roles.map(r => ({ value: String(r.id), label: getRoleLabel(r.code, t) }))
+  const roleFormOptions = roles.filter(r => r.code !== 'admin').map(r => ({ value: String(r.id), label: getRoleLabel(r.code, t) }))
 
   /** 获取用户列表 */
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     try {
       const res = await getUsers({
-        keyword: keyword || undefined,
+        keyword: debouncedKeyword || undefined,
         role: roleFilter || undefined,
         page,
         pageSize,
@@ -94,7 +105,7 @@ export function UserManagementContent() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, keyword, roleFilter])
+  }, [page, pageSize, debouncedKeyword, roleFilter])
 
   useEffect(() => {
     void fetchUsers()
@@ -162,7 +173,10 @@ export function UserManagementContent() {
   }
 
   /** 确认操作 */
+  const [confirming, setConfirming] = useState(false)
   const handleConfirmAction = async () => {
+    if (confirming) return
+    setConfirming(true)
     const { type, userId, extra } = confirmDialog
     try {
       switch (type) {
@@ -187,7 +201,19 @@ export function UserManagementContent() {
       void fetchUsers()
     } catch (e) {
       toast.error(getErrorMessage(e))
+    } finally {
+      setConfirming(false)
     }
+  }
+
+  // 非管理员无权访问
+  if (!isAdmin) {
+    return (
+      <div className="flex w-full flex-col items-center justify-center gap-4 py-20">
+        <ShieldAlert className="size-12 text-slate-300" />
+        <p className="text-sm text-slate-500">{t('permissionDenied')}</p>
+      </div>
+    )
   }
 
   return (
@@ -288,18 +314,20 @@ export function UserManagementContent() {
                     {/* 操作列 */}
                     <TableCell className="px-6 py-3.5">
                       <div className="flex items-center justify-end gap-1">
-                        {/* 编辑 */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="size-8 p-0 text-slate-500 hover:text-primary"
-                          onClick={() => openEditDialog(u)}
-                          title={t('editUser')}
-                        >
-                          <Pencil className="size-3.5" />
-                        </Button>
+                        {/* 编辑（管理员不可编辑） */}
+                        {u.id !== 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="size-8 p-0 text-slate-500 hover:text-primary"
+                            onClick={() => openEditDialog(u)}
+                            title={t('editUser')}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                        )}
                         {/* 启禁用 */}
-                        {u.id !== currentUser?.id && (
+                        {u.id !== 1 && u.id !== currentUser?.id && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -321,23 +349,25 @@ export function UserManagementContent() {
                             {u.isEnabled ? <ShieldAlert className="size-3.5" /> : <Shield className="size-3.5" />}
                           </Button>
                         )}
-                        {/* 重置密码 */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="size-8 p-0 text-slate-500 hover:text-orange-600"
-                          onClick={() =>
-                            setConfirmDialog({
-                              open: true,
-                              type: 'reset',
-                              userId: u.id,
-                              userName: u.displayName,
-                            })
-                          }
-                          title={t('resetPassword')}
-                        >
-                          <KeyRound className="size-3.5" />
-                        </Button>
+                        {/* 重置密码（管理员不可重置） */}
+                        {u.id !== 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="size-8 p-0 text-slate-500 hover:text-orange-600"
+                            onClick={() =>
+                              setConfirmDialog({
+                                open: true,
+                                type: 'reset',
+                                userId: u.id,
+                                userName: u.displayName,
+                              })
+                            }
+                            title={t('resetPassword')}
+                          >
+                            <KeyRound className="size-3.5" />
+                          </Button>
+                        )}
                         {/* 解锁（仅锁定时显示） */}
                         {u.isLocked && (
                           <Button
@@ -489,8 +519,8 @@ export function UserManagementContent() {
           </DialogHeader>
           <DialogFooter>
             <DialogClose render={<Button variant="outline">{tc('cancel')}</Button>} />
-            <Button variant={confirmDialog.type === 'delete' ? 'destructive' : 'default'} onClick={handleConfirmAction}>
-              {tc('confirm')}
+            <Button variant={confirmDialog.type === 'delete' ? 'destructive' : 'default'} onClick={handleConfirmAction} disabled={confirming}>
+              {confirming ? tc('loading') : tc('confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>

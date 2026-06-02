@@ -317,12 +317,11 @@ export function ReplenishmentPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 页面标题 + 操作按钮 */}
+      {/* 操作按钮 */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-foreground text-2xl font-bold">{t('title')}</h1>
           {!loading && suggestions.length > 0 && (
-            <p className="text-muted-foreground mt-1 text-sm">
+            <p className="text-muted-foreground text-sm">
               {t('needsReplenishment')}: {suggestions.length}
               {urgentCount > 0 && (
                 <span className="ml-2 text-red-600 dark:text-red-400">

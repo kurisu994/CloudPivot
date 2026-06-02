@@ -36,11 +36,8 @@ pub struct LoginResponse {
     pub permissions: Vec<PermissionItem>,
 }
 
-/// 初始管理员默认密码
-const DEFAULT_ADMIN_PASSWORD: &str = "admin123";
-
-/// 新建用户默认密码（用户管理创建 / 重置密码）
-pub const DEFAULT_USER_PASSWORD: &str = "abc12345";
+/// 默认密码（初始管理员 / 新建用户 / 重置密码统一使用）
+pub const DEFAULT_PASSWORD: &str = "abc12345";
 
 /// 连续失败锁定阈值
 const MAX_FAILED_ATTEMPTS: i32 = 5;
@@ -57,19 +54,19 @@ pub async fn ensure_admin_exists(pool: &PgPool) -> Result<(), AppError> {
         .map_err(|e| AppError::Database(format!("查询用户数量失败: {}", e)))?;
 
     if count == 0 {
-        let password_hash = bcrypt::hash(DEFAULT_ADMIN_PASSWORD, bcrypt::DEFAULT_COST)
+        let password_hash = bcrypt::hash(DEFAULT_PASSWORD, bcrypt::DEFAULT_COST)
             .map_err(|e| AppError::Auth(format!("密码哈希失败: {}", e)))?;
 
         sqlx::query(
-            "INSERT INTO users (username, display_name, password_hash, role, must_change_password, session_version)
-             VALUES ('admin', '管理员', $1, 'admin', TRUE, 1)",
+            "INSERT INTO users (username, display_name, password_hash, role, role_id, must_change_password, session_version)
+             VALUES ('admin', '管理员', $1, 'admin', (SELECT id FROM roles WHERE code = 'admin'), TRUE, 1)",
         )
         .bind(&password_hash)
         .execute(pool)
         .await
         .map_err(|e| AppError::Database(format!("创建管理员账号失败: {}", e)))?;
 
-        log::info!("已创建默认管理员账号 (admin / admin123)");
+        log::info!("已创建默认管理员账号 (admin / abc12345)");
     }
 
     Ok(())
@@ -371,8 +368,8 @@ pub async fn change_password(
         return Err(AppError::Auth("密码长度至少 8 位".into()));
     }
 
-    // 不能使用默认密码（admin 初始密码或新用户初始密码）
-    if new_password == DEFAULT_ADMIN_PASSWORD || new_password == DEFAULT_USER_PASSWORD {
+    // 不能使用默认密码作为新密码
+    if new_password == DEFAULT_PASSWORD {
         return Err(AppError::Auth("新密码不能与初始密码相同".into()));
     }
 

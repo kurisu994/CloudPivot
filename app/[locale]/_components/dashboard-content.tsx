@@ -17,9 +17,7 @@ export function DashboardContent() {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Dashboard Header */}
-      <div className="mt-2 flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">{t('dashboard.title')}</h2>
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-3">
           <Button
             variant="outline"

@@ -227,18 +227,6 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 头部区域 */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('manualStockMovements.title')}</h1>
-          <p className="text-sm text-muted-foreground">{t('manualStockMovements.subtitle')}</p>
-        </div>
-        <Button onClick={onNew} className="shadow-sm">
-          <Plus className="mr-2 h-4 w-4" />
-          {t('manualStockMovements.newMovement')}
-        </Button>
-      </div>
-
       {/* 筛选过滤面板 */}
       <Card className="border-muted bg-card shadow-sm">
         <CardContent className="pt-6">
@@ -334,12 +322,16 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
 
             {/* 按钮控制 */}
             <div className="flex items-center gap-2 md:col-span-2 lg:col-span-2 lg:col-start-5">
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="flex-1">
                 {tc('search')}
               </Button>
-              <Button type="button" variant="outline" onClick={handleReset} className="w-full">
+              <Button type="button" variant="outline" onClick={handleReset} className="flex-1">
                 <RotateCcw className="mr-2 h-4 w-4" />
                 {tc('reset')}
+              </Button>
+              <Button type="button" onClick={onNew} className="shrink-0 shadow-sm">
+                <Plus className="mr-2 h-4 w-4" />
+                {t('manualStockMovements.newMovement')}
               </Button>
             </div>
           </form>

@@ -26,7 +26,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const t = useTranslations()
   const tc = useTranslations('common')
   const pathname = usePathname()
-  const { canAccess, isAdmin } = usePermission()
+  const { canAccess } = usePermission()
 
   /** 根据权限过滤导航项 */
   const filteredNav = useMemo(() => {
@@ -47,13 +47,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         return { ...item, children: filteredChildren }
       })
       .filter(Boolean) as NavItem[]
-  }, [canAccess, isAdmin])
+  }, [canAccess])
 
   return (
     <aside
       className={cn(
         'border-sidebar-border bg-sidebar fixed top-0 left-0 z-30 flex h-full flex-col border-r transition-all duration-200 ease-in-out',
-        collapsed ? 'w-16' : 'w-60',
+        collapsed ? 'w-16' : 'w-52',
       )}
     >
       <div className="flex h-14 items-center px-3 pt-1">

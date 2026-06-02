@@ -89,7 +89,8 @@
       "confirmDisableTitle": "禁用用户",
       "confirmDisable": "确定禁用用户 {name}？禁用后该用户将无法登录。",
       "confirmUnlockTitle": "解锁用户",
-      "confirmUnlock": "确定解锁用户 {name}？"
+      "confirmUnlock": "确定解锁用户 {name}？",
+      "permissionDenied": "无权访问此页面"
     },
     "encodingRules": {
       "title": "编码规则设置",

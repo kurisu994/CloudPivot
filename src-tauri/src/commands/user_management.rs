@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
-use crate::auth::{self, DEFAULT_USER_PASSWORD, PermissionItem};
+use crate::auth::{self, DEFAULT_PASSWORD, PermissionItem};
 use crate::db::DbState;
 use crate::error::AppError;
 use crate::operation_log;
@@ -120,7 +120,12 @@ pub async fn get_users(
     // 关键词搜索（用户名或显示名）
     if let Some(ref kw) = filter.keyword {
         if !kw.is_empty() {
-            let pattern = format!("%{}%", kw);
+            // 转义 ILIKE 通配符，避免用户输入的 % 和 _ 被当作模式匹配
+            let escaped = kw
+                .replace('\\', "\\\\")
+                .replace('%', "\\%")
+                .replace('_', "\\_");
+            let pattern = format!("%{}%", escaped);
             count_qb.push(" AND (username ILIKE ");
             count_qb.push_bind(pattern.clone());
             count_qb.push(" OR display_name ILIKE ");
@@ -336,7 +341,7 @@ pub async fn create_user(
         .ok_or_else(|| AppError::Business("角色不存在".into()))?;
 
     // 生成初始密码哈希
-    let password_hash = bcrypt::hash(DEFAULT_USER_PASSWORD, bcrypt::DEFAULT_COST)
+    let password_hash = bcrypt::hash(DEFAULT_PASSWORD, bcrypt::DEFAULT_COST)
         .map_err(|e| AppError::Auth(format!("密码哈希失败: {}", e)))?;
 
     let new_id: i64 = sqlx::query_scalar(
@@ -498,6 +503,11 @@ pub async fn toggle_user_status(
 ) -> Result<(), AppError> {
     current_user.require_permission("user_management", "edit")?;
 
+    // 不可禁用内置管理员
+    if user_id == 1 && !is_enabled {
+        return Err(AppError::Business("不能禁用内置管理员账号".into()));
+    }
+
     if user_id == current_user.user_id() && !is_enabled {
         return Err(AppError::Business("不能禁用自己的账号".into()));
     }
@@ -560,7 +570,7 @@ pub async fn reset_user_password(
 ) -> Result<(), AppError> {
     current_user.require_permission("user_management", "reset_password")?;
 
-    let password_hash = bcrypt::hash(DEFAULT_USER_PASSWORD, bcrypt::DEFAULT_COST)
+    let password_hash = bcrypt::hash(DEFAULT_PASSWORD, bcrypt::DEFAULT_COST)
         .map_err(|e| AppError::Auth(format!("密码哈希失败: {}", e)))?;
 
     sqlx::query(
@@ -644,7 +654,11 @@ pub async fn unlock_user(
 
 /// 获取角色列表
 #[tauri::command]
-pub async fn get_roles(db: State<'_, DbState>) -> Result<Vec<RoleInfo>, AppError> {
+pub async fn get_roles(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+) -> Result<Vec<RoleInfo>, AppError> {
+    current_user.require_auth()?;
     let rows = sqlx::query_as::<_, (i64, String, String, Option<String>, bool)>(
         "SELECT id, code, name, description, is_system FROM roles WHERE is_enabled = TRUE ORDER BY id",
     )

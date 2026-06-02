@@ -129,7 +129,7 @@ function AppLayoutShell({
       <Sidebar collapsed={sidebarCollapsed} onToggle={onToggleSidebar} />
 
       {/* 主内容区 */}
-      <div className={cn('flex min-w-0 flex-1 flex-col transition-all duration-200 ease-in-out', sidebarCollapsed ? 'ml-16' : 'ml-60')}>
+      <div className={cn('flex min-w-0 flex-1 flex-col transition-all duration-200 ease-in-out', sidebarCollapsed ? 'ml-16' : 'ml-52')}>
         {/* 顶部工具栏 */}
         <Header onToggleSidebar={onToggleSidebar} />
 

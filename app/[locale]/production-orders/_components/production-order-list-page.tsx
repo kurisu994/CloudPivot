@@ -114,8 +114,7 @@ export function ProductionOrderListPage({ onEdit, onNew }: Props) {
   return (
     <div className="flex flex-col gap-4">
       {/* 标题栏 */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t('title')}</h1>
+      <div className="flex items-center justify-end">
         <Button onClick={onNew}>
           <Plus className="mr-1.5 h-4 w-4" />
           {t('createOrder')}

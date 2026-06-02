@@ -1,6 +1,7 @@
 {
   "common": {
     "save": "Save",
+    "saving": "Saving...",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "delete": "Delete",
@@ -17,6 +18,7 @@
     "close": "Close",
     "loading": "Loading...",
     "noData": "No Data",
+    "totalRecords": "{count} records total",
     "actions": "Actions",
     "status": "Status",
     "all": "All",

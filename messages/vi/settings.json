@@ -89,7 +89,8 @@
       "confirmDisableTitle": "Tắt người dùng",
       "confirmDisable": "Bạn có chắc muốn tắt người dùng {name}? Người dùng này sẽ không thể đăng nhập.",
       "confirmUnlockTitle": "Mở khóa người dùng",
-      "confirmUnlock": "Bạn có chắc muốn mở khóa người dùng {name}?"
+      "confirmUnlock": "Bạn có chắc muốn mở khóa người dùng {name}?",
+      "permissionDenied": "Bạn không có quyền truy cập trang này"
     },
     "encodingRules": {
       "title": "Cài đặt quy tắc mã hóa",

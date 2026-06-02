@@ -393,15 +393,6 @@ export function MaterialsClientPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 页面标题 */}
-      <div>
-        <h2 className="text-foreground text-2xl font-bold">
-          {t('title')}
-          <span className="text-muted-foreground ml-2 text-lg font-normal">{t('subtitle')}</span>
-        </h2>
-        <p className="text-muted-foreground mt-1 text-sm">{t('description')}</p>
-      </div>
-
       {/* 搜索过滤条 */}
       <div className="border-border bg-card flex items-center justify-between gap-4 rounded-xl border p-4 shadow-sm">
         <div className="flex flex-1 items-center gap-4">

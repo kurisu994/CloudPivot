@@ -1,13 +1,12 @@
 'use client'
 
-import { CalendarDays, Download, Layers, Search, User, Zap } from 'lucide-react'
+import { Download, Layers, Search, User, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
 import { PaginationControls } from '@/components/common/pagination'
 import { Button } from '@/components/ui/button'
 import { DateRangePicker } from '@/components/ui/date-picker'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { getOperationLogs, type OperationLogFilter, type OperationLogItem } from '@/lib/tauri'
@@ -152,82 +151,58 @@ export function OperationLogsContent() {
   return (
     <div className="flex w-full flex-col gap-6">
       {/* 筛选面板 */}
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        {/* 第一行：三列筛选器 */}
-        <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div className="space-y-1.5">
-            <Label className="flex items-center text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-              <Layers className="mr-1 size-3.5" />
-              {t('module')}
-            </Label>
-            <Select value={moduleFilter} onValueChange={value => setModuleFilter(value ?? '')} items={moduleOptions}>
-              <SelectTrigger className="h-10 w-full bg-slate-50 dark:bg-slate-900/50">
-                <SelectValue placeholder={t('allModules')} />
-              </SelectTrigger>
-              <SelectContent>
-                {moduleOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <section className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+        <div className="flex flex-wrap items-center gap-3">
+          <Select value={moduleFilter} onValueChange={value => setModuleFilter(value ?? '')} items={moduleOptions}>
+            <SelectTrigger className="h-9 w-[160px] bg-slate-50 text-sm dark:bg-slate-900/50">
+              <Layers className="mr-1.5 size-3.5 shrink-0 text-slate-400" />
+              <SelectValue placeholder={t('allModules')} />
+            </SelectTrigger>
+            <SelectContent>
+              {moduleOptions.map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={actionFilter} onValueChange={value => setActionFilter(value ?? '')} items={actionOptions}>
+            <SelectTrigger className="h-9 w-[160px] bg-slate-50 text-sm dark:bg-slate-900/50">
+              <Zap className="mr-1.5 size-3.5 shrink-0 text-slate-400" />
+              <SelectValue placeholder={t('allTypes')} />
+            </SelectTrigger>
+            <SelectContent>
+              {actionOptions.map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="flex h-9 items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50">
+            <User className="mr-1.5 size-3.5 shrink-0 text-slate-400" />
+            {t('allUsers')}
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="flex items-center text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-              <Zap className="mr-1 size-3.5" />
-              {t('actionType')}
-            </Label>
-            <Select value={actionFilter} onValueChange={value => setActionFilter(value ?? '')} items={actionOptions}>
-              <SelectTrigger className="h-10 w-full bg-slate-50 dark:bg-slate-900/50">
-                <SelectValue placeholder={t('allTypes')} />
-              </SelectTrigger>
-              <SelectContent>
-                {actionOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="flex items-center text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-              <User className="mr-1 size-3.5" />
-              {t('user')}
-            </Label>
-            <div className="flex h-10 items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50">
-              {t('allUsers')}
-            </div>
-          </div>
-        </div>
-
-        {/* 第二行：日期范围 + 操作按钮 */}
-        <div className="flex items-end gap-6 border-t border-slate-50 pt-6 dark:border-slate-800">
-          <div className="max-w-md flex-1 space-y-1.5">
-            <Label className="flex items-center text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-              <CalendarDays className="mr-1 size-3.5" />
-              {t('dateRange')}
-            </Label>
-            <DateRangePicker
-              fromValue={dateFrom}
-              toValue={dateTo}
-              onChange={(from, to) => {
-                setDateFrom(from)
-                setDateTo(to)
-              }}
-              className="h-10 bg-slate-50 dark:bg-slate-900/50"
-            />
-          </div>
+          <DateRangePicker
+            fromValue={dateFrom}
+            toValue={dateTo}
+            onChange={(from, to) => {
+              setDateFrom(from)
+              setDateTo(to)
+            }}
+            className="h-9 w-[260px] bg-slate-50 text-sm dark:bg-slate-900/50"
+          />
 
           <div className="flex-1" />
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              className="h-10 gap-2 font-bold"
+              size="sm"
+              className="gap-1.5 font-bold"
               onClick={() => {
                 // 导出 CSV（简单实现）
                 if (logs.length === 0) return
@@ -251,17 +226,18 @@ export function OperationLogsContent() {
                 URL.revokeObjectURL(url)
               }}
             >
-              <Download className="size-4" />
+              <Download className="size-3.5" />
               {t('exportData')}
             </Button>
             <Button
-              className="h-10 gap-2 px-8 font-bold"
+              size="sm"
+              className="gap-1.5 px-6 font-bold"
               onClick={() => {
                 setPage(1)
                 void fetchLogs()
               }}
             >
-              <Search className="size-4" />
+              <Search className="size-3.5" />
               {t('query')}
             </Button>
           </div>

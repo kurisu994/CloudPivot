@@ -89,7 +89,8 @@
       "confirmDisableTitle": "Disable User",
       "confirmDisable": "Are you sure you want to disable user {name}? This user will not be able to login.",
       "confirmUnlockTitle": "Unlock User",
-      "confirmUnlock": "Are you sure you want to unlock user {name}?"
+      "confirmUnlock": "Are you sure you want to unlock user {name}?",
+      "permissionDenied": "You do not have permission to access this page"
     },
     "encodingRules": {
       "title": "Encoding Rules",

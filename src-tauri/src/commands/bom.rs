@@ -822,7 +822,8 @@ mod tests {
     use super::ensure_bom_not_referenced;
 
     async fn setup_bom_reference_pool() -> sqlx::PgPool {
-        let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| env!("DATABASE_URL").to_string());
+        let db_url =
+            std::env::var("DATABASE_URL").unwrap_or_else(|_| env!("DATABASE_URL").to_string());
         let pool = PgPoolOptions::new()
             .max_connections(1)
             .connect(&db_url)
