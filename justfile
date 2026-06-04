@@ -97,6 +97,8 @@ version bump:
     sed -i.bak "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml && rm src-tauri/Cargo.toml.bak
     # tauri.conf.json
     sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json && rm src-tauri/tauri.conf.json.bak
+    # Cargo.lock 中项目自身 [[package]] 块（避免下次 cargo build 自动同步产生 diff）
+    perl -i -0pe 's/(\[\[package\]\]\nname = "app"\nversion = ")[^"]+(")/${1}'"$VERSION"'${2}/' src-tauri/Cargo.lock
     echo "✅ Version updated to $VERSION"
 
 # 打包发布全流程（包含更新版本号、提交 Commit、推主干、打 Tag 并出包）
