@@ -325,24 +325,7 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
 
       {/* BOM 列表表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell
-          className="border-border bg-card rounded-xl border shadow-sm"
-          tableClassName="min-w-[960px]"
-          footer={
-            total > 0 ? (
-              <BusinessListTableFooter>
-                <span className="text-xs font-bold text-slate-400">{t('table.totalRecords', { total: String(total) })}</span>
-                <PaginationControls
-                  currentPage={page}
-                  totalPages={totalPages}
-                  onPageChange={setPage}
-                  pageSize={pageSize}
-                  onPageSizeChange={setPageSize}
-                />
-              </BusinessListTableFooter>
-            ) : undefined
-          }
-        >
+        <BusinessListTableShell className="border-border bg-card rounded-xl border shadow-sm" tableClassName="min-w-[960px]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
               <TableHead className={`w-[200px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('table.materialName')}</TableHead>
@@ -420,6 +403,14 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
           </TableBody>
         </BusinessListTableShell>
       </div>
+
+      {/* 分页栏（固定底部，不参与滚动） */}
+      {total > 0 && (
+        <BusinessListTableFooter className="shrink-0">
+          <span className="text-xs font-bold text-slate-400">{t('table.totalRecords', { total: String(total) })}</span>
+          <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={setPage} pageSize={pageSize} onPageSizeChange={setPageSize} />
+        </BusinessListTableFooter>
+      )}
 
       {/* 物料反查 */}
       <BomReverseLookup />

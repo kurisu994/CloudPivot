@@ -191,21 +191,7 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
 
       {/* 表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell
-          tableClassName="min-w-[900px]"
-          footer={
-            <BusinessListTableFooter>
-              <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
-              <PaginationControls
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                pageSize={pageSize}
-                onPageSizeChange={setPageSize}
-              />
-            </BusinessListTableFooter>
-          }
-        >
+        <BusinessListTableShell tableClassName="min-w-[900px]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
               <TableHead className="w-[160px]">{t('transferNo')}</TableHead>
@@ -264,6 +250,18 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
           </TableBody>
         </BusinessListTableShell>
       </div>
+
+      {/* 分页栏（固定底部，不参与滚动） */}
+      <BusinessListTableFooter className="shrink-0">
+        <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+        />
+      </BusinessListTableFooter>
 
       {/* 确认对话框 */}
       <ConfirmDialog

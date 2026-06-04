@@ -5,13 +5,13 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
+import { BusinessListTableShell } from '@/components/common/business-list-table'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { usePermission } from '@/hooks/use-permission'
 import type { UnitItem } from '@/lib/tauri'
 import { deleteUnit, getAllUnits, toggleUnitStatus } from '@/lib/tauri'
@@ -101,105 +101,96 @@ export function UnitsContent() {
     loadUnits()
   }
 
+  const colSpan = showActions ? 7 : 6
+
   return (
-    <div className="space-y-6">
-      {/* 页面标题和操作栏 */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
-        {canCreate && (
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      {/* 操作栏：新增按钮右对齐 */}
+      {canCreate && (
+        <div className="flex items-center justify-end">
           <Button onClick={handleAdd}>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus data-icon="inline-start" />
             {t('addUnit')}
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* 单位列表 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('title')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[120px]">{t('name')}</TableHead>
-                <TableHead className="w-[100px]">{t('nameEn')}</TableHead>
-                <TableHead className="w-[100px]">{t('nameVi')}</TableHead>
-                <TableHead className="w-[80px]">{t('symbol')}</TableHead>
-                <TableHead className="w-[80px]">{t('decimalPlaces')}</TableHead>
-                <TableHead className="w-[80px]">{t('status')}</TableHead>
-                {showActions && <TableHead className="w-[140px]">{t('actions')}</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                // 加载骨架
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: showActions ? 7 : 6 }).map((_, j) => (
-                      <TableCell key={j}>
-                        <Skeleton className="h-4 w-full" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : items.length === 0 ? (
-                // 空状态
-                <TableRow>
-                  <TableCell colSpan={showActions ? 7 : 6} className="h-32 text-center">
-                    <div className="text-muted-foreground">
-                      <p>{t('emptyState')}</p>
-                      <p className="text-sm">{t('emptyStateDesc')}</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                // 数据行
-                items.map(item => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>{item.nameEn ?? '—'}</TableCell>
-                    <TableCell>{item.nameVi ?? '—'}</TableCell>
-                    <TableCell>{item.symbol ?? '—'}</TableCell>
-                    <TableCell>{item.decimalPlaces}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={item.isEnabled ? 'default' : 'secondary'}
-                        className={canEdit ? 'cursor-pointer' : undefined}
-                        onClick={canEdit ? () => handleToggleStatus(item) : undefined}
-                      >
-                        {item.isEnabled ? t('enabled') : t('disabled')}
-                      </Badge>
+      {/* 单位列表（独立滚动，表头吸顶） */}
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+          <TableHeader className="bg-muted sticky top-0 z-30">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-[120px] text-center">{t('name')}</TableHead>
+              <TableHead className="w-[100px]">{t('nameEn')}</TableHead>
+              <TableHead className="w-[100px]">{t('nameVi')}</TableHead>
+              <TableHead className="w-[80px]">{t('symbol')}</TableHead>
+              <TableHead className="w-[80px]">{t('decimalPlaces')}</TableHead>
+              <TableHead className="w-[80px]">{t('status')}</TableHead>
+              {showActions && <TableHead className="w-[140px]">{t('actions')}</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              // 加载骨架
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  {Array.from({ length: colSpan }).map((_, j) => (
+                    <TableCell key={j}>
+                      <Skeleton className="h-4 w-full" />
                     </TableCell>
-                    {showActions && (
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {canEdit && (
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(item.id)}>
-                              {t('edit')}
-                            </Button>
-                          )}
-                          {canDelete && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => setDeleteTarget(item)}
-                            >
-                              {t('delete')}
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  ))}
+                </TableRow>
+              ))
+            ) : items.length === 0 ? (
+              // 空状态
+              <TableRow>
+                <TableCell colSpan={colSpan} className="h-32 text-center">
+                  <div className="text-muted-foreground">
+                    <p>{t('emptyState')}</p>
+                    <p className="text-sm">{t('emptyStateDesc')}</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              // 数据行
+              items.map(item => (
+                <TableRow key={item.id}>
+                  <TableCell className="text-center font-medium">{item.name}</TableCell>
+                  <TableCell>{item.nameEn ?? '—'}</TableCell>
+                  <TableCell>{item.nameVi ?? '—'}</TableCell>
+                  <TableCell>{item.symbol ?? '—'}</TableCell>
+                  <TableCell>{item.decimalPlaces}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={item.isEnabled ? 'default' : 'secondary'}
+                      className={canEdit ? 'cursor-pointer' : undefined}
+                      onClick={canEdit ? () => handleToggleStatus(item) : undefined}
+                    >
+                      {item.isEnabled ? t('enabled') : t('disabled')}
+                    </Badge>
+                  </TableCell>
+                  {showActions && (
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {canEdit && (
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(item.id)}>
+                            {t('edit')}
+                          </Button>
+                        )}
+                        {canDelete && (
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(item)}>
+                            {t('delete')}
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
 
       {/* 新增/编辑弹窗 */}
       <UnitDialog open={dialogOpen} onOpenChange={setDialogOpen} unitId={editingUnitId} onSuccess={handleDialogSuccess} />

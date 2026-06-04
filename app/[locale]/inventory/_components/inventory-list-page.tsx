@@ -240,21 +240,7 @@ export function InventoryListPage() {
       {/* 数据表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
         <TooltipProvider>
-          <BusinessListTableShell
-            tableClassName="min-w-[1200px]"
-            footer={
-              <BusinessListTableFooter>
-                <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
-                <PaginationControls
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                  pageSize={pageSize}
-                  onPageSizeChange={setPageSize}
-                />
-              </BusinessListTableFooter>
-            }
-          >
+          <BusinessListTableShell tableClassName="min-w-[1200px]">
             <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
               <TableRow>
                 <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[140px]`}>{t('materialCode')}</TableHead>
@@ -311,6 +297,18 @@ export function InventoryListPage() {
           </BusinessListTableShell>
         </TooltipProvider>
       </div>
+
+      {/* 分页栏（固定底部，不参与滚动） */}
+      <BusinessListTableFooter className="shrink-0">
+        <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+        />
+      </BusinessListTableFooter>
 
       {/* 详情弹窗 */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>

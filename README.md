@@ -319,7 +319,7 @@ just clean                  # 清理构建产物
 - [x] 供应商管理 — 列表筛选分页、Sheet 表单、详情弹窗、Rust IPC CRUD
 - [x] 客户管理 — 列表筛选分页、Dialog 编辑弹窗、详情弹窗、Rust IPC CRUD
 - [x] 仓库管理 — 轻量 Card + Table 列表、Dialog 编辑弹窗、默认仓映射、Rust IPC CRUD
-- [x] 单位管理 — 轻量 Card + Table 列表、Dialog 编辑弹窗、Rust IPC CRUD
+- [x] 单位管理 — 业务列表（独立滚动、表头吸顶）、Dialog 编辑弹窗、Rust IPC CRUD
 - [x] 业务列表表格骨架 — 统一横向滚动、固定首列、加载态、空态、分页栏响应式布局
 - [x] BOM 管理 — 列表筛选分页、编辑页（头信息 + 明细表格 + 需求计算）、物料反查、复制新版本、Rust IPC 10 个命令
 

@@ -178,6 +178,11 @@
   html {
     @apply font-sans;
   }
+  /* 禁用整页滚动到边界时的橡皮筋/回弹效果 */
+  html,
+  body {
+    overscroll-behavior: none;
+  }
 }
 
 /* ========================================
