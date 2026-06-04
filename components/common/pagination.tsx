@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils'
 
 /** 默认可选的每页条数 */
-const PAGE_SIZE_OPTIONS = [20, 50, 100, 200]
+const PAGE_SIZE_OPTIONS = [20, 50, 100, 300, 500]
 
 /**
  * 生成分页器页码列表（同步操作日志页面分页效果，最多可显示端点及省略号）

@@ -45,7 +45,7 @@ export function UserManagementContent() {
   const [roles, setRoles] = useState<RoleInfo[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(50)
   const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
