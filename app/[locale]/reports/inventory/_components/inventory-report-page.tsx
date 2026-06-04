@@ -215,7 +215,7 @@ export function InventoryReportPage() {
     } finally {
       setReportLoading(false)
     }
-  }, [startDate, endDate, warehouseId, categoryId, materialType, keyword, page, refreshKey])
+  }, [startDate, endDate, warehouseId, categoryId, materialType, keyword, page, pageSize, refreshKey])
 
   // 加载库龄数据
   const loadAging = useCallback(async () => {
@@ -238,7 +238,7 @@ export function InventoryReportPage() {
     } finally {
       setAgingLoading(false)
     }
-  }, [warehouseId, categoryId, agingPage, agingRange, agingKeyword, refreshKey])
+  }, [warehouseId, categoryId, agingPage, pageSize, agingRange, agingKeyword, refreshKey])
 
   // 加载滞销数据
   const loadSlowMoving = useCallback(async () => {
@@ -258,7 +258,7 @@ export function InventoryReportPage() {
     } finally {
       setSlowLoading(false)
     }
-  }, [warehouseId, categoryId, slowPage, slowThreshold, refreshKey])
+  }, [warehouseId, categoryId, slowPage, pageSize, slowThreshold, refreshKey])
 
   // 根据 Tab 加载数据
   useEffect(() => {
@@ -461,26 +461,6 @@ export function InventoryReportPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 页面标题 */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-foreground text-2xl font-bold">{t('title')}</h1>
-        <div className="flex items-center gap-2">
-          {generatedAt && (
-            <span className="text-muted-foreground text-xs">
-              {t('dataAsOf')} {new Date(generatedAt).toLocaleTimeString()}
-            </span>
-          )}
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
-            <Download data-icon="inline-start" />
-            {t('exportExcel')}
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleRefresh}>
-            <RefreshCw data-icon="inline-start" />
-            {t('refresh')}
-          </Button>
-        </div>
-      </div>
-
       {/* KPI 卡片（金额相关，暂时隐藏） */}
       {SHOW_AMOUNT_COLUMNS && (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -605,11 +585,28 @@ export function InventoryReportPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={v => setActiveTab(v as typeof activeTab)}>
-        <TabsList>
-          <TabsTrigger value="movement">{t('movementDetail')}</TabsTrigger>
-          <TabsTrigger value="aging">{t('agingAnalysis')}</TabsTrigger>
-          <TabsTrigger value="slowMoving">{t('slowMoving')}</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="movement">{t('movementDetail')}</TabsTrigger>
+            <TabsTrigger value="aging">{t('agingAnalysis')}</TabsTrigger>
+            <TabsTrigger value="slowMoving">{t('slowMoving')}</TabsTrigger>
+          </TabsList>
+          <div className="flex items-center gap-2">
+            {generatedAt && (
+              <span className="text-muted-foreground text-xs">
+                {t('dataAsOf')} {new Date(generatedAt).toLocaleTimeString()}
+              </span>
+            )}
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+              <Download data-icon="inline-start" />
+              {t('exportExcel')}
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleRefresh}>
+              <RefreshCw data-icon="inline-start" />
+              {t('refresh')}
+            </Button>
+          </div>
+        </div>
 
         {/* 收发存明细 */}
         <TabsContent value="movement" className="mt-4">
@@ -620,7 +617,10 @@ export function InventoryReportPage() {
             page={page}
             pageSize={pageSize}
             onPageChange={setPage}
-            onPageSizeChange={setPageSize}
+            onPageSizeChange={size => {
+              setPageSize(size)
+              setPage(1)
+            }}
             t={t}
             tc={tc}
           />
@@ -687,7 +687,10 @@ export function InventoryReportPage() {
             page={agingPage}
             pageSize={pageSize}
             onPageChange={setAgingPage}
-            onPageSizeChange={setPageSize}
+            onPageSizeChange={size => {
+              setPageSize(size)
+              setAgingPage(1)
+            }}
             t={t}
             tc={tc}
           />
@@ -706,7 +709,10 @@ export function InventoryReportPage() {
             page={slowPage}
             pageSize={pageSize}
             onPageChange={setSlowPage}
-            onPageSizeChange={setPageSize}
+            onPageSizeChange={size => {
+              setPageSize(size)
+              setSlowPage(1)
+            }}
             t={t}
             tc={tc}
           />
