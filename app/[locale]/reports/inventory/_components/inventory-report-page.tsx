@@ -460,7 +460,7 @@ export function InventoryReportPage() {
   const stats = reportData?.stats
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {/* KPI 卡片（金额相关，暂时隐藏） */}
       {SHOW_AMOUNT_COLUMNS && (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -584,7 +584,7 @@ export function InventoryReportPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={v => setActiveTab(v as typeof activeTab)}>
+      <Tabs value={activeTab} onValueChange={v => setActiveTab(v as typeof activeTab)} className="flex min-h-0 flex-1 flex-col">
         <div className="flex items-center justify-between">
           <TabsList>
             <TabsTrigger value="movement">{t('movementDetail')}</TabsTrigger>
@@ -609,7 +609,7 @@ export function InventoryReportPage() {
         </div>
 
         {/* 收发存明细 */}
-        <TabsContent value="movement" className="mt-4">
+        <TabsContent value="movement" className="mt-4 flex min-h-0 flex-1 flex-col">
           <StockMovementTable
             items={reportData?.items ?? []}
             loading={reportLoading}
@@ -627,7 +627,7 @@ export function InventoryReportPage() {
         </TabsContent>
 
         {/* 库龄分析 */}
-        <TabsContent value="aging" className="mt-4">
+        <TabsContent value="aging" className="mt-4 flex min-h-0 flex-1 flex-col">
           {/* 库龄筛选（草稿模式） */}
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <Select value={draftAgingRange} onValueChange={v => v && setDraftAgingRange(v)} items={agingRangeItems}>
@@ -697,7 +697,7 @@ export function InventoryReportPage() {
         </TabsContent>
 
         {/* 滞销预警 */}
-        <TabsContent value="slowMoving" className="mt-4">
+        <TabsContent value="slowMoving" className="mt-4 flex min-h-0 flex-1 flex-col">
           <div className="mb-3 flex items-center gap-2">
             <span className="text-muted-foreground text-sm">{t('daysThreshold')}:</span>
             <Input type="number" value={slowThreshold} onChange={e => setSlowThreshold(Number(e.target.value) || 90)} className="w-[80px]" />
@@ -720,7 +720,7 @@ export function InventoryReportPage() {
       </Tabs>
 
       {/* 估算说明 */}
-      <p className="text-muted-foreground text-xs italic">{t('estimatedNote')}</p>
+      {SHOW_AMOUNT_COLUMNS && <p className="text-muted-foreground text-xs italic ">{t('estimatedNote')}</p>}
     </div>
   )
 }
@@ -752,57 +752,59 @@ function StockMovementTable({
 }) {
   return (
     <>
-      <BusinessListTableShell tableClassName={SHOW_AMOUNT_COLUMNS ? 'min-w-[1200px]' : 'min-w-[760px]'}>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="sticky left-0 z-10 w-[100px] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
-            <TableHead className="w-[140px]">{t('materialName')}</TableHead>
-            <TableHead className="w-[80px]">{t('spec')}</TableHead>
-            <TableHead className="w-[90px] text-right">{t('openingQty')}</TableHead>
-            <TableHead className="w-[90px] text-right">{t('inboundQty')}</TableHead>
-            <TableHead className="w-[90px] text-right">{t('outboundQty')}</TableHead>
-            <TableHead className="w-[90px] text-right">{t('closingQty')}</TableHead>
-            {SHOW_AMOUNT_COLUMNS && (
-              <>
-                <TableHead className="w-[110px] text-right">{t('inboundValue')}</TableHead>
-                <TableHead className="w-[110px] text-right">{t('outboundValue')}</TableHead>
-                <TableHead className="w-[110px] text-right">{t('closingValue')}</TableHead>
-              </>
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell tableClassName={SHOW_AMOUNT_COLUMNS ? 'min-w-[1200px]' : 'min-w-[760px]'}>
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow>
+              <TableHead className="sticky left-0 z-10 w-[100px] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
+              <TableHead className="w-[140px]">{t('materialName')}</TableHead>
+              <TableHead className="w-[80px]">{t('spec')}</TableHead>
+              <TableHead className="w-[90px] text-right">{t('openingQty')}</TableHead>
+              <TableHead className="w-[90px] text-right">{t('inboundQty')}</TableHead>
+              <TableHead className="w-[90px] text-right">{t('outboundQty')}</TableHead>
+              <TableHead className="w-[90px] text-right">{t('closingQty')}</TableHead>
+              {SHOW_AMOUNT_COLUMNS && (
+                <>
+                  <TableHead className="w-[110px] text-right">{t('inboundValue')}</TableHead>
+                  <TableHead className="w-[110px] text-right">{t('outboundValue')}</TableHead>
+                  <TableHead className="w-[110px] text-right">{t('closingValue')}</TableHead>
+                </>
+              )}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={MOVEMENT_COL_COUNT} />
+            ) : items.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={MOVEMENT_COL_COUNT} message={tc('noData')} />
+            ) : (
+              items.map(item => (
+                <TableRow key={item.materialId}>
+                  <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.materialCode}</TableCell>
+                  <TableCell className="truncate">{item.materialName}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{item.spec || '-'}</TableCell>
+                  <TableCell className="text-right font-mono">{item.openingQty.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-mono text-emerald-600 dark:text-emerald-400">
+                    {item.inboundQty > 0 ? `+${item.inboundQty.toFixed(2)}` : '0.00'}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-amber-600 dark:text-amber-400">
+                    {item.outboundQty > 0 ? `-${item.outboundQty.toFixed(2)}` : '0.00'}
+                  </TableCell>
+                  <TableCell className="text-right font-mono font-semibold">{item.closingQty.toFixed(2)}</TableCell>
+                  {SHOW_AMOUNT_COLUMNS && (
+                    <>
+                      <TableCell className="text-right font-mono">{formatAmount(item.inboundValue, 'USD' as Currency)}</TableCell>
+                      <TableCell className="text-right font-mono">{formatAmount(item.outboundValue, 'USD' as Currency)}</TableCell>
+                      <TableCell className="text-right font-mono font-semibold">{formatAmount(item.closingValue, 'USD' as Currency)}</TableCell>
+                    </>
+                  )}
+                </TableRow>
+              ))
             )}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={MOVEMENT_COL_COUNT} />
-          ) : items.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={MOVEMENT_COL_COUNT} message={tc('noData')} />
-          ) : (
-            items.map(item => (
-              <TableRow key={item.materialId}>
-                <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.materialCode}</TableCell>
-                <TableCell className="truncate">{item.materialName}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.spec || '-'}</TableCell>
-                <TableCell className="text-right font-mono">{item.openingQty.toFixed(2)}</TableCell>
-                <TableCell className="text-right font-mono text-emerald-600 dark:text-emerald-400">
-                  {item.inboundQty > 0 ? `+${item.inboundQty.toFixed(2)}` : '0.00'}
-                </TableCell>
-                <TableCell className="text-right font-mono text-amber-600 dark:text-amber-400">
-                  {item.outboundQty > 0 ? `-${item.outboundQty.toFixed(2)}` : '0.00'}
-                </TableCell>
-                <TableCell className="text-right font-mono font-semibold">{item.closingQty.toFixed(2)}</TableCell>
-                {SHOW_AMOUNT_COLUMNS && (
-                  <>
-                    <TableCell className="text-right font-mono">{formatAmount(item.inboundValue, 'USD' as Currency)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatAmount(item.outboundValue, 'USD' as Currency)}</TableCell>
-                    <TableCell className="text-right font-mono font-semibold">{formatAmount(item.closingValue, 'USD' as Currency)}</TableCell>
-                  </>
-                )}
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </BusinessListTableShell>
-      <div className="mt-4">
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
+      <div className="shrink-0 pt-4">
         <PaginationControls
           currentPage={page}
           totalPages={Math.ceil(total / pageSize)}
@@ -864,39 +866,41 @@ function AgingTable({
 
   return (
     <>
-      <BusinessListTableShell tableClassName={SHOW_AMOUNT_COLUMNS ? 'min-w-[900px]' : 'min-w-[700px]'}>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="sticky left-0 z-10 w-[100px] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
-            <TableHead className="w-[140px]">{t('materialName')}</TableHead>
-            <TableHead className="w-[120px]">{t('lotNo')}</TableHead>
-            <TableHead className="w-[100px]">{t('receivedDate')}</TableHead>
-            <TableHead className="w-[100px]">{t('daysInStock')}</TableHead>
-            <TableHead className="w-[90px] text-right">{t('qty')}</TableHead>
-            {SHOW_AMOUNT_COLUMNS && <TableHead className="w-[110px] text-right">{t('value')}</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={AGING_COL_COUNT} />
-          ) : items.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={AGING_COL_COUNT} message={tc('noData')} />
-          ) : (
-            items.map(item => (
-              <TableRow key={`${item.materialId}-${item.lotNo}`}>
-                <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.materialCode}</TableCell>
-                <TableCell className="truncate">{item.materialName}</TableCell>
-                <TableCell className="font-mono text-sm">{item.lotNo}</TableCell>
-                <TableCell className="text-sm">{item.receivedDate}</TableCell>
-                <TableCell>{agingBadge(item.daysInStock)}</TableCell>
-                <TableCell className="text-right font-mono">{item.qtyOnHand.toFixed(2)}</TableCell>
-                {SHOW_AMOUNT_COLUMNS && <TableCell className="text-right font-mono">{formatAmount(item.value, 'USD' as Currency)}</TableCell>}
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </BusinessListTableShell>
-      <div className="mt-4">
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell tableClassName={SHOW_AMOUNT_COLUMNS ? 'min-w-[900px]' : 'min-w-[700px]'}>
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow>
+              <TableHead className="sticky left-0 z-10 w-[100px] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
+              <TableHead className="w-[140px]">{t('materialName')}</TableHead>
+              <TableHead className="w-[120px]">{t('lotNo')}</TableHead>
+              <TableHead className="w-[100px]">{t('receivedDate')}</TableHead>
+              <TableHead className="w-[100px]">{t('daysInStock')}</TableHead>
+              <TableHead className="w-[90px] text-right">{t('qty')}</TableHead>
+              {SHOW_AMOUNT_COLUMNS && <TableHead className="w-[110px] text-right">{t('value')}</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={AGING_COL_COUNT} />
+            ) : items.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={AGING_COL_COUNT} message={tc('noData')} />
+            ) : (
+              items.map(item => (
+                <TableRow key={`${item.materialId}-${item.lotNo}`}>
+                  <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.materialCode}</TableCell>
+                  <TableCell className="truncate">{item.materialName}</TableCell>
+                  <TableCell className="font-mono text-sm">{item.lotNo}</TableCell>
+                  <TableCell className="text-sm">{item.receivedDate}</TableCell>
+                  <TableCell>{agingBadge(item.daysInStock)}</TableCell>
+                  <TableCell className="text-right font-mono">{item.qtyOnHand.toFixed(2)}</TableCell>
+                  {SHOW_AMOUNT_COLUMNS && <TableCell className="text-right font-mono">{formatAmount(item.value, 'USD' as Currency)}</TableCell>}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
+      <div className="shrink-0 pt-4">
         <PaginationControls
           currentPage={page}
           totalPages={Math.ceil(total / pageSize)}
@@ -936,43 +940,45 @@ function SlowMovingTable({
 }) {
   return (
     <>
-      <BusinessListTableShell tableClassName="min-w-[900px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="sticky left-0 z-10 w-[100px] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
-            <TableHead className="w-[140px]">{t('materialName')}</TableHead>
-            <TableHead className="w-[100px]">{t('category')}</TableHead>
-            <TableHead className="w-[90px] text-right">{t('currentQty')}</TableHead>
-            <TableHead className="w-[100px]">{t('lastOutDate')}</TableHead>
-            <TableHead className="w-[100px] text-right">{t('daysSinceLastOut')}</TableHead>
-            <TableHead className="w-[100px] text-right">{t('avgMonthlyOutbound')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={7} />
-          ) : items.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={7} message={tc('noData')} />
-          ) : (
-            items.map(item => (
-              <TableRow key={item.materialId}>
-                <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.materialCode}</TableCell>
-                <TableCell className="truncate">{item.materialName}</TableCell>
-                <TableCell className="text-sm">{item.categoryName || '-'}</TableCell>
-                <TableCell className="text-right font-mono">{item.currentQty.toFixed(2)}</TableCell>
-                <TableCell className="text-sm">{item.lastOutDate || '-'}</TableCell>
-                <TableCell className="text-right">
-                  <Badge variant={item.daysSinceLastOut > 180 ? 'destructive' : 'secondary'}>
-                    {item.daysSinceLastOut === 9999 ? '∞' : t('daysCount', { count: item.daysSinceLastOut })}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right font-mono">{item.avgMonthlyOutbound.toFixed(1)}</TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </BusinessListTableShell>
-      <div className="mt-4">
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell tableClassName="min-w-[900px]">
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow>
+              <TableHead className="sticky left-0 z-10 w-[100px] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
+              <TableHead className="w-[140px]">{t('materialName')}</TableHead>
+              <TableHead className="w-[100px]">{t('category')}</TableHead>
+              <TableHead className="w-[90px] text-right">{t('currentQty')}</TableHead>
+              <TableHead className="w-[100px]">{t('lastOutDate')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('daysSinceLastOut')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('avgMonthlyOutbound')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={7} />
+            ) : items.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={7} message={tc('noData')} />
+            ) : (
+              items.map(item => (
+                <TableRow key={item.materialId}>
+                  <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.materialCode}</TableCell>
+                  <TableCell className="truncate">{item.materialName}</TableCell>
+                  <TableCell className="text-sm">{item.categoryName || '-'}</TableCell>
+                  <TableCell className="text-right font-mono">{item.currentQty.toFixed(2)}</TableCell>
+                  <TableCell className="text-sm">{item.lastOutDate || '-'}</TableCell>
+                  <TableCell className="text-right">
+                    <Badge variant={item.daysSinceLastOut > 180 ? 'destructive' : 'secondary'}>
+                      {item.daysSinceLastOut === 9999 ? '∞' : t('daysCount', { count: item.daysSinceLastOut })}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono">{item.avgMonthlyOutbound.toFixed(1)}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
+      <div className="shrink-0 pt-4">
         <PaginationControls
           currentPage={page}
           totalPages={Math.ceil(total / pageSize)}
