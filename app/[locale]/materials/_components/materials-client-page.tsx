@@ -398,7 +398,7 @@ export function MaterialsClientPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {/* 搜索过滤条 */}
       <div className="border-border bg-card flex items-center justify-between gap-4 rounded-xl border p-4 shadow-sm">
         <div className="flex flex-1 items-center gap-4">
@@ -490,24 +490,26 @@ export function MaterialsClientPage() {
       </div>
 
       {/* 数据表格 + 分页 */}
-      <MaterialTable
-        data={data}
-        loading={loading}
-        total={total}
-        page={page}
-        pageSize={pageSize}
-        onPageChange={setPage}
-        onPageSizeChange={s => {
-          setPageSize(s)
-          setPage(1)
-        }}
-        onEdit={id => {
-          setEditingId(id)
-          setDialogOpen(true)
-        }}
-        onToggleStatus={handleToggleStatus}
-        canEdit={canEdit}
-      />
+      <div className="min-h-0 flex-1">
+        <MaterialTable
+          data={data}
+          loading={loading}
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={s => {
+            setPageSize(s)
+            setPage(1)
+          }}
+          onEdit={id => {
+            setEditingId(id)
+            setDialogOpen(true)
+          }}
+          onToggleStatus={handleToggleStatus}
+          canEdit={canEdit}
+        />
+      </div>
 
       {/* 新增/编辑弹窗 */}
       <MaterialFormDialog

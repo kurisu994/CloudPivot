@@ -165,7 +165,7 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {/* 筛选区 */}
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-end gap-3">
@@ -217,62 +217,63 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
       </div>
 
       {/* 表格 */}
-      <BusinessListTableShell
-        tableClassName="min-w-[900px]"
-        footer={
-          <BusinessListTableFooter>
-            <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
-            <PaginationControls
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              pageSize={pageSize}
-              onPageSizeChange={setPageSize}
-            />
-          </BusinessListTableFooter>
-        }
-      >
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[160px]">{t('checkNo')}</TableHead>
-            <TableHead className="w-[120px]">{t('warehouse')}</TableHead>
-            <TableHead className="w-[100px]">{t('checkDate')}</TableHead>
-            <TableHead className="w-[80px]">{tc('status')}</TableHead>
-            <TableHead className="w-[80px]">{t('scopeType')}</TableHead>
-            <TableHead className="w-[80px] text-right">{t('itemCount')}</TableHead>
-            <TableHead className="w-[80px] text-right">{t('diffCount')}</TableHead>
-            <TableHead className="w-[100px]">{t('createdBy')}</TableHead>
-            <TableHead className="w-[80px]">{tc('actions')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={COL_COUNT} />
-          ) : items.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={COL_COUNT} message={t('noItems')} />
-          ) : (
-            items.map(item => (
-              <TableRow key={item.id} className="group">
-                <TableCell className="font-mono text-sm">{item.checkNo}</TableCell>
-                <TableCell>{item.warehouseName}</TableCell>
-                <TableCell className="text-sm">{item.checkDate}</TableCell>
-                <TableCell>{statusBadge(item.status)}</TableCell>
-                <TableCell className="text-sm">{item.scopeType === 'warehouse' ? t('scopeWarehouse') : t('scopeCategory')}</TableCell>
-                <TableCell className="text-right">{item.itemCount}</TableCell>
-                <TableCell className="text-right">
-                  {item.diffCount > 0 ? <span className="text-amber-600 font-medium">{item.diffCount}</span> : 0}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.createdByName || '-'}</TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="sm" onClick={() => onEdit(item.id)}>
-                    <Eye className="size-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </BusinessListTableShell>
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell tableClassName="min-w-[900px]">
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow>
+              <TableHead className="w-[160px]">{t('checkNo')}</TableHead>
+              <TableHead className="w-[120px]">{t('warehouse')}</TableHead>
+              <TableHead className="w-[100px]">{t('checkDate')}</TableHead>
+              <TableHead className="w-[80px]">{tc('status')}</TableHead>
+              <TableHead className="w-[80px]">{t('scopeType')}</TableHead>
+              <TableHead className="w-[80px] text-right">{t('itemCount')}</TableHead>
+              <TableHead className="w-[80px] text-right">{t('diffCount')}</TableHead>
+              <TableHead className="w-[100px]">{t('createdBy')}</TableHead>
+              <TableHead className="w-[80px]">{tc('actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={COL_COUNT} />
+            ) : items.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={COL_COUNT} message={t('noItems')} />
+            ) : (
+              items.map(item => (
+                <TableRow key={item.id} className="group">
+                  <TableCell className="font-mono text-sm">{item.checkNo}</TableCell>
+                  <TableCell>{item.warehouseName}</TableCell>
+                  <TableCell className="text-sm">{item.checkDate}</TableCell>
+                  <TableCell>{statusBadge(item.status)}</TableCell>
+                  <TableCell className="text-sm">{item.scopeType === 'warehouse' ? t('scopeWarehouse') : t('scopeCategory')}</TableCell>
+                  <TableCell className="text-right">{item.itemCount}</TableCell>
+                  <TableCell className="text-right">
+                    {item.diffCount > 0 ? <span className="text-amber-600 font-medium">{item.diffCount}</span> : 0}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{item.createdByName || '-'}</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" onClick={() => onEdit(item.id)}>
+                      <Eye className="size-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
+
+      <div className="shrink-0 pt-4">
+        <BusinessListTableFooter>
+          <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
+        </BusinessListTableFooter>
+      </div>
 
       {/* 新建盘点单弹窗 */}
       <Dialog open={createOpen} onOpenChange={open => !creating && setCreateOpen(open)}>

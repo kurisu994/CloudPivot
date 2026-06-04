@@ -217,7 +217,7 @@ export function UserManagementContent() {
   }
 
   return (
-    <div className="flex w-full flex-col gap-6">
+    <div className="flex h-full min-h-0 w-full flex-col gap-4">
       {/* 标题栏 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -256,10 +256,10 @@ export function UserManagementContent() {
       </div>
 
       {/* 用户列表 */}
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        <div className="overflow-x-auto">
+      <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+        <div className="min-h-0 flex-1 overflow-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
               <TableRow className="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50">
                 <TableHead className="px-6 py-3.5 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('username')}</TableHead>
                 <TableHead className="px-6 py-3.5 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('displayName')}</TableHead>
@@ -416,7 +416,7 @@ export function UserManagementContent() {
         </div>
 
         {/* 分页 */}
-        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-3 dark:border-slate-800 dark:bg-slate-900/50">
+        <div className="flex shrink-0 items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-3 dark:border-slate-800 dark:bg-slate-900/50">
           <span className="text-xs font-bold text-slate-400">{tc('totalRecords', { count: total })}</span>
           <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={setPage} pageSize={pageSize} onPageSizeChange={setPageSize} />
         </div>

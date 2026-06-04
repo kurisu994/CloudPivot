@@ -58,10 +58,90 @@ export function SupplierTable({
   const tc = useTranslations('common')
 
   return (
-    <BusinessListTableShell
-      className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
-      tableClassName="min-w-[1300px]"
-      footer={
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell
+          className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
+          tableClassName="min-w-[1300px]"
+        >
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className={`w-[140px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('code')}</TableHead>
+              <TableHead className="w-[180px]">{t('name')}</TableHead>
+              <TableHead className="w-[120px]">{t('country')}</TableHead>
+              <TableHead className="w-[120px]">{t('contactPerson')}</TableHead>
+              <TableHead className="w-[140px]">{t('contactPhone')}</TableHead>
+              <TableHead className="w-[100px]">{t('grade')}</TableHead>
+              <TableHead className="w-[100px]">{t('currency')}</TableHead>
+              <TableHead className="w-[140px] text-right">{t('payableBalance')}</TableHead>
+              <TableHead className="w-[100px]">{t('isEnabled')}</TableHead>
+              <TableHead className="w-[160px] text-right">{tc('actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={10} />
+            ) : suppliers.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={10} message={tc('noData')} />
+            ) : (
+              suppliers.map(supplier => (
+                <TableRow key={supplier.id} className="group">
+                  <TableCell className={`font-mono text-xs font-medium ${BUSINESS_LIST_STICKY_CELL_CLASS}`}>{supplier.code}</TableCell>
+                  <TableCell>
+                    <div className="truncate font-medium">{supplier.name}</div>
+                    {supplier.shortName && <div className="text-muted-foreground truncate text-xs">{supplier.shortName}</div>}
+                  </TableCell>
+                  <TableCell>{t(COUNTRY_OPTIONS.find(option => option.value === supplier.country)?.labelKey ?? 'countryOTHER')}</TableCell>
+                  <TableCell>{supplier.contactPerson ?? '—'}</TableCell>
+                  <TableCell>{supplier.contactPhone ?? '—'}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${GRADE_COLORS[supplier.grade] || GRADE_COLORS.D}`}
+                    >
+                      {t(GRADE_OPTIONS.find(option => option.value === supplier.grade)?.labelKey ?? 'gradeD')}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {supplier.currency}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    {formatAmount(supplier.payableBalance, supplier.currency as 'VND' | 'CNY' | 'USD')}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={supplier.isEnabled ? 'default' : 'secondary'} className="text-xs">
+                      {supplier.isEnabled ? tc('enabled') : tc('disabled')}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="icon-sm" onClick={() => onEdit(supplier)} title={tc('edit')}>
+                        <Pencil className="size-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => onView(supplier)} title={t('details')}>
+                        <Eye className="size-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => onToggleStatus(supplier)}
+                        title={supplier.isEnabled ? t('disableSupplier') : t('enableSupplier')}
+                      >
+                        <Power className="size-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => onDelete(supplier)} title={tc('delete')}>
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
+      <div className="shrink-0 pt-4">
         <BusinessListTableFooter>
           <span className="text-xs font-bold text-slate-400">{t('totalRecords', { count: total })}</span>
           <PaginationControls
@@ -72,83 +152,7 @@ export function SupplierTable({
             onPageSizeChange={onPageSizeChange}
           />
         </BusinessListTableFooter>
-      }
-    >
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          <TableHead className={`w-[140px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('code')}</TableHead>
-          <TableHead className="w-[180px]">{t('name')}</TableHead>
-          <TableHead className="w-[120px]">{t('country')}</TableHead>
-          <TableHead className="w-[120px]">{t('contactPerson')}</TableHead>
-          <TableHead className="w-[140px]">{t('contactPhone')}</TableHead>
-          <TableHead className="w-[100px]">{t('grade')}</TableHead>
-          <TableHead className="w-[100px]">{t('currency')}</TableHead>
-          <TableHead className="w-[140px] text-right">{t('payableBalance')}</TableHead>
-          <TableHead className="w-[100px]">{t('isEnabled')}</TableHead>
-          <TableHead className="w-[160px] text-right">{tc('actions')}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {loading ? (
-          <BusinessListTableLoadingRows colSpan={10} />
-        ) : suppliers.length === 0 ? (
-          <BusinessListTableEmptyRow colSpan={10} message={tc('noData')} />
-        ) : (
-          suppliers.map(supplier => (
-            <TableRow key={supplier.id} className="group">
-              <TableCell className={`font-mono text-xs font-medium ${BUSINESS_LIST_STICKY_CELL_CLASS}`}>{supplier.code}</TableCell>
-              <TableCell>
-                <div className="truncate font-medium">{supplier.name}</div>
-                {supplier.shortName && <div className="text-muted-foreground truncate text-xs">{supplier.shortName}</div>}
-              </TableCell>
-              <TableCell>{t(COUNTRY_OPTIONS.find(option => option.value === supplier.country)?.labelKey ?? 'countryOTHER')}</TableCell>
-              <TableCell>{supplier.contactPerson ?? '—'}</TableCell>
-              <TableCell>{supplier.contactPhone ?? '—'}</TableCell>
-              <TableCell>
-                <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${GRADE_COLORS[supplier.grade] || GRADE_COLORS.D}`}
-                >
-                  {t(GRADE_OPTIONS.find(option => option.value === supplier.grade)?.labelKey ?? 'gradeD')}
-                </span>
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline" className="font-mono text-xs">
-                  {supplier.currency}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right font-medium">
-                {formatAmount(supplier.payableBalance, supplier.currency as 'VND' | 'CNY' | 'USD')}
-              </TableCell>
-              <TableCell>
-                <Badge variant={supplier.isEnabled ? 'default' : 'secondary'} className="text-xs">
-                  {supplier.isEnabled ? tc('enabled') : tc('disabled')}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-1">
-                  <Button variant="ghost" size="icon-sm" onClick={() => onEdit(supplier)} title={tc('edit')}>
-                    <Pencil className="size-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon-sm" onClick={() => onView(supplier)} title={t('details')}>
-                    <Eye className="size-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => onToggleStatus(supplier)}
-                    title={supplier.isEnabled ? t('disableSupplier') : t('enableSupplier')}
-                  >
-                    <Power className="size-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon-sm" onClick={() => onDelete(supplier)} title={tc('delete')}>
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </BusinessListTableShell>
+      </div>
+    </div>
   )
 }

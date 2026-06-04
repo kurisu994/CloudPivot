@@ -147,10 +147,84 @@ export function CustomOrderTable({
   }
 
   return (
-    <BusinessListTableShell
-      className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
-      tableClassName="min-w-[1100px]"
-      footer={
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell
+          className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
+          tableClassName="min-w-[1100px]"
+        >
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className={`w-[170px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('orderNo')}</TableHead>
+              <TableHead className="w-[140px]">{t('customer')}</TableHead>
+              <TableHead className="w-[90px]">{t('customType')}</TableHead>
+              <TableHead className="w-[120px]">{t('refProduct')}</TableHead>
+              <TableHead className="w-[120px] text-right">{t('quoteAmount')}</TableHead>
+              <TableHead className="w-[70px]">{t('priority')}</TableHead>
+              <TableHead className="w-[90px]">{tc('status')}</TableHead>
+              <TableHead className="w-[100px]">{t('orderDate')}</TableHead>
+              <TableHead className="w-[100px] text-right">{tc('actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={9} />
+            ) : orders.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={9} message={tc('noData')} />
+            ) : (
+              orders.map(order => (
+                <TableRow key={order.id} className="group">
+                  {/* 定制单号（固定首列） */}
+                  <TableCell className={`font-mono text-xs font-medium ${BUSINESS_LIST_STICKY_CELL_CLASS}`}>{order.orderNo}</TableCell>
+
+                  {/* 客户 */}
+                  <TableCell>
+                    <div className="truncate font-medium">{order.customerName}</div>
+                  </TableCell>
+
+                  {/* 定制类型 */}
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">
+                      {t(TYPE_LABEL_KEYS[order.custom_type] || 'typeFull')}
+                    </Badge>
+                  </TableCell>
+
+                  {/* 参考产品 */}
+                  <TableCell className="text-sm">{order.ref_material_name || '—'}</TableCell>
+
+                  {/* 报价金额 */}
+                  <TableCell className="text-right font-medium">
+                    {formatAmount(order.quote_amount, order.currency as 'VND' | 'CNY' | 'USD')}
+                  </TableCell>
+
+                  {/* 优先级 */}
+                  <TableCell>
+                    <span className={`text-sm ${PRIORITY_STYLES[order.priority] || ''}`}>
+                      {t(PRIORITY_LABEL_KEYS[order.priority] || 'priorityNormal')}
+                    </span>
+                  </TableCell>
+
+                  {/* 状态 */}
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[order.status] || STATUS_STYLES.quoting}`}
+                    >
+                      {t(STATUS_LABEL_KEYS[order.status] || 'statusQuoting')}
+                    </span>
+                  </TableCell>
+
+                  {/* 日期 */}
+                  <TableCell className="text-sm">{order.orderDate}</TableCell>
+
+                  {/* 操作 */}
+                  <TableCell className="text-right">{renderActions(order)}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
+      <div className="shrink-0 pt-4">
         <BusinessListTableFooter>
           <span className="text-xs font-bold text-slate-400">{t('totalRecords', { count: total })}</span>
           <PaginationControls
@@ -161,75 +235,7 @@ export function CustomOrderTable({
             onPageSizeChange={onPageSizeChange}
           />
         </BusinessListTableFooter>
-      }
-    >
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          <TableHead className={`w-[170px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('orderNo')}</TableHead>
-          <TableHead className="w-[140px]">{t('customer')}</TableHead>
-          <TableHead className="w-[90px]">{t('customType')}</TableHead>
-          <TableHead className="w-[120px]">{t('refProduct')}</TableHead>
-          <TableHead className="w-[120px] text-right">{t('quoteAmount')}</TableHead>
-          <TableHead className="w-[70px]">{t('priority')}</TableHead>
-          <TableHead className="w-[90px]">{tc('status')}</TableHead>
-          <TableHead className="w-[100px]">{t('orderDate')}</TableHead>
-          <TableHead className="w-[100px] text-right">{tc('actions')}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {loading ? (
-          <BusinessListTableLoadingRows colSpan={9} />
-        ) : orders.length === 0 ? (
-          <BusinessListTableEmptyRow colSpan={9} message={tc('noData')} />
-        ) : (
-          orders.map(order => (
-            <TableRow key={order.id} className="group">
-              {/* 定制单号（固定首列） */}
-              <TableCell className={`font-mono text-xs font-medium ${BUSINESS_LIST_STICKY_CELL_CLASS}`}>{order.orderNo}</TableCell>
-
-              {/* 客户 */}
-              <TableCell>
-                <div className="truncate font-medium">{order.customerName}</div>
-              </TableCell>
-
-              {/* 定制类型 */}
-              <TableCell>
-                <Badge variant="outline" className="text-xs">
-                  {t(TYPE_LABEL_KEYS[order.custom_type] || 'typeFull')}
-                </Badge>
-              </TableCell>
-
-              {/* 参考产品 */}
-              <TableCell className="text-sm">{order.ref_material_name || '—'}</TableCell>
-
-              {/* 报价金额 */}
-              <TableCell className="text-right font-medium">{formatAmount(order.quote_amount, order.currency as 'VND' | 'CNY' | 'USD')}</TableCell>
-
-              {/* 优先级 */}
-              <TableCell>
-                <span className={`text-sm ${PRIORITY_STYLES[order.priority] || ''}`}>
-                  {t(PRIORITY_LABEL_KEYS[order.priority] || 'priorityNormal')}
-                </span>
-              </TableCell>
-
-              {/* 状态 */}
-              <TableCell>
-                <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[order.status] || STATUS_STYLES.quoting}`}
-                >
-                  {t(STATUS_LABEL_KEYS[order.status] || 'statusQuoting')}
-                </span>
-              </TableCell>
-
-              {/* 日期 */}
-              <TableCell className="text-sm">{order.orderDate}</TableCell>
-
-              {/* 操作 */}
-              <TableCell className="text-right">{renderActions(order)}</TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </BusinessListTableShell>
+      </div>
+    </div>
   )
 }

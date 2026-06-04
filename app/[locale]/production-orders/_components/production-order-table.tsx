@@ -51,7 +51,7 @@ export function ProductionOrderTable({ items, loading, onEdit, onDelete }: Props
 
   return (
     <BusinessListTableShell tableClassName={TABLE_MIN_W}>
-      <thead>
+      <thead className="sticky top-0 z-30 bg-white dark:bg-slate-950">
         <tr className="border-b">
           <th className="bg-background sticky left-0 z-10 w-[160px] px-3 py-2.5 text-left text-sm font-medium">{t('orderNo')}</th>
           <th className="w-[140px] px-3 py-2.5 text-left text-sm font-medium">{t('outputMaterial')}</th>

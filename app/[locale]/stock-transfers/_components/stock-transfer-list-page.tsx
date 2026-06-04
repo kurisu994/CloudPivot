@@ -138,7 +138,7 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
   const confirmTitle = pendingAction?.type === 'delete' ? t('deleteConfirm') : t('confirmTransferTip')
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {/* 筛选区 */}
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-end gap-3">
@@ -190,78 +190,80 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
       </div>
 
       {/* 表格 */}
-      <BusinessListTableShell
-        tableClassName="min-w-[900px]"
-        footer={
-          <BusinessListTableFooter>
-            <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
-            <PaginationControls
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              pageSize={pageSize}
-              onPageSizeChange={setPageSize}
-            />
-          </BusinessListTableFooter>
-        }
-      >
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[160px]">{t('transferNo')}</TableHead>
-            <TableHead className="w-[120px]">{t('fromWarehouse')}</TableHead>
-            <TableHead className="w-[120px]">{t('toWarehouse')}</TableHead>
-            <TableHead className="w-[100px]">{t('transferDate')}</TableHead>
-            <TableHead className="w-[80px]">{tc('status')}</TableHead>
-            <TableHead className="w-[80px] text-right">{t('itemCount')}</TableHead>
-            <TableHead className="w-[100px]">{t('createdBy')}</TableHead>
-            <TableHead className="w-[100px]">{t('createdAt')}</TableHead>
-            <TableHead className="w-[120px]">{tc('actions')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={COL_COUNT} />
-          ) : items.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={COL_COUNT} message={t('noItems')} />
-          ) : (
-            items.map(item => (
-              <TableRow key={item.id} className="group">
-                <TableCell className="font-mono text-sm">{item.transferNo}</TableCell>
-                <TableCell>{item.fromWarehouseName}</TableCell>
-                <TableCell>{item.toWarehouseName}</TableCell>
-                <TableCell className="text-sm">{item.transferDate}</TableCell>
-                <TableCell>
-                  {item.status === 'draft' ? (
-                    <Badge variant="outline">{t('statusDraft')}</Badge>
-                  ) : (
-                    <Badge variant="default">{t('statusConfirmed')}</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">{item.itemCount}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.createdByName || '-'}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.createdAt?.split('T')[0] || '-'}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => onEdit(item.id)}>
-                      <Eye className="size-4" />
-                    </Button>
-                    {item.status === 'draft' && (
-                      <>
-                        <Button variant="ghost" size="sm" onClick={() => handleConfirm(item)} className="text-green-600 hover:text-green-700">
-                          {tc('confirm')}
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(item)} className="text-red-600 hover:text-red-700">
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </>
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell
+          tableClassName="min-w-[900px]"
+          footer={
+            <BusinessListTableFooter>
+              <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                pageSize={pageSize}
+                onPageSizeChange={setPageSize}
+              />
+            </BusinessListTableFooter>
+          }
+        >
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow>
+              <TableHead className="w-[160px]">{t('transferNo')}</TableHead>
+              <TableHead className="w-[120px]">{t('fromWarehouse')}</TableHead>
+              <TableHead className="w-[120px]">{t('toWarehouse')}</TableHead>
+              <TableHead className="w-[100px]">{t('transferDate')}</TableHead>
+              <TableHead className="w-[80px]">{tc('status')}</TableHead>
+              <TableHead className="w-[80px] text-right">{t('itemCount')}</TableHead>
+              <TableHead className="w-[100px]">{t('createdBy')}</TableHead>
+              <TableHead className="w-[100px]">{t('createdAt')}</TableHead>
+              <TableHead className="w-[120px]">{tc('actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={COL_COUNT} />
+            ) : items.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={COL_COUNT} message={t('noItems')} />
+            ) : (
+              items.map(item => (
+                <TableRow key={item.id} className="group">
+                  <TableCell className="font-mono text-sm">{item.transferNo}</TableCell>
+                  <TableCell>{item.fromWarehouseName}</TableCell>
+                  <TableCell>{item.toWarehouseName}</TableCell>
+                  <TableCell className="text-sm">{item.transferDate}</TableCell>
+                  <TableCell>
+                    {item.status === 'draft' ? (
+                      <Badge variant="outline">{t('statusDraft')}</Badge>
+                    ) : (
+                      <Badge variant="default">{t('statusConfirmed')}</Badge>
                     )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </BusinessListTableShell>
+                  </TableCell>
+                  <TableCell className="text-right">{item.itemCount}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{item.createdByName || '-'}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{item.createdAt?.split('T')[0] || '-'}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => onEdit(item.id)}>
+                        <Eye className="size-4" />
+                      </Button>
+                      {item.status === 'draft' && (
+                        <>
+                          <Button variant="ghost" size="sm" onClick={() => handleConfirm(item)} className="text-green-600 hover:text-green-700">
+                            {tc('confirm')}
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(item)} className="text-red-600 hover:text-red-700">
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
 
       {/* 确认对话框 */}
       <ConfirmDialog

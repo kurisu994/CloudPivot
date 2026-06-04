@@ -206,7 +206,7 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
   const isDestructiveAction = pendingAction?.type === 'delete' || pendingAction?.type === 'cancel'
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {/* 筛选区 */}
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-end gap-3">
@@ -299,23 +299,25 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
       </div>
 
       {/* 数据表格 */}
-      <CustomOrderTable
-        orders={items}
-        loading={loading}
-        total={total}
-        page={currentPage}
-        pageSize={pageSize}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        onPageSizeChange={(s: number) => {
-          setPageSize(s)
-          setCurrentPage(1)
-        }}
-        onEdit={(order: CustomOrderListItem) => onEdit(order.id)}
-        onConfirm={handleConfirm}
-        onCancel={handleCancel}
-        onDelete={handleDelete}
-      />
+      <div className="min-h-0 flex-1">
+        <CustomOrderTable
+          orders={items}
+          loading={loading}
+          total={total}
+          page={currentPage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(s: number) => {
+            setPageSize(s)
+            setCurrentPage(1)
+          }}
+          onEdit={(order: CustomOrderListItem) => onEdit(order.id)}
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+          onDelete={handleDelete}
+        />
+      </div>
 
       {/* 确认对话框 */}
       <ConfirmDialog

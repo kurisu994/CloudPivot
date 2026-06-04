@@ -205,7 +205,7 @@ export function StockMovementsListPage() {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col gap-6">
+      <div className="flex h-full min-h-0 flex-col gap-4">
         {/* 筛选区 */}
         <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
           <div className="flex flex-wrap items-end gap-3">
@@ -298,84 +298,86 @@ export function StockMovementsListPage() {
         </div>
 
         {/* 表格 */}
-        <BusinessListTableShell
-          tableClassName="min-w-[1400px]"
-          footer={
-            <BusinessListTableFooter>
-              <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
-              <PaginationControls
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                pageSize={pageSize}
-                onPageSizeChange={setPageSize}
-              />
-            </BusinessListTableFooter>
-          }
-        >
-          <TableHeader>
-            <TableRow>
-              <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[240px]`}>{t('transactionNo')}</TableHead>
-              <TableHead className="w-[100px]">{t('transactionDate')}</TableHead>
-              <TableHead className="w-[120px]">{t('transactionType')}</TableHead>
-              <TableHead className="w-[120px]">{ti('materialCode')}</TableHead>
-              <TableHead className="w-[140px]">{ti('materialName')}</TableHead>
-              <TableHead className="w-[100px]">{ti('warehouse')}</TableHead>
-              <TableHead className="w-[90px] text-right">{t('changeQty')}</TableHead>
-              <TableHead className="w-[80px] text-right">{t('beforeQty')}</TableHead>
-              <TableHead className="w-[80px] text-right">{t('afterQty')}</TableHead>
-              <TableHead className="w-[160px]">{t('relatedOrderNo')}</TableHead>
-              <TableHead className="w-[150px]">{t('source')}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <BusinessListTableLoadingRows colSpan={COL_COUNT} />
-            ) : items.length === 0 ? (
-              <BusinessListTableEmptyRow colSpan={COL_COUNT} message={t('noRecords')} />
-            ) : (
-              items.map(item => (
-                <TableRow key={item.id} className="group">
-                  <TableCell className={`${BUSINESS_LIST_STICKY_CELL_CLASS} font-mono text-sm`}>
-                    <Truncated text={item.transactionNo} />
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    <Truncated text={item.transactionDate} />
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={item.quantity > 0 ? 'default' : 'secondary'}>
-                      {item.businessType ? getBusinessTypeLabel(item.businessType) : getTypeName(item.transactionType)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">
-                    <Truncated text={item.materialCode} />
-                  </TableCell>
-                  <TableCell>
-                    <Truncated text={item.materialName} />
-                  </TableCell>
-                  <TableCell>
-                    <Truncated text={item.warehouseName} />
-                  </TableCell>
-                  <TableCell className={`text-right font-mono ${item.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    <Truncated text={`${item.quantity > 0 ? '+' : ''}${fmtQty(item.quantity)}`} />
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm">
-                    <Truncated text={fmtQty(item.beforeQty)} />
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm">
-                    <Truncated text={fmtQty(item.afterQty)} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-sm">
-                    <Truncated text={item.relatedOrderNo || '-'} />
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    <Truncated text={getSourceLabel(item.sourceType) ?? '-'} />
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </BusinessListTableShell>
+        <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+          <BusinessListTableShell
+            tableClassName="min-w-[1400px]"
+            footer={
+              <BusinessListTableFooter>
+                <span className="text-xs font-bold text-slate-400">{t('totalItems', { total })}</span>
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  pageSize={pageSize}
+                  onPageSizeChange={setPageSize}
+                />
+              </BusinessListTableFooter>
+            }
+          >
+            <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+              <TableRow>
+                <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[240px]`}>{t('transactionNo')}</TableHead>
+                <TableHead className="w-[100px]">{t('transactionDate')}</TableHead>
+                <TableHead className="w-[120px]">{t('transactionType')}</TableHead>
+                <TableHead className="w-[120px]">{ti('materialCode')}</TableHead>
+                <TableHead className="w-[140px]">{ti('materialName')}</TableHead>
+                <TableHead className="w-[100px]">{ti('warehouse')}</TableHead>
+                <TableHead className="w-[90px] text-right">{t('changeQty')}</TableHead>
+                <TableHead className="w-[80px] text-right">{t('beforeQty')}</TableHead>
+                <TableHead className="w-[80px] text-right">{t('afterQty')}</TableHead>
+                <TableHead className="w-[160px]">{t('relatedOrderNo')}</TableHead>
+                <TableHead className="w-[150px]">{t('source')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <BusinessListTableLoadingRows colSpan={COL_COUNT} />
+              ) : items.length === 0 ? (
+                <BusinessListTableEmptyRow colSpan={COL_COUNT} message={t('noRecords')} />
+              ) : (
+                items.map(item => (
+                  <TableRow key={item.id} className="group">
+                    <TableCell className={`${BUSINESS_LIST_STICKY_CELL_CLASS} font-mono text-sm`}>
+                      <Truncated text={item.transactionNo} />
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <Truncated text={item.transactionDate} />
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={item.quantity > 0 ? 'default' : 'secondary'}>
+                        {item.businessType ? getBusinessTypeLabel(item.businessType) : getTypeName(item.transactionType)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      <Truncated text={item.materialCode} />
+                    </TableCell>
+                    <TableCell>
+                      <Truncated text={item.materialName} />
+                    </TableCell>
+                    <TableCell>
+                      <Truncated text={item.warehouseName} />
+                    </TableCell>
+                    <TableCell className={`text-right font-mono ${item.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <Truncated text={`${item.quantity > 0 ? '+' : ''}${fmtQty(item.quantity)}`} />
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm">
+                      <Truncated text={fmtQty(item.beforeQty)} />
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm">
+                      <Truncated text={fmtQty(item.afterQty)} />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-sm">
+                      <Truncated text={item.relatedOrderNo || '-'} />
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <Truncated text={getSourceLabel(item.sourceType) ?? '-'} />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </BusinessListTableShell>
+        </div>
       </div>
     </TooltipProvider>
   )

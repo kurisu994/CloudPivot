@@ -122,7 +122,7 @@ export function ReturnListPage({ onNewReturn }: ReturnListPageProps) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {/* 筛选区 */}
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-end gap-3">
@@ -201,65 +201,68 @@ export function ReturnListPage({ onNewReturn }: ReturnListPageProps) {
       </div>
 
       {/* 数据表格 */}
-      <BusinessListTableShell
-        className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
-        tableClassName="min-w-[1000px]"
-        footer={
-          <BusinessListTableFooter>
-            <span className="text-xs font-bold text-slate-400">{t('totalRecords', { count: total })}</span>
-            <PaginationControls
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              pageSize={pageSize}
-              onPageSizeChange={setPageSize}
-            />
-          </BusinessListTableFooter>
-        }
-      >
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className={`w-[170px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('returnNo')}</TableHead>
-            <TableHead className="w-[170px]">{t('sourceInbound')}</TableHead>
-            <TableHead className="w-[140px]">{t('supplier')}</TableHead>
-            <TableHead className="w-[100px]">{t('returnDate')}</TableHead>
-            <TableHead className="w-[120px] text-right">{t('returnAmount')}</TableHead>
-            <TableHead className="w-[140px]">{t('returnReason')}</TableHead>
-            <TableHead className="w-[80px]">{tc('status')}</TableHead>
-            <TableHead className="w-[80px] text-right">{tc('actions')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={8} />
-          ) : items.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={8} message={tc('noData')} />
-          ) : (
-            items.map(item => (
-              <TableRow key={item.id} className="group">
-                <TableCell className={`font-mono text-xs font-medium ${BUSINESS_LIST_STICKY_CELL_CLASS}`}>{item.returnNo}</TableCell>
-                <TableCell className="font-mono text-xs">{item.inboundOrderNo}</TableCell>
-                <TableCell>
-                  <div className="truncate">{item.supplierName}</div>
-                </TableCell>
-                <TableCell className="text-sm">{item.returnDate}</TableCell>
-                <TableCell className="text-right font-medium">{formatAmount(item.totalAmount, item.currency as 'VND' | 'CNY' | 'USD')}</TableCell>
-                <TableCell className="text-muted-foreground truncate text-sm">{item.returnReason ?? '—'}</TableCell>
-                <TableCell>
-                  <Badge variant={item.status === 'confirmed' ? 'default' : 'secondary'} className="text-xs">
-                    {item.status === 'confirmed' ? t('statusConfirmed') : t('statusDraft')}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon-sm" onClick={() => toast.info(tc('developing'))} title={t('details')}>
-                    <Eye className="size-3.5" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </BusinessListTableShell>
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell
+          className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
+          tableClassName="min-w-[1000px]"
+        >
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className={`w-[170px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('returnNo')}</TableHead>
+              <TableHead className="w-[170px]">{t('sourceInbound')}</TableHead>
+              <TableHead className="w-[140px]">{t('supplier')}</TableHead>
+              <TableHead className="w-[100px]">{t('returnDate')}</TableHead>
+              <TableHead className="w-[120px] text-right">{t('returnAmount')}</TableHead>
+              <TableHead className="w-[140px]">{t('returnReason')}</TableHead>
+              <TableHead className="w-[80px]">{tc('status')}</TableHead>
+              <TableHead className="w-[80px] text-right">{tc('actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={8} />
+            ) : items.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={8} message={tc('noData')} />
+            ) : (
+              items.map(item => (
+                <TableRow key={item.id} className="group">
+                  <TableCell className={`font-mono text-xs font-medium ${BUSINESS_LIST_STICKY_CELL_CLASS}`}>{item.returnNo}</TableCell>
+                  <TableCell className="font-mono text-xs">{item.inboundOrderNo}</TableCell>
+                  <TableCell>
+                    <div className="truncate">{item.supplierName}</div>
+                  </TableCell>
+                  <TableCell className="text-sm">{item.returnDate}</TableCell>
+                  <TableCell className="text-right font-medium">{formatAmount(item.totalAmount, item.currency as 'VND' | 'CNY' | 'USD')}</TableCell>
+                  <TableCell className="text-muted-foreground truncate text-sm">{item.returnReason ?? '—'}</TableCell>
+                  <TableCell>
+                    <Badge variant={item.status === 'confirmed' ? 'default' : 'secondary'} className="text-xs">
+                      {item.status === 'confirmed' ? t('statusConfirmed') : t('statusDraft')}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon-sm" onClick={() => toast.info(tc('developing'))} title={t('details')}>
+                      <Eye className="size-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
+
+      <div className="shrink-0 pt-4">
+        <BusinessListTableFooter>
+          <span className="text-xs font-bold text-slate-400">{t('totalRecords', { count: total })}</span>
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
+        </BusinessListTableFooter>
+      </div>
     </div>
   )
 }

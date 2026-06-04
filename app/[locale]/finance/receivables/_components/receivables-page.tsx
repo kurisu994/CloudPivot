@@ -207,7 +207,7 @@ export function ReceivablesPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {/* 页面标题 */}
       <div>
         <h1 className="text-foreground text-2xl font-bold">{t('receivables.title')}</h1>
@@ -294,68 +294,74 @@ export function ReceivablesPage() {
       </div>
 
       {/* 列表表格 */}
-      <BusinessListTableShell tableClassName="min-w-[1100px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[120px]">{t('receivables.table.type')}</TableHead>
-            <TableHead className="w-[160px]">{t('receivables.table.orderNo')}</TableHead>
-            <TableHead className="w-[140px]">{t('receivables.table.customer')}</TableHead>
-            <TableHead className="w-[100px]">{t('receivables.table.receivableDate')}</TableHead>
-            <TableHead className="w-[120px] text-right">{t('receivables.table.receivableAmount')}</TableHead>
-            <TableHead className="w-[120px] text-right">{t('receivables.table.receivedAmount')}</TableHead>
-            <TableHead className="w-[120px] text-right">{t('receivables.table.unreceivedAmount')}</TableHead>
-            <TableHead className="w-[90px]">{t('receivables.table.status')}</TableHead>
-            <TableHead className="w-[110px]">{t('receivables.table.actions')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={COL_COUNT} />
-          ) : items.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={COL_COUNT} message={tc('noData')} />
-          ) : (
-            items.map(item => (
-              <TableRow key={item.id} className={item.adjustmentType === 'return_offset' ? 'bg-red-50/30 dark:bg-red-950/10' : ''}>
-                <TableCell>{typeBadge(item.adjustmentType)}</TableCell>
-                <TableCell className="font-mono text-sm">{item.orderNo || '-'}</TableCell>
-                <TableCell className="truncate">{item.customerName}</TableCell>
-                <TableCell className="text-sm">{item.receivableDate}</TableCell>
-                <TableCell className={`text-right font-mono ${item.receivableAmount < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-                  {formatAmount(item.receivableAmount, item.currency as Currency)}
-                </TableCell>
-                <TableCell className="text-right font-mono">{formatAmount(item.receivedAmount, item.currency as Currency)}</TableCell>
-                <TableCell className={`text-right font-mono font-semibold ${item.unreceivedAmount > 0 ? 'text-amber-600 dark:text-amber-400' : ''}`}>
-                  {formatAmount(item.unreceivedAmount, item.currency as Currency)}
-                </TableCell>
-                <TableCell>{statusBadge(item.status)}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    {item.status !== 'paid' && item.adjustmentType === 'normal' && (
-                      <Button variant="ghost" size="sm" onClick={() => openReceiptDialog(item)}>
-                        <CreditCard className="size-4" />
-                      </Button>
-                    )}
-                    {item.receivedAmount > 0 && (
-                      <Button variant="ghost" size="sm" onClick={() => void openRecordsDialog(item)}>
-                        <Clock className="size-4" />
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </BusinessListTableShell>
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell tableClassName="min-w-[1100px]">
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow>
+              <TableHead className="w-[120px]">{t('receivables.table.type')}</TableHead>
+              <TableHead className="w-[160px]">{t('receivables.table.orderNo')}</TableHead>
+              <TableHead className="w-[140px]">{t('receivables.table.customer')}</TableHead>
+              <TableHead className="w-[100px]">{t('receivables.table.receivableDate')}</TableHead>
+              <TableHead className="w-[120px] text-right">{t('receivables.table.receivableAmount')}</TableHead>
+              <TableHead className="w-[120px] text-right">{t('receivables.table.receivedAmount')}</TableHead>
+              <TableHead className="w-[120px] text-right">{t('receivables.table.unreceivedAmount')}</TableHead>
+              <TableHead className="w-[90px]">{t('receivables.table.status')}</TableHead>
+              <TableHead className="w-[110px]">{t('receivables.table.actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={COL_COUNT} />
+            ) : items.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={COL_COUNT} message={tc('noData')} />
+            ) : (
+              items.map(item => (
+                <TableRow key={item.id} className={item.adjustmentType === 'return_offset' ? 'bg-red-50/30 dark:bg-red-950/10' : ''}>
+                  <TableCell>{typeBadge(item.adjustmentType)}</TableCell>
+                  <TableCell className="font-mono text-sm">{item.orderNo || '-'}</TableCell>
+                  <TableCell className="truncate">{item.customerName}</TableCell>
+                  <TableCell className="text-sm">{item.receivableDate}</TableCell>
+                  <TableCell className={`text-right font-mono ${item.receivableAmount < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                    {formatAmount(item.receivableAmount, item.currency as Currency)}
+                  </TableCell>
+                  <TableCell className="text-right font-mono">{formatAmount(item.receivedAmount, item.currency as Currency)}</TableCell>
+                  <TableCell
+                    className={`text-right font-mono font-semibold ${item.unreceivedAmount > 0 ? 'text-amber-600 dark:text-amber-400' : ''}`}
+                  >
+                    {formatAmount(item.unreceivedAmount, item.currency as Currency)}
+                  </TableCell>
+                  <TableCell>{statusBadge(item.status)}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      {item.status !== 'paid' && item.adjustmentType === 'normal' && (
+                        <Button variant="ghost" size="sm" onClick={() => openReceiptDialog(item)}>
+                          <CreditCard className="size-4" />
+                        </Button>
+                      )}
+                      {item.receivedAmount > 0 && (
+                        <Button variant="ghost" size="sm" onClick={() => void openRecordsDialog(item)}>
+                          <Clock className="size-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
 
       {/* 分页 */}
-      <PaginationControls
-        currentPage={page}
-        totalPages={Math.ceil(total / pageSize)}
-        onPageChange={setPage}
-        pageSize={pageSize}
-        onPageSizeChange={setPageSize}
-      />
+      <div className="shrink-0 pt-4">
+        <PaginationControls
+          currentPage={page}
+          totalPages={Math.ceil(total / pageSize)}
+          onPageChange={setPage}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+        />
+      </div>
 
       {/* 登记收款弹窗 */}
       <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>

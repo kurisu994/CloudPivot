@@ -280,7 +280,7 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {/* 搜索过滤条 */}
       <div className="border-border bg-card flex items-center justify-between gap-4 rounded-xl border p-4 shadow-sm">
         <div className="flex flex-1 items-center gap-4">
@@ -324,100 +324,102 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
       </div>
 
       {/* BOM 列表表格 */}
-      <BusinessListTableShell
-        className="border-border bg-card rounded-xl border shadow-sm"
-        tableClassName="min-w-[960px]"
-        footer={
-          total > 0 ? (
-            <BusinessListTableFooter>
-              <span className="text-xs font-bold text-slate-400">{t('table.totalRecords', { total: String(total) })}</span>
-              <PaginationControls
-                currentPage={page}
-                totalPages={totalPages}
-                onPageChange={setPage}
-                pageSize={pageSize}
-                onPageSizeChange={setPageSize}
-              />
-            </BusinessListTableFooter>
-          ) : undefined
-        }
-      >
-        <TableHeader>
-          <TableRow>
-            <TableHead className={`w-[200px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('table.materialName')}</TableHead>
-            <TableHead className="w-[120px]">{t('table.materialCode')}</TableHead>
-            <TableHead className="w-[80px]">{t('table.version')}</TableHead>
-            <TableHead className="w-[90px]">{t('table.status')}</TableHead>
-            <TableHead className="w-[120px]">{t('table.standardCost')}</TableHead>
-            <TableHead className="w-[80px]">{t('table.itemCount')}</TableHead>
-            <TableHead className="w-[120px]">{t('table.createdAt')}</TableHead>
-            <TableHead className="w-[130px]">{t('table.actions')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={8} rows={4} />
-          ) : data.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={8} message={t('table.noResults')} />
-          ) : (
-            data.map(bom => (
-              <TableRow key={bom.id} className="group cursor-pointer" onClick={() => onEditBom(bom.id)}>
-                <TableCell className={BUSINESS_LIST_STICKY_CELL_CLASS}>
-                  <div className="flex items-center gap-2">
-                    <Layers className="text-muted-foreground size-4 shrink-0" />
-                    <div className="min-w-0">
-                      <div className="truncate font-medium">{bom.materialName ?? '—'}</div>
-                      {bom.material_spec && <div className="text-muted-foreground truncate text-xs">{bom.material_spec}</div>}
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell
+          className="border-border bg-card rounded-xl border shadow-sm"
+          tableClassName="min-w-[960px]"
+          footer={
+            total > 0 ? (
+              <BusinessListTableFooter>
+                <span className="text-xs font-bold text-slate-400">{t('table.totalRecords', { total: String(total) })}</span>
+                <PaginationControls
+                  currentPage={page}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                  pageSize={pageSize}
+                  onPageSizeChange={setPageSize}
+                />
+              </BusinessListTableFooter>
+            ) : undefined
+          }
+        >
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow>
+              <TableHead className={`w-[200px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('table.materialName')}</TableHead>
+              <TableHead className="w-[120px]">{t('table.materialCode')}</TableHead>
+              <TableHead className="w-[80px]">{t('table.version')}</TableHead>
+              <TableHead className="w-[90px]">{t('table.status')}</TableHead>
+              <TableHead className="w-[120px]">{t('table.standardCost')}</TableHead>
+              <TableHead className="w-[80px]">{t('table.itemCount')}</TableHead>
+              <TableHead className="w-[120px]">{t('table.createdAt')}</TableHead>
+              <TableHead className="w-[130px]">{t('table.actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={8} rows={4} />
+            ) : data.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={8} message={t('table.noResults')} />
+            ) : (
+              data.map(bom => (
+                <TableRow key={bom.id} className="group cursor-pointer" onClick={() => onEditBom(bom.id)}>
+                  <TableCell className={BUSINESS_LIST_STICKY_CELL_CLASS}>
+                    <div className="flex items-center gap-2">
+                      <Layers className="text-muted-foreground size-4 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">{bom.materialName ?? '—'}</div>
+                        {bom.material_spec && <div className="text-muted-foreground truncate text-xs">{bom.material_spec}</div>}
+                      </div>
                     </div>
-                  </div>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{bom.materialCode ?? '—'}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{bom.version}</Badge>
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={bom.status} t={t} />
-                </TableCell>
-                <TableCell className="font-mono">{formatAmount(bom.total_standard_cost, 'USD')}</TableCell>
-                <TableCell className="text-center">{bom.item_count}</TableCell>
-                <TableCell className="text-muted-foreground">{bom.created_at?.slice(0, 10) ?? '—'}</TableCell>
-                <TableCell onClick={e => e.stopPropagation()}>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => onEditBom(bom.id)} title={t('actions.edit')}>
-                      <Pencil className="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setCopySourceId(bom.id)
-                        setCopyDialogOpen(true)
-                      }}
-                      title={t('actions.copy')}
-                    >
-                      <Copy className="size-4" />
-                    </Button>
-                    {bom.status !== 'active' ? (
-                      <Button variant="ghost" size="sm" onClick={() => handleToggleStatus(bom.id, 'active')} title={t('actions.activate')}>
-                        <Play className="size-4" />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{bom.materialCode ?? '—'}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{bom.version}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={bom.status} t={t} />
+                  </TableCell>
+                  <TableCell className="font-mono">{formatAmount(bom.total_standard_cost, 'USD')}</TableCell>
+                  <TableCell className="text-center">{bom.item_count}</TableCell>
+                  <TableCell className="text-muted-foreground">{bom.created_at?.slice(0, 10) ?? '—'}</TableCell>
+                  <TableCell onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => onEditBom(bom.id)} title={t('actions.edit')}>
+                        <Pencil className="size-4" />
                       </Button>
-                    ) : (
-                      <Button variant="ghost" size="sm" onClick={() => handleToggleStatus(bom.id, 'inactive')} title={t('actions.deactivate')}>
-                        <Square className="size-4" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setCopySourceId(bom.id)
+                          setCopyDialogOpen(true)
+                        }}
+                        title={t('actions.copy')}
+                      >
+                        <Copy className="size-4" />
                       </Button>
-                    )}
-                    {bom.status !== 'active' && (
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(bom.id)} title={t('actions.delete')}>
-                        <Trash2 className="text-destructive size-4" />
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </BusinessListTableShell>
+                      {bom.status !== 'active' ? (
+                        <Button variant="ghost" size="sm" onClick={() => handleToggleStatus(bom.id, 'active')} title={t('actions.activate')}>
+                          <Play className="size-4" />
+                        </Button>
+                      ) : (
+                        <Button variant="ghost" size="sm" onClick={() => handleToggleStatus(bom.id, 'inactive')} title={t('actions.deactivate')}>
+                          <Square className="size-4" />
+                        </Button>
+                      )}
+                      {bom.status !== 'active' && (
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(bom.id)} title={t('actions.delete')}>
+                          <Trash2 className="text-destructive size-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
 
       {/* 物料反查 */}
       <BomReverseLookup />

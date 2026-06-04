@@ -67,10 +67,109 @@ export function MaterialTable({
 
   /* 每页条数选项 — 用于 Select items */
   return (
-    <BusinessListTableShell
-      className="border-border bg-card rounded-xl border shadow-sm"
-      tableClassName="min-w-[1120px]"
-      footer={
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell className="border-border bg-card rounded-xl border shadow-sm" tableClassName="min-w-[1120px]">
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className={`w-[240px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>
+                <div className="flex items-center gap-3 pl-2">
+                  <Checkbox />
+                  <span>{t('table.codeName')}</span>
+                </div>
+              </TableHead>
+              <TableHead className="w-[96px]">{t('table.type')}</TableHead>
+              <TableHead className="w-[120px]">{t('table.category')}</TableHead>
+              <TableHead className="w-[140px]">{t('table.spec')}</TableHead>
+              <TableHead className="w-[72px] text-center">{t('table.unit')}</TableHead>
+              {/* 进价/售价暂时隐藏 */}
+              <TableHead className="w-[72px] text-center">{t('table.stock')}</TableHead>
+              <TableHead className="w-[96px] text-center">{t('table.status')}</TableHead>
+              {canEdit && <TableHead className="w-[144px] text-right">{t('table.operations')}</TableHead>}
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={columnCount} rows={4} />
+            ) : data.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={columnCount} message={t('table.noResults')} />
+            ) : (
+              /* 数据行 */
+              data.map(row => (
+                <TableRow key={row.id} className="group">
+                  {/* 第一列 — sticky 编码/名称 */}
+                  <TableCell className={BUSINESS_LIST_STICKY_CELL_CLASS}>
+                    <div className="flex items-center gap-3 pl-2">
+                      <Checkbox />
+                      <div className="min-w-0">
+                        <div className="text-muted-foreground font-mono text-[10px]">{row.code}</div>
+                        <div className="text-foreground truncate font-bold">{row.name}</div>
+                      </div>
+                    </div>
+                  </TableCell>
+
+                  {/* 类型 */}
+                  <TableCell>
+                    <Badge variant="outline" className={TYPE_COLORS[row.materialType] ?? ''}>
+                      {t(`filters.type.${row.materialType}` as 'filters.type.raw' | 'filters.type.semi' | 'filters.type.finished')}
+                    </Badge>
+                  </TableCell>
+
+                  {/* 分类 */}
+                  <TableCell>{row.categoryName || '—'}</TableCell>
+
+                  {/* 规格 */}
+                  <TableCell className="text-muted-foreground">{row.spec || '—'}</TableCell>
+
+                  {/* 单位 */}
+                  <TableCell className="text-center">{row.unitName || '—'}</TableCell>
+
+                  {/* 进价/售价暂时隐藏 */}
+
+                  {/* 安全库存 */}
+                  <TableCell className="text-center">
+                    {row.safetyStock > 0 ? row.safetyStock : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+
+                  {/* 状态 */}
+                  <TableCell className="text-center">
+                    {row.isEnabled ? (
+                      <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                        <span className="size-2 rounded-full bg-emerald-500" />
+                        {t('table.active')}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground inline-flex items-center gap-1.5">
+                        <span className="bg-muted-foreground/40 size-2 rounded-full" />
+                        {t('table.inactive')}
+                      </span>
+                    )}
+                  </TableCell>
+
+                  {/* 操作（仅在拥有编辑权限时渲染整列） */}
+                  {canEdit && (
+                    <TableCell className="pr-4 text-right">
+                      <Button variant="link" size="sm" className="text-primary h-auto p-0 font-bold" onClick={() => onEdit(row.id)}>
+                        {t('actions.edit')}
+                      </Button>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="text-muted-foreground hover:text-destructive ml-3 h-auto p-0 font-bold"
+                        onClick={() => onToggleStatus(row.id, row.isEnabled)}
+                      >
+                        {row.isEnabled ? t('actions.disable') : t('actions.enable')}
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
+      <div className="shrink-0 pt-4">
         <BusinessListTableFooter>
           <span className="text-xs font-bold text-slate-400">{t('table.totalRecords', { total: String(total) })}</span>
           <PaginationControls
@@ -81,105 +180,7 @@ export function MaterialTable({
             onPageSizeChange={onPageSizeChange}
           />
         </BusinessListTableFooter>
-      }
-    >
-      <TableHeader>
-        <TableRow className="bg-muted/50 hover:bg-muted/50">
-          <TableHead className={`w-[240px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>
-            <div className="flex items-center gap-3 pl-2">
-              <Checkbox />
-              <span>{t('table.codeName')}</span>
-            </div>
-          </TableHead>
-          <TableHead className="w-[96px]">{t('table.type')}</TableHead>
-          <TableHead className="w-[120px]">{t('table.category')}</TableHead>
-          <TableHead className="w-[140px]">{t('table.spec')}</TableHead>
-          <TableHead className="w-[72px] text-center">{t('table.unit')}</TableHead>
-          {/* 进价/售价暂时隐藏 */}
-          <TableHead className="w-[72px] text-center">{t('table.stock')}</TableHead>
-          <TableHead className="w-[96px] text-center">{t('table.status')}</TableHead>
-          {canEdit && <TableHead className="w-[144px] text-right">{t('table.operations')}</TableHead>}
-        </TableRow>
-      </TableHeader>
-
-      <TableBody>
-        {loading ? (
-          <BusinessListTableLoadingRows colSpan={columnCount} rows={4} />
-        ) : data.length === 0 ? (
-          <BusinessListTableEmptyRow colSpan={columnCount} message={t('table.noResults')} />
-        ) : (
-          /* 数据行 */
-          data.map(row => (
-            <TableRow key={row.id} className="group">
-              {/* 第一列 — sticky 编码/名称 */}
-              <TableCell className={BUSINESS_LIST_STICKY_CELL_CLASS}>
-                <div className="flex items-center gap-3 pl-2">
-                  <Checkbox />
-                  <div className="min-w-0">
-                    <div className="text-muted-foreground font-mono text-[10px]">{row.code}</div>
-                    <div className="text-foreground truncate font-bold">{row.name}</div>
-                  </div>
-                </div>
-              </TableCell>
-
-              {/* 类型 */}
-              <TableCell>
-                <Badge variant="outline" className={TYPE_COLORS[row.materialType] ?? ''}>
-                  {t(`filters.type.${row.materialType}` as 'filters.type.raw' | 'filters.type.semi' | 'filters.type.finished')}
-                </Badge>
-              </TableCell>
-
-              {/* 分类 */}
-              <TableCell>{row.categoryName || '—'}</TableCell>
-
-              {/* 规格 */}
-              <TableCell className="text-muted-foreground">{row.spec || '—'}</TableCell>
-
-              {/* 单位 */}
-              <TableCell className="text-center">{row.unitName || '—'}</TableCell>
-
-              {/* 进价/售价暂时隐藏 */}
-
-              {/* 安全库存 */}
-              <TableCell className="text-center">
-                {row.safetyStock > 0 ? row.safetyStock : <span className="text-muted-foreground">—</span>}
-              </TableCell>
-
-              {/* 状态 */}
-              <TableCell className="text-center">
-                {row.isEnabled ? (
-                  <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                    <span className="size-2 rounded-full bg-emerald-500" />
-                    {t('table.active')}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground inline-flex items-center gap-1.5">
-                    <span className="bg-muted-foreground/40 size-2 rounded-full" />
-                    {t('table.inactive')}
-                  </span>
-                )}
-              </TableCell>
-
-              {/* 操作（仅在拥有编辑权限时渲染整列） */}
-              {canEdit && (
-                <TableCell className="pr-4 text-right">
-                  <Button variant="link" size="sm" className="text-primary h-auto p-0 font-bold" onClick={() => onEdit(row.id)}>
-                    {t('actions.edit')}
-                  </Button>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="text-muted-foreground hover:text-destructive ml-3 h-auto p-0 font-bold"
-                    onClick={() => onToggleStatus(row.id, row.isEnabled)}
-                  >
-                    {row.isEnabled ? t('actions.disable') : t('actions.enable')}
-                  </Button>
-                </TableCell>
-              )}
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </BusinessListTableShell>
+      </div>
+    </div>
   )
 }

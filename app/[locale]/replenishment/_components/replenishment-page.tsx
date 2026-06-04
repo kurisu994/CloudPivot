@@ -316,7 +316,7 @@ export function ReplenishmentPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {/* 操作按钮 */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -409,98 +409,100 @@ export function ReplenishmentPage() {
       </div>
 
       {/* 建议列表表格 */}
-      <BusinessListTableShell tableClassName="min-w-[1600px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[50px]`}>
-              <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
-            </TableHead>
-            <TableHead className="w-[120px]">{t('materialCode')}</TableHead>
-            <TableHead className="w-[150px]">{t('materialName')}</TableHead>
-            <TableHead className="w-[90px]">{t('category')}</TableHead>
-            <TableHead className="w-[90px] text-right">{t('availableQty')}</TableHead>
-            <TableHead className="w-[90px] text-right">{t('safetyStock')}</TableHead>
-            <TableHead className="w-[80px] text-right">{t('gapQty')}</TableHead>
-            <TableHead className="w-[80px] text-right">{t('dailyConsumption')}</TableHead>
-            <TableHead className="w-[90px] text-right">{t('daysUntilStockout')}</TableHead>
-            <TableHead className="w-[100px] text-right">{t('suggestedQty')}</TableHead>
-            <TableHead className="w-[130px]">{t('supplier')}</TableHead>
-            <TableHead className="w-[90px]">
-              <span className="sr-only">{t('urgencyAll')}</span>
-            </TableHead>
-            <TableHead className="w-[80px]">{tc('actions')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={COL_COUNT} />
-          ) : suggestions.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={COL_COUNT} message={t('noSuggestions')} />
-          ) : (
-            suggestions.map(item => (
-              <TableRow
-                key={item.materialId}
-                className={`group ${
-                  item.urgency === 'urgent'
-                    ? 'bg-red-50/50 dark:bg-red-950/20'
-                    : item.urgency === 'warning'
-                      ? 'bg-amber-50/50 dark:bg-amber-950/20'
-                      : ''
-                }`}
-              >
-                <TableCell className={BUSINESS_LIST_STICKY_CELL_CLASS}>
-                  <Checkbox checked={selectedIds.has(item.materialId)} onCheckedChange={() => toggleSelect(item.materialId)} />
-                </TableCell>
-                <TableCell className="font-mono text-sm">{item.materialCode}</TableCell>
-                <TableCell>
-                  <div>{item.materialName}</div>
-                  {item.spec && <div className="text-muted-foreground text-xs">{item.spec}</div>}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.categoryName || '-'}</TableCell>
-                <TableCell className="text-right font-mono">{item.availableQty.toFixed(1)}</TableCell>
-                <TableCell className="text-right font-mono">{item.safetyStock.toFixed(1)}</TableCell>
-                <TableCell className={`text-right font-mono ${item.gapQty > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-                  {item.gapQty > 0 ? `-${item.gapQty.toFixed(1)}` : '0'}
-                </TableCell>
-                <TableCell className="text-right font-mono text-sm">{item.dailyConsumption.toFixed(2)}</TableCell>
-                <TableCell className="text-right font-mono">
-                  <span className={item.daysUntilStockout < 7 ? 'text-red-600 font-semibold dark:text-red-400' : ''}>
-                    {item.daysUntilStockout >= 999 ? '∞' : `${item.daysUntilStockout.toFixed(0)}${t('daysUnit')}`}
-                  </span>
-                </TableCell>
-                <TableCell className="text-right font-mono font-semibold">{item.suggestedQty.toFixed(1)}</TableCell>
-                <TableCell className="text-sm">
-                  {item.supplierName ? (
-                    <div>
-                      <div className="truncate">{item.supplierName}</div>
-                      {item.refPrice != null && item.refPrice > 0 && (
-                        <div className="text-muted-foreground text-xs">
-                          {formatAmount(item.refPrice, item.refCurrency as Currency)}/{item.unitName || ''}
-                        </div>
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell tableClassName="min-w-[1600px]">
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow>
+              <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[50px]`}>
+                <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
+              </TableHead>
+              <TableHead className="w-[120px]">{t('materialCode')}</TableHead>
+              <TableHead className="w-[150px]">{t('materialName')}</TableHead>
+              <TableHead className="w-[90px]">{t('category')}</TableHead>
+              <TableHead className="w-[90px] text-right">{t('availableQty')}</TableHead>
+              <TableHead className="w-[90px] text-right">{t('safetyStock')}</TableHead>
+              <TableHead className="w-[80px] text-right">{t('gapQty')}</TableHead>
+              <TableHead className="w-[80px] text-right">{t('dailyConsumption')}</TableHead>
+              <TableHead className="w-[90px] text-right">{t('daysUntilStockout')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('suggestedQty')}</TableHead>
+              <TableHead className="w-[130px]">{t('supplier')}</TableHead>
+              <TableHead className="w-[90px]">
+                <span className="sr-only">{t('urgencyAll')}</span>
+              </TableHead>
+              <TableHead className="w-[80px]">{tc('actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={COL_COUNT} />
+            ) : suggestions.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={COL_COUNT} message={t('noSuggestions')} />
+            ) : (
+              suggestions.map(item => (
+                <TableRow
+                  key={item.materialId}
+                  className={`group ${
+                    item.urgency === 'urgent'
+                      ? 'bg-red-50/50 dark:bg-red-950/20'
+                      : item.urgency === 'warning'
+                        ? 'bg-amber-50/50 dark:bg-amber-950/20'
+                        : ''
+                  }`}
+                >
+                  <TableCell className={BUSINESS_LIST_STICKY_CELL_CLASS}>
+                    <Checkbox checked={selectedIds.has(item.materialId)} onCheckedChange={() => toggleSelect(item.materialId)} />
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">{item.materialCode}</TableCell>
+                  <TableCell>
+                    <div>{item.materialName}</div>
+                    {item.spec && <div className="text-muted-foreground text-xs">{item.spec}</div>}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{item.categoryName || '-'}</TableCell>
+                  <TableCell className="text-right font-mono">{item.availableQty.toFixed(1)}</TableCell>
+                  <TableCell className="text-right font-mono">{item.safetyStock.toFixed(1)}</TableCell>
+                  <TableCell className={`text-right font-mono ${item.gapQty > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                    {item.gapQty > 0 ? `-${item.gapQty.toFixed(1)}` : '0'}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm">{item.dailyConsumption.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-mono">
+                    <span className={item.daysUntilStockout < 7 ? 'text-red-600 font-semibold dark:text-red-400' : ''}>
+                      {item.daysUntilStockout >= 999 ? '∞' : `${item.daysUntilStockout.toFixed(0)}${t('daysUnit')}`}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right font-mono font-semibold">{item.suggestedQty.toFixed(1)}</TableCell>
+                  <TableCell className="text-sm">
+                    {item.supplierName ? (
+                      <div>
+                        <div className="truncate">{item.supplierName}</div>
+                        {item.refPrice != null && item.refPrice > 0 && (
+                          <div className="text-muted-foreground text-xs">
+                            {formatAmount(item.refPrice, item.refCurrency as Currency)}/{item.unitName || ''}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">{t('noSupplier')}</span>
+                    )}
+                  </TableCell>
+                  <TableCell>{urgencyBadge(item.urgency)}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => void handleViewTrend(item)} title={t('trend.title')}>
+                        <TrendingUp className="size-4" />
+                      </Button>
+                      {item.logId && (
+                        <Button variant="ghost" size="sm" onClick={() => void handleIgnore(item.logId!)}>
+                          <X className="size-4" />
+                        </Button>
                       )}
                     </div>
-                  ) : (
-                    <span className="text-muted-foreground">{t('noSupplier')}</span>
-                  )}
-                </TableCell>
-                <TableCell>{urgencyBadge(item.urgency)}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => void handleViewTrend(item)} title={t('trend.title')}>
-                      <TrendingUp className="size-4" />
-                    </Button>
-                    {item.logId && (
-                      <Button variant="ghost" size="sm" onClick={() => void handleIgnore(item.logId!)}>
-                        <X className="size-4" />
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </BusinessListTableShell>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
 
       {/* 批量下单确认弹窗 */}
       <Dialog open={confirmOrderOpen} onOpenChange={setConfirmOrderOpen}>

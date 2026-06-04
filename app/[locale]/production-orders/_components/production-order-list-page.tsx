@@ -112,7 +112,7 @@ export function ProductionOrderListPage({ onEdit, onNew }: Props) {
   }))
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {/* 标题栏 */}
       <div className="flex items-center justify-end">
         <Button onClick={onNew}>
@@ -169,11 +169,15 @@ export function ProductionOrderListPage({ onEdit, onNew }: Props) {
       </div>
 
       {/* 表格 */}
-      <ProductionOrderTable items={items} loading={loading} onEdit={onEdit} onDelete={handleDelete} />
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <ProductionOrderTable items={items} loading={loading} onEdit={onEdit} onDelete={handleDelete} />
+      </div>
 
       {/* 分页 */}
       {totalPages > 1 && (
-        <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={setPage} pageSize={pageSize} onPageSizeChange={setPageSize} />
+        <div className="shrink-0 pt-4">
+          <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={setPage} pageSize={pageSize} onPageSizeChange={setPageSize} />
+        </div>
       )}
     </div>
   )

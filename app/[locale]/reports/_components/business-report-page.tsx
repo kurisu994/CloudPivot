@@ -310,7 +310,7 @@ export function BusinessReportPage({ kind }: { kind: ReportKind }) {
   const stats = summary?.stats
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-foreground text-2xl font-bold">{t('title')}</h1>
         <div className="flex items-center gap-2">
@@ -406,17 +406,17 @@ export function BusinessReportPage({ kind }: { kind: ReportKind }) {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={value => setActiveTab(value as ActiveTab)}>
+      <Tabs value={activeTab} onValueChange={value => setActiveTab(value as ActiveTab)} className="flex min-h-0 flex-1 flex-col">
         <TabsList>
           <TabsTrigger value="summary">{t('summaryTab')}</TabsTrigger>
           <TabsTrigger value="ranking">{t('rankingTab')}</TabsTrigger>
           <TabsTrigger value="detail">{t('detailTab')}</TabsTrigger>
         </TabsList>
-        <TabsContent value="summary" className="mt-4">
+        <TabsContent value="summary" className="mt-4 flex min-h-0 flex-1 flex-col">
           <TrendChart data={summary?.trend ?? []} t={t} />
           <TrendTable items={summary?.trend ?? []} loading={loading} t={t} tc={tc} />
         </TabsContent>
-        <TabsContent value="ranking" className="mt-4">
+        <TabsContent value="ranking" className="mt-4 flex min-h-0 flex-1 flex-col">
           <RankingTable
             items={ranking?.items ?? []}
             loading={loading}
@@ -429,7 +429,7 @@ export function BusinessReportPage({ kind }: { kind: ReportKind }) {
             tc={tc}
           />
         </TabsContent>
-        <TabsContent value="detail" className="mt-4">
+        <TabsContent value="detail" className="mt-4 flex min-h-0 flex-1 flex-col">
           <MaterialTable
             items={detail?.items ?? []}
             loading={loading}
@@ -489,30 +489,32 @@ function TrendTable({
   tc: ReturnType<typeof useTranslations>
 }) {
   return (
-    <BusinessListTableShell tableClassName="min-w-[640px]">
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[160px]">{t('date')}</TableHead>
-          <TableHead className="w-[120px] text-right">{t('amount')}</TableHead>
-          <TableHead className="w-[100px] text-right">{t('orderCount')}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {loading ? (
-          <BusinessListTableLoadingRows colSpan={3} />
-        ) : items.length === 0 ? (
-          <BusinessListTableEmptyRow colSpan={3} message={tc('noData')} />
-        ) : (
-          items.map(item => (
-            <TableRow key={item.date}>
-              <TableCell>{item.date}</TableCell>
-              <TableCell className="text-right font-mono">{money(item.amount)}</TableCell>
-              <TableCell className="text-right font-mono">{item.orderCount}</TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </BusinessListTableShell>
+    <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+      <BusinessListTableShell tableClassName="min-w-[640px]">
+        <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+          <TableRow>
+            <TableHead className="w-[160px]">{t('date')}</TableHead>
+            <TableHead className="w-[120px] text-right">{t('amount')}</TableHead>
+            <TableHead className="w-[100px] text-right">{t('orderCount')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            <BusinessListTableLoadingRows colSpan={3} />
+          ) : items.length === 0 ? (
+            <BusinessListTableEmptyRow colSpan={3} message={tc('noData')} />
+          ) : (
+            items.map(item => (
+              <TableRow key={item.date}>
+                <TableCell>{item.date}</TableCell>
+                <TableCell className="text-right font-mono">{money(item.amount)}</TableCell>
+                <TableCell className="text-right font-mono">{item.orderCount}</TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </BusinessListTableShell>
+    </div>
   )
 }
 
@@ -539,37 +541,39 @@ function RankingTable({
 }) {
   return (
     <>
-      <BusinessListTableShell tableClassName="min-w-[760px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[80px]">{t('rank')}</TableHead>
-            <TableHead className="w-[140px]">{t('partnerCode')}</TableHead>
-            <TableHead className="w-[180px]">{t('partner')}</TableHead>
-            <TableHead className="w-[120px] text-right">{t('amount')}</TableHead>
-            <TableHead className="w-[100px] text-right">{t('ratio')}</TableHead>
-            <TableHead className="w-[100px] text-right">{t('orderCount')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={6} />
-          ) : items.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={6} message={tc('noData')} />
-          ) : (
-            items.map((item, index) => (
-              <TableRow key={item.partnerId}>
-                <TableCell>{(page - 1) * pageSize + index + 1}</TableCell>
-                <TableCell className="font-mono text-sm">{item.partnerCode}</TableCell>
-                <TableCell>{item.partnerName}</TableCell>
-                <TableCell className="text-right font-mono">{money(item.amount)}</TableCell>
-                <TableCell className="text-right font-mono">{item.ratio.toFixed(2)}%</TableCell>
-                <TableCell className="text-right font-mono">{item.orderCount}</TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </BusinessListTableShell>
-      <div className="mt-4">
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell tableClassName="min-w-[760px]">
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow>
+              <TableHead className="w-[80px]">{t('rank')}</TableHead>
+              <TableHead className="w-[140px]">{t('partnerCode')}</TableHead>
+              <TableHead className="w-[180px]">{t('partner')}</TableHead>
+              <TableHead className="w-[120px] text-right">{t('amount')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('ratio')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('orderCount')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={6} />
+            ) : items.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={6} message={tc('noData')} />
+            ) : (
+              items.map((item, index) => (
+                <TableRow key={item.partnerId}>
+                  <TableCell>{(page - 1) * pageSize + index + 1}</TableCell>
+                  <TableCell className="font-mono text-sm">{item.partnerCode}</TableCell>
+                  <TableCell>{item.partnerName}</TableCell>
+                  <TableCell className="text-right font-mono">{money(item.amount)}</TableCell>
+                  <TableCell className="text-right font-mono">{item.ratio.toFixed(2)}%</TableCell>
+                  <TableCell className="text-right font-mono">{item.orderCount}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
+      <div className="shrink-0 pt-4">
         <PaginationControls
           currentPage={page}
           totalPages={Math.ceil(total / pageSize)}
@@ -605,39 +609,41 @@ function MaterialTable({
 }) {
   return (
     <>
-      <BusinessListTableShell tableClassName="min-w-[900px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="sticky left-0 z-10 w-[120px] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
-            <TableHead className="w-[180px]">{t('materialName')}</TableHead>
-            <TableHead className="w-[120px]">{t('spec')}</TableHead>
-            <TableHead className="w-[90px]">{t('unit')}</TableHead>
-            <TableHead className="w-[110px] text-right">{t('quantity')}</TableHead>
-            <TableHead className="w-[120px] text-right">{t('amount')}</TableHead>
-            <TableHead className="w-[120px] text-right">{t('avgPrice')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={7} />
-          ) : items.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={7} message={tc('noData')} />
-          ) : (
-            items.map(item => (
-              <TableRow key={item.materialId}>
-                <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.materialCode}</TableCell>
-                <TableCell>{item.materialName}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{item.spec || '-'}</TableCell>
-                <TableCell>{item.unitName}</TableCell>
-                <TableCell className="text-right font-mono">{item.quantity.toFixed(2)}</TableCell>
-                <TableCell className="text-right font-mono">{money(item.amount)}</TableCell>
-                <TableCell className="text-right font-mono">{money(item.avgPrice)}</TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </BusinessListTableShell>
-      <div className="mt-4">
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell tableClassName="min-w-[900px]">
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow>
+              <TableHead className="sticky left-0 z-10 w-[120px] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
+              <TableHead className="w-[180px]">{t('materialName')}</TableHead>
+              <TableHead className="w-[120px]">{t('spec')}</TableHead>
+              <TableHead className="w-[90px]">{t('unit')}</TableHead>
+              <TableHead className="w-[110px] text-right">{t('quantity')}</TableHead>
+              <TableHead className="w-[120px] text-right">{t('amount')}</TableHead>
+              <TableHead className="w-[120px] text-right">{t('avgPrice')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={7} />
+            ) : items.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={7} message={tc('noData')} />
+            ) : (
+              items.map(item => (
+                <TableRow key={item.materialId}>
+                  <TableCell className="sticky left-0 z-10 bg-white font-mono text-sm dark:bg-slate-950">{item.materialCode}</TableCell>
+                  <TableCell>{item.materialName}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{item.spec || '-'}</TableCell>
+                  <TableCell>{item.unitName}</TableCell>
+                  <TableCell className="text-right font-mono">{item.quantity.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-mono">{money(item.amount)}</TableCell>
+                  <TableCell className="text-right font-mono">{money(item.avgPrice)}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
+      <div className="shrink-0 pt-4">
         <PaginationControls
           currentPage={page}
           totalPages={Math.ceil(total / pageSize)}

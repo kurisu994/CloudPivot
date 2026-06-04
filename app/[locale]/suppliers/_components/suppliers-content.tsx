@@ -199,7 +199,7 @@ export function SuppliersContent() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[220px] flex-1">
@@ -281,23 +281,25 @@ export function SuppliersContent() {
         </Button>
       </div>
 
-      <SupplierTable
-        suppliers={items}
-        loading={loading}
-        total={total}
-        page={currentPage}
-        pageSize={pageSize}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        onPageSizeChange={s => {
-          setPageSize(s)
-          setCurrentPage(1)
-        }}
-        onEdit={handleEdit}
-        onView={handleView}
-        onDelete={handleDelete}
-        onToggleStatus={handleToggleStatus}
-      />
+      <div className="min-h-0 flex-1">
+        <SupplierTable
+          suppliers={items}
+          loading={loading}
+          total={total}
+          page={currentPage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={s => {
+            setPageSize(s)
+            setCurrentPage(1)
+          }}
+          onEdit={handleEdit}
+          onView={handleView}
+          onDelete={handleDelete}
+          onToggleStatus={handleToggleStatus}
+        />
+      </div>
 
       <SupplierDialog open={dialogOpen} onOpenChange={setDialogOpen} supplierId={editingSupplierId} onSaved={handleSaved} />
       <SupplierDetailDialog open={detailOpen} onOpenChange={setDetailOpen} supplierId={detailSupplierId} />

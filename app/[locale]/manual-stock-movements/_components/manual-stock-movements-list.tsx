@@ -226,7 +226,7 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
   )
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {/* 筛选过滤面板 */}
       <Card className="border-muted bg-card shadow-sm">
         <CardContent className="pt-6">
@@ -339,131 +339,135 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
       </Card>
 
       {/* 数据列表表格 */}
-      <BusinessListTableShell tableClassName="min-w-[1280px]">
-        <thead>
-          <tr className="border-b bg-muted/40">
-            <th
-              className={`w-[180px] px-4 py-3 text-left text-sm font-semibold text-foreground whitespace-nowrap ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}
-            >
-              {t('manualStockMovements.movementNo')}
-            </th>
-            <th className="w-[90px] px-4 py-3 text-center text-sm font-semibold text-foreground">{t('manualStockMovements.direction')}</th>
-            <th className="w-[150px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.businessType')}</th>
-            <th className="w-[150px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.warehouse')}</th>
-            <th className="w-[150px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.counterpartyName')}</th>
-            <th className="w-[120px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.movementDate')}</th>
-            <th className="w-[88px] px-4 py-3 text-right text-sm font-semibold text-foreground whitespace-nowrap">
-              {t('manualStockMovements.itemCount')}
-            </th>
-            <th className="w-[100px] px-4 py-3 text-center text-sm font-semibold text-foreground">{t('manualStockMovements.status')}</th>
-            <th className="w-[110px] px-4 py-3 text-left text-sm font-semibold text-foreground whitespace-nowrap">
-              {t('manualStockMovements.createdBy')}
-            </th>
-            <th
-              className={`w-[150px] px-4 py-3 text-center text-sm font-semibold text-foreground whitespace-nowrap ${BUSINESS_LIST_STICKY_HEAD_RIGHT_CLASS}`}
-            >
-              {t('manualStockMovements.operations')}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={10} rows={8} />
-          ) : items.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={10} message={t('manualStockMovements.noData')} />
-          ) : (
-            items.map(item => (
-              <tr key={item.id} className="border-b transition-colors hover:bg-muted/30">
-                <td className={`px-4 py-3 text-sm font-medium text-foreground whitespace-nowrap ${BUSINESS_LIST_STICKY_CELL_CLASS}`}>
-                  {item.movementNo}
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <Badge variant={item.direction === 'in' ? 'default' : 'destructive'}>
-                    {item.direction === 'in' ? t('manualStockMovements.directionIn') : t('manualStockMovements.directionOut')}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3 text-sm text-foreground">{getBusinessTypeLabel(item.businessType)}</td>
-                <td className="px-4 py-3 text-sm text-foreground">{item.warehouseName}</td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">{item.counterpartyName || '-'}</td>
-                <td className="px-4 py-3 text-sm text-foreground">{item.movementDate}</td>
-                <td className="px-4 py-3 text-sm text-right font-medium">{item.itemCount}</td>
-                <td className="px-4 py-3 text-center">
-                  <Badge variant={item.status === 'confirmed' ? 'default' : 'outline'}>
-                    {item.status === 'confirmed' ? t('manualStockMovements.statusConfirmed') : t('manualStockMovements.statusDraft')}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">{item.createdByName || '-'}</td>
-                <td className={`px-4 py-3 text-center ${BUSINESS_LIST_STICKY_CELL_RIGHT_CLASS}`}>
-                  <div className="flex items-center justify-center gap-1.5">
-                    {item.status === 'draft' ? (
-                      <>
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell tableClassName="min-w-[1280px]">
+          <thead className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <tr className="border-b bg-muted/40">
+              <th
+                className={`w-[180px] px-4 py-3 text-left text-sm font-semibold text-foreground whitespace-nowrap ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}
+              >
+                {t('manualStockMovements.movementNo')}
+              </th>
+              <th className="w-[90px] px-4 py-3 text-center text-sm font-semibold text-foreground">{t('manualStockMovements.direction')}</th>
+              <th className="w-[150px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.businessType')}</th>
+              <th className="w-[150px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.warehouse')}</th>
+              <th className="w-[150px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.counterpartyName')}</th>
+              <th className="w-[120px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.movementDate')}</th>
+              <th className="w-[88px] px-4 py-3 text-right text-sm font-semibold text-foreground whitespace-nowrap">
+                {t('manualStockMovements.itemCount')}
+              </th>
+              <th className="w-[100px] px-4 py-3 text-center text-sm font-semibold text-foreground">{t('manualStockMovements.status')}</th>
+              <th className="w-[110px] px-4 py-3 text-left text-sm font-semibold text-foreground whitespace-nowrap">
+                {t('manualStockMovements.createdBy')}
+              </th>
+              <th
+                className={`w-[150px] px-4 py-3 text-center text-sm font-semibold text-foreground whitespace-nowrap ${BUSINESS_LIST_STICKY_HEAD_RIGHT_CLASS}`}
+              >
+                {t('manualStockMovements.operations')}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={10} rows={8} />
+            ) : items.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={10} message={t('manualStockMovements.noData')} />
+            ) : (
+              items.map(item => (
+                <tr key={item.id} className="border-b transition-colors hover:bg-muted/30">
+                  <td className={`px-4 py-3 text-sm font-medium text-foreground whitespace-nowrap ${BUSINESS_LIST_STICKY_CELL_CLASS}`}>
+                    {item.movementNo}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <Badge variant={item.direction === 'in' ? 'default' : 'destructive'}>
+                      {item.direction === 'in' ? t('manualStockMovements.directionIn') : t('manualStockMovements.directionOut')}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-foreground">{getBusinessTypeLabel(item.businessType)}</td>
+                  <td className="px-4 py-3 text-sm text-foreground">{item.warehouseName}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{item.counterpartyName || '-'}</td>
+                  <td className="px-4 py-3 text-sm text-foreground">{item.movementDate}</td>
+                  <td className="px-4 py-3 text-sm text-right font-medium">{item.itemCount}</td>
+                  <td className="px-4 py-3 text-center">
+                    <Badge variant={item.status === 'confirmed' ? 'default' : 'outline'}>
+                      {item.status === 'confirmed' ? t('manualStockMovements.statusConfirmed') : t('manualStockMovements.statusDraft')}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{item.createdByName || '-'}</td>
+                  <td className={`px-4 py-3 text-center ${BUSINESS_LIST_STICKY_CELL_RIGHT_CLASS}`}>
+                    <div className="flex items-center justify-center gap-1.5">
+                      {item.status === 'draft' ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                            onClick={() => onEdit(item.id)}
+                            title={t('manualStockMovements.editDraft')}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                            onClick={() => {
+                              setConfirmId(item.id)
+                              setConfirmNo(item.movementNo)
+                              setRiskType(null)
+                            }}
+                            title={t('manualStockMovements.confirmMovement')}
+                          >
+                            <CheckSquare className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => {
+                              setDeleteId(item.id)
+                              setDeleteNo(item.movementNo)
+                            }}
+                            title={t('manualStockMovements.deleteDraft')}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                          className="h-7 w-7 text-slate-600 hover:text-slate-700 hover:bg-slate-50"
                           onClick={() => onEdit(item.id)}
-                          title={t('manualStockMovements.editDraft')}
+                          title={t('manualStockMovements.viewDetail')}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Eye className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                          onClick={() => {
-                            setConfirmId(item.id)
-                            setConfirmNo(item.movementNo)
-                            setRiskType(null)
-                          }}
-                          title={t('manualStockMovements.confirmMovement')}
-                        >
-                          <CheckSquare className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => {
-                            setDeleteId(item.id)
-                            setDeleteNo(item.movementNo)
-                          }}
-                          title={t('manualStockMovements.deleteDraft')}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-slate-600 hover:text-slate-700 hover:bg-slate-50"
-                        onClick={() => onEdit(item.id)}
-                        title={t('manualStockMovements.viewDetail')}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </BusinessListTableShell>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </BusinessListTableShell>
+      </div>
 
       {/* 分页控制 */}
-      {total > 0 && (
-        <BusinessListTableFooter>
-          <span className="text-xs font-bold text-slate-400">{t('manualStockMovements.totalItems', { total })}</span>
-          <PaginationControls
-            currentPage={page}
-            totalPages={Math.ceil(total / pageSize)}
-            onPageChange={setPage}
-            pageSize={pageSize}
-            onPageSizeChange={setPageSize}
-          />
-        </BusinessListTableFooter>
-      )}
+      <div className="shrink-0 pt-4">
+        {total > 0 && (
+          <BusinessListTableFooter>
+            <span className="text-xs font-bold text-slate-400">{t('manualStockMovements.totalItems', { total })}</span>
+            <PaginationControls
+              currentPage={page}
+              totalPages={Math.ceil(total / pageSize)}
+              onPageChange={setPage}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+            />
+          </BusinessListTableFooter>
+        )}
+      </div>
 
       {/* 确认删除 Dialog */}
       <Dialog open={deleteId !== null} onOpenChange={open => !open && setDeleteId(null)}>

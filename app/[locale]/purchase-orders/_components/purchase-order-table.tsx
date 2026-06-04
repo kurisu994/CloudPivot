@@ -125,101 +125,106 @@ export function PurchaseOrderTable({
   }
 
   return (
-    <>
-      <BusinessListTableShell
-        className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
-        tableClassName="min-w-[1200px]"
-        footer={
-          <BusinessListTableFooter>
-            <span className="text-xs font-bold text-slate-400">{t('totalRecords', { count: total })}</span>
-            <PaginationControls
-              currentPage={page}
-              totalPages={totalPages}
-              onPageChange={onPageChange}
-              pageSize={pageSize}
-              onPageSizeChange={onPageSizeChange}
-            />
-          </BusinessListTableFooter>
-        }
-      >
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className={`w-[180px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('orderNo')}</TableHead>
-            <TableHead className="w-[160px]">{t('supplier')}</TableHead>
-            <TableHead className="w-[110px]">{t('orderDate')}</TableHead>
-            <TableHead className="w-[80px]">{t('currency')}</TableHead>
-            <TableHead className="w-[100px]">{tc('status')}</TableHead>
-            <TableHead className="w-[130px] text-right">{t('payableAmount')}</TableHead>
-            <TableHead className="w-[110px]">{t('inboundProgress')}</TableHead>
-            <TableHead className="w-[100px]">{t('warehouse')}</TableHead>
-            <TableHead className="w-[80px]">{t('createdBy')}</TableHead>
-            <TableHead className="w-[140px] text-right">{tc('actions')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <BusinessListTableLoadingRows colSpan={10} />
-          ) : orders.length === 0 ? (
-            <BusinessListTableEmptyRow colSpan={10} message={tc('noData')} />
-          ) : (
-            orders.map(order => (
-              <TableRow key={order.id} className="group">
-                {/* 采购单号（固定首列） */}
-                <TableCell className={`font-mono text-xs font-medium ${BUSINESS_LIST_STICKY_CELL_CLASS}`}>{order.orderNo}</TableCell>
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <BusinessListTableShell
+          className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
+          tableClassName="min-w-[1200px]"
+        >
+          <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className={`w-[180px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('orderNo')}</TableHead>
+              <TableHead className="w-[160px]">{t('supplier')}</TableHead>
+              <TableHead className="w-[110px]">{t('orderDate')}</TableHead>
+              <TableHead className="w-[80px]">{t('currency')}</TableHead>
+              <TableHead className="w-[100px]">{tc('status')}</TableHead>
+              <TableHead className="w-[130px] text-right">{t('payableAmount')}</TableHead>
+              <TableHead className="w-[110px]">{t('inboundProgress')}</TableHead>
+              <TableHead className="w-[100px]">{t('warehouse')}</TableHead>
+              <TableHead className="w-[80px]">{t('createdBy')}</TableHead>
+              <TableHead className="w-[140px] text-right">{tc('actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <BusinessListTableLoadingRows colSpan={10} />
+            ) : orders.length === 0 ? (
+              <BusinessListTableEmptyRow colSpan={10} message={tc('noData')} />
+            ) : (
+              orders.map(order => (
+                <TableRow key={order.id} className="group">
+                  {/* 采购单号（固定首列） */}
+                  <TableCell className={`font-mono text-xs font-medium ${BUSINESS_LIST_STICKY_CELL_CLASS}`}>{order.orderNo}</TableCell>
 
-                {/* 供应商 */}
-                <TableCell>
-                  <div className="truncate font-medium">{order.supplierName}</div>
-                </TableCell>
+                  {/* 供应商 */}
+                  <TableCell>
+                    <div className="truncate font-medium">{order.supplierName}</div>
+                  </TableCell>
 
-                {/* 采购日期 */}
-                <TableCell className="text-sm">{order.orderDate}</TableCell>
+                  {/* 采购日期 */}
+                  <TableCell className="text-sm">{order.orderDate}</TableCell>
 
-                {/* 币种 */}
-                <TableCell>
-                  <Badge variant="outline" className="font-mono text-xs">
-                    {order.currency}
-                  </Badge>
-                </TableCell>
+                  {/* 币种 */}
+                  <TableCell>
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {order.currency}
+                    </Badge>
+                  </TableCell>
 
-                {/* 状态 */}
-                <TableCell>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[order.status] || STATUS_STYLES.draft}`}
-                  >
-                    {t(STATUS_LABEL_KEYS[order.status] || 'statusDraft')}
-                  </span>
-                </TableCell>
+                  {/* 状态 */}
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[order.status] || STATUS_STYLES.draft}`}
+                    >
+                      {t(STATUS_LABEL_KEYS[order.status] || 'statusDraft')}
+                    </span>
+                  </TableCell>
 
-                {/* 订单总金额 */}
-                <TableCell className="text-right font-medium">{formatAmount(order.payableAmount, order.currency as 'VND' | 'CNY' | 'USD')}</TableCell>
+                  {/* 订单总金额 */}
+                  <TableCell className="text-right font-medium">
+                    {formatAmount(order.payableAmount, order.currency as 'VND' | 'CNY' | 'USD')}
+                  </TableCell>
 
-                {/* 入库进度 */}
-                <TableCell>
-                  <span className="text-muted-foreground text-sm">
-                    {t('progressFormat', {
-                      received: order.receivedItemCount,
-                      total: order.itemCount,
-                    })}
-                  </span>
-                </TableCell>
+                  {/* 入库进度 */}
+                  <TableCell>
+                    <span className="text-muted-foreground text-sm">
+                      {t('progressFormat', {
+                        received: order.receivedItemCount,
+                        total: order.itemCount,
+                      })}
+                    </span>
+                  </TableCell>
 
-                {/* 入库仓库 */}
-                <TableCell className="text-sm">{order.warehouseName}</TableCell>
+                  {/* 入库仓库 */}
+                  <TableCell className="text-sm">{order.warehouseName}</TableCell>
 
-                {/* 创建人 */}
-                <TableCell className="text-sm">{order.createdByName ?? '—'}</TableCell>
+                  {/* 创建人 */}
+                  <TableCell className="text-sm">{order.createdByName ?? '—'}</TableCell>
 
-                {/* 操作 */}
-                <TableCell className="text-right">{renderActions(order)}</TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </BusinessListTableShell>
+                  {/* 操作 */}
+                  <TableCell className="text-right">{renderActions(order)}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </BusinessListTableShell>
+      </div>
+
+      <div className="shrink-0 pt-4">
+        <BusinessListTableFooter>
+          <span className="text-xs font-bold text-slate-400">{t('totalRecords', { count: total })}</span>
+          <PaginationControls
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+            pageSize={pageSize}
+            onPageSizeChange={onPageSizeChange}
+          />
+        </BusinessListTableFooter>
+      </div>
 
       {/* 采购单详情弹窗 */}
       <PurchaseOrderDetailDialog orderId={detailOrderId} onClose={() => setDetailOrderId(null)} />
-    </>
+    </div>
   )
 }
