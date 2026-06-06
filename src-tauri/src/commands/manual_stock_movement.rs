@@ -82,6 +82,19 @@ pub struct ManualMovementFilter {
     pub page_size: i32,
 }
 
+/// 库存不足的物料明细（预检结果）
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InsufficientStockItem {
+    pub sort_order: i32,
+    pub material_id: i64,
+    pub material_code: String,
+    pub material_name: String,
+    pub required_qty: f64,
+    pub available_qty: f64,
+    pub unit_name: String,
+}
+
 /// 明细项数据
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -834,6 +847,74 @@ pub async fn confirm_manual_stock_movement(
             format!("RISK_LIMIT_EXCEEDED:amount:amount={}", total_amount)
         };
         return Err(AppError::Business(err_code));
+    }
+
+    // 4.5 出库预检：一次性查询所有明细行的可用库存，收集不足项
+    if direction == "out" {
+        let mut insufficient_items: Vec<InsufficientStockItem> = Vec::new();
+
+        for item in &items {
+            // 查询物料批次追踪模式
+            let lot_tracking_mode: String = sqlx::query_scalar(
+                "SELECT COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = $1",
+            )
+            .bind(item.material_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("预检查询物料批次模式失败: {}", e)))?;
+
+            // 根据批次追踪模式确定可用数量
+            let available_qty: f64 = if lot_tracking_mode != "none" {
+                // 批次追踪物料：以 FIFO 可用批次量为准
+                let available_lots =
+                    inventory_ops::get_available_lots(&mut tx, item.material_id, warehouse_id)
+                        .await?;
+                available_lots.iter().map(|(_, _, qty)| qty).sum()
+            } else {
+                // 非批次追踪物料：以主库存量为准
+                sqlx::query_scalar::<_, f64>(
+                    "SELECT COALESCE(quantity, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2",
+                )
+                .bind(item.material_id)
+                .bind(warehouse_id)
+                .fetch_optional(&mut *tx)
+                .await
+                .map_err(|e| AppError::Database(format!("预检查询库存失败: {}", e)))?
+                .unwrap_or(0.0)
+            };
+
+            if available_qty < item.quantity {
+                // 查物料编码、名称、单位用于展示
+                let (mat_code, mat_name, unit_name): (String, String, String) = sqlx::query_as(
+                    r#"
+                    SELECT m.code, m.name, COALESCE(u.name, '')
+                    FROM materials m
+                    LEFT JOIN units u ON u.id = m.base_unit_id
+                    WHERE m.id = $1
+                    "#,
+                )
+                .bind(item.material_id)
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(|e| AppError::Database(format!("预检查询物料信息失败: {}", e)))?;
+
+                insufficient_items.push(InsufficientStockItem {
+                    sort_order: item.sort_order,
+                    material_id: item.material_id,
+                    material_code: mat_code,
+                    material_name: mat_name,
+                    required_qty: item.quantity,
+                    available_qty,
+                    unit_name,
+                });
+            }
+        }
+
+        if !insufficient_items.is_empty() {
+            let json = serde_json::to_string(&insufficient_items)
+                .map_err(|e| AppError::Business(format!("序列化库存不足信息失败: {}", e)))?;
+            return Err(AppError::Business(format!("INSUFFICIENT_STOCK:{}", json)));
+        }
     }
 
     // 5. 逐行执行出入库记账与批次管理

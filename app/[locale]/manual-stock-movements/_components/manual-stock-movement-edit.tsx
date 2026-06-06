@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, CheckSquare, Plus, Save, Trash2 } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, CheckSquare, Plus, Save, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount, toDisplayAmount, toStorageAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
 import type { ManualMovementItemData, MaterialReferenceOption, SaveManualMovementItemParams, WarehouseItem } from '@/lib/tauri'
@@ -92,6 +93,20 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
   const [riskType, setRiskType] = useState<'qty' | 'amount' | 'both' | null>(null)
   const [riskQty, setRiskQty] = useState(0)
   const [riskAmount, setRiskAmount] = useState(0)
+
+  // 7. 库存不足预检弹窗状态
+  const [insufficientItems, setInsufficientItems] = useState<
+    {
+      sortOrder: number
+      materialId: number
+      materialCode: string
+      materialName: string
+      requiredQty: number
+      availableQty: number
+      unitName: string
+    }[]
+  >([])
+  const [insufficientDialogOpen, setInsufficientDialogOpen] = useState(false)
 
   const isReadOnly = status === 'confirmed'
   const isInbound = direction === 'in'
@@ -423,7 +438,17 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
       onBack()
     } catch (err: any) {
       const errStr = getErrorMessage(err, '')
-      if (errStr.startsWith('RISK_LIMIT_EXCEEDED:')) {
+      if (errStr.startsWith('INSUFFICIENT_STOCK:')) {
+        // 库存不足预检结果：解析 JSON payload 并弹出 Dialog
+        try {
+          const json = errStr.slice('INSUFFICIENT_STOCK:'.length)
+          const items = JSON.parse(json)
+          setInsufficientItems(items)
+          setInsufficientDialogOpen(true)
+        } catch {
+          toast.error(getErrorMessage(err, t('manualStockMovements.confirmFailed')))
+        }
+      } else if (errStr.startsWith('RISK_LIMIT_EXCEEDED:')) {
         // 后端拦截了风控并返回提示：RISK_LIMIT_EXCEEDED:both:qty=1200.0,amount=1500000
         const parts = errStr.split(':')
         const type = parts[1] as 'qty' | 'amount' | 'both'
@@ -660,37 +685,37 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
               </div>
               <Badge variant="secondary">{summary.rowCount} / 100 行</Badge>
             </CardHeader>
-            <CardContent className="p-0 overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b bg-muted/30">
-                    <th className="w-[50px] px-3 py-2 text-center text-xs font-semibold text-muted-foreground">#</th>
-                    <th className="w-[120px] px-3 py-2 text-left text-xs font-semibold text-muted-foreground">物料编码</th>
-                    <th className="w-[180px] px-3 py-2 text-left text-xs font-semibold text-muted-foreground">物料名称</th>
-                    <th className="w-[100px] px-3 py-2 text-left text-xs font-semibold text-muted-foreground">规格</th>
-                    <th className="w-[60px] px-3 py-2 text-left text-xs font-semibold text-muted-foreground">单位</th>
-                    <th className="w-[100px] px-3 py-2 text-right text-xs font-semibold text-muted-foreground">数量</th>
-                    {isInbound && <th className="w-[120px] px-3 py-2 text-left text-xs font-semibold text-muted-foreground">批次号</th>}
-                    {isInbound && <th className="w-[120px] px-3 py-2 text-left text-xs font-semibold text-muted-foreground">供应商批次</th>}
-                    {!isReadOnly && <th className="w-[60px] px-3 py-2 text-center text-xs font-semibold text-muted-foreground">操作</th>}
-                  </tr>
-                </thead>
-                <tbody>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                    <TableHead className="w-[50px] text-center">#</TableHead>
+                    <TableHead className="w-[120px]">{t('manualStockMovements.colMaterialCode')}</TableHead>
+                    <TableHead className="w-[180px]">{t('manualStockMovements.colMaterialName')}</TableHead>
+                    <TableHead className="w-[100px]">{t('manualStockMovements.colSpec')}</TableHead>
+                    <TableHead className="w-[60px]">{t('manualStockMovements.colUnit')}</TableHead>
+                    <TableHead className="w-[100px] text-right">{t('manualStockMovements.colQuantity')}</TableHead>
+                    {isInbound && <TableHead className="w-[120px]">{t('manualStockMovements.colLotNo')}</TableHead>}
+                    {isInbound && <TableHead className="w-[120px]">{t('manualStockMovements.colSupplierBatch')}</TableHead>}
+                    {!isReadOnly && <TableHead className="w-[60px] text-center">{tc('actions')}</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {items.length === 0 ? (
-                    <tr>
-                      <td colSpan={(isInbound ? 8 : 6) + (isReadOnly ? 0 : 1)} className="h-24 text-center text-sm text-muted-foreground">
+                    <TableRow>
+                      <TableCell colSpan={(isInbound ? 8 : 6) + (isReadOnly ? 0 : 1)} className="h-24 text-center text-muted-foreground">
                         {t('manualStockMovements.noItems')}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ) : (
                     items.map((item, idx) => (
-                      <tr key={idx} className="border-b hover:bg-muted/10 transition-colors">
-                        <td className="px-3 py-2 text-center text-sm text-muted-foreground">{item.sortOrder}</td>
-                        <td className="px-3 py-2 text-sm font-semibold text-foreground">{item.materialCode}</td>
-                        <td className="px-3 py-2 text-sm text-foreground">{item.materialName}</td>
-                        <td className="px-3 py-2 text-sm text-muted-foreground">{item.spec || '-'}</td>
-                        <td className="px-3 py-2 text-sm text-muted-foreground">{item.unitName || '-'}</td>
-                        <td className="px-3 py-2">
+                      <TableRow key={idx}>
+                        <TableCell className="text-center text-muted-foreground">{item.sortOrder}</TableCell>
+                        <TableCell className="font-semibold">{item.materialCode}</TableCell>
+                        <TableCell>{item.materialName}</TableCell>
+                        <TableCell className="text-muted-foreground">{item.spec || '-'}</TableCell>
+                        <TableCell className="text-muted-foreground">{item.unitName || '-'}</TableCell>
+                        <TableCell>
                           <div className="flex justify-end">
                             <Input
                               type="number"
@@ -702,9 +727,9 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                               className="h-8 max-w-[100px] py-1 text-right font-medium"
                             />
                           </div>
-                        </td>
+                        </TableCell>
                         {isInbound && (
-                          <td className="px-3 py-2">
+                          <TableCell>
                             <Input
                               placeholder="自动生成"
                               value={item.lotNo || ''}
@@ -712,10 +737,10 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                               disabled={isReadOnly}
                               className="h-8 py-1 max-w-[120px]"
                             />
-                          </td>
+                          </TableCell>
                         )}
                         {isInbound && (
-                          <td className="px-3 py-2">
+                          <TableCell>
                             <Input
                               placeholder="选填"
                               value={item.supplierBatchNo || ''}
@@ -723,10 +748,10 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                               disabled={isReadOnly}
                               className="h-8 py-1 max-w-[120px]"
                             />
-                          </td>
+                          </TableCell>
                         )}
                         {!isReadOnly && (
-                          <td className="px-3 py-2 text-center">
+                          <TableCell className="text-center">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -735,13 +760,13 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                          </td>
+                          </TableCell>
                         )}
-                      </tr>
+                      </TableRow>
                     ))
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </div>
@@ -864,6 +889,50 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
             <Button variant="destructive" onClick={() => handleConfirmPost(true)} disabled={posting}>
               {posting ? '过账中...' : t('manualStockMovements.riskConfirmProceed')}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 库存不足预检 Dialog */}
+      <Dialog open={insufficientDialogOpen} onOpenChange={setInsufficientDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="size-5" />
+              {t('manualStockMovements.insufficientStockTitle')}
+            </DialogTitle>
+            <DialogDescription>{t('manualStockMovements.insufficientStockDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[400px] overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12 text-center">#</TableHead>
+                  <TableHead>{t('manualStockMovements.colMaterialCode')}</TableHead>
+                  <TableHead>{t('manualStockMovements.colMaterialName')}</TableHead>
+                  <TableHead className="text-right">{t('manualStockMovements.requiredQty')}</TableHead>
+                  <TableHead className="text-right">{t('manualStockMovements.availableQty')}</TableHead>
+                  <TableHead className="text-right">{t('manualStockMovements.shortage')}</TableHead>
+                  <TableHead className="w-16">{t('manualStockMovements.colUnit')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {insufficientItems.map(item => (
+                  <TableRow key={item.materialId} className={item.availableQty === 0 ? 'bg-destructive/10' : ''}>
+                    <TableCell className="text-center text-muted-foreground">{item.sortOrder}</TableCell>
+                    <TableCell className="font-mono text-sm">{item.materialCode}</TableCell>
+                    <TableCell>{item.materialName}</TableCell>
+                    <TableCell className="text-right">{item.requiredQty}</TableCell>
+                    <TableCell className="text-right">{item.availableQty}</TableCell>
+                    <TableCell className="text-right font-semibold text-destructive">{(item.availableQty - item.requiredQty).toFixed(2)}</TableCell>
+                    <TableCell>{item.unitName}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setInsufficientDialogOpen(false)}>{t('manualStockMovements.insufficientStockConfirm')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
