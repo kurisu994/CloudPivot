@@ -345,7 +345,10 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
   }, [items, isInbound])
 
   // 5. 保存草稿底层逻辑
-  const executeSave = async (): Promise<number | null> => {
+  // silent: 静默保存（确认过账流程内部调用时不提示"草稿已保存"）
+  const executeSave = async (options?: { silent?: boolean }): Promise<number | null> => {
+    const silent = options?.silent ?? false
+
     if (!warehouseId) {
       toast.error(t('manualStockMovements.selectWarehouse'))
       return null
@@ -400,11 +403,13 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
         items: saveItems,
       })
 
-      toast.success(
-        t('manualStockMovements.draftSaved', {
-          movementNo: movementNo || '草稿',
-        }),
-      )
+      if (!silent) {
+        toast.success(
+          t('manualStockMovements.draftSaved', {
+            movementNo: movementNo || '草稿',
+          }),
+        )
+      }
       return savedId
     } catch (err) {
       toast.error(getErrorMessage(err, t('manualStockMovements.saveFailed')))
@@ -423,8 +428,8 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
 
   // 6. 确认过账逻辑（包含风控多维拦截）
   const handleConfirmPost = async (riskConfirmed = false) => {
-    // A. 必须先保存最新更改
-    const savedId = await executeSave()
+    // A. 必须先保存最新更改（静默，不提示"草稿已保存"）
+    const savedId = await executeSave({ silent: true })
     if (!savedId) return
 
     setPosting(true)
@@ -866,22 +871,20 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-destructive flex items-center gap-2">{t('manualStockMovements.riskConfirmTitle')}</DialogTitle>
-            <DialogDescription className="pt-2 text-foreground">
-              <div className="space-y-3">
-                {riskType === 'qty' && <p>{t('manualStockMovements.riskConfirmQty', { total: riskQty })}</p>}
-                {riskType === 'amount' && <p>{t('manualStockMovements.riskConfirmAmount', { total: riskAmount.toLocaleString() })}</p>}
-                {riskType === 'both' && (
-                  <p>
-                    {t('manualStockMovements.riskConfirmBoth', {
-                      qty: riskQty,
-                      amount: riskAmount.toLocaleString(),
-                    })}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground font-semibold">* 该操作会触发大量库存记账，请确认您已获得授权，是否继续？</p>
-              </div>
-            </DialogDescription>
           </DialogHeader>
+          <div className="space-y-3 text-sm text-foreground pt-2">
+            {riskType === 'qty' && <p>{t('manualStockMovements.riskConfirmQty', { total: riskQty })}</p>}
+            {riskType === 'amount' && <p>{t('manualStockMovements.riskConfirmAmount', { total: riskAmount.toLocaleString() })}</p>}
+            {riskType === 'both' && (
+              <p>
+                {t('manualStockMovements.riskConfirmBoth', {
+                  qty: riskQty,
+                  amount: riskAmount.toLocaleString(),
+                })}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground font-semibold">* 该操作会触发大量库存记账，请确认您已获得授权，是否继续？</p>
+          </div>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setConfirmRiskDialogOpen(false)} disabled={posting}>
               {t('manualStockMovements.riskConfirmCancel')}

@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckSquare, Edit, Eye, Plus, RotateCcw, Search, Trash2 } from 'lucide-react'
+import { AlertTriangle, CheckSquare, Edit, Eye, Plus, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -22,6 +22,7 @@ import { DateRangePicker } from '@/components/ui/date-picker'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { getErrorMessage } from '@/lib/error'
 import type { ManualMovementListItem, WarehouseItem } from '@/lib/tauri'
 import { confirmManualStockMovement, deleteManualStockMovement, getManualStockMovements, getWarehouses } from '@/lib/tauri'
@@ -78,6 +79,20 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
   const [riskQty, setRiskQty] = useState(0)
   const [riskAmount, setRiskAmount] = useState(0)
   const [posting, setPosting] = useState(false)
+
+  // 库存不足预检弹窗状态
+  const [insufficientItems, setInsufficientItems] = useState<
+    {
+      sortOrder: number
+      materialId: number
+      materialCode: string
+      materialName: string
+      requiredQty: number
+      availableQty: number
+      unitName: string
+    }[]
+  >([])
+  const [insufficientDialogOpen, setInsufficientDialogOpen] = useState(false)
 
   // 1. 初始化加载仓库列表
   useEffect(() => {
@@ -162,7 +177,17 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
     } catch (err: any) {
       // 捕捉后端风控异常
       const errStr = getErrorMessage(err, '')
-      if (errStr.startsWith('RISK_LIMIT_EXCEEDED:')) {
+      if (errStr.startsWith('INSUFFICIENT_STOCK:')) {
+        // 库存不足预检结果：解析 JSON payload 并弹出 Dialog
+        try {
+          const json = errStr.slice('INSUFFICIENT_STOCK:'.length)
+          const items = JSON.parse(json)
+          setInsufficientItems(items)
+          setInsufficientDialogOpen(true)
+        } catch {
+          toast.error(getErrorMessage(err, t('manualStockMovements.confirmFailed')))
+        }
+      } else if (errStr.startsWith('RISK_LIMIT_EXCEEDED:')) {
         // 解析风控详细字段，格式：RISK_LIMIT_EXCEEDED:both:qty=1200.0,amount=1500000
         const parts = errStr.split(':')
         const type = parts[1] as 'qty' | 'amount' | 'both'
@@ -184,7 +209,7 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
         setRiskAmount(amountVal)
       } else {
         toast.error(getErrorMessage(err, t('manualStockMovements.confirmFailed')))
-        setConfirmId(null)
+        // 不关闭对话框，让用户可以直接重试
       }
     } finally {
       setPosting(false)
@@ -502,26 +527,27 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
             <DialogTitle className={riskType ? 'text-destructive flex items-center gap-2' : ''}>
               {riskType ? t('manualStockMovements.riskConfirmTitle') : t('manualStockMovements.confirmMovement')}
             </DialogTitle>
-            <DialogDescription className="pt-2 text-foreground">
-              {riskType ? (
-                <div className="space-y-3">
-                  {riskType === 'qty' && <p>{t('manualStockMovements.riskConfirmQty', { total: riskQty })}</p>}
-                  {riskType === 'amount' && <p>{t('manualStockMovements.riskConfirmAmount', { total: riskAmount.toLocaleString() })}</p>}
-                  {riskType === 'both' && (
-                    <p>
-                      {t('manualStockMovements.riskConfirmBoth', {
-                        qty: riskQty,
-                        amount: riskAmount.toLocaleString(),
-                      })}
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground font-semibold">* 该操作会触发大量库存记账，请谨慎确认。</p>
-                </div>
-              ) : (
-                `确定要将批量出入库单 ${confirmNo} 确认并记账过账吗？过账后库存将原子过账且数据不可修改。`
-              )}
-            </DialogDescription>
+            {!riskType && (
+              <DialogDescription className="pt-2 text-foreground">
+                确定要将批量出入库单 {confirmNo} 确认并记账过账吗？过账后库存将原子过账且数据不可修改。
+              </DialogDescription>
+            )}
           </DialogHeader>
+          {riskType && (
+            <div className="space-y-3 text-sm text-foreground pt-2">
+              {riskType === 'qty' && <p>{t('manualStockMovements.riskConfirmQty', { total: riskQty })}</p>}
+              {riskType === 'amount' && <p>{t('manualStockMovements.riskConfirmAmount', { total: riskAmount.toLocaleString() })}</p>}
+              {riskType === 'both' && (
+                <p>
+                  {t('manualStockMovements.riskConfirmBoth', {
+                    qty: riskQty,
+                    amount: riskAmount.toLocaleString(),
+                  })}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground font-semibold">* 该操作会触发大量库存记账，请谨慎确认。</p>
+            </div>
+          )}
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setConfirmId(null)} disabled={posting}>
               {riskType ? t('manualStockMovements.riskConfirmCancel') : tc('cancel')}
@@ -529,6 +555,50 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
             <Button variant={riskType ? 'destructive' : 'default'} onClick={() => handleConfirmPost(riskType !== null)} disabled={posting}>
               {posting ? '过账中...' : riskType ? t('manualStockMovements.riskConfirmProceed') : tc('confirm')}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 库存不足预检 Dialog */}
+      <Dialog open={insufficientDialogOpen} onOpenChange={setInsufficientDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="size-5" />
+              {t('manualStockMovements.insufficientStockTitle')}
+            </DialogTitle>
+            <DialogDescription>{t('manualStockMovements.insufficientStockDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[400px] overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12 text-center">#</TableHead>
+                  <TableHead>{t('manualStockMovements.colMaterialCode')}</TableHead>
+                  <TableHead>{t('manualStockMovements.colMaterialName')}</TableHead>
+                  <TableHead className="text-right">{t('manualStockMovements.requiredQty')}</TableHead>
+                  <TableHead className="text-right">{t('manualStockMovements.availableQty')}</TableHead>
+                  <TableHead className="text-right">{t('manualStockMovements.shortage')}</TableHead>
+                  <TableHead className="w-16">{t('manualStockMovements.colUnit')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {insufficientItems.map(item => (
+                  <TableRow key={item.materialId} className={item.availableQty === 0 ? 'bg-destructive/10' : ''}>
+                    <TableCell className="text-center text-muted-foreground">{item.sortOrder}</TableCell>
+                    <TableCell className="font-mono text-sm">{item.materialCode}</TableCell>
+                    <TableCell>{item.materialName}</TableCell>
+                    <TableCell className="text-right">{item.requiredQty}</TableCell>
+                    <TableCell className="text-right">{item.availableQty}</TableCell>
+                    <TableCell className="text-right font-semibold text-destructive">{(item.availableQty - item.requiredQty).toFixed(2)}</TableCell>
+                    <TableCell>{item.unitName}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setInsufficientDialogOpen(false)}>{t('manualStockMovements.insufficientStockConfirm')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
