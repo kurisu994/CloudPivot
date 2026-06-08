@@ -6,7 +6,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { getSalesReportSummary } from '@/lib/tauri'
-import { formatDashboardUsdCompact } from './format'
+import { addDays, formatDashboardUsdCompact, formatLocalDate } from './format'
 
 interface TrendPoint {
   label: string
@@ -23,8 +23,9 @@ export function SalesTrendChart({ className }: { className?: string }) {
   useEffect(() => {
     void (async () => {
       try {
-        const end = new Date().toISOString().slice(0, 10)
-        const start = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
+        const currentDate = new Date()
+        const end = formatLocalDate(currentDate)
+        const start = formatLocalDate(addDays(currentDate, -30))
         const res = await getSalesReportSummary({ startDate: start, endDate: end, page: 1, pageSize: 1 })
         const points = res.trend.map(p => ({
           label: p.date.slice(5),

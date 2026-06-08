@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getSalesMaterialDetail } from '@/lib/tauri'
+import { addDays, formatLocalDate } from './format'
 
 interface BestSellerItem {
   name: string
@@ -21,8 +22,9 @@ export function BestSellers({ className }: { className?: string }) {
   useEffect(() => {
     void (async () => {
       try {
-        const end = new Date().toISOString().slice(0, 10)
-        const start = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
+        const currentDate = new Date()
+        const end = formatLocalDate(currentDate)
+        const start = formatLocalDate(addDays(currentDate, -30))
         const res = await getSalesMaterialDetail({ startDate: start, endDate: end, page: 1, pageSize: 5 })
         if (res.items.length === 0) {
           setProducts([])
