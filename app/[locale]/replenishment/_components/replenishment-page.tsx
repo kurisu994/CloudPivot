@@ -629,11 +629,7 @@ export function ReplenishmentPage() {
           {/* 分页栏（固定底部，不参与滚动） */}
           <BusinessListTableFooter className="-mx-4 -mb-4 shrink-0 rounded-b-xl">
             <span className="text-xs font-bold text-slate-400">{tc('totalRecords', { count: rulesTotal })}</span>
-            <PaginationControls
-              currentPage={rulesPage}
-              totalPages={Math.max(1, Math.ceil(rulesTotal / 20))}
-              onPageChange={setRulesPage}
-            />
+            <PaginationControls currentPage={rulesPage} totalPages={Math.max(1, Math.ceil(rulesTotal / 20))} onPageChange={setRulesPage} />
           </BusinessListTableFooter>
         </DialogContent>
       </Dialog>
