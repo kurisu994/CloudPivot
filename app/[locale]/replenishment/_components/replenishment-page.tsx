@@ -9,9 +9,11 @@ import {
   BUSINESS_LIST_STICKY_CELL_CLASS,
   BUSINESS_LIST_STICKY_HEAD_CLASS,
   BusinessListTableEmptyRow,
+  BusinessListTableFooter,
   BusinessListTableLoadingRows,
   BusinessListTableShell,
 } from '@/components/common/business-list-table'
+import { PaginationControls } from '@/components/common/pagination'
 import { useAuth } from '@/components/providers/auth-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -22,7 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { type Currency, formatAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
 import type { CategoryNode, ConsumptionTrendPoint, ReplenishmentRule, ReplenishmentSuggestion, RuleFilter, UpdateRuleParams } from '@/lib/tauri'
@@ -551,12 +553,13 @@ export function ReplenishmentPage() {
 
       {/* 策略配置弹窗 */}
       <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
-        <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[85vh] w-[90vw] max-w-6xl flex-col gap-0 overflow-hidden sm:max-w-6xl">
+          <DialogHeader className="shrink-0">
             <DialogTitle>{t('rule.title')}</DialogTitle>
           </DialogHeader>
 
-          <div className="mb-4 flex items-center gap-3">
+          {/* 搜索区（固定，不参与滚动） */}
+          <div className="mt-4 flex shrink-0 items-center gap-3">
             <div className="relative flex-1">
               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
@@ -574,67 +577,64 @@ export function ReplenishmentPage() {
             </div>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[120px]">{t('materialCode')}</TableHead>
-                <TableHead className="w-[140px]">{t('materialName')}</TableHead>
-                <TableHead className="w-[90px] text-right">{t('rule.analysisDays')}</TableHead>
-                <TableHead className="w-[90px] text-right">{t('rule.leadDays')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('rule.safetyDays')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('rule.batchMultiple')}</TableHead>
-                <TableHead className="w-[120px]">{t('rule.preferredSupplier')}</TableHead>
-                <TableHead className="w-[80px]">{tc('status')}</TableHead>
-                <TableHead className="w-[80px]">{tc('actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rulesLoading ? (
-                <BusinessListTableLoadingRows colSpan={9} rows={3} />
-              ) : rules.length === 0 ? (
-                <BusinessListTableEmptyRow colSpan={9} message={tc('noData')} />
-              ) : (
-                rules.map(rule => (
-                  <TableRow key={rule.id}>
-                    <TableCell className="font-mono text-sm">{rule.materialCode}</TableCell>
-                    <TableCell>
-                      <div>{rule.materialName}</div>
-                      {rule.spec && <div className="text-muted-foreground text-xs">{rule.spec}</div>}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">{rule.analysisDays}</TableCell>
-                    <TableCell className="text-right font-mono">{rule.leadDays}</TableCell>
-                    <TableCell className="text-right font-mono">{rule.safetyDays}</TableCell>
-                    <TableCell className="text-right font-mono">{rule.batchMultiple}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm truncate">{rule.supplierName || '-'}</TableCell>
-                    <TableCell>
-                      <Badge variant={rule.isEnabled ? 'default' : 'secondary'}>{rule.isEnabled ? t('rule.enabled') : t('rule.disabled')}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => handleEditRule(rule)}>
-                        <Settings className="size-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          {/* 表格区（仅此处滚动，表头 sticky） */}
+          <div className="mt-4 min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+            <BusinessListTableShell tableClassName="min-w-[900px]">
+              <TableHeader className="bg-popover sticky top-0 z-30">
+                <TableRow>
+                  <TableHead className="w-[120px]">{t('materialCode')}</TableHead>
+                  <TableHead className="w-[140px]">{t('materialName')}</TableHead>
+                  <TableHead className="w-[90px] text-right">{t('rule.analysisDays')}</TableHead>
+                  <TableHead className="w-[90px] text-right">{t('rule.leadDays')}</TableHead>
+                  <TableHead className="w-[80px] text-right">{t('rule.safetyDays')}</TableHead>
+                  <TableHead className="w-[80px] text-right">{t('rule.batchMultiple')}</TableHead>
+                  <TableHead className="w-[120px]">{t('rule.preferredSupplier')}</TableHead>
+                  <TableHead className="w-[80px]">{tc('status')}</TableHead>
+                  <TableHead className="w-[80px]">{tc('actions')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rulesLoading ? (
+                  <BusinessListTableLoadingRows colSpan={9} rows={3} />
+                ) : rules.length === 0 ? (
+                  <BusinessListTableEmptyRow colSpan={9} message={tc('noData')} />
+                ) : (
+                  rules.map(rule => (
+                    <TableRow key={rule.id}>
+                      <TableCell className="font-mono text-sm">{rule.materialCode}</TableCell>
+                      <TableCell>
+                        <div>{rule.materialName}</div>
+                        {rule.spec && <div className="text-muted-foreground text-xs">{rule.spec}</div>}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">{rule.analysisDays}</TableCell>
+                      <TableCell className="text-right font-mono">{rule.leadDays}</TableCell>
+                      <TableCell className="text-right font-mono">{rule.safetyDays}</TableCell>
+                      <TableCell className="text-right font-mono">{rule.batchMultiple}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm truncate">{rule.supplierName || '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant={rule.isEnabled ? 'default' : 'secondary'}>{rule.isEnabled ? t('rule.enabled') : t('rule.disabled')}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" onClick={() => handleEditRule(rule)}>
+                          <Settings className="size-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </BusinessListTableShell>
+          </div>
 
-          {rulesTotal > 20 && (
-            <div className="text-muted-foreground mt-2 flex items-center justify-between text-sm">
-              <span>
-                {tc('page')} {rulesPage} / {Math.ceil(rulesTotal / 20)}
-              </span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={rulesPage <= 1} onClick={() => setRulesPage(p => p - 1)}>
-                  {tc('prev')}
-                </Button>
-                <Button variant="outline" size="sm" disabled={rulesPage >= Math.ceil(rulesTotal / 20)} onClick={() => setRulesPage(p => p + 1)}>
-                  {tc('next')}
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* 分页栏（固定底部，不参与滚动） */}
+          <BusinessListTableFooter className="-mx-4 -mb-4 shrink-0 rounded-b-xl">
+            <span className="text-xs font-bold text-slate-400">{tc('totalRecords', { count: rulesTotal })}</span>
+            <PaginationControls
+              currentPage={rulesPage}
+              totalPages={Math.max(1, Math.ceil(rulesTotal / 20))}
+              onPageChange={setRulesPage}
+            />
+          </BusinessListTableFooter>
         </DialogContent>
       </Dialog>
 
