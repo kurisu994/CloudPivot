@@ -119,6 +119,14 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
         setWarehouses(warehouseItems)
         setMaterials(materialItems)
 
+        // 新建模式：默认选中原材料仓
+        if (!movementId) {
+          const rawWarehouse = warehouseItems.find(w => w.warehouseType === 'raw' && w.isEnabled)
+          if (rawWarehouse) {
+            setWarehouseId(String(rawWarehouse.id))
+          }
+        }
+
         // 若为编辑，加载单据详情
         if (movementId) {
           const detail = await getManualStockMovementDetail(movementId)

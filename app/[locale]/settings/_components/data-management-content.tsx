@@ -45,12 +45,13 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
       return
     }
     setBusyFile('backup')
+    const loadingId = toast.loading(t('backingUp'))
     try {
       await createDatabaseBackup()
-      toast.success(t('backupSuccess'))
+      toast.success(t('backupSuccess'), { id: loadingId })
       await onRefresh()
     } catch (error) {
-      toast.error(getErrorMessage(error, t('backupFailed')))
+      toast.error(getErrorMessage(error, t('backupFailed')), { id: loadingId })
     } finally {
       setBusyFile(null)
     }
@@ -71,19 +72,21 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
     if (!pendingBackupAction) return
     const { type, fileName } = pendingBackupAction
     setBusyFile(fileName)
+    const loadingMsg = type === 'restore' ? t('restoringBackup') : t('deletingBackup')
+    const loadingId = toast.loading(loadingMsg)
     try {
       if (type === 'restore') {
         await restoreDatabaseBackup(fileName)
-        toast.success(t('restoreSuccess'))
+        toast.success(t('restoreSuccess'), { id: loadingId })
       } else {
         await deleteDatabaseBackup(fileName)
-        toast.success(t('deleteBackupSuccess'))
+        toast.success(t('deleteBackupSuccess'), { id: loadingId })
         await onRefresh()
       }
       setPendingBackupAction(null)
     } catch (error) {
       const errKey = type === 'restore' ? 'restoreFailed' : 'deleteBackupFailed'
-      toast.error(getErrorMessage(error, t(errKey)))
+      toast.error(getErrorMessage(error, t(errKey)), { id: loadingId })
       throw error
     } finally {
       setBusyFile(null)
@@ -109,14 +112,6 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
               >
                 <UploadCloud className="size-4" />
                 {t('backupNow')}
-              </Button>
-              <Button
-                variant="outline"
-                disabled={!status?.backups.length}
-                className="rounded-lg px-4 py-2 text-sm font-bold"
-                onClick={() => status?.backups[0] && handleRestore(status.backups[0].fileName)}
-              >
-                {t('restoreBackup')}
               </Button>
             </div>
           </div>

@@ -336,7 +336,7 @@ pub async fn create_database_backup(
     .await
     .map_err(|e| AppError::Database(format!("查询表列表失败: {}", e)))?;
 
-    // 逐表导出为 INSERT 语句
+    // 逐表导出为 INSERT 语句（排除 GENERATED 列）
     let mut sql_content = String::new();
     sql_content.push_str("-- CloudPivot IMS 数据库备份\n");
     sql_content.push_str(&format!(
@@ -344,21 +344,66 @@ pub async fn create_database_backup(
         Local::now().format("%Y-%m-%d %H:%M:%S")
     ));
 
+    // 统一 TRUNCATE 所有业务表（CASCADE 处理潜在依赖）
+    if !tables.is_empty() {
+        sql_content.push_str("-- 清空所有业务表\n");
+        let quoted_tables = tables
+            .iter()
+            .map(|t| format!("\"{}\"", t))
+            .collect::<Vec<_>>()
+            .join(", ");
+        sql_content.push_str(&format!(
+            "TRUNCATE {} RESTART IDENTITY CASCADE;\n\n",
+            quoted_tables
+        ));
+    }
+
     for table in &tables {
-        // 使用 COPY TO STDOUT 格式导出数据
-        let rows: Vec<(String,)> =
-            sqlx::query_as(&format!("SELECT row_to_json(t)::TEXT FROM {} t", table))
-                .fetch_all(&db.pool)
-                .await
-                .unwrap_or_default();
+        // 查询该表的非 GENERATED 列
+        let columns: Vec<String> = sqlx::query_scalar::<_, String>(
+            "SELECT column_name FROM information_schema.columns \
+             WHERE table_schema = 'public' AND table_name = $1 \
+             AND is_generated = 'NEVER' AND generation_expression IS NULL \
+             ORDER BY ordinal_position",
+        )
+        .bind(table)
+        .fetch_all(&db.pool)
+        .await
+        .map_err(|e| AppError::Database(format!("查询 {} 列信息失败: {}", table, e)))?;
+
+        if columns.is_empty() {
+            continue;
+        }
+
+        // 只 SELECT 普通列导出 JSON
+        let col_select = columns
+            .iter()
+            .map(|c| format!("\"{}\"", c))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let query = format!(
+            "SELECT json_build_object({})::TEXT FROM \"{}\"",
+            columns
+                .iter()
+                .map(|c| format!("'{}', \"{}\"", c, c))
+                .collect::<Vec<_>>()
+                .join(", "),
+            table
+        );
+
+        let rows: Vec<(String,)> = sqlx::query_as(&query)
+            .fetch_all(&db.pool)
+            .await
+            .unwrap_or_default();
 
         if !rows.is_empty() {
             sql_content.push_str(&format!("-- Table: {} ({} rows)\n", table, rows.len()));
-            sql_content.push_str(&format!("DELETE FROM {};\n", table));
             for row in &rows {
                 sql_content.push_str(&format!(
-                    "INSERT INTO {} SELECT * FROM json_populate_record(NULL::{}, '{}');\n",
+                    "INSERT INTO \"{}\" ({}) SELECT {} FROM json_populate_record(NULL::\"{}\", '{}');\n",
                     table,
+                    col_select,
+                    col_select,
                     table,
                     row.0.replace('\'', "''")
                 ));
@@ -416,10 +461,10 @@ pub async fn restore_database_backup(
 
     for statement in sql_content.split(';') {
         let stmt = statement.trim();
-        if stmt.is_empty() || stmt.starts_with("--") {
+        if stmt.is_empty() {
             continue;
         }
-        // 跳过纯注释行
+        // 跳过纯注释块（所有行都是空行或注释）
         if stmt.lines().all(|line| {
             let trimmed = line.trim();
             trimmed.is_empty() || trimmed.starts_with("--")
@@ -435,6 +480,32 @@ pub async fn restore_database_backup(
             ))
         })?;
     }
+
+    // 恢复完毕后重置所有序列到对应表的 max(id)，避免后续新增记录 ID 冲突
+    let reset_sql = r#"
+        DO $$
+        DECLARE r RECORD;
+        BEGIN
+            FOR r IN
+                SELECT s.relname AS seq_name,
+                       t.relname AS table_name,
+                       a.attname AS column_name
+                FROM pg_class s
+                JOIN pg_depend d ON d.objid = s.oid
+                JOIN pg_class t ON t.oid = d.refobjid
+                JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = d.refobjsubid
+                WHERE s.relkind = 'S' AND t.relkind = 'r'
+            LOOP
+                EXECUTE format(
+                    'SELECT setval(%L, COALESCE((SELECT MAX(%I) FROM %I), 1))',
+                    r.seq_name, r.column_name, r.table_name
+                );
+            END LOOP;
+        END $$
+    "#;
+    tx.execute(sqlx::raw_sql(reset_sql))
+        .await
+        .map_err(|e| AppError::Database(format!("重置序列失败: {}", e)))?;
 
     tx.commit()
         .await
