@@ -70,7 +70,7 @@
       "enableSuccess": "User enabled",
       "disableSuccess": "User disabled",
       "unlockSuccess": "User unlocked",
-      "fieldRequired": "Please fill in required fields",
+      "fieldRequired": "{field} is required",
       "selectRole": "Select Role",
       "createUserDesc": "New user will have default password abc12345 and must change it on first login",
       "editUserDesc": "Edit user profile and role assignment",

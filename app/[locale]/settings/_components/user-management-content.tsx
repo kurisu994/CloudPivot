@@ -68,6 +68,7 @@ export function UserManagementContent() {
   const [formEmail, setFormEmail] = useState('')
   const [formPhone, setFormPhone] = useState('')
   const [formRemark, setFormRemark] = useState('')
+  const [formErrors, setFormErrors] = useState<{ username?: string; displayName?: string; role?: string }>({})
 
   // 确认弹窗
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -118,10 +119,11 @@ export function UserManagementContent() {
     setEditingUser(null)
     setFormUsername('')
     setFormDisplayName('')
-    setFormRoleId(roles.find(r => r.code === 'operator')?.id ?? roles[0]?.id ?? null)
+    setFormRoleId(roles.find(r => r.code === 'viewer')?.id ?? roles[0]?.id ?? null)
     setFormEmail('')
     setFormPhone('')
     setFormRemark('')
+    setFormErrors({})
     setDialogOpen(true)
   }
 
@@ -134,15 +136,21 @@ export function UserManagementContent() {
     setFormEmail(user.email ?? '')
     setFormPhone(user.phone ?? '')
     setFormRemark('')
+    setFormErrors({})
     setDialogOpen(true)
   }
 
   /** 保存用户 */
   const handleSave = async () => {
-    if (!formUsername.trim() || !formDisplayName.trim() || !formRoleId) {
-      toast.error(t('fieldRequired'))
+    const errors: typeof formErrors = {}
+    if (!formUsername.trim()) errors.username = t('fieldRequired', { field: t('username') })
+    if (!formDisplayName.trim()) errors.displayName = t('fieldRequired', { field: t('displayName') })
+    if (!formRoleId) errors.role = t('fieldRequired', { field: t('role') })
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors)
       return
     }
+    setFormErrors({})
 
     setSaving(true)
     try {
@@ -150,7 +158,7 @@ export function UserManagementContent() {
         id: editingUser?.id,
         username: formUsername.trim(),
         displayName: formDisplayName.trim(),
-        roleId: formRoleId,
+        roleId: formRoleId!,
         email: formEmail.trim() || null,
         phone: formPhone.trim() || null,
         remark: formRemark.trim() || null,
@@ -436,24 +444,54 @@ export function UserManagementContent() {
           <div className="grid gap-4 py-4">
             {/* 用户名 */}
             <div className="grid gap-2">
-              <Label>{t('username')}</Label>
+              <Label className="flex items-center gap-1">
+                {t('username')}
+                <span className="text-red-500">*</span>
+              </Label>
               <Input
                 value={formUsername}
-                onChange={e => setFormUsername(e.target.value)}
+                onChange={e => {
+                  setFormUsername(e.target.value)
+                  if (formErrors.username) setFormErrors(prev => ({ ...prev, username: undefined }))
+                }}
                 disabled={!!editingUser}
                 placeholder={t('usernamePlaceholder')}
+                aria-invalid={!!formErrors.username}
               />
+              {formErrors.username && <p className="text-destructive text-xs font-medium">{formErrors.username}</p>}
             </div>
             {/* 显示名 */}
             <div className="grid gap-2">
-              <Label>{t('displayName')}</Label>
-              <Input value={formDisplayName} onChange={e => setFormDisplayName(e.target.value)} placeholder={t('displayNamePlaceholder')} />
+              <Label className="flex items-center gap-1">
+                {t('displayName')}
+                <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                value={formDisplayName}
+                onChange={e => {
+                  setFormDisplayName(e.target.value)
+                  if (formErrors.displayName) setFormErrors(prev => ({ ...prev, displayName: undefined }))
+                }}
+                placeholder={t('displayNamePlaceholder')}
+                aria-invalid={!!formErrors.displayName}
+              />
+              {formErrors.displayName && <p className="text-destructive text-xs font-medium">{formErrors.displayName}</p>}
             </div>
             {/* 角色 */}
             <div className="grid gap-2">
-              <Label>{t('role')}</Label>
-              <Select value={formRoleId ? String(formRoleId) : ''} onValueChange={v => setFormRoleId(v ? Number(v) : null)} items={roleFormOptions}>
-                <SelectTrigger>
+              <Label className="flex items-center gap-1">
+                {t('role')}
+                <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formRoleId ? String(formRoleId) : ''}
+                onValueChange={v => {
+                  setFormRoleId(v ? Number(v) : null)
+                  if (formErrors.role) setFormErrors(prev => ({ ...prev, role: undefined }))
+                }}
+                items={roleFormOptions}
+              >
+                <SelectTrigger aria-invalid={!!formErrors.role}>
                   <SelectValue placeholder={t('selectRole')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -464,6 +502,7 @@ export function UserManagementContent() {
                   ))}
                 </SelectContent>
               </Select>
+              {formErrors.role && <p className="text-destructive text-xs font-medium">{formErrors.role}</p>}
             </div>
             {/* 邮箱 */}
             <div className="grid gap-2">

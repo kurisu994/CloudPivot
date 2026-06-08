@@ -70,7 +70,7 @@
       "enableSuccess": "用户已启用",
       "disableSuccess": "用户已禁用",
       "unlockSuccess": "用户已解锁",
-      "fieldRequired": "请填写必填项",
+      "fieldRequired": "{field}不能为空",
       "selectRole": "选择角色",
       "createUserDesc": "新用户将使用初始密码 abc12345，首次登录需修改",
       "editUserDesc": "修改用户基本信息与角色",

@@ -70,7 +70,7 @@
       "enableSuccess": "Đã bật người dùng",
       "disableSuccess": "Đã tắt người dùng",
       "unlockSuccess": "Đã mở khóa người dùng",
-      "fieldRequired": "Vui lòng điền các trường bắt buộc",
+      "fieldRequired": "{field} không được để trống",
       "selectRole": "Chọn vai trò",
       "createUserDesc": "Người dùng mới sẽ có mật khẩu mặc định abc12345, phải đổi khi đăng nhập lần đầu",
       "editUserDesc": "Chỉnh sửa thông tin cơ bản và vai trò người dùng",

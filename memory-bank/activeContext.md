@@ -6,6 +6,7 @@
 
 ## 最近完成的工作
 
+- **用户管理新建/编辑弹窗体验完善**：必填项 Label 加红色 `*` 标识；保存校验由 toast 改为字段下方内联红字（`text-destructive`），输入即清错；`messages/{zh,en,vi}/settings.json` 中 `fieldRequired` 改为带 `{field}` 占位符的参数化文案；新建用户默认角色由 operator 改为 viewer
 - **补货策略配置弹窗改造**：策略配置弹窗接入全站通用的 `BusinessListTableShell` + `PaginationControls`，弹窗内搜索/表头/分页均固定，仅表格行滚动；宽度放宽至 `max-w-6xl`，9 列字段不再被挤压
 - **仪表盘日期窗口本地化**：销售排行、采购趋势、销售趋势三个组件改用 `formatLocalDate`/`addDays` 生成近 30 天范围，修复 UTC+7 凌晨时段的整体偏移
 - **自由出入库优化**：自由出入库确认过账时新增库存不足批量预检与精确提示，编辑页明细表重构为 shadcn Table 组件
