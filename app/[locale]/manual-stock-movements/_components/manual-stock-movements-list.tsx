@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, CheckSquare, Edit, Eye, Plus, RotateCcw, Search, Trash2 } from 'lucide-react'
+import { AlertTriangle, CheckSquare, Edit, Eye, Plus, Printer, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -43,9 +43,10 @@ const OUTBOUND_TYPES = [
 interface ManualStockMovementsListProps {
   onNew: () => void
   onEdit: (id: number) => void
+  onPrint: (id: number) => void
 }
 
-export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovementsListProps) {
+export function ManualStockMovementsList({ onNew, onEdit, onPrint }: ManualStockMovementsListProps) {
   const t = useTranslations()
   const tc = useTranslations('common')
 
@@ -459,15 +460,26 @@ export function ManualStockMovementsList({ onNew, onEdit }: ManualStockMovements
                           </Button>
                         </>
                       ) : (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-slate-600 hover:text-slate-700 hover:bg-slate-50"
-                          onClick={() => onEdit(item.id)}
-                          title={t('manualStockMovements.viewDetail')}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-slate-600 hover:text-slate-700 hover:bg-slate-50"
+                            onClick={() => onEdit(item.id)}
+                            title={t('manualStockMovements.viewDetail')}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() => onPrint(item.id)}
+                            title={t('manualStockMovements.printMovement')}
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </td>

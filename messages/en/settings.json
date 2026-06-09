@@ -193,6 +193,7 @@
       "paperA4": "A4 (210x297mm)",
       "paperA5": "A5 (148x210mm)",
       "templates": {
+        "manualStockMovement": "Manual Stock Movement",
         "purchaseOrder": "Purchase Order",
         "purchaseReceipt": "Purchase Receipt",
         "purchaseReturn": "Purchase Return",
@@ -202,6 +203,29 @@
         "stockCheck": "Stock Check",
         "stockTransfer": "Stock Transfer",
         "productionOrder": "Production Order"
+      },
+      "customized": "Customized",
+      "editTemplate": "Edit Template",
+      "previewMissingData": "No datasource registered for this template; preview unavailable",
+      "previewMockNote": "Preview uses mock data",
+      "saveSuccess": "Settings saved",
+      "saveFailed": "Save failed",
+      "backToSettings": "Back to Settings",
+      "availableFields": "Available Fields",
+      "allFieldsUsed": "All fields are already added",
+      "columnOrder": "Column Order",
+      "noColumnsHint": "No columns yet, add fields from the left panel",
+      "columnProperties": "Column Properties",
+      "selectColumnHint": "Select a column to edit",
+      "columnField": "Field",
+      "columnVisible": "Visible",
+      "columnWidth": "Width",
+      "columnAlign": "Align",
+      "chars": "chars",
+      "align": {
+        "left": "Left",
+        "center": "Center",
+        "right": "Right"
       }
     },
     "appearance": {

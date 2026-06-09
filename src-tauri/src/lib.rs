@@ -298,6 +298,12 @@ pub fn run() {
             commands::manual_stock_movement::save_manual_stock_movement,
             commands::manual_stock_movement::confirm_manual_stock_movement,
             commands::manual_stock_movement::delete_manual_stock_movement,
+            // 打印模板
+            commands::print_template::get_print_template,
+            commands::print_template::list_print_templates,
+            commands::print_template::save_print_template,
+            commands::print_template::reset_print_template_to_default,
+            commands::print_template::log_print_event,
             // 库存盘点
             commands::inventory::get_stock_checks,
             commands::inventory::get_stock_check_detail,

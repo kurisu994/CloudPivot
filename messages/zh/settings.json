@@ -193,6 +193,7 @@
       "paperA4": "A4 (210x297mm)",
       "paperA5": "A5 (148x210mm)",
       "templates": {
+        "manualStockMovement": "自由出入库单",
         "purchaseOrder": "采购订单",
         "purchaseReceipt": "采购入库单",
         "purchaseReturn": "采购退货单",
@@ -202,6 +203,29 @@
         "stockCheck": "库存盘点单",
         "stockTransfer": "库存调拨单",
         "productionOrder": "生产工单"
+      },
+      "customized": "已自定义",
+      "editTemplate": "编辑模板",
+      "previewMissingData": "暂无该模板的数据源，预览不可用",
+      "previewMockNote": "预览使用示例数据",
+      "saveSuccess": "设置已保存",
+      "saveFailed": "保存失败",
+      "backToSettings": "返回设置",
+      "availableFields": "可用字段",
+      "allFieldsUsed": "所有字段都已加入",
+      "columnOrder": "列顺序",
+      "noColumnsHint": "暂无列，请从左侧添加字段",
+      "columnProperties": "列属性",
+      "selectColumnHint": "请先选择一列",
+      "columnField": "字段",
+      "columnVisible": "可见",
+      "columnWidth": "列宽",
+      "columnAlign": "对齐",
+      "chars": "字符",
+      "align": {
+        "left": "左",
+        "center": "中",
+        "right": "右"
       }
     },
     "appearance": {

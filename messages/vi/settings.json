@@ -193,6 +193,7 @@
       "paperA4": "A4 (210x297mm)",
       "paperA5": "A5 (148x210mm)",
       "templates": {
+        "manualStockMovement": "Phiếu xuất nhập tự do",
         "purchaseOrder": "Đơn mua hàng",
         "purchaseReceipt": "Phiếu nhập mua hàng",
         "purchaseReturn": "Phiếu trả hàng mua",
@@ -202,6 +203,29 @@
         "stockCheck": "Phiếu kiểm kho",
         "stockTransfer": "Phiếu chuyển kho",
         "productionOrder": "Lệnh sản xuất"
+      },
+      "customized": "Đã tuỳ chỉnh",
+      "editTemplate": "Sửa mẫu",
+      "previewMissingData": "Mẫu này chưa có nguồn dữ liệu, không thể xem trước",
+      "previewMockNote": "Xem trước với dữ liệu mẫu",
+      "saveSuccess": "Đã lưu cài đặt",
+      "saveFailed": "Lưu thất bại",
+      "backToSettings": "Quay lại cài đặt",
+      "availableFields": "Trường có thể thêm",
+      "allFieldsUsed": "Tất cả trường đã được thêm",
+      "columnOrder": "Thứ tự cột",
+      "noColumnsHint": "Chưa có cột, thêm trường từ bên trái",
+      "columnProperties": "Thuộc tính cột",
+      "selectColumnHint": "Chọn một cột để chỉnh",
+      "columnField": "Trường",
+      "columnVisible": "Hiển thị",
+      "columnWidth": "Chiều rộng",
+      "columnAlign": "Căn lề",
+      "chars": "ký tự",
+      "align": {
+        "left": "Trái",
+        "center": "Giữa",
+        "right": "Phải"
       }
     },
     "appearance": {

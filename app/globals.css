@@ -264,3 +264,169 @@ html[data-compact="true"] {
     transform: scale(1.15);
   }
 }
+
+/* ================================================================
+ * 打印样式（PrintRenderer + PrintPage 配套）
+ *
+ * 设计要点：
+ * - 14×22cm 连续三联纸 + 针式打印机
+ * - 等宽字体（中文宋体 / Noto Sans Mono CJK）
+ * - 行高锁死 4.2mm（针式步距 1/6 inch = 4.23mm）
+ * - 字号默认 10pt（v1 全局，v2 才开放档位）
+ * - 纯黑、无圆角、无大面积底色（针式打不出灰度）
+ * ================================================================ */
+@page {
+  size: 14cm 22cm;
+  margin: 5mm 5mm 5mm 5mm;
+}
+
+:root {
+  --print-font-family: "SimSun", "宋体", "Noto Sans Mono CJK SC", "Noto Sans Mono CJK", monospace;
+  --print-line-height: 4.2mm;
+  --print-font-size: 10pt;
+}
+
+/* 屏幕预览时模拟打印纸张 */
+.print-page {
+  background: white;
+  color: black;
+  font-family: var(--print-font-family);
+  font-size: var(--print-font-size);
+  line-height: var(--print-line-height);
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.print-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 页眉 */
+.print-header {
+  border-bottom: 1px solid black;
+  padding-bottom: 1mm;
+  margin-bottom: 1mm;
+}
+.print-header-top {
+  text-align: center;
+  margin-bottom: 1mm;
+}
+.print-company-name {
+  font-size: 9pt;
+  margin-bottom: 1mm;
+}
+.print-title {
+  font-size: 12pt;
+  font-weight: bold;
+  margin: 0;
+  letter-spacing: 0.5mm;
+}
+.print-header-grid {
+  display: flex;
+  justify-content: space-between;
+  gap: 4mm;
+}
+.print-header-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5mm;
+}
+.print-header-col-right {
+  text-align: right;
+}
+.print-header-field {
+  display: inline-block;
+}
+.print-header-label {
+  font-weight: normal;
+}
+.print-header-value {
+  font-weight: normal;
+}
+
+/* 表格 */
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  flex: 1;
+}
+.print-table th,
+.print-table td {
+  border: 1px solid black;
+  padding: 0.5mm 1mm;
+  font-size: var(--print-font-size);
+  line-height: var(--print-line-height);
+  vertical-align: middle;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.print-th {
+  font-weight: bold;
+  background: white; /* 针式不能上色 */
+}
+.print-row {
+  break-inside: avoid;     /* 跨页不在行中间断 */
+  page-break-inside: avoid;
+}
+.print-table .align-left   { text-align: left; }
+.print-table .align-center { text-align: center; }
+.print-table .align-right  { text-align: right; }
+.print-empty {
+  text-align: center;
+  padding: 3mm;
+  font-style: normal;
+  color: black;
+}
+
+/* 页脚 */
+.print-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1mm;
+  padding-top: 1mm;
+  border-top: 1px solid black;
+  font-size: 9pt;
+}
+
+.print-error {
+  padding: 4mm;
+  border: 1px dashed black;
+  text-align: center;
+  font-size: 10pt;
+}
+
+/* 真正打印时：续页表头重复 + 隐藏屏幕装饰 */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    margin: 0;
+    padding: 0;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-page {
+    width: 14cm !important;
+    height: 22cm !important;
+    transform: none !important;
+    page-break-after: always;
+  }
+  .print-page:last-of-type {
+    page-break-after: auto;
+  }
+  thead {
+    display: table-header-group; /* 续页重复表头 */
+  }
+  tfoot {
+    display: table-footer-group;
+  }
+}

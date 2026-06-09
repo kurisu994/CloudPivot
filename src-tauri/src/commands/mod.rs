@@ -14,6 +14,7 @@ pub mod inventory_ops;
 pub mod manual_stock_movement;
 pub mod material;
 pub mod order_shared;
+pub mod print_template;
 pub mod production_order;
 pub mod purchase;
 pub mod replenishment;
