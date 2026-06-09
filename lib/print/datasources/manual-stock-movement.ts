@@ -124,6 +124,15 @@ export function useManualMovementPrintData(id: number | null) {
   return { data, isLoading, error }
 }
 
+/** snake_case 业务类型枚举 → PascalCase（用于拼 i18n key）。
+ *  比如 other_out → OtherOut，对应 `manualStockMovements.typeOtherOut`。 */
+function toPascalCase(value: string): string {
+  return value
+    .split('_')
+    .map(w => (w ? w.charAt(0).toUpperCase() + w.slice(1) : ''))
+    .join('')
+}
+
 /** 从 detail 取页眉字段值 */
 function getHeaderValue(detail: ManualMovementDetail, fieldKey: string): string | number | null {
   switch (fieldKey) {
@@ -131,8 +140,12 @@ function getHeaderValue(detail: ManualMovementDetail, fieldKey: string): string 
       return detail.movementNo
     case 'movementDate':
       return detail.movementDate
-    case 'businessTypeLabel':
-      return detail.businessType
+    case 'businessTypeLabel': {
+      // 返回 i18n key，由 PrintRenderer 走 t.has 翻译；
+      // 翻译失败会 fallback 回原 key 字符串。
+      if (!detail.businessType) return null
+      return `manualStockMovements.type${toPascalCase(detail.businessType)}`
+    }
     case 'counterpartyName':
       return detail.counterpartyName
     case 'warehouseName':

@@ -1,0 +1,26 @@
+{
+  "print": {
+    "col": {
+      "rowIndex": "STT",
+      "materialCode": "Mã hàng",
+      "materialName": "Tên hàng",
+      "spec": "Quy cách",
+      "quantity": "Số lượng",
+      "unitName": "Đơn vị",
+      "lotNo": "Số lô",
+      "supplierBatchNo": "Lô NCC",
+      "unitCostUsd": "Đơn giá (USD)",
+      "remark": "Ghi chú"
+    },
+    "header": {
+      "movementNo": "Số phiếu",
+      "movementDate": "Ngày",
+      "businessTypeLabel": "Loại nghiệp vụ",
+      "counterpartyName": "Đối tác",
+      "warehouseName": "Kho",
+      "remark": "Ghi chú",
+      "createdByName": "Người lập",
+      "confirmedByName": "Người xác nhận"
+    }
+  }
+}

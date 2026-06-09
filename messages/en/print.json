@@ -1,0 +1,26 @@
+{
+  "print": {
+    "col": {
+      "rowIndex": "No.",
+      "materialCode": "Material Code",
+      "materialName": "Material Name",
+      "spec": "Spec",
+      "quantity": "Qty",
+      "unitName": "Unit",
+      "lotNo": "Lot No.",
+      "supplierBatchNo": "Supplier Batch",
+      "unitCostUsd": "Unit Price (USD)",
+      "remark": "Remark"
+    },
+    "header": {
+      "movementNo": "Doc No.",
+      "movementDate": "Date",
+      "businessTypeLabel": "Business Type",
+      "counterpartyName": "Counterparty",
+      "warehouseName": "Warehouse",
+      "remark": "Remark",
+      "createdByName": "Created By",
+      "confirmedByName": "Confirmed By"
+    }
+  }
+}

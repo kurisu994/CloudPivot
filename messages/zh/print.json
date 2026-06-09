@@ -1,0 +1,26 @@
+{
+  "print": {
+    "col": {
+      "rowIndex": "序号",
+      "materialCode": "产品编号",
+      "materialName": "品名",
+      "spec": "规格",
+      "quantity": "数量",
+      "unitName": "单位",
+      "lotNo": "批次号",
+      "supplierBatchNo": "供应商批号",
+      "unitCostUsd": "单价(USD)",
+      "remark": "备注"
+    },
+    "header": {
+      "movementNo": "单号",
+      "movementDate": "日期",
+      "businessTypeLabel": "业务类型",
+      "counterpartyName": "往来单位",
+      "warehouseName": "仓库",
+      "remark": "备注",
+      "createdByName": "制单人",
+      "confirmedByName": "确认人"
+    }
+  }
+}

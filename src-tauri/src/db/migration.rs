@@ -80,6 +80,11 @@ fn get_migrations() -> Vec<Migration> {
             name: "operator_restrict_perms",
             sql: include_str!("../../migrations/postgres/010_operator_restrict_perms.sql"),
         },
+        Migration {
+            version: 11,
+            name: "print_templates",
+            sql: include_str!("../../migrations/postgres/011_print_templates.sql"),
+        },
     ]
 }
 

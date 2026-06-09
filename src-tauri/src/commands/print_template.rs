@@ -124,7 +124,7 @@ fn builtin_default_config(template_key: &str) -> PrintTemplateRecord {
 /// 自由出入库的默认列配置（参考图片样式，但只用 schema 实际有的字段）
 fn default_manual_stock_movement_columns() -> JsonValue {
     serde_json::json!([
-        { "fieldKey": "rowIndex",       "label": "序号",   "widthChars": 4,  "align": "center", "visible": true },
+        { "fieldKey": "rowIndex",       "label": "序号",   "widthChars": 6,  "align": "center", "visible": true },
         { "fieldKey": "materialCode",   "label": "产品编号", "widthChars": 12, "align": "left",   "visible": true },
         { "fieldKey": "materialName",   "label": "品名",   "widthChars": 16, "align": "left",   "visible": true },
         { "fieldKey": "spec",           "label": "规格",   "widthChars": 12, "align": "left",   "visible": true },
@@ -138,7 +138,7 @@ fn default_manual_stock_movement_columns() -> JsonValue {
 /// 自由出入库的默认页眉配置
 fn default_manual_stock_movement_header() -> JsonValue {
     serde_json::json!({
-        "title":         { "field": "businessTypeLabel", "showCompanyName": true },
+        "title":         { "field": "businessTypeLabel", "showCompanyName": false },
         "leftFields":    ["counterpartyName", "warehouseName"],
         "rightFields":   ["movementNo", "movementDate"]
     })

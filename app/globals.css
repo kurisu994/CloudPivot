@@ -304,6 +304,7 @@ html[data-compact="true"] {
   height: 100%;
   display: flex;
   flex-direction: column;
+  padding-top: 3mm;
 }
 
 /* 页眉 */
@@ -354,7 +355,17 @@ html[data-compact="true"] {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  flex: 1;
+  /* WebKit quirk：<table> 作 flex item 时 main-axis 会被隐式拉伸，
+     显式声明不拉伸；剩余空白由 .print-spacer 占位顶住 footer。 */
+  flex: 0 0 auto;
+}
+.print-table tr {
+  /* 单行明细被 tbody 撑高的兜底：行高跟随 line-height 自然计算。 */
+  height: auto;
+}
+/* 占位区：把页脚顶到 .print-page 底部，表格保持自然行高 */
+.print-spacer {
+  flex: 1 1 auto;
 }
 .print-table th,
 .print-table td {
@@ -362,10 +373,26 @@ html[data-compact="true"] {
   padding: 0.5mm 1mm;
   font-size: var(--print-font-size);
   line-height: var(--print-line-height);
-  vertical-align: middle;
+  vertical-align: top;
   overflow: hidden;
+}
+/* 表头保持单行省略 */
+.print-table th {
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+/* 单元格内容最多 3 行，超出省略；用包一层 div 应用 line-clamp，
+   因为 -webkit-line-clamp 直接放 td 会破坏 table-cell 布局。 */
+.print-cell {
+  display: -webkit-box;
+  display: box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  white-space: normal;
 }
 .print-th {
   font-weight: bold;
@@ -403,18 +430,57 @@ html[data-compact="true"] {
   font-size: 10pt;
 }
 
-/* 真正打印时：续页表头重复 + 隐藏屏幕装饰 */
+/* 屏幕态：满屏遮罩，盖住应用 layout（侧边栏 / 顶栏 / 面包屑），
+ * 让用户聚焦在打印预览。打印态退化为普通块（由 @media print 接管）。 */
+.print-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgb(241 245 249); /* slate-50 */
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+/* 真正打印时：续页表头重复 + 隐藏屏幕装饰
+ *
+ * 难点：进入打印 view 时，整个 App layout（侧边栏 / 顶栏 / 面包屑）仍挂在 DOM 上，
+ * 即便 visibility:hidden 也会贡献布局高度，导致打印多余空白页。
+ * 解法：ManualStockMovementPrint 用 React Portal 把 .print-overlay 挂到 body
+ *      直接子节点；这里 body > * 除 .print-overlay 外全部 display:none，
+ *      彻底消除 App layout 的高度贡献。
+ */
 @media print {
+  html,
   body {
     background: white !important;
     color: black !important;
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
   }
-  .no-print {
+  body > *:not(.print-overlay) {
+    display: none !important;
+  }
+  /* overlay 在打印时退化为普通块流，不再 fixed */
+  .print-overlay {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+  /* overlay 内的按钮 / 错误提示在打印时隐藏 */
+  .print-overlay .no-print,
+  .print-overlay .no-print * {
     display: none !important;
   }
   .print-page {
+    margin: 0 !important;
     width: 14cm !important;
     height: 22cm !important;
     transform: none !important;

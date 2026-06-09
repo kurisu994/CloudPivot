@@ -9,6 +9,7 @@
  * - data 取值返回 null → 显示空字符串
  * - data.items 为空 → 表格只显示表头 + 一行"无明细"提示
  */
+import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { getDatasource } from '@/lib/print/registry'
 import type { PrintGlobalConfig } from '@/lib/print/types'
@@ -35,7 +36,18 @@ function HeaderField({ label, value }: { label: string; value: string | number |
 }
 
 export function PrintRenderer({ config, data, global = DEFAULT_PRINT_GLOBAL_CONFIG }: PrintRendererProps) {
+  const t = useTranslations()
   const datasource = useMemo(() => getDatasource(config.templateKey), [config.templateKey])
+
+  /** 尝试把 i18n key 翻译成对应语言文案，找不到则返回 fallback */
+  const tryT = (key: string, fallback: string): string => {
+    if (!key) return fallback
+    try {
+      return t.has(key as Parameters<typeof t.has>[0]) ? (t(key as Parameters<typeof t>[0]) as string) : fallback
+    } catch {
+      return fallback
+    }
+  }
 
   // 已知字段 key 集合（用于 graceful skip）
   const knownFieldKeys = useMemo(() => new Set(datasource?.fields.map(f => f.key) ?? []), [datasource])
@@ -80,11 +92,15 @@ export function PrintRenderer({ config, data, global = DEFAULT_PRINT_GLOBAL_CONF
   const rightFields = headerConfig.rightFields ?? []
   const titleField = headerConfig.title?.field
 
-  // 页眉字段取值（容错）
+  // 页眉字段取值（容错 + 自动 i18n 翻译）。
+  // 部分字段（如 businessTypeLabel）从 datasource 返回的是 i18n key 字符串，
+  // 这里统一尝试翻译；翻译失败则原样返回。
   const headerValueOf = (key: string): string | number | null => {
     if (!data) return null
     try {
-      return datasource.getHeaderValue(data, key)
+      const raw = datasource.getHeaderValue(data, key)
+      if (typeof raw === 'string' && raw) return tryT(raw, raw)
+      return raw
     } catch {
       return null
     }
@@ -103,12 +119,12 @@ export function PrintRenderer({ config, data, global = DEFAULT_PRINT_GLOBAL_CONF
         <div className="print-header-grid">
           <div className="print-header-col">
             {leftFields.map(key => (
-              <HeaderField key={key} label={getFieldLabel(datasource.fields, key)} value={headerValueOf(key)} />
+              <HeaderField key={key} label={tryT(getFieldLabel(datasource.fields, key), key)} value={headerValueOf(key)} />
             ))}
           </div>
           <div className="print-header-col print-header-col-right">
             {rightFields.map(key => (
-              <HeaderField key={key} label={getFieldLabel(datasource.fields, key)} value={headerValueOf(key)} />
+              <HeaderField key={key} label={tryT(getFieldLabel(datasource.fields, key), key)} value={headerValueOf(key)} />
             ))}
           </div>
         </div>
@@ -120,7 +136,7 @@ export function PrintRenderer({ config, data, global = DEFAULT_PRINT_GLOBAL_CONF
           <tr>
             {usableColumns.map(col => (
               <th key={col.fieldKey} className={`print-th align-${col.align}`} style={{ width: `${col.widthChars}ch` }}>
-                {col.label || getFieldLabel(datasource.fields, col.fieldKey)}
+                {col.label || tryT(getFieldLabel(datasource.fields, col.fieldKey), col.fieldKey)}
               </th>
             ))}
           </tr>
@@ -137,7 +153,7 @@ export function PrintRenderer({ config, data, global = DEFAULT_PRINT_GLOBAL_CONF
               <tr key={rowIndex} className="print-row">
                 {usableColumns.map(col => (
                   <td key={col.fieldKey} className={`print-td align-${col.align}`} style={{ width: `${col.widthChars}ch` }}>
-                    {formatCell(datasource.getColumnValue(item, col.fieldKey, rowIndex))}
+                    <div className="print-cell">{formatCell(datasource.getColumnValue(item, col.fieldKey, rowIndex))}</div>
                   </td>
                 ))}
               </tr>
@@ -145,6 +161,9 @@ export function PrintRenderer({ config, data, global = DEFAULT_PRINT_GLOBAL_CONF
           )}
         </tbody>
       </table>
+
+      {/* 占位：把页脚顶到纸张底部，避免表格被拉伸 */}
+      <div className="print-spacer" aria-hidden="true" />
 
       {/* 页脚 */}
       <footer className="print-footer">
