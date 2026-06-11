@@ -118,15 +118,15 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
 
           <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-              <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('dbLocation')}</div>
+              <div className="mb-1 text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('dbLocation')}</div>
               <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{status?.dbPath ?? '-'}</div>
             </div>
             <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-              <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('dbSize')}</div>
+              <div className="mb-1 text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('dbSize')}</div>
               <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{formatBytes(status?.dbSizeBytes ?? 0)}</div>
             </div>
             <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-              <div className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('lastBackupTime')}</div>
+              <div className="mb-1 text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('lastBackupTime')}</div>
               <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{status?.lastBackupAt ?? '-'}</div>
             </div>
           </div>
@@ -148,7 +148,7 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
 
               <div className="flex items-center gap-4">
                 <div className="flex-1">
-                  <Label className="mb-1 block text-[11px] font-bold text-slate-400 uppercase">{t('backupCycle')}</Label>
+                  <Label className="mb-1 block text-[0.6875rem] font-bold text-slate-400 uppercase">{t('backupCycle')}</Label>
                   <Select defaultValue="daily" items={[{ value: 'daily', label: t('dailyBackup') }]}>
                     <SelectTrigger className="bg-white dark:bg-slate-950">
                       <SelectValue />
@@ -159,7 +159,7 @@ function DataBackupSection({ status, onRefresh }: { status: DataManagementStatus
                   </Select>
                 </div>
                 <div className="w-24">
-                  <Label className="mb-1 block text-[11px] font-bold text-slate-400 uppercase">{t('retentionCount')}</Label>
+                  <Label className="mb-1 block text-[0.6875rem] font-bold text-slate-400 uppercase">{t('retentionCount')}</Label>
                   <Input type="number" value="30" readOnly />
                 </div>
               </div>
@@ -327,12 +327,12 @@ function DataImportExportSection({ onRefresh }: { onRefresh: () => Promise<void>
           </button>
 
           <div className="flex gap-3 rounded-lg border border-amber-100 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-900/10">
-            <Info className="size-[18px] shrink-0 text-amber-600 dark:text-amber-500" />
-            <p className="text-[11px] leading-relaxed font-bold text-amber-700 dark:text-amber-500">{t('importWarning')}</p>
+            <Info className="size-[1.125rem] shrink-0 text-amber-600 dark:text-amber-500" />
+            <p className="text-[0.6875rem] leading-relaxed font-bold text-amber-700 dark:text-amber-500">{t('importWarning')}</p>
           </div>
 
           <div className="border-t border-slate-50 pt-6 dark:border-slate-800">
-            <div className="mb-2 text-[11px] font-bold tracking-widest text-slate-400 uppercase">{t('templateDownload')}</div>
+            <div className="mb-2 text-[0.6875rem] font-bold tracking-widest text-slate-400 uppercase">{t('templateDownload')}</div>
 
             <div className="space-y-1">
               <button
@@ -344,7 +344,7 @@ function DataImportExportSection({ onRefresh }: { onRefresh: () => Promise<void>
                   <FileText className="size-5 text-slate-400" />
                   {t('materialTemplate')}
                 </span>
-                <Download className="size-[18px] text-slate-400" />
+                <Download className="size-[1.125rem] text-slate-400" />
               </button>
 
               <button
@@ -356,7 +356,7 @@ function DataImportExportSection({ onRefresh }: { onRefresh: () => Promise<void>
                   <FileText className="size-5 text-slate-400" />
                   {t('inventoryTemplate')}
                 </span>
-                <Download className="size-[18px] text-slate-400" />
+                <Download className="size-[1.125rem] text-slate-400" />
               </button>
             </div>
           </div>

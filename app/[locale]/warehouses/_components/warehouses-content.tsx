@@ -146,12 +146,12 @@ export function WarehousesContent() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[140px]">{t('code')}</TableHead>
-                <TableHead className="w-[140px]">{t('name')}</TableHead>
-                <TableHead className="w-[120px]">{t('type')}</TableHead>
-                <TableHead className="w-[120px]">{t('manager')}</TableHead>
-                <TableHead className="w-[80px]">{t('status')}</TableHead>
-                <TableHead className="w-[140px]">{t('actions')}</TableHead>
+                <TableHead className="w-[8.75rem]">{t('code')}</TableHead>
+                <TableHead className="w-[8.75rem]">{t('name')}</TableHead>
+                <TableHead className="w-[7.5rem]">{t('type')}</TableHead>
+                <TableHead className="w-[7.5rem]">{t('manager')}</TableHead>
+                <TableHead className="w-[5rem]">{t('status')}</TableHead>
+                <TableHead className="w-[8.75rem]">{t('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -299,20 +299,20 @@ export function InboundExecutePage({ purchaseId, onBack }: InboundExecutePagePro
           <h3 className="text-foreground font-semibold">{t('inboundItemsTitle')}</h3>
         </div>
         <div className="overflow-x-auto">
-          <Table className="min-w-[1100px] table-fixed">
+          <Table className="min-w-[68.75rem] table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px]">#</TableHead>
-                <TableHead className="w-[90px]">{t('materialCode')}</TableHead>
-                <TableHead className="w-[140px]">{t('materialName')}</TableHead>
-                <TableHead className="w-[80px]">{t('spec')}</TableHead>
-                <TableHead className="w-[60px]">{t('unit')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('orderQuantity')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('receivedQty')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('remainingQty')}</TableHead>
-                <TableHead className="w-[100px]">{t('thisQuantity')}</TableHead>
-                <TableHead className="w-[130px]">{t('lotNo')}</TableHead>
-                <TableHead className="w-[100px] text-right">{t('amount')}</TableHead>
+                <TableHead className="w-[2.5rem]">#</TableHead>
+                <TableHead className="w-[5.625rem]">{t('materialCode')}</TableHead>
+                <TableHead className="w-[8.75rem]">{t('materialName')}</TableHead>
+                <TableHead className="w-[5rem]">{t('spec')}</TableHead>
+                <TableHead className="w-[3.75rem]">{t('unit')}</TableHead>
+                <TableHead className="w-[5rem] text-right">{t('orderQuantity')}</TableHead>
+                <TableHead className="w-[5rem] text-right">{t('receivedQty')}</TableHead>
+                <TableHead className="w-[5rem] text-right">{t('remainingQty')}</TableHead>
+                <TableHead className="w-[6.25rem]">{t('thisQuantity')}</TableHead>
+                <TableHead className="w-[8.125rem]">{t('lotNo')}</TableHead>
+                <TableHead className="w-[6.25rem] text-right">{t('amount')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

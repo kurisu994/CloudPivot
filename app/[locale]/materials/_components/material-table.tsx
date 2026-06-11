@@ -69,23 +69,23 @@ export function MaterialTable({
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell className="border-border bg-card rounded-xl border shadow-sm" tableClassName="min-w-[1120px]">
+        <BusinessListTableShell className="border-border bg-card rounded-xl border shadow-sm" tableClassName="min-w-[70rem]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className={`w-[240px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>
+              <TableHead className={`w-[15rem] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>
                 <div className="flex items-center gap-3 pl-2">
                   <Checkbox />
                   <span>{t('table.codeName')}</span>
                 </div>
               </TableHead>
-              <TableHead className="w-[96px]">{t('table.type')}</TableHead>
-              <TableHead className="w-[120px]">{t('table.category')}</TableHead>
-              <TableHead className="w-[140px]">{t('table.spec')}</TableHead>
-              <TableHead className="w-[72px] text-center">{t('table.unit')}</TableHead>
+              <TableHead className="w-[6rem]">{t('table.type')}</TableHead>
+              <TableHead className="w-[7.5rem]">{t('table.category')}</TableHead>
+              <TableHead className="w-[8.75rem]">{t('table.spec')}</TableHead>
+              <TableHead className="w-[4.5rem] text-center">{t('table.unit')}</TableHead>
               {/* 进价/售价暂时隐藏 */}
-              <TableHead className="w-[72px] text-center">{t('table.stock')}</TableHead>
-              <TableHead className="w-[96px] text-center">{t('table.status')}</TableHead>
-              {canEdit && <TableHead className="w-[144px] text-right">{t('table.operations')}</TableHead>}
+              <TableHead className="w-[4.5rem] text-center">{t('table.stock')}</TableHead>
+              <TableHead className="w-[6rem] text-center">{t('table.status')}</TableHead>
+              {canEdit && <TableHead className="w-[9rem] text-right">{t('table.operations')}</TableHead>}
             </TableRow>
           </TableHeader>
 
@@ -103,7 +103,7 @@ export function MaterialTable({
                     <div className="flex items-center gap-3 pl-2">
                       <Checkbox />
                       <div className="min-w-0">
-                        <div className="text-muted-foreground font-mono text-[10px]">{row.code}</div>
+                        <div className="text-muted-foreground font-mono text-[0.625rem]">{row.code}</div>
                         <div className="text-foreground truncate font-bold">{row.name}</div>
                       </div>
                     </div>

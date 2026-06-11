@@ -107,7 +107,7 @@ function ThemeSwitcher() {
         className="text-muted-foreground hover:bg-accent hover:text-accent-foreground flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
         title={t('header.theme')}
       >
-        <CurrentIcon className="h-[18px] w-[18px]" />
+        <CurrentIcon className="h-[1.125rem] w-[1.125rem]" />
       </button>
 
       {open && (
@@ -168,7 +168,7 @@ function UserMenu() {
       >
         <div className="flex flex-col">
           <span className="text-sm leading-none font-bold text-slate-800 dark:text-slate-100">{displayName}</span>
-          {role && <span className="mt-1 text-[10px] font-semibold tracking-wider text-slate-400">{role}</span>}
+          {role && <span className="mt-1 text-[0.625rem] font-semibold tracking-wider text-slate-400">{role}</span>}
         </div>
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800">
           <User className="h-4 w-4" />
@@ -267,7 +267,7 @@ export function Header({ onToggleSidebar }: HeaderProps) {
           <ThemeSwitcher />
           {/** 暂时先屏蔽通知和帮助 */}
           {/* <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200">
-            <Bell className="h-[18px] w-[18px]" />
+            <Bell className="h-[1.125rem] w-[1.125rem]" />
             <span className="bg-destructive absolute top-2 right-2 h-1.5 w-1.5 rounded-full" />
           </button>
 

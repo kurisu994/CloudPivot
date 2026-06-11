@@ -197,7 +197,7 @@ export function SalesOrderListPage({ onEdit, onNew }: SalesOrderListPageProps) {
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-end gap-3">
           {/* 关键词搜索 */}
-          <div className="min-w-[220px] flex-1">
+          <div className="min-w-[13.75rem] flex-1">
             <div className="relative">
               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
@@ -210,7 +210,7 @@ export function SalesOrderListPage({ onEdit, onNew }: SalesOrderListPageProps) {
             </div>
           </div>
           {/* 客户筛选 */}
-          <div className="w-[180px]">
+          <div className="w-[11.25rem]">
             <Select value={draftCustomerId} onValueChange={v => v && setDraftCustomerId(v)} items={customerItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -225,7 +225,7 @@ export function SalesOrderListPage({ onEdit, onNew }: SalesOrderListPageProps) {
             </Select>
           </div>
           {/* 状态筛选 */}
-          <div className="w-[140px]">
+          <div className="w-[8.75rem]">
             <Select value={draftStatus} onValueChange={v => v && setDraftStatus(v)} items={statusItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -240,7 +240,7 @@ export function SalesOrderListPage({ onEdit, onNew }: SalesOrderListPageProps) {
             </Select>
           </div>
           {/* 仓库筛选 */}
-          <div className="w-[160px]">
+          <div className="w-[10rem]">
             <Select value={draftWarehouseId} onValueChange={v => v && setDraftWarehouseId(v)} items={warehouseItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -262,7 +262,7 @@ export function SalesOrderListPage({ onEdit, onNew }: SalesOrderListPageProps) {
               setDraftDateFrom(from)
               setDraftDateTo(to)
             }}
-            className="w-[280px]"
+            className="w-[17.5rem]"
           />
           {/* 操作按钮 */}
           <Button variant="outline" size="sm" onClick={handleReset}>

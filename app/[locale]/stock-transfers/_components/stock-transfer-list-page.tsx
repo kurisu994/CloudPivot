@@ -142,7 +142,7 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
       {/* 筛选区 */}
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="w-[140px]">
+          <div className="w-[8.75rem]">
             <Select value={draftStatus} onValueChange={v => v && setDraftStatus(v)} items={statusItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -156,7 +156,7 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
               </SelectContent>
             </Select>
           </div>
-          <div className="w-[160px]">
+          <div className="w-[10rem]">
             <Select value={draftWarehouse} onValueChange={v => v && setDraftWarehouse(v)} items={warehouseItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -191,18 +191,18 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
 
       {/* 表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell tableClassName="min-w-[760px]">
+        <BusinessListTableShell tableClassName="min-w-[47.5rem]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
-              <TableHead className="w-[130px]">{t('transferNo')}</TableHead>
-              <TableHead className="w-[96px]">{t('fromWarehouse')}</TableHead>
-              <TableHead className="w-[96px]">{t('toWarehouse')}</TableHead>
-              <TableHead className="w-[88px]">{t('transferDate')}</TableHead>
-              <TableHead className="w-[70px]">{tc('status')}</TableHead>
-              <TableHead className="w-[64px] text-right">{t('itemCount')}</TableHead>
-              <TableHead className="w-[80px]">{t('createdBy')}</TableHead>
-              <TableHead className="w-[88px]">{t('createdAt')}</TableHead>
-              <TableHead className="w-[96px]">{tc('actions')}</TableHead>
+              <TableHead className="w-[8.125rem]">{t('transferNo')}</TableHead>
+              <TableHead className="w-[6rem]">{t('fromWarehouse')}</TableHead>
+              <TableHead className="w-[6rem]">{t('toWarehouse')}</TableHead>
+              <TableHead className="w-[5.5rem]">{t('transferDate')}</TableHead>
+              <TableHead className="w-[4.375rem]">{tc('status')}</TableHead>
+              <TableHead className="w-[4rem] text-right">{t('itemCount')}</TableHead>
+              <TableHead className="w-[5rem]">{t('createdBy')}</TableHead>
+              <TableHead className="w-[5.5rem]">{t('createdAt')}</TableHead>
+              <TableHead className="w-[6rem]">{tc('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

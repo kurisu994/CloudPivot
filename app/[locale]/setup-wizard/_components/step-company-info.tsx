@@ -53,7 +53,7 @@ export function StepCompanyInfo({ data, onChange, onNext, isLoading, error }: St
           />
           <span className="text-2xl font-black tracking-tight text-[#294985] uppercase dark:text-slate-100">CloudPivot IMS</span>
         </div>
-        <p className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">
+        <p className="text-[0.625rem] font-bold tracking-[0.2em] text-slate-400 uppercase">
           {t('title')} — {t('stepIndicator', { current: 1, total: 3 })}
         </p>
       </div>
@@ -73,7 +73,7 @@ export function StepCompanyInfo({ data, onChange, onNext, isLoading, error }: St
           <div className="space-y-8">
             {/* 企业名称 */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-[10px] font-bold tracking-widest text-[#294985] uppercase dark:text-blue-300">
+              <label className="flex items-center gap-2 text-[0.625rem] font-bold tracking-widest text-[#294985] uppercase dark:text-blue-300">
                 <Building2 className="size-4" />
                 {t('companyName')}
               </label>
@@ -90,7 +90,7 @@ export function StepCompanyInfo({ data, onChange, onNext, isLoading, error }: St
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
               {/* 默认语言 */}
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-[10px] font-bold tracking-widest text-[#294985] uppercase dark:text-blue-300">
+                <label className="flex items-center gap-2 text-[0.625rem] font-bold tracking-widest text-[#294985] uppercase dark:text-blue-300">
                   <Globe className="size-4" />
                   {t('defaultLanguage')}
                 </label>
@@ -110,7 +110,7 @@ export function StepCompanyInfo({ data, onChange, onNext, isLoading, error }: St
 
               {/* 核算币种（固定） */}
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-[10px] font-bold tracking-widest text-[#294985] uppercase dark:text-blue-300">
+                <label className="flex items-center gap-2 text-[0.625rem] font-bold tracking-widest text-[#294985] uppercase dark:text-blue-300">
                   <Lock className="size-3.5" />
                   {t('baseCurrency')}
                 </label>
@@ -124,8 +124,8 @@ export function StepCompanyInfo({ data, onChange, onNext, isLoading, error }: St
             {/* 进度条 */}
             <div className="pt-4">
               <div className="mb-3 flex items-end justify-between">
-                <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">{t('setupProgress')}</span>
-                <span className="text-[10px] font-bold tracking-widest text-[#294985] uppercase dark:text-blue-300">33% {t('complete')}</span>
+                <span className="text-[0.625rem] font-bold tracking-widest text-slate-400 uppercase">{t('setupProgress')}</span>
+                <span className="text-[0.625rem] font-bold tracking-widest text-[#294985] uppercase dark:text-blue-300">33% {t('complete')}</span>
               </div>
               <div className="flex gap-2">
                 <div className="h-1.5 flex-1 rounded-full bg-[#294985]" />
@@ -157,7 +157,7 @@ export function StepCompanyInfo({ data, onChange, onNext, isLoading, error }: St
         {/* 底部安全提示 */}
         <div className="flex items-center gap-3 border-t border-slate-100 bg-slate-50/50 px-10 py-5 dark:border-slate-800 dark:bg-slate-900/50">
           <ShieldCheck className="size-4 text-[#294985] dark:text-blue-400" />
-          <p className="text-[11px] font-semibold tracking-wide text-slate-500 dark:text-slate-400">{t('securityNote')}</p>
+          <p className="text-[0.6875rem] font-semibold tracking-wide text-slate-500 dark:text-slate-400">{t('securityNote')}</p>
         </div>
       </Card>
     </div>

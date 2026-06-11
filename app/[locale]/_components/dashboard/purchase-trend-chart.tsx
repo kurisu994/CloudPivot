@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import { useDisplayPreferences } from '@/components/providers/display-preferences-provider'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { getPurchaseReportSummary } from '@/lib/tauri'
@@ -17,6 +18,7 @@ interface TrendPoint {
 export function PurchaseTrendChart({ className }: { className?: string }) {
   const t = useTranslations('dashboard')
   const tc = useTranslations('common')
+  const { largeFont } = useDisplayPreferences()
   const [data, setData] = useState<TrendPoint[]>([])
   const [error, setError] = useState(false)
 
@@ -51,9 +53,9 @@ export function PurchaseTrendChart({ className }: { className?: string }) {
       </CardHeader>
       <CardContent>
         {error ? (
-          <p className="text-muted-foreground flex h-[250px] items-center justify-center text-sm">{tc('loadFailed')}</p>
+          <p className="text-muted-foreground flex h-[15.625rem] items-center justify-center text-sm">{tc('loadFailed')}</p>
         ) : (
-          <ChartContainer config={purchaseConfig} className="h-[250px] min-h-[250px] w-full min-w-full">
+          <ChartContainer config={purchaseConfig} className="h-[15.625rem] min-h-[15.625rem] w-full min-w-full">
             <AreaChart accessibilityLayer data={data} margin={{ top: 10, left: 0, right: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="fillPurchase" x1="0" y1="0" x2="0" y2="1">
@@ -62,16 +64,23 @@ export function PurchaseTrendChart({ className }: { className?: string }) {
                 </linearGradient>
               </defs>
               <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
-              <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={12} fontSize={11} className="font-bold text-slate-400" />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={12}
+                fontSize={largeFont ? 14 : 11}
+                className="font-bold text-slate-400"
+              />
               <YAxis
                 tickLine={false}
                 axisLine={false}
                 tickMargin={12}
-                fontSize={11}
+                fontSize={largeFont ? 14 : 11}
                 className="text-slate-400"
                 tickFormatter={val => formatDashboardUsdCompact(Number(val))}
               />
-              <ChartTooltip cursor={false} content={<ChartTooltipContent className="min-w-[150px]" />} />
+              <ChartTooltip cursor={false} content={<ChartTooltipContent className="min-w-[9.375rem]" />} />
               <Area
                 type="monotone"
                 dataKey="value"

@@ -191,9 +191,9 @@
 
 /* 默认表格/列表尺寸变量 */
 :root {
-  --table-row-height: 48px;
-  --list-item-padding-y: 12px;
-  --list-item-padding-x: 16px;
+  --table-row-height: 3rem;
+  --list-item-padding-y: 0.75rem;
+  --list-item-padding-x: 1rem;
 }
 
 /* 大字体模式 — 根 font-size 放大，rem 单位全局生效 */

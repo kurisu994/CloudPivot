@@ -209,7 +209,7 @@ export function StockMovementsListPage() {
         {/* 筛选区 */}
         <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
           <div className="flex flex-wrap items-end gap-3">
-            <div className="min-w-[220px] flex-1">
+            <div className="min-w-[13.75rem] flex-1">
               <div className="relative">
                 <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                 <Input
@@ -221,7 +221,7 @@ export function StockMovementsListPage() {
                 />
               </div>
             </div>
-            <div className="w-[160px]">
+            <div className="w-[10rem]">
               <Select value={draftWarehouse} onValueChange={v => v && setDraftWarehouse(v)} items={warehouseItems}>
                 <SelectTrigger>
                   <SelectValue />
@@ -235,7 +235,7 @@ export function StockMovementsListPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-[140px]">
+            <div className="w-[8.75rem]">
               <Select value={draftType} onValueChange={v => v && setDraftType(v)} items={typeItems}>
                 <SelectTrigger>
                   <SelectValue />
@@ -249,7 +249,7 @@ export function StockMovementsListPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-[150px]">
+            <div className="w-[9.375rem]">
               <Select value={draftSource} onValueChange={v => v && setDraftSource(v)} items={sourceItems}>
                 <SelectTrigger>
                   <SelectValue />
@@ -263,7 +263,7 @@ export function StockMovementsListPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-[150px]">
+            <div className="w-[9.375rem]">
               <Select value={draftBusinessType} onValueChange={v => v && setDraftBusinessType(v)} items={businessTypeItems}>
                 <SelectTrigger>
                   <SelectValue />
@@ -284,7 +284,7 @@ export function StockMovementsListPage() {
                 setDraftDateFrom(from)
                 setDraftDateTo(to)
               }}
-              className="w-[280px]"
+              className="w-[17.5rem]"
             />
             <Button variant="outline" size="sm" onClick={handleReset}>
               <RotateCcw data-icon="inline-start" />
@@ -299,20 +299,20 @@ export function StockMovementsListPage() {
 
         {/* 表格 */}
         <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-          <BusinessListTableShell tableClassName="min-w-[1100px]">
+          <BusinessListTableShell tableClassName="min-w-[68.75rem]">
             <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
               <TableRow>
-                <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[180px]`}>{t('transactionNo')}</TableHead>
-                <TableHead className="w-[88px]">{t('transactionDate')}</TableHead>
-                <TableHead className="w-[96px]">{t('transactionType')}</TableHead>
-                <TableHead className="w-[96px]">{ti('materialCode')}</TableHead>
-                <TableHead className="w-[120px]">{ti('materialName')}</TableHead>
-                <TableHead className="w-[80px]">{ti('warehouse')}</TableHead>
-                <TableHead className="w-[72px] text-right">{t('changeQty')}</TableHead>
-                <TableHead className="w-[64px] text-right">{t('beforeQty')}</TableHead>
-                <TableHead className="w-[64px] text-right">{t('afterQty')}</TableHead>
-                <TableHead className="w-[130px]">{t('relatedOrderNo')}</TableHead>
-                <TableHead className="w-[120px]">{t('source')}</TableHead>
+                <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[11.25rem]`}>{t('transactionNo')}</TableHead>
+                <TableHead className="w-[5.5rem]">{t('transactionDate')}</TableHead>
+                <TableHead className="w-[6rem]">{t('transactionType')}</TableHead>
+                <TableHead className="w-[6rem]">{ti('materialCode')}</TableHead>
+                <TableHead className="w-[7.5rem]">{ti('materialName')}</TableHead>
+                <TableHead className="w-[5rem]">{ti('warehouse')}</TableHead>
+                <TableHead className="w-[4.5rem] text-right">{t('changeQty')}</TableHead>
+                <TableHead className="w-[4rem] text-right">{t('beforeQty')}</TableHead>
+                <TableHead className="w-[4rem] text-right">{t('afterQty')}</TableHead>
+                <TableHead className="w-[8.125rem]">{t('relatedOrderNo')}</TableHead>
+                <TableHead className="w-[7.5rem]">{t('source')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

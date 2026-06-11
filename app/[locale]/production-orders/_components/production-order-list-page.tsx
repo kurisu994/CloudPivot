@@ -164,7 +164,7 @@ export function ProductionOrderListPage({ onEdit, onNew }: Props) {
             setDateTo(to)
             setPage(1)
           }}
-          className="w-[280px]"
+          className="w-[17.5rem]"
         />
       </div>
 

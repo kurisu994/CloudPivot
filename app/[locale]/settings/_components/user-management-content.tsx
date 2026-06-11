@@ -269,12 +269,12 @@ export function UserManagementContent() {
           <Table>
             <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
               <TableRow className="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50">
-                <TableHead className="px-6 py-3.5 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('username')}</TableHead>
-                <TableHead className="px-6 py-3.5 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('displayName')}</TableHead>
-                <TableHead className="px-6 py-3.5 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('role')}</TableHead>
-                <TableHead className="px-6 py-3.5 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('status')}</TableHead>
-                <TableHead className="px-6 py-3.5 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('lastLoginAt')}</TableHead>
-                <TableHead className="px-6 py-3.5 text-right text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                <TableHead className="px-6 py-3.5 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('username')}</TableHead>
+                <TableHead className="px-6 py-3.5 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('displayName')}</TableHead>
+                <TableHead className="px-6 py-3.5 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('role')}</TableHead>
+                <TableHead className="px-6 py-3.5 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('status')}</TableHead>
+                <TableHead className="px-6 py-3.5 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('lastLoginAt')}</TableHead>
+                <TableHead className="px-6 py-3.5 text-right text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">
                   {tc('actions')}
                 </TableHead>
               </TableRow>
@@ -590,7 +590,7 @@ function RoleBadge({ role, t }: { role: string; t: ReturnType<typeof useTranslat
     viewer: 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700',
   }
   return (
-    <Badge variant="outline" className={cn('text-[11px] font-bold', styles[role] ?? styles.viewer)}>
+    <Badge variant="outline" className={cn('text-[0.6875rem] font-bold', styles[role] ?? styles.viewer)}>
       {getRoleLabel(role, t)}
     </Badge>
   )
@@ -602,7 +602,7 @@ function StatusBadge({ isEnabled, isLocked, t }: { isEnabled: boolean; isLocked:
     return (
       <Badge
         variant="outline"
-        className="border-red-200 bg-red-50 text-[11px] font-bold text-red-600 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400"
+        className="border-red-200 bg-red-50 text-[0.6875rem] font-bold text-red-600 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400"
       >
         {t('locked')}
       </Badge>
@@ -612,7 +612,7 @@ function StatusBadge({ isEnabled, isLocked, t }: { isEnabled: boolean; isLocked:
     return (
       <Badge
         variant="outline"
-        className="border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+        className="border-slate-200 bg-slate-50 text-[0.6875rem] font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
       >
         {t('disabled')}
       </Badge>
@@ -621,7 +621,7 @@ function StatusBadge({ isEnabled, isLocked, t }: { isEnabled: boolean; isLocked:
   return (
     <Badge
       variant="outline"
-      className="border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-600 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400"
+      className="border-emerald-200 bg-emerald-50 text-[0.6875rem] font-bold text-emerald-600 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400"
     >
       {t('enabled')}
     </Badge>

@@ -318,22 +318,22 @@ export function OutboundExecutePage({ salesId, onBack }: OutboundExecutePageProp
           <h3 className="text-foreground font-semibold">{t('outboundItemsTitle')}</h3>
         </div>
         <div className="overflow-x-auto">
-          <Table className="min-w-[1200px] table-fixed">
+          <Table className="min-w-[75rem] table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px]">#</TableHead>
-                <TableHead className="w-[90px]">{t('materialCode')}</TableHead>
-                <TableHead className="w-[130px]">{t('materialName')}</TableHead>
-                <TableHead className="w-[70px]">{t('spec')}</TableHead>
-                <TableHead className="w-[50px]">{t('unit')}</TableHead>
-                <TableHead className="w-[70px] text-right">{t('orderQuantity')}</TableHead>
-                <TableHead className="w-[70px] text-right">{t('shippedQty')}</TableHead>
-                <TableHead className="w-[70px] text-right">{t('remainingQty')}</TableHead>
-                <TableHead className="w-[70px] text-right">{t('availableStock')}</TableHead>
-                <TableHead className="w-[90px]">{t('thisQuantity')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('unitPrice')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('standardCost')}</TableHead>
-                <TableHead className="w-[90px] text-right">{t('amount')}</TableHead>
+                <TableHead className="w-[2.5rem]">#</TableHead>
+                <TableHead className="w-[5.625rem]">{t('materialCode')}</TableHead>
+                <TableHead className="w-[8.125rem]">{t('materialName')}</TableHead>
+                <TableHead className="w-[4.375rem]">{t('spec')}</TableHead>
+                <TableHead className="w-[3.125rem]">{t('unit')}</TableHead>
+                <TableHead className="w-[4.375rem] text-right">{t('orderQuantity')}</TableHead>
+                <TableHead className="w-[4.375rem] text-right">{t('shippedQty')}</TableHead>
+                <TableHead className="w-[4.375rem] text-right">{t('remainingQty')}</TableHead>
+                <TableHead className="w-[4.375rem] text-right">{t('availableStock')}</TableHead>
+                <TableHead className="w-[5.625rem]">{t('thisQuantity')}</TableHead>
+                <TableHead className="w-[5rem] text-right">{t('unitPrice')}</TableHead>
+                <TableHead className="w-[5rem] text-right">{t('standardCost')}</TableHead>
+                <TableHead className="w-[5.625rem] text-right">{t('amount')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -75,7 +75,7 @@ function BasicInfoCard({
       <div className="grid grid-cols-1 gap-x-12 gap-y-8 md:grid-cols-2">
         {/* 企业名称 */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">{t('companyName')}</label>
+          <label className="text-[0.6875rem] font-bold tracking-widest text-slate-400 uppercase">{t('companyName')}</label>
           {isEditing ? (
             <Input value={data.companyName} onChange={e => onChange('companyName', e.target.value)} placeholder={t('companyName')} />
           ) : (
@@ -85,7 +85,7 @@ function BasicInfoCard({
 
         {/* 统一社会信用代码 */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">{t('taxId')}</label>
+          <label className="text-[0.6875rem] font-bold tracking-widest text-slate-400 uppercase">{t('taxId')}</label>
           {isEditing ? (
             <Input value={data.taxId} onChange={e => onChange('taxId', e.target.value)} placeholder={t('taxId')} className="font-mono" />
           ) : (
@@ -95,12 +95,12 @@ function BasicInfoCard({
 
         {/* 企业地址 */}
         <div className="space-y-1.5 md:col-span-2">
-          <label className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">{t('companyAddress')}</label>
+          <label className="text-[0.6875rem] font-bold tracking-widest text-slate-400 uppercase">{t('companyAddress')}</label>
           {isEditing ? (
             <Input value={data.address} onChange={e => onChange('address', e.target.value)} placeholder={t('companyAddress')} />
           ) : (
             <div className="flex min-h-6 items-start gap-2 text-base font-medium text-slate-900 dark:text-slate-100">
-              <MapPin className="mt-0.5 size-[18px] shrink-0 text-slate-300" />
+              <MapPin className="mt-0.5 size-[1.125rem] shrink-0 text-slate-300" />
               <span>{data.address || '—'}</span>
             </div>
           )}
@@ -108,7 +108,7 @@ function BasicInfoCard({
 
         {/* 业务类型 */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">{t('businessType')}</label>
+          <label className="text-[0.6875rem] font-bold tracking-widest text-slate-400 uppercase">{t('businessType')}</label>
           {isEditing ? (
             <Input value={data.businessType} onChange={e => onChange('businessType', e.target.value)} placeholder={t('businessType')} />
           ) : (
@@ -149,7 +149,7 @@ function DefaultRow({
       </div>
       {isEditing && options && onValueChange ? (
         <Select disabled={disabled} value={value} onValueChange={val => val && onValueChange(val)} items={options}>
-          <SelectTrigger className="h-8 w-[280px] bg-white dark:bg-slate-950">
+          <SelectTrigger className="h-8 w-[17.5rem] bg-white dark:bg-slate-950">
             <SelectValue placeholder={<span className="text-muted-foreground">{value}</span>} />
           </SelectTrigger>
           <SelectContent>
@@ -255,7 +255,7 @@ function ContactItem({
         <Icon className="size-5" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="pb-1 text-[10px] font-bold tracking-widest text-slate-400 uppercase">{label}</div>
+        <div className="pb-1 text-[0.625rem] font-bold tracking-widest text-slate-400 uppercase">{label}</div>
         {isEditing && onValueChange ? (
           <Input type={type} value={value} onChange={e => onValueChange(e.target.value)} className="h-8" />
         ) : (
@@ -321,7 +321,7 @@ function BrandAssetsCard() {
 
         <div className="text-center">
           <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{t('companyLogo')}</div>
-          <p className="mt-2 text-[10px] leading-relaxed text-slate-400">
+          <p className="mt-2 text-[0.625rem] leading-relaxed text-slate-400">
             {t('logoHintSize')}
             <br />
             {t('logoHintFormat')}

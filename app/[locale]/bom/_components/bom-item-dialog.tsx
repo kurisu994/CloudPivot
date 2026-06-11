@@ -161,7 +161,7 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px]">
+      <DialogContent className="sm:max-w-[35rem]">
         <DialogHeader>
           <DialogTitle>{isEdit ? t('actions.edit') : t('actions.addMaterial')}</DialogTitle>
         </DialogHeader>
@@ -172,7 +172,7 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
             <div className="grid gap-2">
               <Label>{t('items.materialName')} *</Label>
               <div className="relative">
-                <Search className="text-muted-foreground absolute top-2.5 left-3 size-[18px]" />
+                <Search className="text-muted-foreground absolute top-2.5 left-3 size-[1.125rem]" />
                 <Input
                   className="pl-10"
                   placeholder={t('form.searchMaterial')}
@@ -184,7 +184,7 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
                 />
               </div>
               {materialOptions.length > 0 && !selectedMaterial && (
-                <div className="border-border max-h-[200px] overflow-y-auto rounded-md border">
+                <div className="border-border max-h-[12.5rem] overflow-y-auto rounded-md border">
                   {materialOptions.map(m => (
                     <button
                       key={m.id}

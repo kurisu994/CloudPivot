@@ -27,34 +27,34 @@ function CurrentRatesSection() {
         {/* VND Card */}
         <div className="hover:border-primary/20 flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50 p-5 transition-all dark:border-slate-800 dark:bg-slate-900/50">
           <div className="flex items-start justify-between">
-            <span className="rounded bg-blue-100/60 px-2.5 py-1 text-[10px] font-bold tracking-wider text-blue-700 uppercase dark:bg-blue-900/30 dark:text-blue-400">
+            <span className="rounded bg-blue-100/60 px-2.5 py-1 text-[0.625rem] font-bold tracking-wider text-blue-700 uppercase dark:bg-blue-900/30 dark:text-blue-400">
               USD / VND
             </span>
-            <span className="text-[10px] font-medium text-slate-400">2026-03-27</span>
+            <span className="text-[0.625rem] font-medium text-slate-400">2026-03-27</span>
           </div>
           <div className="mt-4">
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-black text-slate-900 dark:text-slate-100">25,300</span>
               <span className="text-sm font-bold text-slate-500">VND</span>
             </div>
-            <div className="mt-1 text-[11px] font-medium text-slate-400">{t('vndDesc', { rate: '25,300' })}</div>
+            <div className="mt-1 text-[0.6875rem] font-medium text-slate-400">{t('vndDesc', { rate: '25,300' })}</div>
           </div>
         </div>
 
         {/* CNY Card */}
         <div className="hover:border-primary/20 flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50 p-5 transition-all dark:border-slate-800 dark:bg-slate-900/50">
           <div className="flex items-start justify-between">
-            <span className="rounded bg-red-100/60 px-2.5 py-1 text-[10px] font-bold tracking-wider text-red-700 uppercase dark:bg-red-900/30 dark:text-red-400">
+            <span className="rounded bg-red-100/60 px-2.5 py-1 text-[0.625rem] font-bold tracking-wider text-red-700 uppercase dark:bg-red-900/30 dark:text-red-400">
               USD / CNY
             </span>
-            <span className="text-[10px] font-medium text-slate-400">2026-03-27</span>
+            <span className="text-[0.625rem] font-medium text-slate-400">2026-03-27</span>
           </div>
           <div className="mt-4">
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-black text-slate-900 dark:text-slate-100">7.20</span>
               <span className="text-sm font-bold text-slate-500">CNY</span>
             </div>
-            <div className="mt-1 text-[11px] font-medium text-slate-400">{t('cnyDesc', { rate: '7.20' })}</div>
+            <div className="mt-1 text-[0.6875rem] font-medium text-slate-400">{t('cnyDesc', { rate: '7.20' })}</div>
           </div>
         </div>
       </div>
@@ -71,16 +71,16 @@ function BaseCurrencyCard() {
   return (
     <section className="border-primary bg-primary relative flex flex-col justify-between overflow-hidden rounded-xl border p-6 text-white shadow-sm lg:col-span-1">
       <div className="relative z-10">
-        <p className="mb-1 text-[10px] font-bold tracking-widest text-blue-200/80 uppercase">{t('systemBaseCurrency')}</p>
+        <p className="mb-1 text-[0.625rem] font-bold tracking-widest text-blue-200/80 uppercase">{t('systemBaseCurrency')}</p>
         <h3 className="mb-3 text-4xl font-black">USD ($)</h3>
-        <p className="mb-4 text-[12px] leading-relaxed text-blue-100/80">{t('baseCurrencyDesc')}</p>
+        <p className="mb-4 text-xs leading-relaxed text-blue-100/80">{t('baseCurrencyDesc')}</p>
       </div>
 
       <div className="relative z-10 mt-auto flex items-center gap-3 rounded-lg border border-white/10 bg-white/10 p-3 backdrop-blur-sm">
         <Info className="size-5 text-blue-300" />
         <div className="min-w-0">
-          <p className="text-[9px] font-bold tracking-wider text-blue-200 uppercase">{t('lastSync')}</p>
-          <p className="truncate text-[11px] font-medium">2026-03-27 09:00</p>
+          <p className="text-[0.5625rem] font-bold tracking-wider text-blue-200 uppercase">{t('lastSync')}</p>
+          <p className="truncate text-[0.6875rem] font-medium">2026-03-27 09:00</p>
         </div>
       </div>
 
@@ -102,17 +102,17 @@ function RateHistoryTable() {
         <h3 className="font-bold text-slate-900 dark:text-slate-100">{t('historyTitle')}</h3>
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" className="hover:text-primary h-8 w-8 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
-            <ListFilter className="size-[18px]" />
+            <ListFilter className="size-[1.125rem]" />
           </Button>
           <Button variant="ghost" size="icon" className="hover:text-primary h-8 w-8 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
-            <Download className="size-[18px]" />
+            <Download className="size-[1.125rem]" />
           </Button>
         </div>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-left">
-          <thead className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold tracking-widest text-slate-400 uppercase dark:border-slate-800 dark:bg-slate-900/50">
+          <thead className="border-b border-slate-100 bg-slate-50/50 text-[0.6875rem] font-bold tracking-widest text-slate-400 uppercase dark:border-slate-800 dark:bg-slate-900/50">
             <tr>
               <th className="px-6 py-4">{t('effectiveDate')}</th>
               <th className="px-6 py-4">{t('currencyType')}</th>
@@ -134,7 +134,7 @@ function RateHistoryTable() {
               <td className="px-6 py-4 font-black text-slate-900 dark:text-slate-200">25,300</td>
               <td className="px-6 py-4">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-[9px] font-bold text-slate-500 uppercase dark:border-slate-700 dark:bg-slate-800">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-[0.5625rem] font-bold text-slate-500 uppercase dark:border-slate-700 dark:bg-slate-800">
                     A
                   </div>
                   <span className="text-slate-600 dark:text-slate-400">admin</span>
@@ -155,7 +155,7 @@ function RateHistoryTable() {
               <td className="px-6 py-4 font-black text-slate-900 dark:text-slate-200">7.20</td>
               <td className="px-6 py-4">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-[9px] font-bold text-slate-500 uppercase dark:border-slate-700 dark:bg-slate-800">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-[0.5625rem] font-bold text-slate-500 uppercase dark:border-slate-700 dark:bg-slate-800">
                     A
                   </div>
                   <span className="text-slate-600 dark:text-slate-400">admin</span>
@@ -176,7 +176,7 @@ function RateHistoryTable() {
               <td className="px-6 py-4 font-black text-slate-900 dark:text-slate-200">7.15</td>
               <td className="px-6 py-4">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-[9px] font-bold text-slate-500 uppercase dark:border-slate-700 dark:bg-slate-800">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-[0.5625rem] font-bold text-slate-500 uppercase dark:border-slate-700 dark:bg-slate-800">
                     A
                   </div>
                   <span className="text-slate-600 dark:text-slate-400">admin</span>
@@ -189,23 +189,23 @@ function RateHistoryTable() {
       </div>
 
       <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/10 px-6 py-4 dark:border-slate-800">
-        <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('showingRecords', { count: 3 })}</span>
+        <span className="text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('showingRecords', { count: 3 })}</span>
         <div className="flex gap-1.5">
           <Button
             variant="outline"
             size="sm"
             disabled
-            className="h-8 px-3 text-[11px] font-bold text-slate-600 disabled:opacity-30 dark:border-slate-700 dark:text-slate-400"
+            className="h-8 px-3 text-[0.6875rem] font-bold text-slate-600 disabled:opacity-30 dark:border-slate-700 dark:text-slate-400"
           >
             {t('prevPage')}
           </Button>
-          <Button size="sm" className="bg-primary h-8 px-3 text-[11px] font-bold text-white shadow-sm hover:opacity-90">
+          <Button size="sm" className="bg-primary h-8 px-3 text-[0.6875rem] font-bold text-white shadow-sm hover:opacity-90">
             1
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="h-8 px-3 text-[11px] font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+            className="h-8 px-3 text-[0.6875rem] font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
           >
             {t('nextPage')}
           </Button>

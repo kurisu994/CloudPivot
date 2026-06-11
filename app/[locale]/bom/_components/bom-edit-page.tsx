@@ -501,20 +501,20 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
           </Button>
         </div>
         <div className="overflow-x-auto">
-          <Table className="min-w-[1100px] table-fixed">
+          <Table className="min-w-[68.75rem] table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px]">#</TableHead>
-                <TableHead className="w-[160px]">{t('items.materialName')}</TableHead>
-                <TableHead className="w-[100px]">{t('items.spec')}</TableHead>
-                <TableHead className="w-[60px]">{t('items.unit')}</TableHead>
-                <TableHead className="w-[90px]">{t('items.standardQty')}</TableHead>
-                <TableHead className="w-[90px]">{t('items.wastageRate')}</TableHead>
-                <TableHead className="w-[90px]">{t('items.actualQty')}</TableHead>
-                <TableHead className="w-[100px]">{t('items.unitPrice')}</TableHead>
-                <TableHead className="w-[100px]">{t('items.cost')}</TableHead>
-                <TableHead className="w-[80px]">{t('items.processStep')}</TableHead>
-                <TableHead className="w-[80px]">{t('items.actions')}</TableHead>
+                <TableHead className="w-[2.5rem]">#</TableHead>
+                <TableHead className="w-[10rem]">{t('items.materialName')}</TableHead>
+                <TableHead className="w-[6.25rem]">{t('items.spec')}</TableHead>
+                <TableHead className="w-[3.75rem]">{t('items.unit')}</TableHead>
+                <TableHead className="w-[5.625rem]">{t('items.standardQty')}</TableHead>
+                <TableHead className="w-[5.625rem]">{t('items.wastageRate')}</TableHead>
+                <TableHead className="w-[5.625rem]">{t('items.actualQty')}</TableHead>
+                <TableHead className="w-[6.25rem]">{t('items.unitPrice')}</TableHead>
+                <TableHead className="w-[6.25rem]">{t('items.cost')}</TableHead>
+                <TableHead className="w-[5rem]">{t('items.processStep')}</TableHead>
+                <TableHead className="w-[5rem]">{t('items.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -579,7 +579,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
           <h3 className="text-foreground mb-4 font-semibold">{t('demand.title')}</h3>
           <div className="mb-4 flex items-center gap-3">
             <Label>{t('demand.quantity')}</Label>
-            <Input type="number" className="w-[120px]" value={demandQty} onChange={e => setDemandQty(e.target.value)} min={1} />
+            <Input type="number" className="w-[7.5rem]" value={demandQty} onChange={e => setDemandQty(e.target.value)} min={1} />
             <span className="text-muted-foreground text-sm">{t('demand.unit')}</span>
             <Button size="sm" onClick={handleCalcDemand} disabled={demandLoading}>
               <Calculator data-icon="inline-start" />

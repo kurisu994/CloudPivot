@@ -719,16 +719,16 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
         </div>
 
         <div className="overflow-x-auto">
-          <Table className="min-w-[800px] table-fixed">
+          <Table className="min-w-[50rem] table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px]">#</TableHead>
-                <TableHead className="w-[150px]">{t('configKey')}</TableHead>
-                <TableHead className="w-[150px]">{t('standardValue')}</TableHead>
-                <TableHead className="w-[150px]">{t('customValue')}</TableHead>
-                <TableHead className="w-[120px] text-right">{t('extraCharge')}</TableHead>
-                <TableHead className="w-[140px]">{t('configRemark')}</TableHead>
-                {!isReadonly && <TableHead className="w-[50px]" />}
+                <TableHead className="w-[2.5rem]">#</TableHead>
+                <TableHead className="w-[9.375rem]">{t('configKey')}</TableHead>
+                <TableHead className="w-[9.375rem]">{t('standardValue')}</TableHead>
+                <TableHead className="w-[9.375rem]">{t('customValue')}</TableHead>
+                <TableHead className="w-[7.5rem] text-right">{t('extraCharge')}</TableHead>
+                <TableHead className="w-[8.75rem]">{t('configRemark')}</TableHead>
+                {!isReadonly && <TableHead className="w-[3.125rem]" />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -843,15 +843,15 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
             <h3 className="text-foreground font-semibold">{t('reservationTitle')}</h3>
           </div>
           <div className="overflow-x-auto">
-            <Table className="min-w-[700px] table-fixed">
+            <Table className="min-w-[43.75rem] table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px]">{t('bomMaterialCode')}</TableHead>
-                  <TableHead className="w-[150px]">{t('bomMaterial')}</TableHead>
-                  <TableHead className="w-[80px]">{tc('unit')}</TableHead>
-                  <TableHead className="w-[100px] text-right">{t('reservedQty')}</TableHead>
-                  <TableHead className="w-[100px] text-right">{t('consumedQty')}</TableHead>
-                  <TableHead className="w-[100px]">{tc('status')}</TableHead>
+                  <TableHead className="w-[6.25rem]">{t('bomMaterialCode')}</TableHead>
+                  <TableHead className="w-[9.375rem]">{t('bomMaterial')}</TableHead>
+                  <TableHead className="w-[5rem]">{tc('unit')}</TableHead>
+                  <TableHead className="w-[6.25rem] text-right">{t('reservedQty')}</TableHead>
+                  <TableHead className="w-[6.25rem] text-right">{t('consumedQty')}</TableHead>
+                  <TableHead className="w-[6.25rem]">{tc('status')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

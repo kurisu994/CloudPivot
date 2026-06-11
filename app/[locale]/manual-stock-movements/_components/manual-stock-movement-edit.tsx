@@ -702,15 +702,15 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30">
-                    <TableHead className="w-[50px] text-center">#</TableHead>
-                    <TableHead className="w-[120px]">{t('manualStockMovements.colMaterialCode')}</TableHead>
-                    <TableHead className="w-[180px]">{t('manualStockMovements.colMaterialName')}</TableHead>
-                    <TableHead className="w-[100px]">{t('manualStockMovements.colSpec')}</TableHead>
-                    <TableHead className="w-[60px]">{t('manualStockMovements.colUnit')}</TableHead>
-                    <TableHead className="w-[100px] text-right">{t('manualStockMovements.colQuantity')}</TableHead>
-                    {isInbound && <TableHead className="w-[120px]">{t('manualStockMovements.colLotNo')}</TableHead>}
-                    {isInbound && <TableHead className="w-[120px]">{t('manualStockMovements.colSupplierBatch')}</TableHead>}
-                    {!isReadOnly && <TableHead className="w-[60px] text-center">{tc('actions')}</TableHead>}
+                    <TableHead className="w-[3.125rem] text-center">#</TableHead>
+                    <TableHead className="w-[7.5rem]">{t('manualStockMovements.colMaterialCode')}</TableHead>
+                    <TableHead className="w-[11.25rem]">{t('manualStockMovements.colMaterialName')}</TableHead>
+                    <TableHead className="w-[6.25rem]">{t('manualStockMovements.colSpec')}</TableHead>
+                    <TableHead className="w-[3.75rem]">{t('manualStockMovements.colUnit')}</TableHead>
+                    <TableHead className="w-[6.25rem] text-right">{t('manualStockMovements.colQuantity')}</TableHead>
+                    {isInbound && <TableHead className="w-[7.5rem]">{t('manualStockMovements.colLotNo')}</TableHead>}
+                    {isInbound && <TableHead className="w-[7.5rem]">{t('manualStockMovements.colSupplierBatch')}</TableHead>}
+                    {!isReadOnly && <TableHead className="w-[3.75rem] text-center">{tc('actions')}</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -737,7 +737,7 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                               value={item.quantity}
                               onChange={e => handleItemFieldChange(idx, 'quantity', Number(e.target.value))}
                               disabled={isReadOnly}
-                              className="h-8 max-w-[100px] py-1 text-right font-medium"
+                              className="h-8 max-w-[6.25rem] py-1 text-right font-medium"
                             />
                           </div>
                         </TableCell>
@@ -748,7 +748,7 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                               value={item.lotNo || ''}
                               onChange={e => handleItemFieldChange(idx, 'lotNo', e.target.value)}
                               disabled={isReadOnly}
-                              className="h-8 py-1 max-w-[120px]"
+                              className="h-8 py-1 max-w-[7.5rem]"
                             />
                           </TableCell>
                         )}
@@ -759,7 +759,7 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                               value={item.supplierBatchNo || ''}
                               onChange={e => handleItemFieldChange(idx, 'supplierBatchNo', e.target.value)}
                               disabled={isReadOnly}
-                              className="h-8 py-1 max-w-[120px]"
+                              className="h-8 py-1 max-w-[7.5rem]"
                             />
                           </TableCell>
                         )}
@@ -914,7 +914,7 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
             </DialogTitle>
             <DialogDescription>{t('manualStockMovements.insufficientStockDescription')}</DialogDescription>
           </DialogHeader>
-          <div className="max-h-[400px] overflow-auto">
+          <div className="max-h-[25rem] overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>

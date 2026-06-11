@@ -61,7 +61,7 @@ function DocumentRulesCard() {
       {/* 表格 */}
       <div className="overflow-x-auto">
         <table className="w-full text-left">
-          <thead className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+          <thead className="border-b border-slate-100 bg-slate-50/50 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
             <tr>
               <th className="px-6 py-4">{t('documentType')}</th>
               <th className="px-6 py-4">{t('prefix')}</th>
@@ -111,18 +111,18 @@ function MaterialBatchForm() {
         {/* 物料前缀 + 起始流水号 */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('materialPrefix')}</Label>
+            <Label className="text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('materialPrefix')}</Label>
             <Input defaultValue="MAT" className="bg-slate-50 dark:bg-slate-900/50" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('startSeqNo')}</Label>
+            <Label className="text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('startSeqNo')}</Label>
             <Input defaultValue="10001" className="bg-slate-50 dark:bg-slate-900/50" />
           </div>
         </div>
 
         {/* 物料流水长度 */}
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('materialSeqLength')}</Label>
+          <Label className="text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('materialSeqLength')}</Label>
           <Select
             defaultValue="5"
             items={[
@@ -144,19 +144,19 @@ function MaterialBatchForm() {
 
         {/* 批次编码规则 */}
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('batchRule')}</Label>
+          <Label className="text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('batchRule')}</Label>
           <div className="flex gap-2">
             <Input defaultValue="LOT-YYYYMMDD-###" className="flex-1 bg-slate-50 font-mono dark:bg-slate-900/50" />
             <Button variant="outline" className="px-4 text-xs font-bold text-slate-600">
               {t('validate')}
             </Button>
           </div>
-          <p className="mt-1 text-[10px] text-slate-400">{t('batchRuleHint')}</p>
+          <p className="mt-1 text-[0.625rem] text-slate-400">{t('batchRuleHint')}</p>
         </div>
 
         {/* 当前预览 */}
         <div className="mt-auto flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
-          <p className="mb-2 text-[10px] font-bold tracking-widest text-slate-400 uppercase">{t('currentPreview')}</p>
+          <p className="mb-2 text-[0.625rem] font-bold tracking-widest text-slate-400 uppercase">{t('currentPreview')}</p>
           <p className="font-mono text-xl font-bold text-amber-600">LOT-20240520-001</p>
         </div>
       </div>

@@ -404,7 +404,7 @@ export function MaterialsClientPage() {
         <div className="flex flex-1 items-center gap-4">
           {/* 搜索框 */}
           <div className="relative max-w-xs flex-1">
-            <Search className="text-muted-foreground absolute top-2.5 left-3 size-[18px]" />
+            <Search className="text-muted-foreground absolute top-2.5 left-3 size-[1.125rem]" />
             <Input
               className="pl-10"
               placeholder={t('searchPlaceholder')}
@@ -415,7 +415,7 @@ export function MaterialsClientPage() {
           </div>
           {/* 分类 */}
           <Select value={categoryId} onValueChange={value => setCategoryId(value ?? 'all')} items={categoryItems}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[9.375rem]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -428,7 +428,7 @@ export function MaterialsClientPage() {
           </Select>
           {/* 类型 */}
           <Select value={materialType} onValueChange={value => setMaterialType(value ?? 'all')} items={typeItems}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[9.375rem]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -441,7 +441,7 @@ export function MaterialsClientPage() {
           </Select>
           {/* 状态 */}
           <Select value={status} onValueChange={value => setStatus(value ?? 'all')} items={statusItems}>
-            <SelectTrigger className="w-[130px]">
+            <SelectTrigger className="w-[8.125rem]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

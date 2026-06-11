@@ -366,28 +366,28 @@ export function ManualStockMovementsList({ onNew, onEdit, onPrint }: ManualStock
 
       {/* 数据列表表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell tableClassName="min-w-[1040px]">
+        <BusinessListTableShell tableClassName="min-w-[65rem]">
           <thead className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <tr className="border-b bg-muted/40">
               <th
-                className={`w-[140px] px-4 py-3 text-left text-sm font-semibold text-foreground whitespace-nowrap ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}
+                className={`w-[8.75rem] px-4 py-3 text-left text-sm font-semibold text-foreground whitespace-nowrap ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}
               >
                 {t('manualStockMovements.movementNo')}
               </th>
-              <th className="w-[70px] px-4 py-3 text-center text-sm font-semibold text-foreground">{t('manualStockMovements.direction')}</th>
-              <th className="w-[120px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.businessType')}</th>
-              <th className="w-[100px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.warehouse')}</th>
-              <th className="w-[120px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.counterpartyName')}</th>
-              <th className="w-[110px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.movementDate')}</th>
-              <th className="w-[72px] px-4 py-3 text-right text-sm font-semibold text-foreground whitespace-nowrap">
+              <th className="w-[4.375rem] px-4 py-3 text-center text-sm font-semibold text-foreground">{t('manualStockMovements.direction')}</th>
+              <th className="w-[7.5rem] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.businessType')}</th>
+              <th className="w-[6.25rem] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.warehouse')}</th>
+              <th className="w-[7.5rem] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.counterpartyName')}</th>
+              <th className="w-[6.875rem] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.movementDate')}</th>
+              <th className="w-[4.5rem] px-4 py-3 text-right text-sm font-semibold text-foreground whitespace-nowrap">
                 {t('manualStockMovements.itemCount')}
               </th>
-              <th className="w-[80px] px-4 py-3 text-center text-sm font-semibold text-foreground">{t('manualStockMovements.status')}</th>
-              <th className="w-[80px] px-4 py-3 text-left text-sm font-semibold text-foreground whitespace-nowrap">
+              <th className="w-[5rem] px-4 py-3 text-center text-sm font-semibold text-foreground">{t('manualStockMovements.status')}</th>
+              <th className="w-[5rem] px-4 py-3 text-left text-sm font-semibold text-foreground whitespace-nowrap">
                 {t('manualStockMovements.createdBy')}
               </th>
               <th
-                className={`w-[120px] px-4 py-3 text-center text-sm font-semibold text-foreground whitespace-nowrap ${BUSINESS_LIST_STICKY_HEAD_RIGHT_CLASS}`}
+                className={`w-[7.5rem] px-4 py-3 text-center text-sm font-semibold text-foreground whitespace-nowrap ${BUSINESS_LIST_STICKY_HEAD_RIGHT_CLASS}`}
               >
                 {t('manualStockMovements.operations')}
               </th>
@@ -581,7 +581,7 @@ export function ManualStockMovementsList({ onNew, onEdit, onPrint }: ManualStock
             </DialogTitle>
             <DialogDescription>{t('manualStockMovements.insufficientStockDescription')}</DialogDescription>
           </DialogHeader>
-          <div className="max-h-[400px] overflow-auto">
+          <div className="max-h-[25rem] overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>

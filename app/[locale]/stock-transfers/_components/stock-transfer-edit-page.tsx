@@ -333,12 +333,12 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[240px]">{t('material')}</TableHead>
-                  <TableHead className="w-[100px]">{t('spec')}</TableHead>
-                  <TableHead className="w-[80px]">{t('unit')}</TableHead>
-                  <TableHead className="w-[120px] text-right">{t('quantity')}</TableHead>
-                  <TableHead className="w-[160px]">{t('remark')}</TableHead>
-                  {isEditable && <TableHead className="w-[60px]" />}
+                  <TableHead className="w-[15rem]">{t('material')}</TableHead>
+                  <TableHead className="w-[6.25rem]">{t('spec')}</TableHead>
+                  <TableHead className="w-[5rem]">{t('unit')}</TableHead>
+                  <TableHead className="w-[7.5rem] text-right">{t('quantity')}</TableHead>
+                  <TableHead className="w-[10rem]">{t('remark')}</TableHead>
+                  {isEditable && <TableHead className="w-[3.75rem]" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -384,7 +384,7 @@ export function StockTransferEditPage({ transferId, onBack }: StockTransferEditP
                             type="number"
                             value={line.quantity || ''}
                             onChange={e => handleQtyChange(index, e.target.value)}
-                            className="w-[100px] ml-auto text-right"
+                            className="w-[6.25rem] ml-auto text-right"
                             min={0}
                           />
                         ) : (

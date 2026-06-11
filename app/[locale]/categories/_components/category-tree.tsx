@@ -345,7 +345,7 @@ export function CategoryTree({ onEdit, refreshKey }: CategoryTreeProps) {
   }
 
   return (
-    <div className="category-tree min-h-[300px]">
+    <div className="category-tree min-h-[18.75rem]">
       <Tree<TreeNode>
         data={treeData}
         openByDefault={true}

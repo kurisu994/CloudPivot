@@ -21,40 +21,40 @@ export function QuickActions() {
           href="/purchase-orders?action=new"
           className={cn(
             buttonVariants({ variant: 'default', size: 'default' }),
-            'h-[40px] gap-2 rounded-lg border-none bg-[#294985] px-4 font-semibold text-white shadow-md hover:bg-[#294985]/90',
+            'h-[2.5rem] gap-2 rounded-lg border-none bg-[#294985] px-4 font-semibold text-white shadow-md hover:bg-[#294985]/90',
           )}
         >
-          <ShoppingCart className="h-[18px] w-[18px]" />
+          <ShoppingCart className="h-[1.125rem] w-[1.125rem]" />
           {t('newPurchaseOrder')}
         </Link>
         <Link
           href="/sales-orders?action=new"
           className={cn(
             buttonVariants({ variant: 'outline', size: 'default' }),
-            'h-[40px] gap-2 rounded-lg border-slate-200 bg-white px-4 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300',
+            'h-[2.5rem] gap-2 rounded-lg border-slate-200 bg-white px-4 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300',
           )}
         >
-          <ReceiptText className="h-[18px] w-[18px] text-[#294985] dark:text-[#43619f]" />
+          <ReceiptText className="h-[1.125rem] w-[1.125rem] text-[#294985] dark:text-[#43619f]" />
           {t('newSalesOrder')}
         </Link>
         <Link
           href="/purchase-receipts"
           className={cn(
             buttonVariants({ variant: 'outline', size: 'default' }),
-            'h-[40px] gap-2 rounded-lg border-slate-200 bg-white px-4 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300',
+            'h-[2.5rem] gap-2 rounded-lg border-slate-200 bg-white px-4 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300',
           )}
         >
-          <PackagePlus className="h-[18px] w-[18px] text-[#944a00] dark:text-orange-500" />
+          <PackagePlus className="h-[1.125rem] w-[1.125rem] text-[#944a00] dark:text-orange-500" />
           {t('purchaseReceipt')}
         </Link>
         <Link
           href="/sales-deliveries"
           className={cn(
             buttonVariants({ variant: 'outline', size: 'default' }),
-            'h-[40px] gap-2 rounded-lg border-slate-200 bg-white px-4 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300',
+            'h-[2.5rem] gap-2 rounded-lg border-slate-200 bg-white px-4 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300',
           )}
         >
-          <PackageMinus className="h-[18px] w-[18px] text-[#944a00] dark:text-orange-500" />
+          <PackageMinus className="h-[1.125rem] w-[1.125rem] text-[#944a00] dark:text-orange-500" />
           {t('salesDelivery')}
         </Link>
       </div>

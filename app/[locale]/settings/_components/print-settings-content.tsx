@@ -88,7 +88,7 @@ function PrintLanguageCard() {
       </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="space-y-1.5 md:col-span-2">
-          <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('languageMode')}</Label>
+          <Label className="text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('languageMode')}</Label>
           <Select value="system" items={[{ value: 'system', label: t('systemDefault') }]}>
             <SelectTrigger className="h-10 bg-slate-50 dark:bg-slate-900/50" disabled>
               <SelectValue />
@@ -124,7 +124,7 @@ function PaperAndMarginsCard() {
       </div>
       <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
         <div className="col-span-2 space-y-1.5">
-          <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('presetSpec')}</Label>
+          <Label className="text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('presetSpec')}</Label>
           <div className="grid grid-cols-2 gap-3">
             <Button variant="outline" className="border-primary bg-primary/5 text-primary h-10 border-2 text-sm font-bold shadow-none" disabled>
               14×22cm
@@ -135,23 +135,23 @@ function PaperAndMarginsCard() {
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('widthMm')}</Label>
+          <Label className="text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('widthMm')}</Label>
           <Input type="number" value={140} readOnly className="h-10 bg-slate-50 dark:bg-slate-900/50" />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('heightMm')}</Label>
+          <Label className="text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('heightMm')}</Label>
           <Input type="number" value={220} readOnly className="h-10 bg-slate-50 dark:bg-slate-900/50" />
         </div>
       </div>
       <div className="mt-8 border-t border-slate-50 pt-6 dark:border-slate-800/50">
-        <h3 className="mb-4 flex items-center gap-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+        <h3 className="mb-4 flex items-center gap-2 text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">
           <Grid2X2 className="size-3.5" />
           {t('marginsTitle')}
         </h3>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {(['top', 'bottom', 'left', 'right'] as const).map(side => (
             <div key={side} className="relative space-y-1">
-              <Label className="ml-1 text-[10px] text-slate-400">{t(side)}</Label>
+              <Label className="ml-1 text-[0.625rem] text-slate-400">{t(side)}</Label>
               <Input type="number" value={5} readOnly className="h-10 bg-slate-50 dark:bg-slate-900/50" />
             </div>
           ))}
@@ -197,7 +197,7 @@ function DisplayItemsCard({ config, onChange }: { config: PrintConfigState; onCh
             />
             <div className="ml-4">
               <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{it.label}</p>
-              <p className="text-[11px] text-slate-500">{it.desc}</p>
+              <p className="text-[0.6875rem] text-slate-500">{it.desc}</p>
             </div>
           </label>
         ))}
@@ -284,12 +284,12 @@ function RealtimePreview({ templateKey, templateName, config }: { templateKey: P
   return (
     <div className="relative flex min-h-full flex-col items-center overflow-hidden rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-inner">
       <div className="mb-4 flex w-full items-center justify-between">
-        <h3 className="flex items-center gap-2 text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+        <h3 className="flex items-center gap-2 text-[0.6875rem] font-bold tracking-widest text-slate-400 uppercase">
           <span className="bg-primary h-2 w-2 animate-pulse rounded-full" />
           {t('realTimePreview')} · {templateName}
         </h3>
         {mockData && (
-          <span className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-400">
+          <span className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[0.625rem] font-bold text-slate-400">
             {t('previewMockNote')}
           </span>
         )}
@@ -417,7 +417,7 @@ function FixedTemplatesCard({
             >
               <span>{item.label}</span>
               {customized && (
-                <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[0.5625rem] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
                   {t('customized')}
                 </span>
               )}

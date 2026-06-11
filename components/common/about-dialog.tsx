@@ -137,7 +137,7 @@ export function AboutDialog() {
             <div className="flex flex-col gap-2 rounded-lg bg-blue-50 px-3 py-2.5 dark:bg-blue-950/30">
               <span className="text-xs font-medium text-blue-700 dark:text-blue-300">{t('newVersion', { version: updateInfo.version ?? '' })}</span>
               {updateInfo.body && (
-                <p className="max-h-24 overflow-y-auto text-[11px] leading-relaxed whitespace-pre-wrap text-blue-600 dark:text-blue-400">
+                <p className="max-h-24 overflow-y-auto text-[0.6875rem] leading-relaxed whitespace-pre-wrap text-blue-600 dark:text-blue-400">
                   {updateInfo.body}
                 </p>
               )}
@@ -198,7 +198,7 @@ export function AboutDialog() {
         </div>
 
         {/* 版权 */}
-        <p className="text-center text-[10px] text-slate-400 dark:text-slate-500">{t('copyright', { year: new Date().getFullYear() })}</p>
+        <p className="text-center text-[0.625rem] text-slate-400 dark:text-slate-500">{t('copyright', { year: new Date().getFullYear() })}</p>
       </DialogContent>
     </Dialog>
   )

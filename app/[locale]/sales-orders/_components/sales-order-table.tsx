@@ -150,20 +150,20 @@ export function SalesOrderTable({
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
         <BusinessListTableShell
           className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
-          tableClassName="min-w-[960px]"
+          tableClassName="min-w-[60rem]"
         >
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow className="hover:bg-transparent">
-              <TableHead className={`w-[140px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('orderNo')}</TableHead>
-              <TableHead className="w-[120px]">{t('customer')}</TableHead>
-              <TableHead className="w-[88px]">{t('orderDate')}</TableHead>
-              <TableHead className="w-[64px]">{t('currency')}</TableHead>
-              <TableHead className="w-[80px]">{tc('status')}</TableHead>
-              <TableHead className="w-[100px] text-right">{t('receivableAmount')}</TableHead>
-              <TableHead className="w-[88px]">{t('outboundProgress')}</TableHead>
-              <TableHead className="w-[80px]">{t('warehouse')}</TableHead>
-              <TableHead className="w-[64px]">{t('createdBy')}</TableHead>
-              <TableHead className="w-[110px] text-right">{tc('actions')}</TableHead>
+              <TableHead className={`w-[8.75rem] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('orderNo')}</TableHead>
+              <TableHead className="w-[7.5rem]">{t('customer')}</TableHead>
+              <TableHead className="w-[5.5rem]">{t('orderDate')}</TableHead>
+              <TableHead className="w-[4rem]">{t('currency')}</TableHead>
+              <TableHead className="w-[5rem]">{tc('status')}</TableHead>
+              <TableHead className="w-[6.25rem] text-right">{t('receivableAmount')}</TableHead>
+              <TableHead className="w-[5.5rem]">{t('outboundProgress')}</TableHead>
+              <TableHead className="w-[5rem]">{t('warehouse')}</TableHead>
+              <TableHead className="w-[4rem]">{t('createdBy')}</TableHead>
+              <TableHead className="w-[6.875rem] text-right">{tc('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

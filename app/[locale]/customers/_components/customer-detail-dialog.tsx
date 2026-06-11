@@ -92,7 +92,7 @@ export function CustomerDetailDialog({ open, onOpenChange, customerId }: Custome
                       {t(`grade.${detail.customer.grade}`)}
                     </Badge>
                   </div>
-                  <div className="mt-1 text-[13px] font-bold tracking-widest text-primary uppercase">{detail.customer.code}</div>
+                  <div className="mt-1 text-[0.8125rem] font-bold tracking-widest text-primary uppercase">{detail.customer.code}</div>
                 </div>
               </div>
 
@@ -103,7 +103,7 @@ export function CustomerDetailDialog({ open, onOpenChange, customerId }: Custome
                   <CardContent className="p-6">
                     <div className="text-sm font-medium text-slate-500 dark:text-slate-400">{t('detail.totalSales')}</div>
                     <div className="mt-2 flex items-baseline gap-2">
-                      <span className="text-[28px] font-bold tracking-tight text-slate-900 dark:text-white">
+                      <span className="text-[1.75rem] font-bold tracking-tight text-slate-900 dark:text-white">
                         {formatAmount(totalSales, detail.customer.currency as 'VND' | 'CNY' | 'USD')}
                       </span>
                     </div>
@@ -120,7 +120,7 @@ export function CustomerDetailDialog({ open, onOpenChange, customerId }: Custome
                   <CardContent className="p-6">
                     <div className="text-sm font-medium text-slate-500 dark:text-slate-400">{t('detail.receivableBalance')}</div>
                     <div className="mt-2 flex items-baseline gap-2">
-                      <span className="text-[28px] font-bold tracking-tight text-slate-900 dark:text-white">
+                      <span className="text-[1.75rem] font-bold tracking-tight text-slate-900 dark:text-white">
                         {formatAmount(detail.receivablesSummary.totalUnpaidAmount, detail.customer.currency as 'VND' | 'CNY' | 'USD')}
                       </span>
                     </div>
@@ -136,7 +136,7 @@ export function CustomerDetailDialog({ open, onOpenChange, customerId }: Custome
                   <CardContent className="p-6">
                     <div className="text-sm font-medium text-slate-500 dark:text-slate-400">{t('detail.receivedAmount')}</div>
                     <div className="mt-2 flex items-baseline gap-2">
-                      <span className="text-[28px] font-bold tracking-tight text-slate-900 dark:text-white">
+                      <span className="text-[1.75rem] font-bold tracking-tight text-slate-900 dark:text-white">
                         {formatAmount(totalReceived, detail.customer.currency as 'VND' | 'CNY' | 'USD')}
                       </span>
                     </div>
@@ -228,13 +228,13 @@ export function CustomerDetailDialog({ open, onOpenChange, customerId }: Custome
                               detail.recentSalesOrders.map(item => (
                                 <TableRow key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
                                   <TableCell className="font-semibold text-slate-900 dark:text-white">{item.orderNo}</TableCell>
-                                  <TableCell className="text-[13px] text-slate-500 dark:text-slate-400">{item.orderDate}</TableCell>
+                                  <TableCell className="text-[0.8125rem] text-slate-500 dark:text-slate-400">{item.orderDate}</TableCell>
                                   <TableCell>
                                     <Badge variant="secondary" className="font-normal">
                                       {t(`salesStatus.${item.status}`)}
                                     </Badge>
                                   </TableCell>
-                                  <TableCell className="text-[13px] text-slate-500 dark:text-slate-400">{item.currency}</TableCell>
+                                  <TableCell className="text-[0.8125rem] text-slate-500 dark:text-slate-400">{item.currency}</TableCell>
                                   <TableCell className="text-right font-medium text-slate-900 dark:text-white">
                                     {formatAmount(item.totalAmount, item.currency)}
                                   </TableCell>
@@ -285,13 +285,13 @@ export function CustomerDetailDialog({ open, onOpenChange, customerId }: Custome
                               detail.receivablesSummary.records.map(item => (
                                 <TableRow key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
                                   <TableCell className="font-medium text-slate-900 dark:text-white">{item.orderNo ?? '—'}</TableCell>
-                                  <TableCell className="text-[13px] text-slate-500 dark:text-slate-400">{item.receivableDate}</TableCell>
-                                  <TableCell className="text-[13px] text-slate-500 dark:text-slate-400">{item.dueDate ?? '—'}</TableCell>
-                                  <TableCell className="text-[13px] text-slate-500 dark:text-slate-400">{item.currency}</TableCell>
+                                  <TableCell className="text-[0.8125rem] text-slate-500 dark:text-slate-400">{item.receivableDate}</TableCell>
+                                  <TableCell className="text-[0.8125rem] text-slate-500 dark:text-slate-400">{item.dueDate ?? '—'}</TableCell>
+                                  <TableCell className="text-[0.8125rem] text-slate-500 dark:text-slate-400">{item.currency}</TableCell>
                                   <TableCell className="text-right font-medium text-slate-900 dark:text-white">
                                     {formatAmount(item.receivableAmount, item.currency)}
                                   </TableCell>
-                                  <TableCell className="text-right text-[13px] text-slate-500 dark:text-slate-400">
+                                  <TableCell className="text-right text-[0.8125rem] text-slate-500 dark:text-slate-400">
                                     {formatAmount(item.receivedAmount, item.currency)}
                                   </TableCell>
                                   <TableCell className="text-right font-semibold text-slate-900 dark:text-white">

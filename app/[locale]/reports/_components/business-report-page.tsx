@@ -362,10 +362,10 @@ export function BusinessReportPage({ kind }: { kind: ReportKind }) {
               setDraftStart(from)
               setDraftEnd(to)
             }}
-            className="w-[280px]"
+            className="w-[17.5rem]"
           />
           <Select value={draftPartnerId} onValueChange={value => value && setDraftPartnerId(value)} items={partnerItems}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[10rem]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -377,7 +377,7 @@ export function BusinessReportPage({ kind }: { kind: ReportKind }) {
             </SelectContent>
           </Select>
           <Select value={draftWarehouseId} onValueChange={value => value && setDraftWarehouseId(value)} items={warehouseItems}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[9.375rem]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -393,7 +393,7 @@ export function BusinessReportPage({ kind }: { kind: ReportKind }) {
             onChange={event => setDraftKeyword(event.target.value)}
             onKeyDown={event => event.key === 'Enter' && handleSearch()}
             placeholder={t('keywordPlaceholder')}
-            className="w-[160px]"
+            className="w-[10rem]"
           />
           <Button variant="outline" size="sm" onClick={handleReset}>
             <RotateCcw data-icon="inline-start" />
@@ -465,7 +465,7 @@ function TrendChart({ data, t }: { data: BusinessTrendPoint[]; t: ReturnType<typ
   return (
     <div className="mb-4 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
       <h3 className="text-foreground mb-2 text-sm font-semibold">{t('trendTitle')}</h3>
-      <ChartContainer config={{ amount: { label: t('amount'), color: 'hsl(var(--primary))' } }} className="h-[260px] w-full">
+      <ChartContainer config={{ amount: { label: t('amount'), color: 'hsl(var(--primary))' } }} className="h-[16.25rem] w-full">
         <BarChart data={data}>
           <CartesianGrid vertical={false} />
           <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
@@ -490,12 +490,12 @@ function TrendTable({
 }) {
   return (
     <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-      <BusinessListTableShell tableClassName="min-w-[640px]">
+      <BusinessListTableShell tableClassName="min-w-[40rem]">
         <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
           <TableRow>
-            <TableHead className="w-[160px]">{t('date')}</TableHead>
-            <TableHead className="w-[120px] text-right">{t('amount')}</TableHead>
-            <TableHead className="w-[100px] text-right">{t('orderCount')}</TableHead>
+            <TableHead className="w-[10rem]">{t('date')}</TableHead>
+            <TableHead className="w-[7.5rem] text-right">{t('amount')}</TableHead>
+            <TableHead className="w-[6.25rem] text-right">{t('orderCount')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -542,15 +542,15 @@ function RankingTable({
   return (
     <>
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell tableClassName="min-w-[760px]">
+        <BusinessListTableShell tableClassName="min-w-[47.5rem]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
-              <TableHead className="w-[80px]">{t('rank')}</TableHead>
-              <TableHead className="w-[140px]">{t('partnerCode')}</TableHead>
-              <TableHead className="w-[180px]">{t('partner')}</TableHead>
-              <TableHead className="w-[120px] text-right">{t('amount')}</TableHead>
-              <TableHead className="w-[100px] text-right">{t('ratio')}</TableHead>
-              <TableHead className="w-[100px] text-right">{t('orderCount')}</TableHead>
+              <TableHead className="w-[5rem]">{t('rank')}</TableHead>
+              <TableHead className="w-[8.75rem]">{t('partnerCode')}</TableHead>
+              <TableHead className="w-[11.25rem]">{t('partner')}</TableHead>
+              <TableHead className="w-[7.5rem] text-right">{t('amount')}</TableHead>
+              <TableHead className="w-[6.25rem] text-right">{t('ratio')}</TableHead>
+              <TableHead className="w-[6.25rem] text-right">{t('orderCount')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -610,16 +610,16 @@ function MaterialTable({
   return (
     <>
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell tableClassName="min-w-[900px]">
+        <BusinessListTableShell tableClassName="min-w-[56.25rem]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
-              <TableHead className="sticky left-0 z-10 w-[120px] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
-              <TableHead className="w-[180px]">{t('materialName')}</TableHead>
-              <TableHead className="w-[120px]">{t('spec')}</TableHead>
-              <TableHead className="w-[90px]">{t('unit')}</TableHead>
-              <TableHead className="w-[110px] text-right">{t('quantity')}</TableHead>
-              <TableHead className="w-[120px] text-right">{t('amount')}</TableHead>
-              <TableHead className="w-[120px] text-right">{t('avgPrice')}</TableHead>
+              <TableHead className="sticky left-0 z-10 w-[7.5rem] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
+              <TableHead className="w-[11.25rem]">{t('materialName')}</TableHead>
+              <TableHead className="w-[7.5rem]">{t('spec')}</TableHead>
+              <TableHead className="w-[5.625rem]">{t('unit')}</TableHead>
+              <TableHead className="w-[6.875rem] text-right">{t('quantity')}</TableHead>
+              <TableHead className="w-[7.5rem] text-right">{t('amount')}</TableHead>
+              <TableHead className="w-[7.5rem] text-right">{t('avgPrice')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

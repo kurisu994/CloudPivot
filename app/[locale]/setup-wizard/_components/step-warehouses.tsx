@@ -54,7 +54,7 @@ export function StepWarehouses({ data, onChange, onPrev, onNext, isLoading, erro
               </div>
             </div>
             <div className="flex flex-col items-end">
-              <span className="mb-2 text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">PROGRESS</span>
+              <span className="mb-2 text-[0.625rem] font-bold tracking-[0.2em] text-slate-400 uppercase">PROGRESS</span>
               <div className="flex gap-1.5">
                 <div className="h-1.5 w-10 rounded-full bg-[#294985]" />
                 <div className="h-1.5 w-10 rounded-full bg-[#294985]" />
@@ -141,7 +141,7 @@ export function StepWarehouses({ data, onChange, onPrev, onNext, isLoading, erro
                 <Wrench className="size-5 text-slate-400" />
                 <h3 className="text-sm font-bold tracking-wide text-slate-500 uppercase dark:text-slate-400">{t('semiWarehouse')}</h3>
               </div>
-              <Badge variant="secondary" className="text-[10px] font-bold uppercase">
+              <Badge variant="secondary" className="text-[0.625rem] font-bold uppercase">
                 {t('optional')}
               </Badge>
             </div>

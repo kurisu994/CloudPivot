@@ -15,6 +15,7 @@ import {
 } from '@/components/common/business-list-table'
 import { PaginationControls } from '@/components/common/pagination'
 import { useAuth } from '@/components/providers/auth-provider'
+import { useDisplayPreferences } from '@/components/providers/display-preferences-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
@@ -57,6 +58,7 @@ export function ReplenishmentPage() {
   const t = useTranslations('replenishment')
   const tc = useTranslations('common')
   const { user } = useAuth()
+  const { largeFont } = useDisplayPreferences()
 
   // 建议列表
   const [suggestions, setSuggestions] = useState<ReplenishmentSuggestion[]>([])
@@ -359,7 +361,7 @@ export function ReplenishmentPage() {
       {/* 筛选区 */}
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-[220px] flex-1">
+          <div className="min-w-[13.75rem] flex-1">
             <div className="relative">
               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
@@ -371,7 +373,7 @@ export function ReplenishmentPage() {
               />
             </div>
           </div>
-          <div className="w-[140px]">
+          <div className="w-[8.75rem]">
             <Select value={draftUrgency} onValueChange={v => v && setDraftUrgency(v)} items={urgencyItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -385,7 +387,7 @@ export function ReplenishmentPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="w-[160px]">
+          <div className="w-[10rem]">
             <Select value={draftCategory} onValueChange={v => v && setDraftCategory(v)} items={categoryItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -412,26 +414,26 @@ export function ReplenishmentPage() {
 
       {/* 建议列表表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell tableClassName="min-w-[1300px]">
+        <BusinessListTableShell tableClassName="min-w-[81.25rem]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
-              <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[40px]`}>
+              <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[2.5rem]`}>
                 <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
               </TableHead>
-              <TableHead className="w-[96px]">{t('materialCode')}</TableHead>
-              <TableHead className="w-[120px]">{t('materialName')}</TableHead>
-              <TableHead className="w-[72px]">{t('category')}</TableHead>
-              <TableHead className="w-[72px] text-right">{t('availableQty')}</TableHead>
-              <TableHead className="w-[72px] text-right">{t('safetyStock')}</TableHead>
-              <TableHead className="w-[64px] text-right">{t('gapQty')}</TableHead>
-              <TableHead className="w-[64px] text-right">{t('dailyConsumption')}</TableHead>
-              <TableHead className="w-[72px] text-right">{t('daysUntilStockout')}</TableHead>
-              <TableHead className="w-[80px] text-right">{t('suggestedQty')}</TableHead>
-              <TableHead className="w-[100px]">{t('supplier')}</TableHead>
-              <TableHead className="w-[72px]">
+              <TableHead className="w-[6rem]">{t('materialCode')}</TableHead>
+              <TableHead className="w-[7.5rem]">{t('materialName')}</TableHead>
+              <TableHead className="w-[4.5rem]">{t('category')}</TableHead>
+              <TableHead className="w-[4.5rem] text-right">{t('availableQty')}</TableHead>
+              <TableHead className="w-[4.5rem] text-right">{t('safetyStock')}</TableHead>
+              <TableHead className="w-[4rem] text-right">{t('gapQty')}</TableHead>
+              <TableHead className="w-[4rem] text-right">{t('dailyConsumption')}</TableHead>
+              <TableHead className="w-[4.5rem] text-right">{t('daysUntilStockout')}</TableHead>
+              <TableHead className="w-[5rem] text-right">{t('suggestedQty')}</TableHead>
+              <TableHead className="w-[6.25rem]">{t('supplier')}</TableHead>
+              <TableHead className="w-[4.5rem]">
                 <span className="sr-only">{t('urgencyAll')}</span>
               </TableHead>
-              <TableHead className="w-[80px]">{tc('actions')}</TableHead>
+              <TableHead className="w-[5rem]">{tc('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -538,11 +540,11 @@ export function ReplenishmentPage() {
           ) : trendData.length === 0 ? (
             <div className="text-muted-foreground py-12 text-center">{t('trend.noData')}</div>
           ) : (
-            <ChartContainer config={{ qty: { label: t('trend.consumption'), color: 'hsl(222, 47%, 51%)' } }} className="h-[300px] w-full">
+            <ChartContainer config={{ qty: { label: t('trend.consumption'), color: 'hsl(222, 47%, 51%)' } }} className="h-[18.75rem] w-full">
               <AreaChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" tickFormatter={v => v.slice(5)} fontSize={12} />
-                <YAxis fontSize={12} />
+                <XAxis dataKey="date" tickFormatter={v => v.slice(5)} fontSize={largeFont ? 15 : 12} />
+                <YAxis fontSize={largeFont ? 15 : 12} />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Area type="monotone" dataKey="qty" stroke="var(--color-qty)" fill="var(--color-qty)" fillOpacity={0.15} strokeWidth={2} />
               </AreaChart>
@@ -579,18 +581,18 @@ export function ReplenishmentPage() {
 
           {/* 表格区（仅此处滚动，表头 sticky） */}
           <div className="mt-4 min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-            <BusinessListTableShell tableClassName="min-w-[900px]">
+            <BusinessListTableShell tableClassName="min-w-[56.25rem]">
               <TableHeader className="bg-popover sticky top-0 z-30">
                 <TableRow>
-                  <TableHead className="w-[120px]">{t('materialCode')}</TableHead>
-                  <TableHead className="w-[140px]">{t('materialName')}</TableHead>
-                  <TableHead className="w-[90px] text-right">{t('rule.analysisDays')}</TableHead>
-                  <TableHead className="w-[90px] text-right">{t('rule.leadDays')}</TableHead>
-                  <TableHead className="w-[80px] text-right">{t('rule.safetyDays')}</TableHead>
-                  <TableHead className="w-[80px] text-right">{t('rule.batchMultiple')}</TableHead>
-                  <TableHead className="w-[120px]">{t('rule.preferredSupplier')}</TableHead>
-                  <TableHead className="w-[80px]">{tc('status')}</TableHead>
-                  <TableHead className="w-[80px]">{tc('actions')}</TableHead>
+                  <TableHead className="w-[7.5rem]">{t('materialCode')}</TableHead>
+                  <TableHead className="w-[8.75rem]">{t('materialName')}</TableHead>
+                  <TableHead className="w-[5.625rem] text-right">{t('rule.analysisDays')}</TableHead>
+                  <TableHead className="w-[5.625rem] text-right">{t('rule.leadDays')}</TableHead>
+                  <TableHead className="w-[5rem] text-right">{t('rule.safetyDays')}</TableHead>
+                  <TableHead className="w-[5rem] text-right">{t('rule.batchMultiple')}</TableHead>
+                  <TableHead className="w-[7.5rem]">{t('rule.preferredSupplier')}</TableHead>
+                  <TableHead className="w-[5rem]">{tc('status')}</TableHead>
+                  <TableHead className="w-[5rem]">{tc('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -238,7 +238,7 @@ export function PrintDesignerContent({ templateKey }: PrintDesignerContentProps)
             {t('editTemplate')}: {t(`templates.${SNAKE_TO_CAMEL[templateKey]}`)}
           </h2>
           {record && !record.isDefault && (
-            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[0.625rem] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
               {t('customized')}
             </span>
           )}
@@ -259,7 +259,7 @@ export function PrintDesignerContent({ templateKey }: PrintDesignerContentProps)
       <div className="grid grid-cols-12 gap-4">
         {/* 左：可添加字段列表 */}
         <div className="col-span-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-          <h3 className="mb-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('availableFields')}</h3>
+          <h3 className="mb-3 text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('availableFields')}</h3>
           <div className="flex flex-col gap-1">
             {availableFields.length === 0 ? (
               <p className="text-xs text-slate-400">{t('allFieldsUsed')}</p>
@@ -283,7 +283,7 @@ export function PrintDesignerContent({ templateKey }: PrintDesignerContentProps)
         <div className="col-span-6 flex flex-col gap-4">
           {/* 列顺序面板 */}
           <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-            <h3 className="mb-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('columnOrder')}</h3>
+            <h3 className="mb-3 text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('columnOrder')}</h3>
             <div className="flex flex-col gap-1">
               {draftColumns.map(col => {
                 const isSelected = col.fieldKey === selectedFieldKey
@@ -302,7 +302,7 @@ export function PrintDesignerContent({ templateKey }: PrintDesignerContentProps)
                     <button type="button" className="flex-1 text-left font-medium" onClick={() => setSelectedFieldKey(col.fieldKey)}>
                       {col.label}
                     </button>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[0.625rem] text-slate-400">
                       {col.widthChars}ch · {col.align}
                     </span>
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveColumn(col.fieldKey, -1)}>
@@ -323,7 +323,7 @@ export function PrintDesignerContent({ templateKey }: PrintDesignerContentProps)
 
           {/* 实时预览 */}
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <h3 className="mb-3 text-[11px] font-bold tracking-widest text-slate-400 uppercase">{t('realTimePreview')}</h3>
+            <h3 className="mb-3 text-[0.6875rem] font-bold tracking-widest text-slate-400 uppercase">{t('realTimePreview')}</h3>
             {loading || !draftRecord ? (
               <p className="text-center text-xs text-slate-500">...</p>
             ) : mockData ? (
@@ -342,13 +342,13 @@ export function PrintDesignerContent({ templateKey }: PrintDesignerContentProps)
 
         {/* 右：选中列属性面板 */}
         <div className="col-span-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-          <h3 className="mb-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('columnProperties')}</h3>
+          <h3 className="mb-3 text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('columnProperties')}</h3>
           {!selectedColumn ? (
             <p className="text-xs text-slate-400">{t('selectColumnHint')}</p>
           ) : (
             <div className="flex flex-col gap-4">
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">{t('columnField')}</Label>
+                <Label className="text-[0.625rem] font-bold tracking-wider text-slate-400 uppercase">{t('columnField')}</Label>
                 <p className="rounded bg-slate-50 px-2 py-1 text-xs font-mono dark:bg-slate-900">{selectedColumn.fieldKey}</p>
               </div>
 
@@ -361,7 +361,7 @@ export function PrintDesignerContent({ templateKey }: PrintDesignerContentProps)
               </label>
 
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">{t('columnWidth')}</Label>
+                <Label className="text-[0.625rem] font-bold tracking-wider text-slate-400 uppercase">{t('columnWidth')}</Label>
                 <Select
                   value={String(selectedColumn.widthChars)}
                   onValueChange={next => updateColumn(selectedColumn.fieldKey, { widthChars: Number(next) as PrintColumn['widthChars'] })}
@@ -381,7 +381,7 @@ export function PrintDesignerContent({ templateKey }: PrintDesignerContentProps)
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">{t('columnAlign')}</Label>
+                <Label className="text-[0.625rem] font-bold tracking-wider text-slate-400 uppercase">{t('columnAlign')}</Label>
                 <div className="grid grid-cols-3 gap-1">
                   {(['left', 'center', 'right'] as PrintColumnAlign[]).map(a => (
                     <Button

@@ -41,7 +41,7 @@ function getStatusBadge(status: string, t: (key: string) => string) {
 }
 
 const COLUMNS = 8
-const TABLE_MIN_W = 'min-w-[760px]'
+const TABLE_MIN_W = 'min-w-[47.5rem]'
 
 /**
  * 生产工单表格组件
@@ -53,14 +53,14 @@ export function ProductionOrderTable({ items, loading, onEdit, onDelete }: Props
     <BusinessListTableShell tableClassName={TABLE_MIN_W}>
       <thead className="sticky top-0 z-30 bg-white dark:bg-slate-950">
         <tr className="border-b">
-          <th className="bg-background sticky left-0 z-10 w-[130px] px-3 py-2.5 text-left text-sm font-medium">{t('orderNo')}</th>
-          <th className="w-[120px] px-3 py-2.5 text-left text-sm font-medium">{t('outputMaterial')}</th>
-          <th className="w-[80px] px-3 py-2.5 text-right text-sm font-medium">{t('plannedQty')}</th>
-          <th className="w-[80px] px-3 py-2.5 text-right text-sm font-medium">{t('completedQty')}</th>
-          <th className="w-[80px] px-3 py-2.5 text-center text-sm font-medium">{t('status')}</th>
-          <th className="w-[96px] px-3 py-2.5 text-left text-sm font-medium">{t('relatedCustomOrder')}</th>
-          <th className="w-[88px] px-3 py-2.5 text-left text-sm font-medium">{t('actualStartDate')}</th>
-          <th className="w-[80px] px-3 py-2.5 text-right text-sm font-medium">{t('actions')}</th>
+          <th className="bg-background sticky left-0 z-10 w-[8.125rem] px-3 py-2.5 text-left text-sm font-medium">{t('orderNo')}</th>
+          <th className="w-[7.5rem] px-3 py-2.5 text-left text-sm font-medium">{t('outputMaterial')}</th>
+          <th className="w-[5rem] px-3 py-2.5 text-right text-sm font-medium">{t('plannedQty')}</th>
+          <th className="w-[5rem] px-3 py-2.5 text-right text-sm font-medium">{t('completedQty')}</th>
+          <th className="w-[5rem] px-3 py-2.5 text-center text-sm font-medium">{t('status')}</th>
+          <th className="w-[6rem] px-3 py-2.5 text-left text-sm font-medium">{t('relatedCustomOrder')}</th>
+          <th className="w-[5.5rem] px-3 py-2.5 text-left text-sm font-medium">{t('actualStartDate')}</th>
+          <th className="w-[5rem] px-3 py-2.5 text-right text-sm font-medium">{t('actions')}</th>
         </tr>
       </thead>
       <tbody>

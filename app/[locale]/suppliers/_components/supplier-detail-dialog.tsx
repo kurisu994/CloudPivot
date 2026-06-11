@@ -85,7 +85,7 @@ export function SupplierDetailDialog({ open, onOpenChange, supplierId }: Supplie
                       {detail.supplier.isEnabled ? t('cooperationNormal') : t('cooperationStopped')}
                     </Badge>
                   </div>
-                  <div className="mt-1 text-[13px] font-bold tracking-widest text-primary uppercase">{detail.supplier.code}</div>
+                  <div className="mt-1 text-[0.8125rem] font-bold tracking-widest text-primary uppercase">{detail.supplier.code}</div>
                 </div>
               </div>
 
@@ -95,7 +95,7 @@ export function SupplierDetailDialog({ open, onOpenChange, supplierId }: Supplie
                   <CardContent className="p-6">
                     <div className="text-sm font-medium text-slate-500 dark:text-slate-400">{t('totalPurchased')}</div>
                     <div className="mt-2 flex items-baseline gap-2">
-                      <span className="text-[28px] font-bold tracking-tight text-slate-900 dark:text-white">
+                      <span className="text-[1.75rem] font-bold tracking-tight text-slate-900 dark:text-white">
                         {formatAmount(totalPurchased, detail.supplier.currency as 'VND' | 'CNY' | 'USD')}
                       </span>
                     </div>
@@ -111,7 +111,7 @@ export function SupplierDetailDialog({ open, onOpenChange, supplierId }: Supplie
                   <CardContent className="p-6">
                     <div className="text-sm font-medium text-slate-500 dark:text-slate-400">{t('payableBalance')}</div>
                     <div className="mt-2 flex items-baseline gap-2">
-                      <span className="text-[28px] font-bold tracking-tight text-slate-900 dark:text-white">
+                      <span className="text-[1.75rem] font-bold tracking-tight text-slate-900 dark:text-white">
                         {formatAmount(detail.payablesSummary.totalUnpaidAmount, detail.supplier.currency as 'VND' | 'CNY' | 'USD')}
                       </span>
                     </div>
@@ -126,7 +126,7 @@ export function SupplierDetailDialog({ open, onOpenChange, supplierId }: Supplie
                   <CardContent className="p-6">
                     <div className="text-sm font-medium text-slate-500 dark:text-slate-400">{t('totalPaid')}</div>
                     <div className="mt-2 flex items-baseline gap-2">
-                      <span className="text-[28px] font-bold tracking-tight text-slate-900 dark:text-white">
+                      <span className="text-[1.75rem] font-bold tracking-tight text-slate-900 dark:text-white">
                         {formatAmount(totalPaid, detail.supplier.currency as 'VND' | 'CNY' | 'USD')}
                       </span>
                     </div>
@@ -253,7 +253,7 @@ export function SupplierDetailDialog({ open, onOpenChange, supplierId }: Supplie
                                       {idx % 2 === 0 ? 'FSC 认证' : 'PEFC 认证'}
                                     </Badge>
                                   </TableCell>
-                                  <TableCell className="font-mono text-[13px] text-slate-500 dark:text-slate-400">
+                                  <TableCell className="font-mono text-[0.8125rem] text-slate-500 dark:text-slate-400">
                                     {item.materialSpec || '—'}
                                   </TableCell>
                                   <TableCell className="text-right font-semibold text-slate-900 dark:text-white">
@@ -291,7 +291,7 @@ export function SupplierDetailDialog({ open, onOpenChange, supplierId }: Supplie
                               detail.recentPurchases.map(item => (
                                 <TableRow key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
                                   <TableCell className="font-semibold text-slate-900 dark:text-white">{item.orderNo}</TableCell>
-                                  <TableCell className="text-[13px] text-slate-500 dark:text-slate-400">{item.orderDate}</TableCell>
+                                  <TableCell className="text-[0.8125rem] text-slate-500 dark:text-slate-400">{item.orderDate}</TableCell>
                                   <TableCell>
                                     <Badge variant="secondary" className="font-normal">
                                       {t(`purchaseStatus.${item.status}`)}
@@ -330,7 +330,7 @@ export function SupplierDetailDialog({ open, onOpenChange, supplierId }: Supplie
                               detail.payablesSummary.records.map(item => (
                                 <TableRow key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
                                   <TableCell className="font-medium text-slate-900 dark:text-white">{item.orderNo ?? '—'}</TableCell>
-                                  <TableCell className="text-[13px] text-slate-500 dark:text-slate-400">{item.dueDate ?? '—'}</TableCell>
+                                  <TableCell className="text-[0.8125rem] text-slate-500 dark:text-slate-400">{item.dueDate ?? '—'}</TableCell>
                                   <TableCell>
                                     <Badge variant={item.status === 'unpaid' ? 'destructive' : 'secondary'} className="font-normal">
                                       {t(`payableStatus.${item.status}`)}

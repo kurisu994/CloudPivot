@@ -533,7 +533,7 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
               }}
               items={materialSelectItems}
             >
-              <SelectTrigger className="w-[280px]">
+              <SelectTrigger className="w-[17.5rem]">
                 <SelectValue placeholder={t('addMaterial')} />
               </SelectTrigger>
               <SelectContent>
@@ -548,20 +548,20 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
         </div>
 
         <div className="overflow-x-auto">
-          <Table className="min-w-[1100px] table-fixed">
+          <Table className="min-w-[68.75rem] table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px]">#</TableHead>
-                <TableHead className="w-[100px]">{t('materialCode')}</TableHead>
-                <TableHead className="w-[150px]">{t('materialName')}</TableHead>
-                <TableHead className="w-[90px]">{t('spec')}</TableHead>
-                <TableHead className="w-[60px]">{t('unit')}</TableHead>
-                <TableHead className="w-[90px]">{t('thisQuantity')}</TableHead>
-                <TableHead className="w-[110px]">{t('unitPrice')}</TableHead>
-                <TableHead className="w-[80px]">{t('lineDiscount')}</TableHead>
-                <TableHead className="w-[120px] text-right">{t('amount')}</TableHead>
-                <TableHead className="w-[110px]">{t('remark')}</TableHead>
-                <TableHead className="w-[50px]" />
+                <TableHead className="w-[2.5rem]">#</TableHead>
+                <TableHead className="w-[6.25rem]">{t('materialCode')}</TableHead>
+                <TableHead className="w-[9.375rem]">{t('materialName')}</TableHead>
+                <TableHead className="w-[5.625rem]">{t('spec')}</TableHead>
+                <TableHead className="w-[3.75rem]">{t('unit')}</TableHead>
+                <TableHead className="w-[5.625rem]">{t('thisQuantity')}</TableHead>
+                <TableHead className="w-[6.875rem]">{t('unitPrice')}</TableHead>
+                <TableHead className="w-[5rem]">{t('lineDiscount')}</TableHead>
+                <TableHead className="w-[7.5rem] text-right">{t('amount')}</TableHead>
+                <TableHead className="w-[6.875rem]">{t('remark')}</TableHead>
+                <TableHead className="w-[3.125rem]" />
               </TableRow>
             </TableHeader>
             <TableBody>

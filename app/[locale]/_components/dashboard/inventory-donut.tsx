@@ -62,10 +62,10 @@ export function InventoryDonut({ className }: { className?: string }) {
       </CardHeader>
       <CardContent className="flex flex-col items-center justify-center p-0 pb-6">
         {error ? (
-          <p className="text-muted-foreground flex h-[220px] items-center justify-center text-sm">{tc('loadFailed')}</p>
+          <p className="text-muted-foreground flex h-[13.75rem] items-center justify-center text-sm">{tc('loadFailed')}</p>
         ) : (
           <>
-            <ChartContainer config={inventoryConfig} className="mx-auto h-[220px] min-h-[220px] w-full min-w-[200px]">
+            <ChartContainer config={inventoryConfig} className="mx-auto h-[13.75rem] min-h-[13.75rem] w-full min-w-[12.5rem]">
               <PieChart>
                 <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                 <Pie data={data} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} strokeWidth={2} paddingAngle={2}>

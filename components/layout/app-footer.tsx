@@ -17,7 +17,7 @@ export function AppFooter({ className }: { className?: string }) {
       )}
     >
       <div>{t('rights')}</div>
-      <div className="mt-2 flex items-center gap-6 text-[10px] tracking-widest md:mt-0">
+      <div className="mt-2 flex items-center gap-6 text-[0.625rem] tracking-widest md:mt-0">
         <a href="#" className="transition-colors hover:text-slate-600 dark:hover:text-slate-200">
           {t('terms')}
         </a>

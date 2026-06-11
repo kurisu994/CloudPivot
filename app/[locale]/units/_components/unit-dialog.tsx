@@ -134,7 +134,7 @@ export function UnitDialog({ open, onOpenChange, unitId, onSuccess }: UnitDialog
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[30rem]">
         <DialogHeader>
           <DialogTitle>{isEditing ? t('editUnit') : t('addUnit')}</DialogTitle>
         </DialogHeader>

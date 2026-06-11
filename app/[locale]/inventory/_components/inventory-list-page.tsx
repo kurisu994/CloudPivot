@@ -172,7 +172,7 @@ export function InventoryListPage() {
       {/* 筛选区 */}
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-[220px] flex-1">
+          <div className="min-w-[13.75rem] flex-1">
             <div className="relative">
               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
@@ -184,7 +184,7 @@ export function InventoryListPage() {
               />
             </div>
           </div>
-          <div className="w-[160px]">
+          <div className="w-[10rem]">
             <Select value={draftWarehouse} onValueChange={v => v && setDraftWarehouse(v)} items={warehouseItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -198,7 +198,7 @@ export function InventoryListPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="w-[160px]">
+          <div className="w-[10rem]">
             <Select value={draftCategory} onValueChange={v => v && setDraftCategory(v)} items={categoryItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -212,7 +212,7 @@ export function InventoryListPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="w-[140px]">
+          <div className="w-[8.75rem]">
             <Select value={draftAlert} onValueChange={v => v && setDraftAlert(v)} items={alertItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -240,20 +240,20 @@ export function InventoryListPage() {
       {/* 数据表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
         <TooltipProvider>
-          <BusinessListTableShell tableClassName="min-w-[1000px]">
+          <BusinessListTableShell tableClassName="min-w-[62.5rem]">
             <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
               <TableRow>
-                <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[96px]`}>{t('materialCode')}</TableHead>
-                <TableHead className="w-[140px]">{t('materialName')}</TableHead>
-                <TableHead className="w-[80px]">{t('category')}</TableHead>
-                <TableHead className="w-[80px]">{t('warehouse')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('quantity')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('reservedQty')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('availableQty')}</TableHead>
-                <TableHead className="w-[70px]">{t('alertStatus')}</TableHead>
-                <TableHead className="w-[88px]">{t('lastInDate')}</TableHead>
-                <TableHead className="w-[88px]">{t('lastOutDate')}</TableHead>
-                <TableHead className="w-[64px]">{tc('actions')}</TableHead>
+                <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[6rem]`}>{t('materialCode')}</TableHead>
+                <TableHead className="w-[8.75rem]">{t('materialName')}</TableHead>
+                <TableHead className="w-[5rem]">{t('category')}</TableHead>
+                <TableHead className="w-[5rem]">{t('warehouse')}</TableHead>
+                <TableHead className="w-[5rem] text-right">{t('quantity')}</TableHead>
+                <TableHead className="w-[5rem] text-right">{t('reservedQty')}</TableHead>
+                <TableHead className="w-[5rem] text-right">{t('availableQty')}</TableHead>
+                <TableHead className="w-[4.375rem]">{t('alertStatus')}</TableHead>
+                <TableHead className="w-[5.5rem]">{t('lastInDate')}</TableHead>
+                <TableHead className="w-[5.5rem]">{t('lastOutDate')}</TableHead>
+                <TableHead className="w-[4rem]">{tc('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

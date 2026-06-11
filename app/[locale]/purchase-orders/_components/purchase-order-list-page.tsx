@@ -171,7 +171,7 @@ export function PurchaseOrderListPage({ onEdit, onNew }: PurchaseOrderListPagePr
       {/* 筛选区 */}
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-[220px] flex-1">
+          <div className="min-w-[13.75rem] flex-1">
             <div className="relative">
               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
@@ -183,7 +183,7 @@ export function PurchaseOrderListPage({ onEdit, onNew }: PurchaseOrderListPagePr
               />
             </div>
           </div>
-          <div className="w-[180px]">
+          <div className="w-[11.25rem]">
             <Select value={draftSupplierId} onValueChange={v => v && setDraftSupplierId(v)} items={supplierItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -197,7 +197,7 @@ export function PurchaseOrderListPage({ onEdit, onNew }: PurchaseOrderListPagePr
               </SelectContent>
             </Select>
           </div>
-          <div className="w-[140px]">
+          <div className="w-[8.75rem]">
             <Select value={draftStatus} onValueChange={v => v && setDraftStatus(v)} items={statusItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -211,7 +211,7 @@ export function PurchaseOrderListPage({ onEdit, onNew }: PurchaseOrderListPagePr
               </SelectContent>
             </Select>
           </div>
-          <div className="w-[160px]">
+          <div className="w-[10rem]">
             <Select value={draftWarehouseId} onValueChange={v => v && setDraftWarehouseId(v)} items={warehouseItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -232,7 +232,7 @@ export function PurchaseOrderListPage({ onEdit, onNew }: PurchaseOrderListPagePr
               setDraftDateFrom(from)
               setDraftDateTo(to)
             }}
-            className="w-[280px]"
+            className="w-[17.5rem]"
           />
           <Button variant="outline" size="sm" onClick={handleReset}>
             <RotateCcw data-icon="inline-start" />

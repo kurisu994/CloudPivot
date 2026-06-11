@@ -154,7 +154,7 @@ export function OperationLogsContent() {
       <section className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-center gap-3">
           <Select value={moduleFilter} onValueChange={value => setModuleFilter(value ?? '')} items={moduleOptions}>
-            <SelectTrigger className="h-9 w-[160px] bg-slate-50 text-sm dark:bg-slate-900/50">
+            <SelectTrigger className="h-9 w-[10rem] bg-slate-50 text-sm dark:bg-slate-900/50">
               <Layers className="mr-1.5 size-3.5 shrink-0 text-slate-400" />
               <SelectValue placeholder={t('allModules')} />
             </SelectTrigger>
@@ -168,7 +168,7 @@ export function OperationLogsContent() {
           </Select>
 
           <Select value={actionFilter} onValueChange={value => setActionFilter(value ?? '')} items={actionOptions}>
-            <SelectTrigger className="h-9 w-[160px] bg-slate-50 text-sm dark:bg-slate-900/50">
+            <SelectTrigger className="h-9 w-[10rem] bg-slate-50 text-sm dark:bg-slate-900/50">
               <Zap className="mr-1.5 size-3.5 shrink-0 text-slate-400" />
               <SelectValue placeholder={t('allTypes')} />
             </SelectTrigger>
@@ -193,7 +193,7 @@ export function OperationLogsContent() {
               setDateFrom(from)
               setDateTo(to)
             }}
-            className="h-9 w-[260px] bg-slate-50 text-sm dark:bg-slate-900/50"
+            className="h-9 w-[16.25rem] bg-slate-50 text-sm dark:bg-slate-900/50"
           />
 
           <div className="flex-1" />
@@ -250,12 +250,12 @@ export function OperationLogsContent() {
           <Table>
             <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
               <TableRow className="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50">
-                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('time')}</TableHead>
-                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('user')}</TableHead>
-                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('module')}</TableHead>
-                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('action')}</TableHead>
-                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('target')}</TableHead>
-                <TableHead className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t('changeSummary')}</TableHead>
+                <TableHead className="px-6 py-4 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('time')}</TableHead>
+                <TableHead className="px-6 py-4 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('user')}</TableHead>
+                <TableHead className="px-6 py-4 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('module')}</TableHead>
+                <TableHead className="px-6 py-4 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('action')}</TableHead>
+                <TableHead className="px-6 py-4 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('target')}</TableHead>
+                <TableHead className="px-6 py-4 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('changeSummary')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -284,7 +284,7 @@ export function OperationLogsContent() {
                     {/* 用户 */}
                     <TableCell className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <div className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                        <div className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-[0.625rem] font-bold text-primary">
                           {getInitials(log.operatorName)}
                         </div>
                         <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{log.operatorName ?? 'system'}</span>
@@ -292,7 +292,7 @@ export function OperationLogsContent() {
                     </TableCell>
                     {/* 模块 */}
                     <TableCell className="px-6 py-4">
-                      <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-bold', getModuleBadgeClass(log.module))}>
+                      <span className={cn('rounded-full px-2 py-0.5 text-[0.6875rem] font-bold', getModuleBadgeClass(log.module))}>
                         {getModuleLabel(log.module)}
                       </span>
                     </TableCell>

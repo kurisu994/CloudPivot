@@ -285,7 +285,7 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
       <div className="border-border bg-card flex items-center justify-between gap-4 rounded-xl border p-4 shadow-sm">
         <div className="flex flex-1 items-center gap-4">
           <div className="relative max-w-xs flex-1">
-            <Search className="text-muted-foreground absolute top-2.5 left-3 size-[18px]" />
+            <Search className="text-muted-foreground absolute top-2.5 left-3 size-[1.125rem]" />
             <Input
               className="pl-10"
               placeholder={t('searchPlaceholder')}
@@ -295,7 +295,7 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
             />
           </div>
           <Select value={status} onValueChange={v => setStatus(v ?? 'all')} items={statusItems}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[9.375rem]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -325,17 +325,17 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
 
       {/* BOM 列表表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell className="border-border bg-card rounded-xl border shadow-sm" tableClassName="min-w-[800px]">
+        <BusinessListTableShell className="border-border bg-card rounded-xl border shadow-sm" tableClassName="min-w-[50rem]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
-              <TableHead className={`w-[160px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('table.materialName')}</TableHead>
-              <TableHead className="w-[96px]">{t('table.materialCode')}</TableHead>
-              <TableHead className="w-[64px]">{t('table.version')}</TableHead>
-              <TableHead className="w-[72px]">{t('table.status')}</TableHead>
-              <TableHead className="w-[100px]">{t('table.standardCost')}</TableHead>
-              <TableHead className="w-[64px]">{t('table.itemCount')}</TableHead>
-              <TableHead className="w-[96px]">{t('table.createdAt')}</TableHead>
-              <TableHead className="w-[100px]">{t('table.actions')}</TableHead>
+              <TableHead className={`w-[10rem] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('table.materialName')}</TableHead>
+              <TableHead className="w-[6rem]">{t('table.materialCode')}</TableHead>
+              <TableHead className="w-[4rem]">{t('table.version')}</TableHead>
+              <TableHead className="w-[4.5rem]">{t('table.status')}</TableHead>
+              <TableHead className="w-[6.25rem]">{t('table.standardCost')}</TableHead>
+              <TableHead className="w-[4rem]">{t('table.itemCount')}</TableHead>
+              <TableHead className="w-[6rem]">{t('table.createdAt')}</TableHead>
+              <TableHead className="w-[6.25rem]">{t('table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

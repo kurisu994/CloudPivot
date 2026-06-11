@@ -81,13 +81,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           {!collapsed && (
             <div className="flex flex-col leading-tight select-none">
               <span
-                className="text-[15px] font-extrabold tracking-tight text-[#294985] dark:text-slate-100"
+                className="text-[0.9375rem] font-extrabold tracking-tight text-[#294985] dark:text-slate-100"
                 style={{ fontFamily: 'var(--font-noto-sans-sc), system-ui' }}
               >
                 {tc('systemName').split(' ')[0]}
               </span>
               <span
-                className="text-[10px] font-semibold tracking-[0.2em] text-slate-400/80 uppercase dark:text-slate-500"
+                className="text-[0.625rem] font-semibold tracking-[0.2em] text-slate-400/80 uppercase dark:text-slate-500"
                 style={{ fontFamily: 'var(--font-brand), system-ui' }}
               >
                 {tc('systemName').substring(tc('systemName').indexOf(' ') + 1)}
@@ -180,7 +180,7 @@ function NavMenuItem({
                   <Link
                     href={child.href}
                     className={cn(
-                      'flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors',
+                      'flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[0.8125rem] font-medium transition-colors',
                       childActive
                         ? 'bg-[#43619f]/10 font-bold text-[#43619f] dark:bg-[#6b85c1]/15 dark:text-[#6b85c1]'
                         : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200',

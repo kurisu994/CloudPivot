@@ -261,20 +261,20 @@ export function ReturnExecutePage({ outboundId, onBack }: ReturnExecutePageProps
           <h3 className="text-foreground font-semibold">{t('returnItemsTitle')}</h3>
         </div>
         <div className="overflow-x-auto">
-          <Table className="min-w-[1000px] table-fixed">
+          <Table className="min-w-[62.5rem] table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px]">#</TableHead>
-                <TableHead className="w-[90px]">{t('materialCode')}</TableHead>
-                <TableHead className="w-[140px]">{t('materialName')}</TableHead>
-                <TableHead className="w-[80px]">{t('spec')}</TableHead>
-                <TableHead className="w-[60px]">{t('unit')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('outboundQuantity')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('alreadyReturned')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('returnableQty')}</TableHead>
-                <TableHead className="w-[100px]">{t('thisReturnQty')}</TableHead>
-                <TableHead className="w-[100px]">{t('lotInfo')}</TableHead>
-                <TableHead className="w-[100px] text-right">{t('amount')}</TableHead>
+                <TableHead className="w-[2.5rem]">#</TableHead>
+                <TableHead className="w-[5.625rem]">{t('materialCode')}</TableHead>
+                <TableHead className="w-[8.75rem]">{t('materialName')}</TableHead>
+                <TableHead className="w-[5rem]">{t('spec')}</TableHead>
+                <TableHead className="w-[3.75rem]">{t('unit')}</TableHead>
+                <TableHead className="w-[5rem] text-right">{t('outboundQuantity')}</TableHead>
+                <TableHead className="w-[5rem] text-right">{t('alreadyReturned')}</TableHead>
+                <TableHead className="w-[5rem] text-right">{t('returnableQty')}</TableHead>
+                <TableHead className="w-[6.25rem]">{t('thisReturnQty')}</TableHead>
+                <TableHead className="w-[6.25rem]">{t('lotInfo')}</TableHead>
+                <TableHead className="w-[6.25rem] text-right">{t('amount')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

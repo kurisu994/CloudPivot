@@ -54,7 +54,7 @@ export function BomCopyDialog({ open, onOpenChange, sourceId, onSuccess }: BomCo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
+      <DialogContent className="sm:max-w-[25rem]">
         <DialogHeader>
           <DialogTitle>{t('copyDialog.title')}</DialogTitle>
         </DialogHeader>

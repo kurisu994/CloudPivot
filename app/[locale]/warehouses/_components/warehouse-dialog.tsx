@@ -163,7 +163,7 @@ export function WarehouseDialog({ open, onOpenChange, warehouseId, onSuccess }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-[32.5rem]">
         <DialogHeader>
           <DialogTitle>{isEditing ? t('editWarehouse') : t('addWarehouse')}</DialogTitle>
         </DialogHeader>

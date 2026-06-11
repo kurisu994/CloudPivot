@@ -522,11 +522,11 @@ export function InventoryReportPage() {
               setDraftStart(from)
               setDraftEnd(to)
             }}
-            className="w-[280px]"
+            className="w-[17.5rem]"
           />
           {/* 仓库 */}
           <Select value={draftWarehouse} onValueChange={v => v && setDraftWarehouse(v)} items={warehouseItems}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[8.75rem]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -539,7 +539,7 @@ export function InventoryReportPage() {
           </Select>
           {/* 分类 */}
           <Select value={draftCategory} onValueChange={v => v && setDraftCategory(v)} items={categoryItems}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[8.75rem]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -552,7 +552,7 @@ export function InventoryReportPage() {
           </Select>
           {/* 物料类型 */}
           <Select value={draftType} onValueChange={v => v && setDraftType(v)} items={typeItems}>
-            <SelectTrigger className="w-[120px]">
+            <SelectTrigger className="w-[7.5rem]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -568,7 +568,7 @@ export function InventoryReportPage() {
             value={draftKeyword}
             onChange={e => setDraftKeyword(e.target.value)}
             placeholder={t('keywordPlaceholder')}
-            className="w-[140px]"
+            className="w-[8.75rem]"
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
           />
           {/* 操作按钮 */}
@@ -631,7 +631,7 @@ export function InventoryReportPage() {
           {/* 库龄筛选（草稿模式） */}
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <Select value={draftAgingRange} onValueChange={v => v && setDraftAgingRange(v)} items={agingRangeItems}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[8.75rem]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -646,7 +646,7 @@ export function InventoryReportPage() {
               value={draftAgingKeyword}
               onChange={e => setDraftAgingKeyword(e.target.value)}
               placeholder={t('keywordPlaceholder')}
-              className="w-[160px]"
+              className="w-[10rem]"
               onKeyDown={e => e.key === 'Enter' && handleAgingSearch()}
             />
             <Button size="sm" onClick={handleAgingSearch}>
@@ -666,7 +666,7 @@ export function InventoryReportPage() {
                   aging61_90: { label: t('aging61_90'), color: AGING_COLORS[2] },
                   aging90plus: { label: t('aging90plus'), color: AGING_COLORS[3] },
                 }}
-                className="mx-auto aspect-square max-h-[250px]"
+                className="mx-auto aspect-square max-h-[15.625rem]"
               >
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent />} />
@@ -700,7 +700,7 @@ export function InventoryReportPage() {
         <TabsContent value="slowMoving" className="mt-4 flex min-h-0 flex-1 flex-col">
           <div className="mb-3 flex items-center gap-2">
             <span className="text-muted-foreground text-sm">{t('daysThreshold')}:</span>
-            <Input type="number" value={slowThreshold} onChange={e => setSlowThreshold(Number(e.target.value) || 90)} className="w-[80px]" />
+            <Input type="number" value={slowThreshold} onChange={e => setSlowThreshold(Number(e.target.value) || 90)} className="w-[5rem]" />
           </div>
           <SlowMovingTable
             items={slowData?.items ?? []}
@@ -753,21 +753,21 @@ function StockMovementTable({
   return (
     <>
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell tableClassName={SHOW_AMOUNT_COLUMNS ? 'min-w-[1200px]' : 'min-w-[760px]'}>
+        <BusinessListTableShell tableClassName={SHOW_AMOUNT_COLUMNS ? 'min-w-[75rem]' : 'min-w-[47.5rem]'}>
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
-              <TableHead className="sticky left-0 z-10 w-[100px] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
-              <TableHead className="w-[140px]">{t('materialName')}</TableHead>
-              <TableHead className="w-[80px]">{t('spec')}</TableHead>
-              <TableHead className="w-[90px] text-right">{t('openingQty')}</TableHead>
-              <TableHead className="w-[90px] text-right">{t('inboundQty')}</TableHead>
-              <TableHead className="w-[90px] text-right">{t('outboundQty')}</TableHead>
-              <TableHead className="w-[90px] text-right">{t('closingQty')}</TableHead>
+              <TableHead className="sticky left-0 z-10 w-[6.25rem] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
+              <TableHead className="w-[8.75rem]">{t('materialName')}</TableHead>
+              <TableHead className="w-[5rem]">{t('spec')}</TableHead>
+              <TableHead className="w-[5.625rem] text-right">{t('openingQty')}</TableHead>
+              <TableHead className="w-[5.625rem] text-right">{t('inboundQty')}</TableHead>
+              <TableHead className="w-[5.625rem] text-right">{t('outboundQty')}</TableHead>
+              <TableHead className="w-[5.625rem] text-right">{t('closingQty')}</TableHead>
               {SHOW_AMOUNT_COLUMNS && (
                 <>
-                  <TableHead className="w-[110px] text-right">{t('inboundValue')}</TableHead>
-                  <TableHead className="w-[110px] text-right">{t('outboundValue')}</TableHead>
-                  <TableHead className="w-[110px] text-right">{t('closingValue')}</TableHead>
+                  <TableHead className="w-[6.875rem] text-right">{t('inboundValue')}</TableHead>
+                  <TableHead className="w-[6.875rem] text-right">{t('outboundValue')}</TableHead>
+                  <TableHead className="w-[6.875rem] text-right">{t('closingValue')}</TableHead>
                 </>
               )}
             </TableRow>
@@ -867,16 +867,16 @@ function AgingTable({
   return (
     <>
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell tableClassName={SHOW_AMOUNT_COLUMNS ? 'min-w-[900px]' : 'min-w-[700px]'}>
+        <BusinessListTableShell tableClassName={SHOW_AMOUNT_COLUMNS ? 'min-w-[56.25rem]' : 'min-w-[43.75rem]'}>
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
-              <TableHead className="sticky left-0 z-10 w-[100px] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
-              <TableHead className="w-[140px]">{t('materialName')}</TableHead>
-              <TableHead className="w-[120px]">{t('lotNo')}</TableHead>
-              <TableHead className="w-[100px]">{t('receivedDate')}</TableHead>
-              <TableHead className="w-[100px]">{t('daysInStock')}</TableHead>
-              <TableHead className="w-[90px] text-right">{t('qty')}</TableHead>
-              {SHOW_AMOUNT_COLUMNS && <TableHead className="w-[110px] text-right">{t('value')}</TableHead>}
+              <TableHead className="sticky left-0 z-10 w-[6.25rem] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
+              <TableHead className="w-[8.75rem]">{t('materialName')}</TableHead>
+              <TableHead className="w-[7.5rem]">{t('lotNo')}</TableHead>
+              <TableHead className="w-[6.25rem]">{t('receivedDate')}</TableHead>
+              <TableHead className="w-[6.25rem]">{t('daysInStock')}</TableHead>
+              <TableHead className="w-[5.625rem] text-right">{t('qty')}</TableHead>
+              {SHOW_AMOUNT_COLUMNS && <TableHead className="w-[6.875rem] text-right">{t('value')}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -941,16 +941,16 @@ function SlowMovingTable({
   return (
     <>
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell tableClassName="min-w-[900px]">
+        <BusinessListTableShell tableClassName="min-w-[56.25rem]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
-              <TableHead className="sticky left-0 z-10 w-[100px] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
-              <TableHead className="w-[140px]">{t('materialName')}</TableHead>
-              <TableHead className="w-[100px]">{t('category')}</TableHead>
-              <TableHead className="w-[90px] text-right">{t('currentQty')}</TableHead>
-              <TableHead className="w-[100px]">{t('lastOutDate')}</TableHead>
-              <TableHead className="w-[100px] text-right">{t('daysSinceLastOut')}</TableHead>
-              <TableHead className="w-[100px] text-right">{t('avgMonthlyOutbound')}</TableHead>
+              <TableHead className="sticky left-0 z-10 w-[6.25rem] bg-white dark:bg-slate-950">{t('materialCode')}</TableHead>
+              <TableHead className="w-[8.75rem]">{t('materialName')}</TableHead>
+              <TableHead className="w-[6.25rem]">{t('category')}</TableHead>
+              <TableHead className="w-[5.625rem] text-right">{t('currentQty')}</TableHead>
+              <TableHead className="w-[6.25rem]">{t('lastOutDate')}</TableHead>
+              <TableHead className="w-[6.25rem] text-right">{t('daysSinceLastOut')}</TableHead>
+              <TableHead className="w-[6.25rem] text-right">{t('avgMonthlyOutbound')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

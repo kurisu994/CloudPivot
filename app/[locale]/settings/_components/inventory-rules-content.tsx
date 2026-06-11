@@ -23,7 +23,7 @@ function DefaultWarehouseMapping() {
       <div className="overflow-x-auto p-0">
         <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase dark:bg-slate-900/50 dark:text-slate-400">
+            <tr className="bg-slate-50/50 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase dark:bg-slate-900/50 dark:text-slate-400">
               <th className="border-b border-slate-100 px-6 py-4 dark:border-slate-800">{t('materialType')}</th>
               <th className="border-b border-slate-100 px-6 py-4 dark:border-slate-800">{t('defaultWarehouse')}</th>
               <th className="border-b border-slate-100 px-6 py-4 dark:border-slate-800">{t('description')}</th>
@@ -41,7 +41,7 @@ function DefaultWarehouseMapping() {
                     { value: 'outsource', label: '委外仓' },
                   ]}
                 >
-                  <SelectTrigger className="h-10 w-full max-w-[240px] bg-slate-50 dark:bg-slate-900/50">
+                  <SelectTrigger className="h-10 w-full max-w-[15rem] bg-slate-50 dark:bg-slate-900/50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -63,7 +63,7 @@ function DefaultWarehouseMapping() {
                     { value: 'workshop', label: '车间仓' },
                   ]}
                 >
-                  <SelectTrigger className="h-10 w-full max-w-[240px] bg-slate-50 dark:bg-slate-900/50">
+                  <SelectTrigger className="h-10 w-full max-w-[15rem] bg-slate-50 dark:bg-slate-900/50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -85,7 +85,7 @@ function DefaultWarehouseMapping() {
                     { value: 'inspect', label: '待检仓' },
                   ]}
                 >
-                  <SelectTrigger className="h-10 w-full max-w-[240px] bg-slate-50 dark:bg-slate-900/50">
+                  <SelectTrigger className="h-10 w-full max-w-[15rem] bg-slate-50 dark:bg-slate-900/50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -119,14 +119,14 @@ function BatchStrategySection() {
         <div className="grid grid-cols-1 gap-x-12 gap-y-8 md:grid-cols-2">
           {/* 批次编号规则 */}
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('batchNumberRule')}</Label>
+            <Label className="text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('batchNumberRule')}</Label>
             <Input defaultValue="LOT-YYYYMMDD-XXX" className="h-10 bg-slate-50 dark:bg-slate-900/50" />
-            <p className="text-[11px] text-slate-400">{t('batchNumberRuleHint')}</p>
+            <p className="text-[0.6875rem] text-slate-400">{t('batchNumberRuleHint')}</p>
           </div>
 
           {/* 出库分配策略 */}
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('outboundStrategy')}</Label>
+            <Label className="text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('outboundStrategy')}</Label>
             <Select
               defaultValue="fifo"
               items={[
@@ -148,7 +148,7 @@ function BatchStrategySection() {
 
           {/* 预留批次策略 */}
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('reservedBatchStrategy')}</Label>
+            <Label className="text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('reservedBatchStrategy')}</Label>
             <Select
               defaultValue="fifo_reserve"
               items={[
@@ -168,7 +168,7 @@ function BatchStrategySection() {
 
           {/* 单据仓库模式 */}
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{t('documentWarehouseMode')}</Label>
+            <Label className="text-[0.6875rem] font-bold tracking-wider text-slate-400 uppercase">{t('documentWarehouseMode')}</Label>
             <Input
               readOnly
               value={t('orderLevelSingleWarehouse')}

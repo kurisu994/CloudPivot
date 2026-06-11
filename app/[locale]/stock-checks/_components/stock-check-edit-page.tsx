@@ -181,14 +181,14 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[120px]">{ti('materialCode')}</TableHead>
-                  <TableHead className="w-[160px]">{ti('materialName')}</TableHead>
-                  <TableHead className="w-[80px]">{ti('spec')}</TableHead>
-                  <TableHead className="w-[60px]">{ti('unit')}</TableHead>
-                  <TableHead className="w-[90px] text-right">{t('systemQty')}</TableHead>
-                  <TableHead className="w-[120px] text-right">{t('actualQty')}</TableHead>
-                  <TableHead className="w-[90px] text-right">{t('diffQty')}</TableHead>
-                  <TableHead className="w-[100px] text-right">{t('diffAmount')}</TableHead>
+                  <TableHead className="w-[7.5rem]">{ti('materialCode')}</TableHead>
+                  <TableHead className="w-[10rem]">{ti('materialName')}</TableHead>
+                  <TableHead className="w-[5rem]">{ti('spec')}</TableHead>
+                  <TableHead className="w-[3.75rem]">{ti('unit')}</TableHead>
+                  <TableHead className="w-[5.625rem] text-right">{t('systemQty')}</TableHead>
+                  <TableHead className="w-[7.5rem] text-right">{t('actualQty')}</TableHead>
+                  <TableHead className="w-[5.625rem] text-right">{t('diffQty')}</TableHead>
+                  <TableHead className="w-[6.25rem] text-right">{t('diffAmount')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -219,7 +219,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
                               type="number"
                               value={actualVal}
                               onChange={e => setEditValues(prev => ({ ...prev, [item.id]: e.target.value }))}
-                              className="w-[100px] ml-auto text-right"
+                              className="w-[6.25rem] ml-auto text-right"
                               placeholder={t('inputActualQty')}
                             />
                           ) : (

@@ -109,7 +109,7 @@ export function BomReverseLookup() {
     <div className="border-border bg-card rounded-xl border p-4 shadow-sm">
       <h3 className="text-foreground mb-3 text-base font-semibold">{t('reverseLookup.title')}</h3>
       <div className="relative mb-4 max-w-md">
-        <Search className="text-muted-foreground absolute top-2.5 left-3 size-[18px]" />
+        <Search className="text-muted-foreground absolute top-2.5 left-3 size-[1.125rem]" />
         <Input
           className="pl-10"
           placeholder={t('reverseLookup.placeholder')}

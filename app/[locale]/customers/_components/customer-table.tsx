@@ -61,20 +61,20 @@ export function CustomerTable({
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
         <BusinessListTableShell
           className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
-          tableClassName="min-w-[1120px]"
+          tableClassName="min-w-[70rem]"
         >
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow className="hover:bg-transparent">
-              <TableHead className={`w-[130px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('table.code')}</TableHead>
-              <TableHead className="w-[160px]">{t('table.name')}</TableHead>
-              <TableHead className="w-[100px]">{t('table.customerType')}</TableHead>
-              <TableHead className="w-[100px]">{t('table.country')}</TableHead>
-              <TableHead className="w-[100px]">{t('table.grade')}</TableHead>
-              <TableHead className="w-[110px]">{t('table.contactPerson')}</TableHead>
-              <TableHead className="w-[90px]">{t('table.currency')}</TableHead>
-              <TableHead className="w-[130px] text-right">{t('table.receivableBalance')}</TableHead>
-              <TableHead className="w-[90px]">{t('table.status')}</TableHead>
-              <TableHead className="w-[140px] text-right">{t('table.actions')}</TableHead>
+              <TableHead className={`w-[8.125rem] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('table.code')}</TableHead>
+              <TableHead className="w-[10rem]">{t('table.name')}</TableHead>
+              <TableHead className="w-[6.25rem]">{t('table.customerType')}</TableHead>
+              <TableHead className="w-[6.25rem]">{t('table.country')}</TableHead>
+              <TableHead className="w-[6.25rem]">{t('table.grade')}</TableHead>
+              <TableHead className="w-[6.875rem]">{t('table.contactPerson')}</TableHead>
+              <TableHead className="w-[5.625rem]">{t('table.currency')}</TableHead>
+              <TableHead className="w-[8.125rem] text-right">{t('table.receivableBalance')}</TableHead>
+              <TableHead className="w-[5.625rem]">{t('table.status')}</TableHead>
+              <TableHead className="w-[8.75rem] text-right">{t('table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

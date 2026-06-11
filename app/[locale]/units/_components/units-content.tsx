@@ -120,13 +120,13 @@ export function UnitsContent() {
         <BusinessListTableShell className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
           <TableHeader className="bg-muted sticky top-0 z-30">
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-[120px] text-center">{t('name')}</TableHead>
-              <TableHead className="w-[100px]">{t('nameEn')}</TableHead>
-              <TableHead className="w-[100px]">{t('nameVi')}</TableHead>
-              <TableHead className="w-[80px]">{t('symbol')}</TableHead>
-              <TableHead className="w-[80px]">{t('decimalPlaces')}</TableHead>
-              <TableHead className="w-[80px]">{t('status')}</TableHead>
-              {showActions && <TableHead className="w-[140px]">{t('actions')}</TableHead>}
+              <TableHead className="w-[7.5rem] text-center">{t('name')}</TableHead>
+              <TableHead className="w-[6.25rem]">{t('nameEn')}</TableHead>
+              <TableHead className="w-[6.25rem]">{t('nameVi')}</TableHead>
+              <TableHead className="w-[5rem]">{t('symbol')}</TableHead>
+              <TableHead className="w-[5rem]">{t('decimalPlaces')}</TableHead>
+              <TableHead className="w-[5rem]">{t('status')}</TableHead>
+              {showActions && <TableHead className="w-[8.75rem]">{t('actions')}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>

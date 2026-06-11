@@ -154,7 +154,7 @@ export function SalesOrderDetailDialog({ orderId, onClose }: SalesOrderDetailDia
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[40px]">#</TableHead>
+                        <TableHead className="w-[2.5rem]">#</TableHead>
                         <TableHead>{t('materialCode')}</TableHead>
                         <TableHead>{t('materialName')}</TableHead>
                         <TableHead>{t('spec')}</TableHead>

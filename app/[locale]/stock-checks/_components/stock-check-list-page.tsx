@@ -169,7 +169,7 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
       {/* 筛选区 */}
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="w-[160px]">
+          <div className="w-[10rem]">
             <Select value={draftWarehouse} onValueChange={v => v && setDraftWarehouse(v)} items={warehouseItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -183,7 +183,7 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
               </SelectContent>
             </Select>
           </div>
-          <div className="w-[140px]">
+          <div className="w-[8.75rem]">
             <Select value={draftStatus} onValueChange={v => v && setDraftStatus(v)} items={statusItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -218,18 +218,18 @@ export function StockCheckListPage({ onEdit, onCreated }: StockCheckListPageProp
 
       {/* 表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell tableClassName="min-w-[900px]">
+        <BusinessListTableShell tableClassName="min-w-[56.25rem]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
-              <TableHead className="w-[160px]">{t('checkNo')}</TableHead>
-              <TableHead className="w-[120px]">{t('warehouse')}</TableHead>
-              <TableHead className="w-[100px]">{t('checkDate')}</TableHead>
-              <TableHead className="w-[80px]">{tc('status')}</TableHead>
-              <TableHead className="w-[80px]">{t('scopeType')}</TableHead>
-              <TableHead className="w-[80px] text-right">{t('itemCount')}</TableHead>
-              <TableHead className="w-[80px] text-right">{t('diffCount')}</TableHead>
-              <TableHead className="w-[100px]">{t('createdBy')}</TableHead>
-              <TableHead className="w-[80px]">{tc('actions')}</TableHead>
+              <TableHead className="w-[10rem]">{t('checkNo')}</TableHead>
+              <TableHead className="w-[7.5rem]">{t('warehouse')}</TableHead>
+              <TableHead className="w-[6.25rem]">{t('checkDate')}</TableHead>
+              <TableHead className="w-[5rem]">{tc('status')}</TableHead>
+              <TableHead className="w-[5rem]">{t('scopeType')}</TableHead>
+              <TableHead className="w-[5rem] text-right">{t('itemCount')}</TableHead>
+              <TableHead className="w-[5rem] text-right">{t('diffCount')}</TableHead>
+              <TableHead className="w-[6.25rem]">{t('createdBy')}</TableHead>
+              <TableHead className="w-[5rem]">{tc('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

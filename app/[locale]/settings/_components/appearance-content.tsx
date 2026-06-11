@@ -47,7 +47,7 @@ function ThemeModeSection({ currentTheme, onThemeChange }: { currentTheme: Theme
             <div className="flex items-center justify-between border-t border-slate-100 bg-white p-4">
               <div className="flex flex-col">
                 <span className="text-sm font-bold text-slate-900">{currentTheme === 'light' ? t('lightThemeCurrent') : t('lightTheme')}</span>
-                <span className="text-[11px] font-medium tracking-tighter text-slate-400 uppercase">{t('lightThemeTag')}</span>
+                <span className="text-[0.6875rem] font-medium tracking-tighter text-slate-400 uppercase">{t('lightThemeTag')}</span>
               </div>
               {currentTheme === 'light' ? (
                 <CheckCircle2 className="fill-primary size-6 text-white" />
@@ -82,7 +82,7 @@ function ThemeModeSection({ currentTheme, onThemeChange }: { currentTheme: Theme
             <div className="flex items-center justify-between border-t border-slate-800 bg-slate-900 p-4">
               <div className="flex flex-col">
                 <span className="text-sm font-bold text-slate-300">{t('darkTheme')}</span>
-                <span className="text-[11px] font-medium tracking-tighter text-slate-600 uppercase">{t('darkThemeTag')}</span>
+                <span className="text-[0.6875rem] font-medium tracking-tighter text-slate-600 uppercase">{t('darkThemeTag')}</span>
               </div>
               {currentTheme === 'dark' ? (
                 <CheckCircle2 className="fill-primary size-6 text-white" />
@@ -124,7 +124,7 @@ function ThemeModeSection({ currentTheme, onThemeChange }: { currentTheme: Theme
             <div className="relative z-10 flex items-center justify-between border-t border-slate-200/50 bg-white/90 p-4 backdrop-blur-md dark:border-slate-800/50 dark:bg-slate-900/90">
               <div className="flex flex-col">
                 <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{t('systemTheme')}</span>
-                <span className="text-[11px] font-medium tracking-tighter text-slate-500 uppercase">{t('systemThemeTag')}</span>
+                <span className="text-[0.6875rem] font-medium tracking-tighter text-slate-500 uppercase">{t('systemThemeTag')}</span>
               </div>
               {currentTheme === 'system' ? (
                 <CheckCircle2 className="fill-primary size-6 text-white" />

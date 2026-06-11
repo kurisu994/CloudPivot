@@ -211,7 +211,7 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-end gap-3">
           {/* 关键词搜索 */}
-          <div className="min-w-[220px] flex-1">
+          <div className="min-w-[13.75rem] flex-1">
             <div className="relative">
               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
@@ -224,7 +224,7 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
             </div>
           </div>
           {/* 客户筛选 */}
-          <div className="w-[180px]">
+          <div className="w-[11.25rem]">
             <Select value={draftCustomerId} onValueChange={v => v && setDraftCustomerId(v)} items={customerItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -239,7 +239,7 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
             </Select>
           </div>
           {/* 状态筛选 */}
-          <div className="w-[140px]">
+          <div className="w-[8.75rem]">
             <Select value={draftStatus} onValueChange={v => v && setDraftStatus(v)} items={statusItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -254,7 +254,7 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
             </Select>
           </div>
           {/* 类型筛选 */}
-          <div className="w-[140px]">
+          <div className="w-[8.75rem]">
             <Select value={draftType} onValueChange={v => v && setDraftType(v)} items={typeItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -276,7 +276,7 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
               setDraftDateFrom(from)
               setDraftDateTo(to)
             }}
-            className="w-[280px]"
+            className="w-[17.5rem]"
           />
           {/* 操作按钮 */}
           <Button variant="outline" size="sm" onClick={handleReset}>

@@ -532,17 +532,17 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <BusinessListTableShell tableClassName="min-w-[700px]">
+          <BusinessListTableShell tableClassName="min-w-[43.75rem]">
             <thead>
               <tr className="border-b">
-                <th className="bg-background sticky left-0 z-10 w-[140px] px-3 py-2 text-left text-xs font-medium">{t('picking.materialName')}</th>
-                <th className="w-[80px] px-3 py-2 text-right text-xs font-medium">{t('picking.requiredQty')}</th>
-                <th className="w-[80px] px-3 py-2 text-right text-xs font-medium">{t('picking.pickedQty')}</th>
-                <th className="w-[80px] px-3 py-2 text-right text-xs font-medium">{t('picking.returnedQty')}</th>
-                <th className="w-[80px] px-3 py-2 text-right text-xs font-medium">{t('picking.netPicked')}</th>
-                <th className="w-[60px] px-3 py-2 text-center text-xs font-medium">{t('picking.unit')}</th>
-                <th className="w-[70px] px-3 py-2 text-center text-xs font-medium">{t('picking.pickStatus')}</th>
-                {!isTerminal && <th className="w-[100px] px-3 py-2 text-right text-xs font-medium">{t('actions')}</th>}
+                <th className="bg-background sticky left-0 z-10 w-[8.75rem] px-3 py-2 text-left text-xs font-medium">{t('picking.materialName')}</th>
+                <th className="w-[5rem] px-3 py-2 text-right text-xs font-medium">{t('picking.requiredQty')}</th>
+                <th className="w-[5rem] px-3 py-2 text-right text-xs font-medium">{t('picking.pickedQty')}</th>
+                <th className="w-[5rem] px-3 py-2 text-right text-xs font-medium">{t('picking.returnedQty')}</th>
+                <th className="w-[5rem] px-3 py-2 text-right text-xs font-medium">{t('picking.netPicked')}</th>
+                <th className="w-[3.75rem] px-3 py-2 text-center text-xs font-medium">{t('picking.unit')}</th>
+                <th className="w-[4.375rem] px-3 py-2 text-center text-xs font-medium">{t('picking.pickStatus')}</th>
+                {!isTerminal && <th className="w-[6.25rem] px-3 py-2 text-right text-xs font-medium">{t('actions')}</th>}
               </tr>
             </thead>
             <tbody>
@@ -603,14 +603,14 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
           )}
         </CardHeader>
         <CardContent className="p-0">
-          <BusinessListTableShell tableClassName="min-w-[600px]">
+          <BusinessListTableShell tableClassName="min-w-[37.5rem]">
             <thead>
               <tr className="border-b">
-                <th className="w-[100px] px-3 py-2 text-left text-xs font-medium">{t('completion.batchNo')}</th>
-                <th className="w-[100px] px-3 py-2 text-right text-xs font-medium">{t('completion.quantity')}</th>
-                <th className="w-[120px] px-3 py-2 text-left text-xs font-medium">{t('completion.warehouse')}</th>
-                <th className="w-[120px] px-3 py-2 text-right text-xs font-medium">{t('completion.unitCost')}</th>
-                <th className="w-[120px] px-3 py-2 text-left text-xs font-medium">{t('completion.date')}</th>
+                <th className="w-[6.25rem] px-3 py-2 text-left text-xs font-medium">{t('completion.batchNo')}</th>
+                <th className="w-[6.25rem] px-3 py-2 text-right text-xs font-medium">{t('completion.quantity')}</th>
+                <th className="w-[7.5rem] px-3 py-2 text-left text-xs font-medium">{t('completion.warehouse')}</th>
+                <th className="w-[7.5rem] px-3 py-2 text-right text-xs font-medium">{t('completion.unitCost')}</th>
+                <th className="w-[7.5rem] px-3 py-2 text-left text-xs font-medium">{t('completion.date')}</th>
               </tr>
             </thead>
             <tbody>

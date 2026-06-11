@@ -126,7 +126,7 @@ export function ReturnListPage({ onNewReturn }: ReturnListPageProps) {
       {/* 筛选区 */}
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-[220px] flex-1">
+          <div className="min-w-[13.75rem] flex-1">
             <div className="relative">
               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
@@ -138,7 +138,7 @@ export function ReturnListPage({ onNewReturn }: ReturnListPageProps) {
               />
             </div>
           </div>
-          <div className="w-[140px]">
+          <div className="w-[8.75rem]">
             <Select value={draftStatus} onValueChange={v => v && setDraftStatus(v)} items={statusItems}>
               <SelectTrigger>
                 <SelectValue />
@@ -159,7 +159,7 @@ export function ReturnListPage({ onNewReturn }: ReturnListPageProps) {
               setDraftDateFrom(from)
               setDraftDateTo(to)
             }}
-            className="w-[280px]"
+            className="w-[17.5rem]"
           />
           <Button variant="outline" size="sm" onClick={handleReset}>
             <RotateCcw data-icon="inline-start" />
@@ -182,7 +182,7 @@ export function ReturnListPage({ onNewReturn }: ReturnListPageProps) {
             }}
             items={outboundItems}
           >
-            <SelectTrigger className="w-[360px]">
+            <SelectTrigger className="w-[22.5rem]">
               <SelectValue placeholder={t('selectOutboundOrder')} />
             </SelectTrigger>
             <SelectContent>
@@ -204,18 +204,18 @@ export function ReturnListPage({ onNewReturn }: ReturnListPageProps) {
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
         <BusinessListTableShell
           className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
-          tableClassName="min-w-[800px]"
+          tableClassName="min-w-[50rem]"
         >
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow className="hover:bg-transparent">
-              <TableHead className={`w-[140px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('returnNo')}</TableHead>
-              <TableHead className="w-[140px]">{t('sourceOutbound')}</TableHead>
-              <TableHead className="w-[110px]">{t('customer')}</TableHead>
-              <TableHead className="w-[88px]">{t('returnDate')}</TableHead>
-              <TableHead className="w-[100px] text-right">{t('returnAmount')}</TableHead>
-              <TableHead className="w-[110px]">{t('returnReason')}</TableHead>
-              <TableHead className="w-[70px]">{tc('status')}</TableHead>
-              <TableHead className="w-[70px] text-right">{tc('actions')}</TableHead>
+              <TableHead className={`w-[8.75rem] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('returnNo')}</TableHead>
+              <TableHead className="w-[8.75rem]">{t('sourceOutbound')}</TableHead>
+              <TableHead className="w-[6.875rem]">{t('customer')}</TableHead>
+              <TableHead className="w-[5.5rem]">{t('returnDate')}</TableHead>
+              <TableHead className="w-[6.25rem] text-right">{t('returnAmount')}</TableHead>
+              <TableHead className="w-[6.875rem]">{t('returnReason')}</TableHead>
+              <TableHead className="w-[4.375rem]">{tc('status')}</TableHead>
+              <TableHead className="w-[4.375rem] text-right">{tc('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

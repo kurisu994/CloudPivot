@@ -66,21 +66,21 @@ export function PendingTasks({ className }: { className?: string }) {
               <AlertTriangle className="mt-0.5 h-5 w-5 text-red-600 dark:text-red-500" />
               <div>
                 <p className="text-xs font-bold text-red-900 dark:text-red-400">{t('stockAlertTitle', { count: lowStockCount })}</p>
-                <p className="mt-0.5 text-[10px] text-red-700 dark:text-red-500/80">{t('stockAlertDesc')}</p>
+                <p className="mt-0.5 text-[0.625rem] text-red-700 dark:text-red-500/80">{t('stockAlertDesc')}</p>
               </div>
             </div>
             <div className="flex items-start gap-3 rounded border-l-4 border-l-orange-500 bg-orange-50 p-3 dark:bg-orange-500/10">
               <FileCheck className="mt-0.5 h-5 w-5 text-orange-600 dark:text-orange-500" />
               <div>
                 <p className="text-xs font-bold text-orange-900 dark:text-orange-400">{t('purchaseAuditTitle', { count: pendingPurchaseCount })}</p>
-                <p className="mt-0.5 text-[10px] text-orange-700 dark:text-orange-500/80">{t('purchaseAuditDesc')}</p>
+                <p className="mt-0.5 text-[0.625rem] text-orange-700 dark:text-orange-500/80">{t('purchaseAuditDesc')}</p>
               </div>
             </div>
             <div className="flex items-start gap-3 rounded border-l-4 border-l-blue-500 bg-blue-50 p-3 dark:bg-blue-500/10">
               <Truck className="mt-0.5 h-5 w-5 text-blue-600 dark:text-blue-500" />
               <div>
                 <p className="text-xs font-bold text-blue-900 dark:text-blue-400">{t('deliveryConfirmTitle', { count: pendingOutboundCount })}</p>
-                <p className="mt-0.5 text-[10px] text-blue-700 dark:text-blue-500/80">{t('deliveryConfirmDesc')}</p>
+                <p className="mt-0.5 text-[0.625rem] text-blue-700 dark:text-blue-500/80">{t('deliveryConfirmDesc')}</p>
               </div>
             </div>
             <div className="flex items-start gap-3 rounded border-l-4 border-l-slate-400 bg-slate-50 p-3 dark:bg-slate-800">
@@ -89,7 +89,7 @@ export function PendingTasks({ className }: { className?: string }) {
                 <p className="text-xs font-bold text-slate-900 dark:text-slate-300">
                   {t('overdueReceivableTitle', { count: overdueReceivableCount })}
                 </p>
-                <p className="mt-0.5 text-[10px] text-slate-600 dark:text-slate-400">
+                <p className="mt-0.5 text-[0.625rem] text-slate-600 dark:text-slate-400">
                   {overdueReceivableCount > 0 ? t('overdueReceivableDesc', { days: maxOverdueDays }) : t('noOverdueReceivableDesc')}
                 </p>
               </div>

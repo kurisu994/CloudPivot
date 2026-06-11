@@ -183,7 +183,7 @@ export function MetricsCards() {
           </CardHeader>
           <CardContent className="p-5 pt-0">
             <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatDashboardUsd(todaySales)}</h3>
-            <p className="mt-2 text-[10px] text-slate-400">
+            <p className="mt-2 text-[0.625rem] text-slate-400">
               {t('comparisonAmount', { label: t('vsYesterday'), amount: formatDashboardUsd(yesterdaySales) })}
             </p>
           </CardContent>
@@ -196,7 +196,7 @@ export function MetricsCards() {
           </CardHeader>
           <CardContent className="p-5 pt-0">
             <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatDashboardUsd(monthSales)}</h3>
-            <p className="mt-2 text-[10px] text-slate-400">
+            <p className="mt-2 text-[0.625rem] text-slate-400">
               {t('comparisonAmount', { label: t('vsPreviousMonthPeriod'), amount: formatDashboardUsd(previousMonthSales) })}
             </p>
           </CardContent>
@@ -209,7 +209,7 @@ export function MetricsCards() {
           </CardHeader>
           <CardContent className="p-5 pt-0">
             <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatDashboardUsd(todayPurchase)}</h3>
-            <p className="mt-2 text-[10px] text-slate-400">
+            <p className="mt-2 text-[0.625rem] text-slate-400">
               {t('comparisonAmount', { label: t('vsYesterday'), amount: formatDashboardUsd(yesterdayPurchase) })}
             </p>
           </CardContent>
@@ -224,7 +224,7 @@ export function MetricsCards() {
           </CardHeader>
           <CardContent className="p-5 pt-0">
             <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{t('lowStockCount', { count: lowStockCount })}</h3>
-            <p className="mt-2 text-[10px] text-slate-400">{t('belowSafetyLevel')}</p>
+            <p className="mt-2 text-[0.625rem] text-slate-400">{t('belowSafetyLevel')}</p>
           </CardContent>
         </Card>
       </div>
@@ -236,7 +236,7 @@ export function MetricsCards() {
             <Wallet className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-[11px] font-bold tracking-tight text-slate-500 uppercase">{t('receivables')}</p>
+            <p className="text-[0.6875rem] font-bold tracking-tight text-slate-500 uppercase">{t('receivables')}</p>
             <p className="text-lg font-bold text-slate-800 dark:text-slate-200">{formatDashboardUsd(receivables)}</p>
           </div>
         </div>
@@ -246,7 +246,7 @@ export function MetricsCards() {
             <CreditCard className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-[11px] font-bold tracking-tight text-slate-500 uppercase">{t('payables')}</p>
+            <p className="text-[0.6875rem] font-bold tracking-tight text-slate-500 uppercase">{t('payables')}</p>
             <p className="text-lg font-bold text-slate-800 dark:text-slate-200">{formatDashboardUsd(payables)}</p>
           </div>
         </div>
@@ -256,7 +256,7 @@ export function MetricsCards() {
             <RefreshCw className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-[11px] font-bold tracking-tight text-slate-500 uppercase">{t('replenishmentPending')}</p>
+            <p className="text-[0.6875rem] font-bold tracking-tight text-slate-500 uppercase">{t('replenishmentPending')}</p>
             <p className="text-lg font-bold text-slate-800 dark:text-slate-200">
               {t('itemCount', { count: replenishmentCount })}
               {urgentDelta > 0 && (

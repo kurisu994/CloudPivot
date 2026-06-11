@@ -151,19 +151,19 @@ export function CustomOrderTable({
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
         <BusinessListTableShell
           className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
-          tableClassName="min-w-[880px]"
+          tableClassName="min-w-[55rem]"
         >
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow className="hover:bg-transparent">
-              <TableHead className={`w-[140px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('orderNo')}</TableHead>
-              <TableHead className="w-[110px]">{t('customer')}</TableHead>
-              <TableHead className="w-[72px]">{t('customType')}</TableHead>
-              <TableHead className="w-[96px]">{t('refProduct')}</TableHead>
-              <TableHead className="w-[100px] text-right">{t('quoteAmount')}</TableHead>
-              <TableHead className="w-[56px]">{t('priority')}</TableHead>
-              <TableHead className="w-[72px]">{tc('status')}</TableHead>
-              <TableHead className="w-[88px]">{t('orderDate')}</TableHead>
-              <TableHead className="w-[80px] text-right">{tc('actions')}</TableHead>
+              <TableHead className={`w-[8.75rem] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('orderNo')}</TableHead>
+              <TableHead className="w-[6.875rem]">{t('customer')}</TableHead>
+              <TableHead className="w-[4.5rem]">{t('customType')}</TableHead>
+              <TableHead className="w-[6rem]">{t('refProduct')}</TableHead>
+              <TableHead className="w-[6.25rem] text-right">{t('quoteAmount')}</TableHead>
+              <TableHead className="w-[3.5rem]">{t('priority')}</TableHead>
+              <TableHead className="w-[4.5rem]">{tc('status')}</TableHead>
+              <TableHead className="w-[5.5rem]">{t('orderDate')}</TableHead>
+              <TableHead className="w-[5rem] text-right">{tc('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

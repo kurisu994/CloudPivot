@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import { useDisplayPreferences } from '@/components/providers/display-preferences-provider'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { getSalesReportSummary } from '@/lib/tauri'
@@ -17,6 +18,7 @@ interface TrendPoint {
 export function SalesTrendChart({ className }: { className?: string }) {
   const t = useTranslations('dashboard')
   const tc = useTranslations('common')
+  const { largeFont } = useDisplayPreferences()
   const [data, setData] = useState<TrendPoint[]>([])
   const [error, setError] = useState(false)
 
@@ -51,9 +53,9 @@ export function SalesTrendChart({ className }: { className?: string }) {
       </CardHeader>
       <CardContent>
         {error ? (
-          <p className="text-muted-foreground flex h-[250px] items-center justify-center text-sm">{tc('loadFailed')}</p>
+          <p className="text-muted-foreground flex h-[15.625rem] items-center justify-center text-sm">{tc('loadFailed')}</p>
         ) : (
-          <ChartContainer config={salesConfig} className="h-[250px] min-h-[250px] w-full min-w-full">
+          <ChartContainer config={salesConfig} className="h-[15.625rem] min-h-[15.625rem] w-full min-w-full">
             <BarChart accessibilityLayer data={data} margin={{ top: 20, left: -20, right: 10 }}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.5} />
               <XAxis
@@ -61,7 +63,7 @@ export function SalesTrendChart({ className }: { className?: string }) {
                 tickLine={false}
                 tickMargin={15}
                 axisLine={false}
-                fontSize={12}
+                fontSize={largeFont ? 15 : 12}
                 fontWeight={600}
                 className="tracking-wider text-slate-400 uppercase"
               />
@@ -69,11 +71,11 @@ export function SalesTrendChart({ className }: { className?: string }) {
                 tickLine={false}
                 axisLine={false}
                 tickMargin={10}
-                fontSize={11}
+                fontSize={largeFont ? 14 : 11}
                 className="text-slate-400"
                 tickFormatter={value => formatDashboardUsdCompact(Number(value))}
               />
-              <ChartTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} content={<ChartTooltipContent indicator="dashed" className="w-[180px]" />} />
+              <ChartTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} content={<ChartTooltipContent indicator="dashed" className="w-[11.25rem]" />} />
               <Bar dataKey="current" fill="var(--color-current)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ChartContainer>

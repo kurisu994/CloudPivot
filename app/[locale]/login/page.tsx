@@ -88,7 +88,7 @@ export default function LoginPage() {
 
       {/* 主内容区域 */}
       <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-12">
-        <div className="w-full max-w-[420px]">
+        <div className="w-full max-w-[26.25rem]">
           {/* 登录卡片 */}
           <Card className="border-slate-200/80 shadow-xl shadow-slate-200/50 dark:border-slate-800 dark:shadow-slate-900/50">
             <CardContent className="px-8 py-10">
@@ -243,7 +243,7 @@ export default function LoginPage() {
           {/*
           <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3.5 dark:border-blue-900/30 dark:bg-blue-950/30">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#294985] dark:text-[#6b85c1]" />
-            <p className="text-[13px] leading-relaxed text-[#294985] dark:text-[#8ba3d4]">
+            <p className="text-[0.8125rem] leading-relaxed text-[#294985] dark:text-[#8ba3d4]">
               {t('hint', {
                 username: 'admin',
                 password: 'admin123',
