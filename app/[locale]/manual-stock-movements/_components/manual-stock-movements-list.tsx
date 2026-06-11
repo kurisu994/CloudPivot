@@ -377,8 +377,8 @@ export function ManualStockMovementsList({ onNew, onEdit, onPrint }: ManualStock
               <th className="w-[70px] px-4 py-3 text-center text-sm font-semibold text-foreground">{t('manualStockMovements.direction')}</th>
               <th className="w-[120px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.businessType')}</th>
               <th className="w-[100px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.warehouse')}</th>
-              <th className="w-[110px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.counterpartyName')}</th>
-              <th className="w-[88px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.movementDate')}</th>
+              <th className="w-[120px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.counterpartyName')}</th>
+              <th className="w-[110px] px-4 py-3 text-left text-sm font-semibold text-foreground">{t('manualStockMovements.movementDate')}</th>
               <th className="w-[72px] px-4 py-3 text-right text-sm font-semibold text-foreground whitespace-nowrap">
                 {t('manualStockMovements.itemCount')}
               </th>
