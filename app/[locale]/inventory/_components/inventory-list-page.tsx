@@ -240,20 +240,20 @@ export function InventoryListPage() {
       {/* 数据表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
         <TooltipProvider>
-          <BusinessListTableShell tableClassName="min-w-[1200px]">
+          <BusinessListTableShell tableClassName="min-w-[1000px]">
             <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
               <TableRow>
-                <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[140px]`}>{t('materialCode')}</TableHead>
-                <TableHead className="w-[160px]">{t('materialName')}</TableHead>
-                <TableHead className="w-[100px]">{t('category')}</TableHead>
-                <TableHead className="w-[120px]">{t('warehouse')}</TableHead>
-                <TableHead className="w-[100px] text-right">{t('quantity')}</TableHead>
-                <TableHead className="w-[100px] text-right">{t('reservedQty')}</TableHead>
-                <TableHead className="w-[100px] text-right">{t('availableQty')}</TableHead>
-                <TableHead className="w-[80px]">{t('alertStatus')}</TableHead>
-                <TableHead className="w-[100px]">{t('lastInDate')}</TableHead>
-                <TableHead className="w-[100px]">{t('lastOutDate')}</TableHead>
-                <TableHead className="w-[80px]">{tc('actions')}</TableHead>
+                <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[96px]`}>{t('materialCode')}</TableHead>
+                <TableHead className="w-[140px]">{t('materialName')}</TableHead>
+                <TableHead className="w-[80px]">{t('category')}</TableHead>
+                <TableHead className="w-[80px]">{t('warehouse')}</TableHead>
+                <TableHead className="w-[80px] text-right">{t('quantity')}</TableHead>
+                <TableHead className="w-[80px] text-right">{t('reservedQty')}</TableHead>
+                <TableHead className="w-[80px] text-right">{t('availableQty')}</TableHead>
+                <TableHead className="w-[70px]">{t('alertStatus')}</TableHead>
+                <TableHead className="w-[88px]">{t('lastInDate')}</TableHead>
+                <TableHead className="w-[88px]">{t('lastOutDate')}</TableHead>
+                <TableHead className="w-[64px]">{tc('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
