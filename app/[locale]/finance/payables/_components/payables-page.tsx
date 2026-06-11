@@ -295,18 +295,18 @@ export function PayablesPage() {
 
       {/* 列表表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell tableClassName="min-w-[1100px]">
+        <BusinessListTableShell tableClassName="min-w-[880px]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
-              <TableHead className="w-[120px]">{t('payables.table.type')}</TableHead>
-              <TableHead className="w-[160px]">{t('payables.table.orderNo')}</TableHead>
-              <TableHead className="w-[140px]">{t('payables.table.supplier')}</TableHead>
-              <TableHead className="w-[100px]">{t('payables.table.payableDate')}</TableHead>
-              <TableHead className="w-[120px] text-right">{t('payables.table.payableAmount')}</TableHead>
-              <TableHead className="w-[120px] text-right">{t('payables.table.paidAmount')}</TableHead>
-              <TableHead className="w-[120px] text-right">{t('payables.table.unpaidAmount')}</TableHead>
-              <TableHead className="w-[90px]">{t('payables.table.status')}</TableHead>
-              <TableHead className="w-[110px]">{t('payables.table.actions')}</TableHead>
+              <TableHead className="w-[88px]">{t('payables.table.type')}</TableHead>
+              <TableHead className="w-[130px]">{t('payables.table.orderNo')}</TableHead>
+              <TableHead className="w-[110px]">{t('payables.table.supplier')}</TableHead>
+              <TableHead className="w-[88px]">{t('payables.table.payableDate')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('payables.table.payableAmount')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('payables.table.paidAmount')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('payables.table.unpaidAmount')}</TableHead>
+              <TableHead className="w-[72px]">{t('payables.table.status')}</TableHead>
+              <TableHead className="w-[88px]">{t('payables.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -204,18 +204,18 @@ export function ReturnListPage({ onNewReturn }: ReturnListPageProps) {
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
         <BusinessListTableShell
           className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
-          tableClassName="min-w-[1000px]"
+          tableClassName="min-w-[800px]"
         >
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow className="hover:bg-transparent">
-              <TableHead className={`w-[170px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('returnNo')}</TableHead>
-              <TableHead className="w-[170px]">{t('sourceOutbound')}</TableHead>
-              <TableHead className="w-[140px]">{t('customer')}</TableHead>
-              <TableHead className="w-[100px]">{t('returnDate')}</TableHead>
-              <TableHead className="w-[120px] text-right">{t('returnAmount')}</TableHead>
-              <TableHead className="w-[140px]">{t('returnReason')}</TableHead>
-              <TableHead className="w-[80px]">{tc('status')}</TableHead>
-              <TableHead className="w-[80px] text-right">{tc('actions')}</TableHead>
+              <TableHead className={`w-[140px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('returnNo')}</TableHead>
+              <TableHead className="w-[140px]">{t('sourceOutbound')}</TableHead>
+              <TableHead className="w-[110px]">{t('customer')}</TableHead>
+              <TableHead className="w-[88px]">{t('returnDate')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('returnAmount')}</TableHead>
+              <TableHead className="w-[110px]">{t('returnReason')}</TableHead>
+              <TableHead className="w-[70px]">{tc('status')}</TableHead>
+              <TableHead className="w-[70px] text-right">{tc('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

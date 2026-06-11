@@ -295,18 +295,18 @@ export function ReceivablesPage() {
 
       {/* 列表表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell tableClassName="min-w-[1100px]">
+        <BusinessListTableShell tableClassName="min-w-[880px]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
-              <TableHead className="w-[120px]">{t('receivables.table.type')}</TableHead>
-              <TableHead className="w-[160px]">{t('receivables.table.orderNo')}</TableHead>
-              <TableHead className="w-[140px]">{t('receivables.table.customer')}</TableHead>
-              <TableHead className="w-[100px]">{t('receivables.table.receivableDate')}</TableHead>
-              <TableHead className="w-[120px] text-right">{t('receivables.table.receivableAmount')}</TableHead>
-              <TableHead className="w-[120px] text-right">{t('receivables.table.receivedAmount')}</TableHead>
-              <TableHead className="w-[120px] text-right">{t('receivables.table.unreceivedAmount')}</TableHead>
-              <TableHead className="w-[90px]">{t('receivables.table.status')}</TableHead>
-              <TableHead className="w-[110px]">{t('receivables.table.actions')}</TableHead>
+              <TableHead className="w-[88px]">{t('receivables.table.type')}</TableHead>
+              <TableHead className="w-[130px]">{t('receivables.table.orderNo')}</TableHead>
+              <TableHead className="w-[110px]">{t('receivables.table.customer')}</TableHead>
+              <TableHead className="w-[88px]">{t('receivables.table.receivableDate')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('receivables.table.receivableAmount')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('receivables.table.receivedAmount')}</TableHead>
+              <TableHead className="w-[100px] text-right">{t('receivables.table.unreceivedAmount')}</TableHead>
+              <TableHead className="w-[72px]">{t('receivables.table.status')}</TableHead>
+              <TableHead className="w-[88px]">{t('receivables.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

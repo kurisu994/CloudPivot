@@ -191,18 +191,18 @@ export function StockTransferListPage({ onEdit, onNew }: StockTransferListPagePr
 
       {/* 表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell tableClassName="min-w-[900px]">
+        <BusinessListTableShell tableClassName="min-w-[760px]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
-              <TableHead className="w-[160px]">{t('transferNo')}</TableHead>
-              <TableHead className="w-[120px]">{t('fromWarehouse')}</TableHead>
-              <TableHead className="w-[120px]">{t('toWarehouse')}</TableHead>
-              <TableHead className="w-[100px]">{t('transferDate')}</TableHead>
-              <TableHead className="w-[80px]">{tc('status')}</TableHead>
-              <TableHead className="w-[80px] text-right">{t('itemCount')}</TableHead>
-              <TableHead className="w-[100px]">{t('createdBy')}</TableHead>
-              <TableHead className="w-[100px]">{t('createdAt')}</TableHead>
-              <TableHead className="w-[120px]">{tc('actions')}</TableHead>
+              <TableHead className="w-[130px]">{t('transferNo')}</TableHead>
+              <TableHead className="w-[96px]">{t('fromWarehouse')}</TableHead>
+              <TableHead className="w-[96px]">{t('toWarehouse')}</TableHead>
+              <TableHead className="w-[88px]">{t('transferDate')}</TableHead>
+              <TableHead className="w-[70px]">{tc('status')}</TableHead>
+              <TableHead className="w-[64px] text-right">{t('itemCount')}</TableHead>
+              <TableHead className="w-[80px]">{t('createdBy')}</TableHead>
+              <TableHead className="w-[88px]">{t('createdAt')}</TableHead>
+              <TableHead className="w-[96px]">{tc('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

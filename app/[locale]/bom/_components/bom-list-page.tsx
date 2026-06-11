@@ -325,17 +325,17 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
 
       {/* BOM 列表表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell className="border-border bg-card rounded-xl border shadow-sm" tableClassName="min-w-[960px]">
+        <BusinessListTableShell className="border-border bg-card rounded-xl border shadow-sm" tableClassName="min-w-[800px]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
-              <TableHead className={`w-[200px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('table.materialName')}</TableHead>
-              <TableHead className="w-[120px]">{t('table.materialCode')}</TableHead>
-              <TableHead className="w-[80px]">{t('table.version')}</TableHead>
-              <TableHead className="w-[90px]">{t('table.status')}</TableHead>
-              <TableHead className="w-[120px]">{t('table.standardCost')}</TableHead>
-              <TableHead className="w-[80px]">{t('table.itemCount')}</TableHead>
-              <TableHead className="w-[120px]">{t('table.createdAt')}</TableHead>
-              <TableHead className="w-[130px]">{t('table.actions')}</TableHead>
+              <TableHead className={`w-[160px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('table.materialName')}</TableHead>
+              <TableHead className="w-[96px]">{t('table.materialCode')}</TableHead>
+              <TableHead className="w-[64px]">{t('table.version')}</TableHead>
+              <TableHead className="w-[72px]">{t('table.status')}</TableHead>
+              <TableHead className="w-[100px]">{t('table.standardCost')}</TableHead>
+              <TableHead className="w-[64px]">{t('table.itemCount')}</TableHead>
+              <TableHead className="w-[96px]">{t('table.createdAt')}</TableHead>
+              <TableHead className="w-[100px]">{t('table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

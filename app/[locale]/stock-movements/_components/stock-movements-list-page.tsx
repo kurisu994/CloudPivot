@@ -299,20 +299,20 @@ export function StockMovementsListPage() {
 
         {/* 表格 */}
         <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-          <BusinessListTableShell tableClassName="min-w-[1400px]">
+          <BusinessListTableShell tableClassName="min-w-[1100px]">
             <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
               <TableRow>
-                <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[240px]`}>{t('transactionNo')}</TableHead>
-                <TableHead className="w-[100px]">{t('transactionDate')}</TableHead>
-                <TableHead className="w-[120px]">{t('transactionType')}</TableHead>
-                <TableHead className="w-[120px]">{ti('materialCode')}</TableHead>
-                <TableHead className="w-[140px]">{ti('materialName')}</TableHead>
-                <TableHead className="w-[100px]">{ti('warehouse')}</TableHead>
-                <TableHead className="w-[90px] text-right">{t('changeQty')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('beforeQty')}</TableHead>
-                <TableHead className="w-[80px] text-right">{t('afterQty')}</TableHead>
-                <TableHead className="w-[160px]">{t('relatedOrderNo')}</TableHead>
-                <TableHead className="w-[150px]">{t('source')}</TableHead>
+                <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[180px]`}>{t('transactionNo')}</TableHead>
+                <TableHead className="w-[88px]">{t('transactionDate')}</TableHead>
+                <TableHead className="w-[96px]">{t('transactionType')}</TableHead>
+                <TableHead className="w-[96px]">{ti('materialCode')}</TableHead>
+                <TableHead className="w-[120px]">{ti('materialName')}</TableHead>
+                <TableHead className="w-[80px]">{ti('warehouse')}</TableHead>
+                <TableHead className="w-[72px] text-right">{t('changeQty')}</TableHead>
+                <TableHead className="w-[64px] text-right">{t('beforeQty')}</TableHead>
+                <TableHead className="w-[64px] text-right">{t('afterQty')}</TableHead>
+                <TableHead className="w-[130px]">{t('relatedOrderNo')}</TableHead>
+                <TableHead className="w-[120px]">{t('source')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

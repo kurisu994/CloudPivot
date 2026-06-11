@@ -62,20 +62,20 @@ export function SupplierTable({
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
         <BusinessListTableShell
           className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
-          tableClassName="min-w-[1300px]"
+          tableClassName="min-w-[1000px]"
         >
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow className="hover:bg-transparent">
-              <TableHead className={`w-[140px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('code')}</TableHead>
-              <TableHead className="w-[180px]">{t('name')}</TableHead>
-              <TableHead className="w-[120px]">{t('country')}</TableHead>
-              <TableHead className="w-[120px]">{t('contactPerson')}</TableHead>
-              <TableHead className="w-[140px]">{t('contactPhone')}</TableHead>
-              <TableHead className="w-[100px]">{t('grade')}</TableHead>
-              <TableHead className="w-[100px]">{t('currency')}</TableHead>
-              <TableHead className="w-[140px] text-right">{t('payableBalance')}</TableHead>
-              <TableHead className="w-[100px]">{t('isEnabled')}</TableHead>
-              <TableHead className="w-[160px] text-right">{tc('actions')}</TableHead>
+              <TableHead className={`w-[96px] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('code')}</TableHead>
+              <TableHead className="w-[140px]">{t('name')}</TableHead>
+              <TableHead className="w-[80px]">{t('country')}</TableHead>
+              <TableHead className="w-[88px]">{t('contactPerson')}</TableHead>
+              <TableHead className="w-[120px]">{t('contactPhone')}</TableHead>
+              <TableHead className="w-[80px]">{t('grade')}</TableHead>
+              <TableHead className="w-[80px]">{t('currency')}</TableHead>
+              <TableHead className="w-[110px] text-right">{t('payableBalance')}</TableHead>
+              <TableHead className="w-[70px]">{t('isEnabled')}</TableHead>
+              <TableHead className="w-[120px] text-right">{tc('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -412,23 +412,23 @@ export function ReplenishmentPage() {
 
       {/* 建议列表表格 */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
-        <BusinessListTableShell tableClassName="min-w-[1600px]">
+        <BusinessListTableShell tableClassName="min-w-[1300px]">
           <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
             <TableRow>
-              <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[50px]`}>
+              <TableHead className={`${BUSINESS_LIST_STICKY_HEAD_CLASS} w-[40px]`}>
                 <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
               </TableHead>
-              <TableHead className="w-[120px]">{t('materialCode')}</TableHead>
-              <TableHead className="w-[150px]">{t('materialName')}</TableHead>
-              <TableHead className="w-[90px]">{t('category')}</TableHead>
-              <TableHead className="w-[90px] text-right">{t('availableQty')}</TableHead>
-              <TableHead className="w-[90px] text-right">{t('safetyStock')}</TableHead>
-              <TableHead className="w-[80px] text-right">{t('gapQty')}</TableHead>
-              <TableHead className="w-[80px] text-right">{t('dailyConsumption')}</TableHead>
-              <TableHead className="w-[90px] text-right">{t('daysUntilStockout')}</TableHead>
-              <TableHead className="w-[100px] text-right">{t('suggestedQty')}</TableHead>
-              <TableHead className="w-[130px]">{t('supplier')}</TableHead>
-              <TableHead className="w-[90px]">
+              <TableHead className="w-[96px]">{t('materialCode')}</TableHead>
+              <TableHead className="w-[120px]">{t('materialName')}</TableHead>
+              <TableHead className="w-[72px]">{t('category')}</TableHead>
+              <TableHead className="w-[72px] text-right">{t('availableQty')}</TableHead>
+              <TableHead className="w-[72px] text-right">{t('safetyStock')}</TableHead>
+              <TableHead className="w-[64px] text-right">{t('gapQty')}</TableHead>
+              <TableHead className="w-[64px] text-right">{t('dailyConsumption')}</TableHead>
+              <TableHead className="w-[72px] text-right">{t('daysUntilStockout')}</TableHead>
+              <TableHead className="w-[80px] text-right">{t('suggestedQty')}</TableHead>
+              <TableHead className="w-[100px]">{t('supplier')}</TableHead>
+              <TableHead className="w-[72px]">
                 <span className="sr-only">{t('urgencyAll')}</span>
               </TableHead>
               <TableHead className="w-[80px]">{tc('actions')}</TableHead>
