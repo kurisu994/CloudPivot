@@ -29,6 +29,22 @@ import { getCategoryTree, getInventoryDetail, getInventoryList, getWarehouses } 
 const DEFAULT_PAGE_SIZE = 50
 const COL_COUNT = 11
 
+/** 变动类型选项（与后端 transaction_type 枚举一致） */
+const TX_TYPE_OPTIONS = [
+  { value: 'purchase_in', labelKey: 'purchaseIn' },
+  { value: 'sales_out', labelKey: 'salesOut' },
+  { value: 'purchase_return', labelKey: 'purchaseReturn' },
+  { value: 'sales_return', labelKey: 'salesReturn' },
+  { value: 'check_gain', labelKey: 'checkGain' },
+  { value: 'check_loss', labelKey: 'checkLoss' },
+  { value: 'transfer_in', labelKey: 'transferIn' },
+  { value: 'transfer_out', labelKey: 'transferOut' },
+  { value: 'production_out', labelKey: 'productionOut' },
+  { value: 'production_in', labelKey: 'productionIn' },
+  { value: 'other_in', labelKey: 'otherIn' },
+  { value: 'other_out', labelKey: 'otherOut' },
+] as const
+
 /** 截断表格文本，并在悬浮时显示完整内容。 */
 function Truncated({ text }: { text: string }) {
   return (
@@ -56,6 +72,7 @@ const ALERT_OPTIONS = [
 export function InventoryListPage() {
   const t = useTranslations('inventory')
   const tc = useTranslations('common')
+  const ts = useTranslations('stockMovements')
 
   const [items, setItems] = useState<InventoryListItem[]>([])
   const [total, setTotal] = useState(0)
@@ -405,7 +422,11 @@ export function InventoryListPage() {
                       detail.recentTransactions.map(tx => (
                         <TableRow key={tx.id}>
                           <TableCell>
-                            <div className="text-sm">{tx.transactionType}</div>
+                            <div className="text-sm">
+                              {TX_TYPE_OPTIONS.find(o => o.value === tx.transactionType)
+                                ? ts(TX_TYPE_OPTIONS.find(o => o.value === tx.transactionType)!.labelKey)
+                                : tx.transactionType}
+                            </div>
                             <div className="text-muted-foreground text-xs">{tx.transactionDate}</div>
                           </TableCell>
                           <TableCell>{tx.warehouseName}</TableCell>

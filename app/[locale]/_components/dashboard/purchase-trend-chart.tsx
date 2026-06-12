@@ -18,7 +18,7 @@ interface TrendPoint {
 export function PurchaseTrendChart({ className }: { className?: string }) {
   const t = useTranslations('dashboard')
   const tc = useTranslations('common')
-  const { largeFont } = useDisplayPreferences()
+  const { fontSize } = useDisplayPreferences()
   const [data, setData] = useState<TrendPoint[]>([])
   const [error, setError] = useState(false)
 
@@ -69,14 +69,14 @@ export function PurchaseTrendChart({ className }: { className?: string }) {
                 tickLine={false}
                 axisLine={false}
                 tickMargin={12}
-                fontSize={largeFont ? 14 : 11}
+                fontSize={fontSize >= 18 ? 14 : 11}
                 className="font-bold text-slate-400"
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
                 tickMargin={12}
-                fontSize={largeFont ? 14 : 11}
+                fontSize={fontSize >= 18 ? 14 : 11}
                 className="text-slate-400"
                 tickFormatter={val => formatDashboardUsdCompact(Number(val))}
               />

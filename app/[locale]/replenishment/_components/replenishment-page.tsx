@@ -58,7 +58,7 @@ export function ReplenishmentPage() {
   const t = useTranslations('replenishment')
   const tc = useTranslations('common')
   const { user } = useAuth()
-  const { largeFont } = useDisplayPreferences()
+  const { fontSize } = useDisplayPreferences()
 
   // 建议列表
   const [suggestions, setSuggestions] = useState<ReplenishmentSuggestion[]>([])
@@ -543,8 +543,8 @@ export function ReplenishmentPage() {
             <ChartContainer config={{ qty: { label: t('trend.consumption'), color: 'hsl(222, 47%, 51%)' } }} className="h-[18.75rem] w-full">
               <AreaChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" tickFormatter={v => v.slice(5)} fontSize={largeFont ? 15 : 12} />
-                <YAxis fontSize={largeFont ? 15 : 12} />
+                <XAxis dataKey="date" tickFormatter={v => v.slice(5)} fontSize={fontSize >= 18 ? 15 : 12} />
+                <YAxis fontSize={fontSize >= 18 ? 15 : 12} />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Area type="monotone" dataKey="qty" stroke="var(--color-qty)" fill="var(--color-qty)" fillOpacity={0.15} strokeWidth={2} />
               </AreaChart>

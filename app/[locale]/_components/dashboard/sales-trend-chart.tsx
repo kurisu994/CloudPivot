@@ -18,7 +18,7 @@ interface TrendPoint {
 export function SalesTrendChart({ className }: { className?: string }) {
   const t = useTranslations('dashboard')
   const tc = useTranslations('common')
-  const { largeFont } = useDisplayPreferences()
+  const { fontSize } = useDisplayPreferences()
   const [data, setData] = useState<TrendPoint[]>([])
   const [error, setError] = useState(false)
 
@@ -63,7 +63,7 @@ export function SalesTrendChart({ className }: { className?: string }) {
                 tickLine={false}
                 tickMargin={15}
                 axisLine={false}
-                fontSize={largeFont ? 15 : 12}
+                fontSize={fontSize >= 18 ? 15 : 12}
                 fontWeight={600}
                 className="tracking-wider text-slate-400 uppercase"
               />
@@ -71,7 +71,7 @@ export function SalesTrendChart({ className }: { className?: string }) {
                 tickLine={false}
                 axisLine={false}
                 tickMargin={10}
-                fontSize={largeFont ? 14 : 11}
+                fontSize={fontSize >= 18 ? 14 : 11}
                 className="text-slate-400"
                 tickFormatter={value => formatDashboardUsdCompact(Number(value))}
               />

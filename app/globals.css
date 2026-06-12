@@ -196,19 +196,27 @@
   --list-item-padding-x: 1rem;
 }
 
-/* 大字体模式 — 根 font-size 放大，rem 单位全局生效 */
-html[data-large-font="true"] {
-  font-size: 20px;
+/* 字体大小档位 — 通过 data-font-size 属性驱动根 font-size */
+html[data-font-size="12"] { font-size: 12px !important; }
+html[data-font-size="14"] { font-size: 14px !important; }
+html[data-font-size="16"] { font-size: 16px !important; }
+html[data-font-size="18"] { font-size: 18px !important; }
+html[data-font-size="20"] { font-size: 20px !important; }
 
-  /* Switch 组件使用 rem 尺寸，大字体下 thumb 会溢出容器，固定为 px */
-  [data-slot="switch"] {
-    height: 18.4px;
-    width: 32px;
-  }
-  [data-slot="switch-thumb"] {
-    width: 16px;
-    height: 16px;
-  }
+/* Switch 组件使用 rem 尺寸，非默认字体下 thumb 会溢出容器，固定为 px */
+html[data-font-size="12"] [data-slot="switch"],
+html[data-font-size="14"] [data-slot="switch"],
+html[data-font-size="18"] [data-slot="switch"],
+html[data-font-size="20"] [data-slot="switch"] {
+  height: 18.4px;
+  width: 32px;
+}
+html[data-font-size="12"] [data-slot="switch-thumb"],
+html[data-font-size="14"] [data-slot="switch-thumb"],
+html[data-font-size="18"] [data-slot="switch-thumb"],
+html[data-font-size="20"] [data-slot="switch-thumb"] {
+  width: 16px;
+  height: 16px;
 }
 
 /* 紧凑列表视图 — 减小表头高度与单元格 padding（横向/纵向同时压缩） */
