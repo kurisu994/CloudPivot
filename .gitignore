@@ -1,6 +1,8 @@
 .idea
-.claude
 .antigravitycli
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
 !.claude/skills/
 **/.DS_Store
 .tauri/

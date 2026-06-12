@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/memory-bank-reminder.sh",
+            "timeout": 15,
+            "statusMessage": "检查记忆银行是否需要更新"
+          }
+        ]
+      }
+    ]
+  }
+}
