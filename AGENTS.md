@@ -18,7 +18,7 @@ TypeScript 遵循 `biome.json`：2 空格缩进、单引号、尽量使用 `useC
 
 ## AI 会话收尾与记忆银行
 
-每次最终回复前，AI 必须检查本轮是否产生代码变更、重要决策、阻塞或下一步计划；如有，先更新 `memory-bank/activeContext.md`，记录当前状态、活跃文件、已做决策、下一步和阻塞。涉及里程碑、架构调整或长期约定变化时，同步更新 `memory-bank/progress.md`。Claude Code 已配置 `.claude/hooks/memory-bank-reminder.sh` Stop hook，在记忆银行落后于代码改动时会拦截收尾并提示更新。
+每次最终回复前，AI 必须检查本轮是否产生代码变更、重要决策、阻塞或下一步计划；如有，先更新 `memory-bank/activeContext.md`，记录当前状态、活跃文件、已做决策、下一步和阻塞。涉及里程碑、架构调整或长期约定变化时，同步更新 `memory-bank/progress.md`。
 
 ## Commit 与 Pull Request 指南
 
