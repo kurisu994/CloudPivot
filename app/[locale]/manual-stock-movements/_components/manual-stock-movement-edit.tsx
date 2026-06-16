@@ -16,9 +16,9 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { usePermission } from '@/hooks/use-permission'
 import { formatAmount, toDisplayAmount, toStorageAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
-import { usePermission } from '@/hooks/use-permission'
 import type { ManualMovementItemData, MaterialReferenceOption, SaveManualMovementItemParams, WarehouseItem } from '@/lib/tauri'
 import {
   confirmManualStockMovement,

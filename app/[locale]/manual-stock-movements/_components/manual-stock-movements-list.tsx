@@ -23,8 +23,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { getErrorMessage } from '@/lib/error'
 import { usePermission } from '@/hooks/use-permission'
+import { getErrorMessage } from '@/lib/error'
 import type { ManualMovementListItem, WarehouseItem } from '@/lib/tauri'
 import { confirmManualStockMovement, deleteManualStockMovement, getManualStockMovements, getWarehouses } from '@/lib/tauri'
 
