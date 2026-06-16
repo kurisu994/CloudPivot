@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount, toDisplayAmount, toStorageAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
+import { usePermission } from '@/hooks/use-permission'
 import type { ManualMovementItemData, MaterialReferenceOption, SaveManualMovementItemParams, WarehouseItem } from '@/lib/tauri'
 import {
   confirmManualStockMovement,
@@ -54,6 +55,9 @@ interface ManualStockMovementEditProps {
 export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovementEditProps) {
   const t = useTranslations()
   const tc = useTranslations('common')
+  const { can } = usePermission()
+  // 过账（confirm）权限：无权时仅显示草稿按钮
+  const canConfirm = can('manual_stock', 'confirm')
 
   // 1. 单头状态
   const [direction, setDirection] = useState<'in' | 'out'>('in')
@@ -845,10 +849,12 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                     <Save className="mr-2 h-4 w-4" />
                     {t('manualStockMovements.saveDraft')}
                   </Button>
-                  <Button onClick={() => handleConfirmPost(false)} className="w-full shadow-sm" disabled={saving || posting}>
-                    <CheckSquare className="mr-2 h-4 w-4" />
-                    {posting ? '过账中...' : t('manualStockMovements.confirmMovement')}
-                  </Button>
+                  {canConfirm && (
+                    <Button onClick={() => handleConfirmPost(false)} className="w-full shadow-sm" disabled={saving || posting}>
+                      <CheckSquare className="mr-2 h-4 w-4" />
+                      {posting ? '过账中...' : t('manualStockMovements.confirmMovement')}
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>

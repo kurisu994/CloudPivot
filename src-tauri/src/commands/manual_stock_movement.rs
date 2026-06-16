@@ -740,9 +740,9 @@ pub async fn confirm_manual_stock_movement(
     current_user: State<'_, CurrentUser>,
     params: ConfirmManualMovementParams,
 ) -> Result<String, AppError> {
-    // 强制检验登录
+    // 强制校验登录与过账权限（操作员仅可保存草稿，过账上收至管理员）
     let (operator_id, operator_name) = {
-        current_user.require_auth()?;
+        current_user.require_permission("manual_stock", "confirm")?;
         (current_user.user_id(), current_user.display_name())
     };
 

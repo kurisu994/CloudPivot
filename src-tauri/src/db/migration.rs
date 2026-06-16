@@ -85,6 +85,18 @@ fn get_migrations() -> Vec<Migration> {
             name: "print_templates",
             sql: include_str!("../../migrations/postgres/011_print_templates.sql"),
         },
+        Migration {
+            version: 12,
+            name: "operator_revoke_stock_checks",
+            sql: include_str!("../../migrations/postgres/012_operator_revoke_stock_checks.sql"),
+        },
+        Migration {
+            version: 13,
+            name: "operator_revoke_manual_stock_confirm",
+            sql: include_str!(
+                "../../migrations/postgres/013_operator_revoke_manual_stock_confirm.sql"
+            ),
+        },
     ]
 }
 

@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { getErrorMessage } from '@/lib/error'
+import { usePermission } from '@/hooks/use-permission'
 import type { ManualMovementListItem, WarehouseItem } from '@/lib/tauri'
 import { confirmManualStockMovement, deleteManualStockMovement, getManualStockMovements, getWarehouses } from '@/lib/tauri'
 
@@ -49,6 +50,9 @@ interface ManualStockMovementsListProps {
 export function ManualStockMovementsList({ onNew, onEdit, onPrint }: ManualStockMovementsListProps) {
   const t = useTranslations()
   const tc = useTranslations('common')
+  const { can } = usePermission()
+  // 过账权限：无权时列表不展示「确认过账」按钮
+  const canConfirm = can('manual_stock', 'confirm')
 
   // 筛选状态
   const [keyword, setKeyword] = useState('')
@@ -433,19 +437,21 @@ export function ManualStockMovementsList({ onNew, onEdit, onPrint }: ManualStock
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                            onClick={() => {
-                              setConfirmId(item.id)
-                              setConfirmNo(item.movementNo)
-                              setRiskType(null)
-                            }}
-                            title={t('manualStockMovements.confirmMovement')}
-                          >
-                            <CheckSquare className="h-4 w-4" />
-                          </Button>
+                          {canConfirm && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                              onClick={() => {
+                                setConfirmId(item.id)
+                                setConfirmNo(item.movementNo)
+                                setRiskType(null)
+                              }}
+                              title={t('manualStockMovements.confirmMovement')}
+                            >
+                              <CheckSquare className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
