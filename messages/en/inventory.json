@@ -228,7 +228,13 @@
     "creatingSnapshot": "Generating check items...",
     "warehouse": "Warehouse",
     "totalItems": "{total} items",
-    "searchMaterial": "Search material name/code..."
+    "searchMaterial": "Search material name/code...",
+    "exportExcel": "Export Excel",
+    "exportSuccess": "Exported successfully",
+    "exportFailed": "Export failed",
+    "remark": "Remark",
+    "exportSheetTitle": "Stock Check",
+    "exportPrintHint": "(Actual Qty column is left blank for offline counting)"
   },
   "stockTransfers": {
     "title": "Stock Transfer",

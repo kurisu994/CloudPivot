@@ -6,6 +6,7 @@
 
 ## 最近完成的工作
 
+- **盘点单 Excel 导出功能**：在盘点单详情页（`stock-check-edit-page.tsx`）标题栏新增"导出 Excel"按钮（detail 加载后即可见，不受 draft/checking/confirmed 状态限制）。导出表格含标题区（盘点单号 / 仓库 / 盘点日期 / 状态 / 创建人 / 打印提示）+ 明细表（物料编码 / 物料名称 / 规格 / 单位 / 系统库存 / 实盘数量 / 盈亏数量 / 备注）。draft/checking 状态实盘列和盈亏列留空便于打印线下手填；confirmed 状态填充已确认值用于归档。复用项目已有的 `xlsx@0.18.5` 依赖（动态 import），用 AOA + 列宽 + 合并单元格组装，未抽到 `lib/business-excel.ts` 以避免污染其物料/期初导入模板的纯粹用途。三语在 `messages/{zh,en,vi}/inventory.json` 的 `stockChecks` 命名空间新增 `exportExcel`、`exportSuccess`、`exportFailed`、`remark`、`exportSheetTitle`、`exportPrintHint` 六键。
 - **外观设置大字号滑块重构（iOS风格）**：将传统开关式大字体模式重构为 12px -> 20px（共 5 档）的滑块刻度选择。
 - **拖拽防抖与性能吞吐优化**：将拖拽过程中的字号状态在本地以 `tempValue` 进行托管，拖动期间仅更新本地预览及数字高亮，将向 Tauri 数据库发起持久化 IPC 写入的 `onChange` 动作推迟到 `pointerup`（松手）时仅触发一次。这彻底消除了此前鼠标微移都在后台阻塞进行数据库事务排队造成的严重卡顿，滑块拖动完全零延迟跟手。
 - **滑块吸附动效与遮挡修复**：拖动时使用绝对定位直接计算 left，去除了过渡动画使得滑块极其跟手；松手或点击 Aa 按钮时利用 200ms 的过渡平滑吸附到刻度上。使用绝对定位将滑轨中线、圆形滑块与下方的刻度数字（`top-[32px]`）进行物理空间解耦，彻底修复了圆形滑块遮挡刻度数字（如 14）的缺陷。
@@ -20,14 +21,14 @@
 
 ## 活跃文件
 
-- `.claude/settings.json` — 已清空为 `{}`，移除孤儿 hook 引用
-- `~/.claude/CLAUDE.md`（全局） — 调整新会话读取策略措辞 + 删除 Stop hook 兜底说明
-- `CLAUDE.md`（项目） — 「记忆银行更新约定」精简为一句话指向全局规则
-- `AGENTS.md` — 保留「AI 会话收尾与记忆银行」段落（用户已亲自精简）
-- `memory-bank/activeContext.md` / `memory-bank/progress.md` — 本次同步更新
+- `app/[locale]/stock-checks/_components/stock-check-edit-page.tsx` — 新增 `handleExport` 和导出按钮，import `Download` 图标
+- `messages/{zh,en,vi}/inventory.json` — `stockChecks` 命名空间新增 6 个导出相关键
+- `memory-bank/activeContext.md` — 本次同步更新
 
 ## 已做出的决策
 
+- **盘点 Excel 导出逻辑不抽进 `lib/business-excel.ts`**：现有 `downloadBusinessWorkbook` 只服务于"列定义 + 数据行"的简单导入模板用途（物料、期初库存），盘点单需要 AOA + 合并单元格 + 列宽 + 标题区，差异较大。抽公共 helper 反而会让 `business-excel.ts` 变成多分支胶水代码，因此就近放在盘点页面内，按需 `await import('xlsx')`。
+- **导出按钮在所有状态可见**：draft/checking 用于打印线下盘点（实盘列空），confirmed 用于归档（实盘列填）；不限制到 isEditable 是因为已审核也常有打印归档需求。
 - **撤回 Stop hook 兜底，改为纯文档约束**：实践中 hook 在无代码变更的纯咨询会话也会触发拦截，打扰频率高于收益；判定 AI 自觉性 + 文档强约束已足够，hook 不再保留。
 - **三处规则按职责分工去重**：全局 `CLAUDE.md` 讲方法论（如何生成 6 文件、采集源映射），项目 `CLAUDE.md` 讲消费（按需读取路由）+ 一句话指向全局更新约定，项目 `AGENTS.md` 保留通用会话收尾规则；避免逐字复述。
 - **字号状态与数据库写入解耦**（v0.2.7 已发布）：拖拽字号时仅进行组件内部 `useState` 响应，松手时才调用 `onChange` 进行数据库保存，解决 Tauri IPC 队列阻塞卡顿；行内 `html.style.fontSize` 写入兜底保证全局生效。

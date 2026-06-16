@@ -914,7 +914,7 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
             </DialogTitle>
             <DialogDescription>{t('manualStockMovements.insufficientStockDescription')}</DialogDescription>
           </DialogHeader>
-          <div className="max-h-[25rem] overflow-auto">
+          <div className="max-h-100 overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>

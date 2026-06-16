@@ -228,7 +228,13 @@
     "creatingSnapshot": "正在生成盘点明细...",
     "warehouse": "仓库",
     "totalItems": "共 {total} 条",
-    "searchMaterial": "搜索物料名称/编码..."
+    "searchMaterial": "搜索物料名称/编码...",
+    "exportExcel": "导出 Excel",
+    "exportSuccess": "导出成功",
+    "exportFailed": "导出失败",
+    "remark": "备注",
+    "exportSheetTitle": "盘点单",
+    "exportPrintHint": "（实盘数量列留空，可打印后线下手填）"
   },
   "stockTransfers": {
     "title": "库存调拨",

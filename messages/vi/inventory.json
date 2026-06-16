@@ -228,7 +228,13 @@
     "creatingSnapshot": "Đang tạo chi tiết kiểm kê...",
     "warehouse": "Kho",
     "totalItems": "Tổng {total} mục",
-    "searchMaterial": "Tìm tên/mã vật tư..."
+    "searchMaterial": "Tìm tên/mã vật tư...",
+    "exportExcel": "Xuất Excel",
+    "exportSuccess": "Xuất thành công",
+    "exportFailed": "Xuất thất bại",
+    "remark": "Ghi chú",
+    "exportSheetTitle": "Phiếu kiểm kê",
+    "exportPrintHint": "(Cột SL thực tế để trống, in ra để kiểm kê offline)"
   },
   "stockTransfers": {
     "title": "Chuyển kho",

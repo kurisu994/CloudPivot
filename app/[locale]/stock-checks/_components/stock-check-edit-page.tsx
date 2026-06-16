@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, CheckCircle, Save, Search } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Download, Save, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -70,6 +70,72 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
   }, [loadDetail])
 
   const isEditable = detail && (detail.status === 'draft' || detail.status === 'checking')
+
+  /** 状态枚举转可读文案 */
+  const statusLabel = useCallback(
+    (status: string) => {
+      switch (status) {
+        case 'draft':
+          return t('statusDraft')
+        case 'checking':
+          return t('statusChecking')
+        case 'confirmed':
+          return t('statusConfirmed')
+        default:
+          return status
+      }
+    },
+    [t],
+  )
+
+  /** 导出盘点单为 Excel（含标题区+明细表，未审核状态实盘列留空便于打印线下盘点） */
+  const handleExport = async () => {
+    if (!detail) return
+    try {
+      const XLSX = await import('xlsx')
+      const editable = detail.status === 'draft' || detail.status === 'checking'
+
+      const headers = [ti('materialCode'), ti('materialName'), ti('spec'), ti('unit'), t('systemQty'), t('actualQty'), t('diffQty'), t('remark')]
+
+      const titleRows: (string | number | null)[][] = [
+        [t('exportSheetTitle')],
+        [`${t('checkNo')}: ${detail.checkNo}`],
+        [`${t('warehouse')}: ${detail.warehouseName}`, '', `${t('checkDate')}: ${detail.checkDate}`],
+        [`${tc('status')}: ${statusLabel(detail.status)}`, '', `${t('createdBy')}: ${detail.createdByName || '-'}`],
+      ]
+      if (editable) titleRows.push([t('exportPrintHint')])
+      titleRows.push([])
+
+      const dataRows = detail.items.map(item => {
+        const actual = editable ? null : item.actualQty
+        const diff = editable ? null : item.diffQty
+        return [item.materialCode, item.materialName, item.spec ?? '', item.unitName, item.systemQty, actual, diff, item.remark ?? '']
+      })
+
+      const aoa = [...titleRows, headers, ...dataRows]
+      const worksheet = XLSX.utils.aoa_to_sheet(aoa)
+
+      // 列宽：编码 14 / 名称 24 / 规格 14 / 单位 8 / 数量列各 12 / 备注 20
+      worksheet['!cols'] = [{ wch: 14 }, { wch: 24 }, { wch: 14 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 20 }]
+
+      // 标题区横向合并：第 1 行合并 8 列，第 3、4 行的两段信息合并 1-3 列、5-8 列
+      worksheet['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: headers.length - 1 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
+        { s: { r: 2, c: 4 }, e: { r: 2, c: 7 } },
+        { s: { r: 3, c: 0 }, e: { r: 3, c: 3 } },
+        { s: { r: 3, c: 4 }, e: { r: 3, c: 7 } },
+      ]
+
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, t('exportSheetTitle'))
+      XLSX.writeFile(workbook, `${t('exportSheetTitle')}-${detail.checkNo}-${detail.checkDate}.xlsx`)
+      toast.success(t('exportSuccess'))
+    } catch (error) {
+      toast.error(getErrorMessage(error, t('exportFailed')))
+    }
+  }
 
   /** 保存实盘数量 */
   const handleSave = async () => {
@@ -153,16 +219,24 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
             </div>
           )}
         </div>
-        {isEditable && (
+        {detail && (
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleSave} disabled={saving}>
-              <Save data-icon="inline-start" />
-              {saving ? tc('loading') : t('saveActualQty')}
+            <Button variant="outline" onClick={handleExport}>
+              <Download data-icon="inline-start" />
+              {t('exportExcel')}
             </Button>
-            <Button onClick={handleConfirm} disabled={confirming}>
-              <CheckCircle data-icon="inline-start" />
-              {confirming ? tc('loading') : t('confirmCheck')}
-            </Button>
+            {isEditable && (
+              <>
+                <Button variant="outline" onClick={handleSave} disabled={saving}>
+                  <Save data-icon="inline-start" />
+                  {saving ? tc('loading') : t('saveActualQty')}
+                </Button>
+                <Button onClick={handleConfirm} disabled={confirming}>
+                  <CheckCircle data-icon="inline-start" />
+                  {confirming ? tc('loading') : t('confirmCheck')}
+                </Button>
+              </>
+            )}
           </div>
         )}
       </div>
