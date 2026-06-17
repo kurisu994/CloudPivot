@@ -4,13 +4,13 @@ import { Plus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { getErrorMessage } from '@/lib/error'
 import type { WarehouseItem } from '@/lib/tauri'
 import { deleteWarehouse, getWarehouses, toggleWarehouseStatus } from '@/lib/tauri'
 
@@ -53,7 +53,7 @@ export function WarehousesContent() {
       setItems(result)
     } catch (error) {
       console.error('加载仓库失败', error)
-      toast.error(String(error))
+      toast.error(getErrorMessage(error))
     } finally {
       setLoading(false)
     }
@@ -85,7 +85,7 @@ export function WarehousesContent() {
       // 删除后刷新默认仓映射（可能被清除了）
       setMappingRefreshKey(k => k + 1)
     } catch (error) {
-      toast.error(String(error))
+      toast.error(getErrorMessage(error))
     }
   }
 
@@ -98,7 +98,7 @@ export function WarehousesContent() {
       // 禁用时可能清除了默认仓映射，刷新
       setMappingRefreshKey(k => k + 1)
     } catch (error) {
-      toast.error(String(error))
+      toast.error(getErrorMessage(error))
     }
   }
 
@@ -114,7 +114,7 @@ export function WarehousesContent() {
           loadWarehouses()
           setMappingRefreshKey(k => k + 1)
         })
-        .catch(error => toast.error(String(error)))
+        .catch(error => toast.error(getErrorMessage(error)))
     }
   }
 

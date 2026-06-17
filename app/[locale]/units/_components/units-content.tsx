@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { usePermission } from '@/hooks/use-permission'
+import { getErrorMessage } from '@/lib/error'
 import type { UnitItem } from '@/lib/tauri'
 import { deleteUnit, getAllUnits, toggleUnitStatus } from '@/lib/tauri'
 
@@ -47,7 +48,7 @@ export function UnitsContent() {
       setItems(result)
     } catch (error) {
       console.error('加载单位失败', error)
-      toast.error(String(error))
+      toast.error(getErrorMessage(error))
     } finally {
       setLoading(false)
     }
@@ -78,7 +79,7 @@ export function UnitsContent() {
       setDeleteTarget(null)
       loadUnits()
     } catch (error) {
-      toast.error(String(error))
+      toast.error(getErrorMessage(error))
       throw error
     }
   }
@@ -89,7 +90,7 @@ export function UnitsContent() {
       await toggleUnitStatus(item.id)
       loadUnits()
     } catch (error) {
-      toast.error(String(error))
+      toast.error(getErrorMessage(error))
     }
   }
 

@@ -1,43 +1,42 @@
 import {
   ArrowLeftRight,
-  // ── 以下图标对应阶段性隐藏的菜单，后续分批开放时连同菜单一并恢复 ──
   BarChart3,
   Box,
   Building2,
+  ClipboardCheck,
   ClipboardList,
-  // ClipboardCheck,
-  // CreditCard,
+  CreditCard,
   Database,
   DollarSign,
   FileText,
   FolderTree,
-  // Hammer,
+  Hammer,
   Hash,
+  Layers,
   LayoutDashboard,
   Lightbulb,
   type LucideIcon,
   Package,
+  PackageCheck,
+  PackageOpen,
   PackagePlus,
-  // Layers,
-  // PackageCheck,
-  // PackageOpen,
   PackageSearch,
   Paintbrush,
-  // Palette,
+  Palette,
   PieChart,
   Printer,
+  Receipt,
+  RotateCcw,
   Ruler,
   Settings,
-  // Receipt,
-  // RotateCcw,
-  // ShoppingCart,
-  // TrendingUp,
-  // Truck,
-  // Undo2,
-  // Users,
+  ShoppingCart,
+  TrendingUp,
+  Truck,
+  Undo2,
   UserCog,
-  // Wallet,
-  // Warehouse,
+  Users,
+  Wallet,
+  Warehouse,
 } from 'lucide-react'
 
 /** 侧边栏导航项类型 */
@@ -78,23 +77,18 @@ export const navConfig: NavItem[] = [
     children: [
       { titleKey: 'nav.materials', href: '/materials', icon: Package, permissionModule: 'materials' },
       { titleKey: 'nav.categories', href: '/categories', icon: FolderTree, permissionModule: 'categories' },
-      /* 阶段性隐藏，后续分批开放：
       { titleKey: 'nav.suppliers', href: '/suppliers', icon: Truck, permissionModule: 'suppliers' },
       { titleKey: 'nav.customers', href: '/customers', icon: Users, permissionModule: 'customers' },
       { titleKey: 'nav.warehouses', href: '/warehouses', icon: Warehouse, permissionModule: 'warehouses' },
-      */
       { titleKey: 'nav.units', href: '/units', icon: Ruler, permissionModule: 'units' },
     ],
   },
-  /* ── 阶段性隐藏（BOM），后续分批开放 ──
   {
     titleKey: 'nav.bom',
     href: '/bom',
     icon: Layers,
     permissionModule: 'bom',
   },
-  */
-  /* ── 阶段性隐藏（采购），后续分批开放 ──
   {
     titleKey: 'nav.purchase',
     href: '/purchase-orders',
@@ -120,8 +114,6 @@ export const navConfig: NavItem[] = [
       },
     ],
   },
-  */
-  /* ── 阶段性隐藏（销售），后续分批开放 ──
   {
     titleKey: 'nav.sales',
     href: '/sales-orders',
@@ -137,7 +129,6 @@ export const navConfig: NavItem[] = [
       { titleKey: 'nav.salesReturns', href: '/sales-returns', icon: RotateCcw, permissionModule: 'sales_returns' },
     ],
   },
-  */
   // 库存（阶段性仅开放：库存查询 / 自由出入库 / 出入库流水 / 库存盘点）
   {
     titleKey: 'nav.inventory',
@@ -163,32 +154,26 @@ export const navConfig: NavItem[] = [
         icon: ClipboardList,
         permissionModule: 'stock_checks',
       },
-      /* 阶段性隐藏，后续分批开放：
       {
         titleKey: 'nav.stockTransfers',
         href: '/stock-transfers',
         icon: ClipboardCheck,
         permissionModule: 'stock_transfers',
       },
-      */
     ],
   },
-  /* ── 阶段性隐藏（定制单），后续分批开放 ──
   {
     titleKey: 'nav.customOrders',
     href: '/custom-orders',
     icon: Palette,
     permissionModule: 'custom_orders',
   },
-  */
-  /* ── 阶段性隐藏（生产工单），后续分批开放 ──
   {
     titleKey: 'nav.productionOrders',
     href: '/production-orders',
     icon: Hammer,
     permissionModule: 'production_orders',
   },
-  */
   // 智能补货
   {
     titleKey: 'nav.replenishment',
@@ -196,7 +181,6 @@ export const navConfig: NavItem[] = [
     icon: Lightbulb,
     permissionModule: 'replenishment',
   },
-  /* ── 阶段性隐藏（财务：应付 / 应收），后续分批开放 ──
   {
     titleKey: 'nav.finance',
     href: '/finance/payables',
@@ -211,14 +195,12 @@ export const navConfig: NavItem[] = [
       },
     ],
   },
-  */
   // 报表中心（阶段性仅开放：库存报表）
   {
     titleKey: 'nav.reports',
     href: '/reports/inventory',
     icon: BarChart3,
     children: [
-      /* 阶段性隐藏，后续分批开放：
       {
         titleKey: 'nav.purchaseReport',
         href: '/reports/purchase',
@@ -231,7 +213,6 @@ export const navConfig: NavItem[] = [
         icon: TrendingUp,
         permissionModule: 'reports',
       },
-      */
       {
         titleKey: 'nav.inventoryReport',
         href: '/reports/inventory',

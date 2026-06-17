@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getErrorMessage } from '@/lib/error'
 import type { DefaultWarehouseItem, WarehouseItem } from '@/lib/tauri'
 import { getDefaultWarehouses, saveDefaultWarehouses } from '@/lib/tauri'
 
@@ -71,7 +72,7 @@ export function DefaultWarehouseMapping({ warehouses, refreshKey }: DefaultWareh
       await saveDefaultWarehouses(toSave)
       toast.success(t('defaultMapping.saveSuccess'))
     } catch (error) {
-      toast.error(String(error))
+      toast.error(getErrorMessage(error))
     } finally {
       setSaving(false)
     }

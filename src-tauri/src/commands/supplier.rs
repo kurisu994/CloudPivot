@@ -466,11 +466,11 @@ async fn load_payables_summary(
     let (total_unpaid_amount, overdue_count, open_count): (i64, i64, i64) = sqlx::query_as(
         r#"
         SELECT
-            COALESCE(SUM(unpaid_amount), 0) AS total_unpaid_amount,
+            COALESCE(SUM(unpaid_amount), 0)::BIGINT AS total_unpaid_amount,
             COALESCE(SUM(CASE
-                WHEN unpaid_amount > 0 AND due_date IS NOT NULL AND date(due_date) < CURRENT_DATE::TEXT
-                THEN 1 ELSE 0 END), 0) AS overdue_count,
-            COALESCE(SUM(CASE WHEN unpaid_amount > 0 THEN 1 ELSE 0 END), 0) AS open_count
+                WHEN unpaid_amount > 0 AND due_date IS NOT NULL AND due_date::DATE < CURRENT_DATE
+                THEN 1 ELSE 0 END), 0)::BIGINT AS overdue_count,
+            COALESCE(SUM(CASE WHEN unpaid_amount > 0 THEN 1 ELSE 0 END), 0)::BIGINT AS open_count
         FROM payables
         WHERE supplier_id = $1
         "#,
@@ -546,7 +546,7 @@ pub async fn get_suppliers(
         r#"
         SELECT s.id, s.code, s.name, s.short_name, s.country, s.contact_person, s.contact_phone,
                s.business_category, s.grade, s.currency,
-               COALESCE(pay.unpaid_total, 0) AS payable_balance,
+               COALESCE(pay.unpaid_total, 0)::BIGINT AS payable_balance,
                s.is_enabled
         FROM suppliers s
         LEFT JOIN (

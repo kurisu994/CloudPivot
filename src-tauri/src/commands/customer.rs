@@ -286,11 +286,11 @@ async fn load_receivables_summary(
     let (total_unpaid_amount, overdue_count, open_count): (i64, i64, i64) = sqlx::query_as(
         r#"
         SELECT
-            COALESCE(SUM(unreceived_amount), 0) AS total_unpaid_amount,
+            COALESCE(SUM(unreceived_amount), 0)::BIGINT AS total_unpaid_amount,
             COALESCE(SUM(CASE
-                WHEN unreceived_amount > 0 AND due_date IS NOT NULL AND date(due_date) < CURRENT_DATE::TEXT
-                THEN 1 ELSE 0 END), 0) AS overdue_count,
-            COALESCE(SUM(CASE WHEN unreceived_amount > 0 THEN 1 ELSE 0 END), 0) AS open_count
+                WHEN unreceived_amount > 0 AND due_date IS NOT NULL AND due_date::DATE < CURRENT_DATE
+                THEN 1 ELSE 0 END), 0)::BIGINT AS overdue_count,
+            COALESCE(SUM(CASE WHEN unreceived_amount > 0 THEN 1 ELSE 0 END), 0)::BIGINT AS open_count
         FROM receivables
         WHERE customer_id = $1
         "#,
@@ -380,7 +380,7 @@ pub async fn get_customers(
         r#"
         SELECT c.id, c.code, c.name, c.customer_type, c.country, c.contact_person,
                c.contact_phone, c.grade, c.currency,
-               COALESCE(recv.unreceived_total, 0) AS receivable_balance,
+               COALESCE(recv.unreceived_total, 0)::BIGINT AS receivable_balance,
                c.is_enabled
         FROM customers c
         LEFT JOIN (

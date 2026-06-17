@@ -6,6 +6,9 @@
 
 ## 最近完成的工作
 
+- **BOM 保存布尔字段绑定修复**：修复保存 BOM 明细时报错 `column "is_key_part" is of type boolean but expression is of type integer`。根因是 PostgreSQL 迁移中 `bom_items.is_key_part` 为 `BOOLEAN`，但 `save_bom` 插入明细时仍沿用 SQLite 兼容思路把 `bool` 转成 `1/0` 绑定。现已在 `src-tauri/src/commands/bom.rs` 中改为直接 `.bind(item.is_key_part)`，并新增 Rust 回归测试 `save_bom_binds_is_key_part_as_boolean_for_postgres` 防止该绑定退回整数。
+- **BOM 明细添加物料搜索重置修复**：修复 `BomItemDialog` 中搜索输入后弹窗重新初始化、搜索词被清空、候选项无法按输入生效的问题。根因是 `fetchMaterials` 依赖 `searchKeyword`，导致初始化 `useEffect` 随输入变化重跑；同时 `onChange` 立即调用闭包内的 `fetchMaterials()` 会用旧关键词查询。现已将弹窗打开初始化和关键词搜索拆成两个 effect，`fetchMaterials(keyword)` 显式接收关键词，并用 `searchRequestIdRef` 避免旧异步响应覆盖新结果。新增 `tests/bom-item-dialog-search.test.mjs` 作为轻量回归保护。
+- **CHANGELOG 与全量提交准备**：`CHANGELOG.md` 的 `[Unreleased]` 已补充本轮用户可见变更，包括侧边栏业务入口开放、BOM 保存/搜索修复、应收应付 PostgreSQL 兼容修复、单位/仓库错误提示优化和通用下拉宽度修复；提交前 `just lint`、BOM Node 回归测试与 BOM Rust 回归测试均已通过。
 - **操作员角色权限二次收紧（盘点 / 自由出入库过账）**：新增迁移 `012_operator_revoke_stock_checks.sql` 与 `013_operator_revoke_manual_stock_confirm.sql`，分别回收操作员对 `stock_checks` 全部权限与 `manual_stock.confirm` 权限；侧边栏据 `permissionModule` 自动隐藏「库存盘点」入口。后端 `confirm_manual_stock_movement` 把 `require_auth` 替换为 `require_permission("manual_stock", "confirm")`，越权调用统一返回"权限不足"。前端自由出入库编辑页（`manual-stock-movement-edit.tsx`）与列表行（`manual-stock-movements-list.tsx`）按 `usePermission().can('manual_stock', 'confirm')` 控制「确认过账」按钮显隐，操作员仅保留草稿录入与编辑/删除入口。
 - **盘点单 Excel 导出功能**：在盘点单详情页（`stock-check-edit-page.tsx`）标题栏新增"导出 Excel"按钮（detail 加载后即可见，不受 draft/checking/confirmed 状态限制）。导出表格含标题区（盘点单号 / 仓库 / 盘点日期 / 状态 / 创建人 / 打印提示）+ 明细表（物料编码 / 物料名称 / 规格 / 单位 / 系统库存 / 实盘数量 / 盈亏数量 / 备注）。draft/checking 状态实盘列和盈亏列留空便于打印线下手填；confirmed 状态填充已确认值用于归档。复用项目已有的 `xlsx@0.18.5` 依赖（动态 import），用 AOA + 列宽 + 合并单元格组装，未抽到 `lib/business-excel.ts` 以避免污染其物料/期初导入模板的纯粹用途。三语在 `messages/{zh,en,vi}/inventory.json` 的 `stockChecks` 命名空间新增 `exportExcel`、`exportSuccess`、`exportFailed`、`remark`、`exportSheetTitle`、`exportPrintHint` 六键。
 - **外观设置大字号滑块重构（iOS风格）**：将传统开关式大字体模式重构为 12px -> 20px（共 5 档）的滑块刻度选择。
@@ -22,17 +25,16 @@
 
 ## 活跃文件
 
-- `src-tauri/migrations/postgres/012_operator_revoke_stock_checks.sql` — 新增，回收操作员对盘点模块的全部权限
-- `src-tauri/migrations/postgres/013_operator_revoke_manual_stock_confirm.sql` — 新增，回收操作员对自由出入库的过账权限
-- `src-tauri/src/db/migration.rs` — 注册版本 12 / 13
-- `src-tauri/src/commands/manual_stock_movement.rs` — `confirm_manual_stock_movement` 由 `require_auth` 改为 `require_permission("manual_stock", "confirm")`
-- `app/[locale]/manual-stock-movements/_components/manual-stock-movement-edit.tsx` — 引入 `usePermission`，按 `manual_stock.confirm` 控制过账按钮显隐
-- `app/[locale]/manual-stock-movements/_components/manual-stock-movements-list.tsx` — 列表行内「确认过账」图标按钮同样按权限隐藏
-- `CHANGELOG.md` — `[Unreleased]` 段新增「操作员角色权限收紧」条目
-- `memory-bank/{activeContext,progress,techContext}.md` — 本次同步更新
+- `src-tauri/src/commands/bom.rs` — 修复 `save_bom` 对 `is_key_part` 的 PostgreSQL boolean 绑定，并补回归测试
+- `app/[locale]/bom/_components/bom-item-dialog.tsx` — 拆分弹窗初始化与物料搜索 effect，修复输入后搜索失效
+- `CHANGELOG.md` — `[Unreleased]` 记录本轮用户可见变更
+- `tests/bom-item-dialog-search.test.mjs` — 新增 BOM 明细物料搜索状态流回归测试
+- `memory-bank/activeContext.md` — 记录本轮修复状态与验证结论
 
 ## 已做出的决策
 
+- **BOM 明细布尔字段以后按 PostgreSQL 类型直接绑定**：当前 Rust 后端只启用 `sqlx` PostgreSQL feature，`bom_items.is_key_part` 在 PG 迁移中是 `BOOLEAN`，不再用 SQLite 式 `1/0` 兼容写法。复制 BOM 明细的 `INSERT ... SELECT` 不涉及 Rust 参数绑定，可保持不变。
+- **BOM 明细物料搜索采用“打开初始化 + 关键词搜索”分离模型**：打开弹窗只重置一次表单状态；搜索词变化只刷新候选物料，不再触发表单重置。搜索函数不读取闭包里的 `searchKeyword`，统一接收显式参数，避免 React state 异步更新造成旧关键词查询。
 - **操作员权限收紧采用"迁移 + 后端守卫 + 前端按权限隐藏"三层兜底**：数据库层一次性 DELETE `role_permissions` 行（向前兼容已存在数据库的最简方式）；后端 `require_permission` 即使前端被绕过也会拦截；前端按 `usePermission().can(...)` 隐藏入口避免无效点击。三层职责分明，不在前端做角色硬编码（如 `user.role === 'operator'`），让权限始终以数据库为单一真实来源。
 - **盘点 Excel 导出逻辑不抽进 `lib/business-excel.ts`**：现有 `downloadBusinessWorkbook` 只服务于"列定义 + 数据行"的简单导入模板用途（物料、期初库存），盘点单需要 AOA + 合并单元格 + 列宽 + 标题区，差异较大。抽公共 helper 反而会让 `business-excel.ts` 变成多分支胶水代码，因此就近放在盘点页面内，按需 `await import('xlsx')`。
 - **导出按钮在所有状态可见**：draft/checking 用于打印线下盘点（实盘列空），confirmed 用于归档（实盘列填）；不限制到 isEditable 是因为已审核也常有打印归档需求。
@@ -42,12 +44,13 @@
 
 ## 下一步
 
+- 若后续引入 React/jsdom 测试工具，可将当前静态回归测试升级为真实交互测试，直接模拟输入框输入和候选项过滤。
 - 持续跟进打磨其他系统设置、报表或业务表单页面的细节排版与国际化缺失项。
 - 观察纯文档约束下 AI 主动更新记忆银行的执行率，若漏更新频繁再考虑更克制的兜底（如只在检测到 git 工作区有变更时才提示，而非按 mtime 一刀切）。
 
 ## 阻塞
 
-暂无阻塞项。
+- 本次 BOM 保存与搜索修复无阻塞；提交前 `just lint`、`node --experimental-strip-types --test tests/bom-command-args.test.mjs tests/bom-item-dialog-search.test.mjs`、`cargo test save_bom_binds_is_key_part_as_boolean_for_postgres --lib` 均已通过。
 
 ---
 

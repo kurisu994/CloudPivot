@@ -389,7 +389,7 @@ pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i
         .bind(item.standard_qty)
         .bind(item.wastage_rate)
         .bind(&item.process_step)
-        .bind(if item.is_key_part { 1 } else { 0 })
+        .bind(item.is_key_part)
         .bind(item.substitute_id)
         .bind(&item.remark)
         .bind(item.sort_order)
@@ -861,6 +861,20 @@ mod tests {
         .expect("创建生产工单测试表失败");
 
         pool
+    }
+
+    #[test]
+    fn save_bom_binds_is_key_part_as_boolean_for_postgres() {
+        let source = include_str!("bom.rs");
+        let production_source = source
+            .split("#[cfg(test)]")
+            .next()
+            .expect("BOM 命令源码应包含测试模块分隔");
+
+        assert!(
+            !production_source.contains(".bind(if item.is_key_part { 1 } else { 0 })"),
+            "PostgreSQL bom_items.is_key_part 是 BOOLEAN，save_bom 必须直接绑定 bool"
+        );
     }
 
     #[tokio::test]

@@ -2,7 +2,7 @@
 
 import { Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -64,6 +64,7 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
   const [searchKeyword, setSearchKeyword] = useState('')
   const [materialOptions, setMaterialOptions] = useState<ChildMaterialOption[]>([])
   const [selectedMaterial, setSelectedMaterial] = useState<ChildMaterialOption | null>(null)
+  const searchRequestIdRef = useRef(0)
 
   // 表单字段
   const [standardQty, setStandardQty] = useState('1')
@@ -84,30 +85,37 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
   )
 
   /** 搜索物料 */
-  const fetchMaterials = useCallback(async () => {
+  const fetchMaterials = useCallback(async (keyword: string) => {
+    const requestId = searchRequestIdRef.current + 1
+    searchRequestIdRef.current = requestId
+    const normalizedKeyword = keyword.trim()
+
     if (!isTauriEnv()) {
       let filtered = MOCK_CHILD_MATERIALS
-      if (searchKeyword.trim()) {
-        const kw = searchKeyword.trim().toLowerCase()
+      if (normalizedKeyword) {
+        const kw = normalizedKeyword.toLowerCase()
         filtered = filtered.filter(m => m.code.toLowerCase().includes(kw) || m.name.toLowerCase().includes(kw))
       }
-      setMaterialOptions(filtered)
+      if (requestId === searchRequestIdRef.current) {
+        setMaterialOptions(filtered)
+      }
       return
     }
     try {
       const res = await invoke<ChildMaterialOption[]>('get_bom_child_materials', {
-        keyword: searchKeyword.trim() || null,
+        keyword: normalizedKeyword || null,
       })
-      setMaterialOptions(res)
+      if (requestId === searchRequestIdRef.current) {
+        setMaterialOptions(res)
+      }
     } catch (e) {
       console.error('搜索物料失败', e)
     }
-  }, [searchKeyword])
+  }, [])
 
   // 弹窗打开时初始化
   useEffect(() => {
     if (!open) return
-    fetchMaterials()
     if (editingItem) {
       setSelectedMaterial({
         id: editingItem.child_material_id,
@@ -123,6 +131,7 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
       setProcessStep(editingItem.process_step ?? '')
       setIsKeyPart(editingItem.is_key_part)
       setItemRemark(editingItem.remark ?? '')
+      setMaterialOptions([])
     } else {
       setSelectedMaterial(null)
       setStandardQty('1')
@@ -131,8 +140,15 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
       setIsKeyPart(false)
       setItemRemark('')
       setSearchKeyword('')
+      setMaterialOptions([])
     }
-  }, [open, editingItem, fetchMaterials])
+  }, [open, editingItem])
+
+  // 搜索词变化只刷新候选项，不重新初始化表单。
+  useEffect(() => {
+    if (!open || isEdit || selectedMaterial) return
+    void fetchMaterials(searchKeyword)
+  }, [fetchMaterials, isEdit, open, searchKeyword, selectedMaterial])
 
   const handleSave = () => {
     if (!selectedMaterial) return
@@ -177,10 +193,7 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
                   className="pl-10"
                   placeholder={t('form.searchMaterial')}
                   value={searchKeyword}
-                  onChange={e => {
-                    setSearchKeyword(e.target.value)
-                    fetchMaterials()
-                  }}
+                  onChange={e => setSearchKeyword(e.target.value)}
                 />
               </div>
               {materialOptions.length > 0 && !selectedMaterial && (

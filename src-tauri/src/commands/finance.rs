@@ -206,7 +206,7 @@ pub async fn get_payables(
             COALESCE(SUM(CASE WHEN status = 'paid' AND adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0)::BIGINT,
             COALESCE(SUM(CASE WHEN status = 'partial' AND adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0)::BIGINT,
             COALESCE(SUM(CASE WHEN status != 'paid' AND adjustment_type = 'normal'
-                AND due_date IS NOT NULL AND due_date < CURRENT_DATE::TEXT
+                AND due_date IS NOT NULL AND due_date::DATE < CURRENT_DATE
                 THEN (payable_amount - paid_amount) ELSE 0 END), 0)::BIGINT
         FROM payables
         "#,
@@ -516,7 +516,7 @@ pub async fn get_receivables(
             COALESCE(SUM(CASE WHEN status = 'paid' AND adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0)::BIGINT,
             COALESCE(SUM(CASE WHEN status = 'partial' AND adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0)::BIGINT,
             COALESCE(SUM(CASE WHEN status != 'paid' AND adjustment_type = 'normal'
-                AND due_date IS NOT NULL AND due_date < CURRENT_DATE::TEXT
+                AND due_date IS NOT NULL AND due_date::DATE < CURRENT_DATE
                 THEN (receivable_amount - received_amount) ELSE 0 END), 0)::BIGINT
         FROM receivables
         "#,

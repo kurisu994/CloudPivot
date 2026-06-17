@@ -10,6 +10,7 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { getErrorMessage } from '@/lib/error'
 import { getUnitById, saveUnit } from '@/lib/tauri'
 
 /** 小数位选项 */
@@ -88,7 +89,7 @@ export function UnitDialog({ open, onOpenChange, unitId, onSuccess }: UnitDialog
           isEnabled: unit.isEnabled,
         })
       } catch (e) {
-        toast.error(String(e))
+        toast.error(getErrorMessage(e))
       }
     } else {
       setForm(EMPTY_FORM)
@@ -126,7 +127,7 @@ export function UnitDialog({ open, onOpenChange, unitId, onSuccess }: UnitDialog
       })
       onSuccess()
     } catch (error) {
-      toast.error(String(error))
+      toast.error(getErrorMessage(error))
     } finally {
       setSaving(false)
     }

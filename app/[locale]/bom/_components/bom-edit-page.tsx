@@ -15,46 +15,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
 import { invoke, isTauriEnv } from '@/lib/tauri'
+import { type BomDetailPageState, type BomDetailResponse, type BomItemPageRow, buildSaveBomArgs, normalizeBomDetail } from './bom-command-args'
 import { BomItemDialog } from './bom-item-dialog'
 
 /* ------------------------------------------------------------------ */
 /*  类型定义                                                           */
 /* ------------------------------------------------------------------ */
 
-interface BomDetail {
-  id: number
-  bom_code: string
-  materialId: number
-  materialCode: string | null
-  materialName: string | null
-  material_spec: string | null
-  version: string
-  status: string
-  effective_date: string | null
-  total_standard_cost: number
-  remark: string | null
-  items: BomItemRow[]
-}
-
-export interface BomItemRow {
-  id?: number
-  bomId?: number
-  child_material_id: number
-  materialCode: string | null
-  materialName: string | null
-  material_spec: string | null
-  unitName: string | null
-  ref_cost_price: number | null
-  standard_qty: number
-  wastage_rate: number
-  actual_qty: number | null
-  process_step: string | null
-  is_key_part: boolean
-  substitute_id: number | null
-  substitute_name: string | null
-  remark: string | null
-  sort_order: number
-}
+type BomDetail = BomDetailPageState
+export type BomItemRow = BomItemPageRow
 
 interface ParentMaterialOption {
   id: number
@@ -276,7 +245,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
       return
     }
     try {
-      const detail = await invoke<BomDetail>('get_bom_detail', { id: bomId })
+      const detail = normalizeBomDetail(await invoke<BomDetailResponse>('get_bom_detail', { id: bomId }))
       setMaterialId(detail.materialId.toString())
       setVersion(detail.version)
       setEffectiveDate(detail.effective_date ?? '')
@@ -310,24 +279,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
     }
 
     setSaving(true)
-    const params = {
-      id: bomId,
-      materialId: parseInt(materialId, 10),
-      version,
-      effective_date: effectiveDate || null,
-      status: isNew ? 'draft' : status,
-      remark: remark || null,
-      items: items.map((item, idx) => ({
-        child_material_id: item.child_material_id,
-        standard_qty: item.standard_qty,
-        wastage_rate: item.wastage_rate,
-        process_step: item.process_step || null,
-        is_key_part: item.is_key_part,
-        substitute_id: item.substitute_id,
-        remark: item.remark || null,
-        sort_order: idx + 1,
-      })),
-    }
+    const args = buildSaveBomArgs({ bomId, materialId, version, effectiveDate, status, isNew, remark, items })
 
     if (!isTauriEnv()) {
       await new Promise(r => setTimeout(r, 300))
@@ -338,7 +290,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
     }
 
     try {
-      await invoke('save_bom', { params })
+      await invoke('save_bom', args)
       toast.success(t('notifications.saveBomSuccess'))
       onBack()
     } catch (e) {
