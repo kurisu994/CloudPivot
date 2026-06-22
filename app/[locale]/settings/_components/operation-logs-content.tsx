@@ -45,6 +45,7 @@ const ACTION_KEYS = [
   'convert_to_sales',
   'start_production',
   'save_batch_movement',
+  'save_draft_insufficient',
   'confirm_batch_movement',
   'delete_batch_movement',
 ]

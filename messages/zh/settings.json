@@ -418,6 +418,7 @@
         "convert_to_sales": "转销售单",
         "start_production": "开始生产",
         "save_batch_movement": "保存自由出入库",
+        "save_draft_insufficient": "库存不足保留草稿",
         "confirm_batch_movement": "确认自由出入库",
         "delete_batch_movement": "删除自由出入库"
       }

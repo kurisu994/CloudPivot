@@ -86,6 +86,8 @@ export interface SaveManualMovementParams {
   counterpartyName?: string | null
   remark?: string | null
   items: SaveManualMovementItemParams[]
+  /** 是否由确认过账流程内部静默调用：为 true 时后端不写「保存草稿」日志 */
+  fromConfirm?: boolean
 }
 
 /** 确认过账参数 */
