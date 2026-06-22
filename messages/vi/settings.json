@@ -418,6 +418,7 @@
         "convert_to_sales": "Chuyển thành đơn bán",
         "start_production": "Bắt đầu sản xuất",
         "save_batch_movement": "Lưu xuất nhập tự do",
+        "save_draft_insufficient": "Tồn không đủ, giữ nháp",
         "confirm_batch_movement": "Xác nhận xuất nhập tự do",
         "delete_batch_movement": "Xóa xuất nhập tự do"
       }

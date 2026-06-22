@@ -157,6 +157,11 @@ pub struct SaveManualMovementParams {
     pub counterparty_name: Option<String>,
     pub remark: Option<String>,
     pub items: Vec<SaveManualMovementItemParams>,
+    /// 是否由确认过账流程内部静默调用。
+    /// 为 true 时不写「保存草稿」操作日志，日志改由过账流程按结果记录，
+    /// 避免「直接确认过账」时多出一条无意义的草稿保存记录。
+    #[serde(default)]
+    pub from_confirm: bool,
 }
 
 /// 确认过账参数
@@ -706,29 +711,33 @@ pub async fn save_manual_stock_movement(
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
     // 写入操作日志
-    let action_desc = if params.id.is_some() {
-        "修改"
-    } else {
-        "创建"
-    };
-    let log_detail = format!(
-        "{}批量出入库草稿：{}，关联仓库ID {}",
-        action_desc, final_movement_no, params.warehouse_id
-    );
-    let _ = crate::operation_log::write_log(
-        &db.pool,
-        crate::operation_log::OperationLogEntry {
-            module: "inventory".to_string(),
-            action: "save_batch_movement".to_string(),
-            target_type: Some("manual_stock_movement".to_string()),
-            target_id: Some(movement_id),
-            target_no: Some(final_movement_no.clone()),
-            detail: log_detail,
-            operator_user_id: Some(operator_id),
-            operator_name: Some(operator_name),
-        },
-    )
-    .await;
+    // 过账流程内部的静默保存不在此记录，由 confirm 流程按最终结果记录，
+    // 避免「直接确认过账」时多出一条「保存草稿」记录。
+    if !params.from_confirm {
+        let action_desc = if params.id.is_some() {
+            "修改"
+        } else {
+            "创建"
+        };
+        let log_detail = format!(
+            "{}批量出入库草稿：{}，关联仓库ID {}",
+            action_desc, final_movement_no, params.warehouse_id
+        );
+        let _ = crate::operation_log::write_log(
+            &db.pool,
+            crate::operation_log::OperationLogEntry {
+                module: "inventory".to_string(),
+                action: "save_batch_movement".to_string(),
+                target_type: Some("manual_stock_movement".to_string()),
+                target_id: Some(movement_id),
+                target_no: Some(final_movement_no.clone()),
+                detail: log_detail,
+                operator_user_id: Some(operator_id),
+                operator_name: Some(operator_name),
+            },
+        )
+        .await;
+    }
 
     Ok(movement_id)
 }
@@ -911,6 +920,28 @@ pub async fn confirm_manual_stock_movement(
         }
 
         if !insufficient_items.is_empty() {
+            // 过账因库存不足整单回滚，单据保留为草稿。
+            // 单独记录此动作，与用户主动「保存草稿」区分开。
+            let log_detail = format!(
+                "出库确认过账时库存不足（{} 项物料），单据已保留为草稿：{}",
+                insufficient_items.len(),
+                movement_no
+            );
+            let _ = crate::operation_log::write_log(
+                &db.pool,
+                crate::operation_log::OperationLogEntry {
+                    module: "inventory".to_string(),
+                    action: "save_draft_insufficient".to_string(),
+                    target_type: Some("manual_stock_movement".to_string()),
+                    target_id: Some(id),
+                    target_no: Some(movement_no.clone()),
+                    detail: log_detail,
+                    operator_user_id: Some(operator_id),
+                    operator_name: Some(operator_name.clone()),
+                },
+            )
+            .await;
+
             let json = serde_json::to_string(&insufficient_items)
                 .map_err(|e| AppError::Business(format!("序列化库存不足信息失败: {}", e)))?;
             return Err(AppError::Business(format!("INSUFFICIENT_STOCK:{}", json)));

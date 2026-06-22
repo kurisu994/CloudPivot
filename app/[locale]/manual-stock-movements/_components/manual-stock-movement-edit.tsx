@@ -357,9 +357,10 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
   }, [items, isInbound])
 
   // 5. 保存草稿底层逻辑
-  // silent: 静默保存（确认过账流程内部调用时不提示"草稿已保存"）
-  const executeSave = async (options?: { silent?: boolean }): Promise<number | null> => {
-    const silent = options?.silent ?? false
+  // fromConfirm: 由确认过账流程内部调用，既静默保存（不提示"草稿已保存"），
+  // 又让后端跳过「保存草稿」日志——避免直接确认过账时多出一条无意义的草稿记录
+  const executeSave = async (options?: { fromConfirm?: boolean }): Promise<number | null> => {
+    const fromConfirm = options?.fromConfirm ?? false
 
     if (!warehouseId) {
       toast.error(t('manualStockMovements.selectWarehouse'))
@@ -413,9 +414,10 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
         counterpartyName: counterpartyName.trim() || null,
         remark: remark.trim() || null,
         items: saveItems,
+        fromConfirm,
       })
 
-      if (!silent) {
+      if (!fromConfirm) {
         toast.success(
           t('manualStockMovements.draftSaved', {
             movementNo: movementNo || '草稿',
@@ -440,8 +442,8 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
 
   // 6. 确认过账逻辑（包含风控多维拦截）
   const handleConfirmPost = async (riskConfirmed = false) => {
-    // A. 必须先保存最新更改（静默，不提示"草稿已保存"）
-    const savedId = await executeSave({ silent: true })
+    // A. 必须先保存最新更改（静默；标记 fromConfirm，避免后端多记一条「保存草稿」日志）
+    const savedId = await executeSave({ fromConfirm: true })
     if (!savedId) return
 
     setPosting(true)
@@ -845,16 +847,16 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
               {/* 操作控制纽 (草稿状态可见) */}
               {!isReadOnly && (
                 <div className="flex flex-col gap-2.5 pt-4">
-                  <Button onClick={handleSaveDraft} variant="outline" className="w-full" disabled={saving || posting}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {t('manualStockMovements.saveDraft')}
-                  </Button>
                   {canConfirm && (
                     <Button onClick={() => handleConfirmPost(false)} className="w-full shadow-sm" disabled={saving || posting}>
                       <CheckSquare className="mr-2 h-4 w-4" />
                       {posting ? '过账中...' : t('manualStockMovements.confirmMovement')}
                     </Button>
                   )}
+                  <Button onClick={handleSaveDraft} variant="outline" className="w-full" disabled={saving || posting}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {t('manualStockMovements.saveDraft')}
+                  </Button>
                 </div>
               )}
             </CardContent>
