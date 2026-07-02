@@ -63,6 +63,7 @@
 
 ## 已解决的阻碍
 
+- ✅ Tauri NPM / Rust minor mismatch（`@tauri-apps/*` NPM 包固定精确版本，避免 `^2.10.1` 漂移到 `2.11.x`）
 - ✅ SQL 注入风险（字符串拼接 → 参数化查询）
 - ✅ 并发库存覆盖（`FOR UPDATE` 行锁 + 数量约束）
 - ✅ IPC 鉴权缺失（写命令统一 `require_auth`）
