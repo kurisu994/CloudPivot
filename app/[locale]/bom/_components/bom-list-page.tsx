@@ -386,7 +386,12 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
                           <Play className="size-4" />
                         </Button>
                       ) : (
-                        <Button variant="ghost" size="sm" onClick={() => handleToggleStatus(bom.id, 'inactive')} title={t('actions.deactivate')}>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleToggleStatus(bom.id, 'inactive')}
+                          title={t('actions.deactivate')}
+                        >
                           <Square className="size-4" />
                         </Button>
                       )}
