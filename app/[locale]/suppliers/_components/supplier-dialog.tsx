@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { DatePicker } from '@/components/ui/date-picker'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -58,8 +57,6 @@ interface MaterialFormData {
   currency: 'VND' | 'CNY' | 'USD'
   leadDays: string
   minOrderQty: string
-  validFrom: string
-  validTo: string
   isPreferred: boolean
   remark: string
 }
@@ -94,10 +91,17 @@ const EMPTY_MATERIAL_FORM: MaterialFormData = {
   currency: 'USD',
   leadDays: '7',
   minOrderQty: '',
-  validFrom: '',
-  validTo: '',
   isPreferred: false,
   remark: '',
+}
+
+const SUPPLIER_MATERIAL_DEFAULT_VALID_TO = '2099-12-31'
+
+function getLocalDateString(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function paramsToForm(params: SaveSupplierParams): FormData {
@@ -159,8 +163,6 @@ function materialToForm(material: SupplierMaterialItem): MaterialFormData {
     currency: material.currency,
     leadDays: material.leadDays.toString(),
     minOrderQty: material.minOrderQty?.toString() ?? '',
-    validFrom: material.validFrom ?? '',
-    validTo: material.validTo ?? '',
     isPreferred: material.isPreferred,
     remark: material.remark ?? '',
   }
@@ -175,8 +177,8 @@ function materialFormToParams(form: MaterialFormData, supplierId: number): SaveS
     currency: form.currency,
     leadDays: Number(form.leadDays || '0'),
     minOrderQty: form.minOrderQty ? Number(form.minOrderQty) : null,
-    validFrom: form.validFrom || null,
-    validTo: form.validTo || null,
+    validFrom: getLocalDateString(),
+    validTo: SUPPLIER_MATERIAL_DEFAULT_VALID_TO,
     isPreferred: form.isPreferred,
     remark: form.remark || null,
   }
@@ -736,14 +738,6 @@ export function SupplierDialog({ open, onOpenChange, supplierId, onSaved }: Supp
                 <div className="flex h-8 items-center">
                   <Switch checked={materialForm.isPreferred} onCheckedChange={value => setMaterialForm(prev => ({ ...prev, isPreferred: value }))} />
                 </div>
-              </Field>
-              <Field>
-                <FieldLabel>{t('validFrom')}</FieldLabel>
-                <DatePicker value={materialForm.validFrom} onChange={value => setMaterialForm(prev => ({ ...prev, validFrom: value }))} />
-              </Field>
-              <Field>
-                <FieldLabel>{t('validTo')}</FieldLabel>
-                <DatePicker value={materialForm.validTo} onChange={value => setMaterialForm(prev => ({ ...prev, validTo: value }))} />
               </Field>
               <Field className="col-span-2">
                 <FieldLabel>{t('remark')}</FieldLabel>
