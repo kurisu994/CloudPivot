@@ -1203,7 +1203,7 @@ pub async fn save_and_confirm_inbound(
             SELECT status, currency, exchange_rate,
                    total_amount, discount_amount, freight_amount, other_charges,
                    warehouse_id,
-                   (SELECT COALESCE(SUM(io2.total_amount), 0) FROM inbound_orders io2
+                   (SELECT COALESCE(SUM(io2.total_amount), 0)::BIGINT FROM inbound_orders io2
                     WHERE io2.purchase_id = $1 AND io2.status = 'confirmed') AS prev_inbound_total
             FROM purchase_orders WHERE id = $2
             "#,
@@ -1277,13 +1277,13 @@ pub async fn save_and_confirm_inbound(
             if all_items_done {
                 // 最后一笔：倒挤法
                 let prev_discount = sqlx::query_scalar::<_, i64>(
-                    "SELECT COALESCE(SUM(allocated_discount), 0) FROM inbound_orders WHERE purchase_id = $1 AND status = 'confirmed'",
+                    "SELECT COALESCE(SUM(allocated_discount), 0)::BIGINT FROM inbound_orders WHERE purchase_id = $1 AND status = 'confirmed'",
                 ).bind(params.purchase_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
                 let prev_freight = sqlx::query_scalar::<_, i64>(
-                    "SELECT COALESCE(SUM(allocated_freight), 0) FROM inbound_orders WHERE purchase_id = $1 AND status = 'confirmed'",
+                    "SELECT COALESCE(SUM(allocated_freight), 0)::BIGINT FROM inbound_orders WHERE purchase_id = $1 AND status = 'confirmed'",
                 ).bind(params.purchase_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
                 let prev_other = sqlx::query_scalar::<_, i64>(
-                    "SELECT COALESCE(SUM(allocated_other), 0) FROM inbound_orders WHERE purchase_id = $1 AND status = 'confirmed'",
+                    "SELECT COALESCE(SUM(allocated_other), 0)::BIGINT FROM inbound_orders WHERE purchase_id = $1 AND status = 'confirmed'",
                 ).bind(params.purchase_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
 
                 (po.4 - prev_discount, po.5 - prev_freight, po.6 - prev_other)

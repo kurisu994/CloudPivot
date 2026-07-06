@@ -3,7 +3,6 @@
 import { Ban, Check, Eye, PackageCheck, Pencil, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import { toast } from 'sonner'
 import {
   BUSINESS_LIST_STICKY_CELL_CLASS,
   BUSINESS_LIST_STICKY_HEAD_CLASS,
@@ -50,6 +49,7 @@ interface PurchaseOrderTableProps {
   onPageSizeChange: (size: number) => void
   onEdit: (order: PurchaseOrderListItem) => void
   onApprove: (order: PurchaseOrderListItem) => void
+  onInbound: (order: PurchaseOrderListItem) => void
   onCancel: (order: PurchaseOrderListItem) => void
   onDelete: (order: PurchaseOrderListItem) => void
 }
@@ -65,6 +65,7 @@ export function PurchaseOrderTable({
   onPageSizeChange,
   onEdit,
   onApprove,
+  onInbound,
   onCancel,
   onDelete,
 }: PurchaseOrderTableProps) {
@@ -95,7 +96,7 @@ export function PurchaseOrderTable({
         <Button key="detail" variant="ghost" size="icon-sm" onClick={() => setDetailOrderId(order.id)} title={t('details')}>
           <Eye className="size-3.5" />
         </Button>,
-        <Button key="inbound" variant="ghost" size="icon-sm" onClick={() => toast.info(tc('developing'))} title={t('inbound')}>
+        <Button key="inbound" variant="ghost" size="icon-sm" onClick={() => onInbound(order)} title={t('inbound')}>
           <PackageCheck className="size-3.5" />
         </Button>,
         <Button key="cancel" variant="ghost" size="icon-sm" onClick={() => onCancel(order)} title={t('cancelOrder')}>
@@ -108,7 +109,7 @@ export function PurchaseOrderTable({
         <Button key="detail" variant="ghost" size="icon-sm" onClick={() => setDetailOrderId(order.id)} title={t('details')}>
           <Eye className="size-3.5" />
         </Button>,
-        <Button key="continue" variant="ghost" size="icon-sm" onClick={() => toast.info(tc('developing'))} title={t('continueInbound')}>
+        <Button key="continue" variant="ghost" size="icon-sm" onClick={() => onInbound(order)} title={t('continueInbound')}>
           <PackageCheck className="size-3.5" />
         </Button>,
       )

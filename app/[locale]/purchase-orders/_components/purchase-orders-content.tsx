@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useRouter } from '@/i18n/navigation'
 import { PurchaseOrderEditPage } from './purchase-order-edit-page'
 import { PurchaseOrderListPage } from './purchase-order-list-page'
 
@@ -13,6 +14,7 @@ export function PurchaseOrdersContent() {
   const [view, setView] = useState<'list' | 'edit'>('list')
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null)
   const searchParams = useSearchParams()
+  const router = useRouter()
 
   // 处理 URL 参数 ?action=new（从 Dashboard 快捷操作跳转）
   useEffect(() => {
@@ -34,6 +36,11 @@ export function PurchaseOrdersContent() {
     setView('edit')
   }
 
+  /** 从采购单进入采购入库 */
+  const handleInbound = (id: number) => {
+    router.push(`/purchase-receipts?purchaseId=${id}`)
+  }
+
   /** 返回列表 */
   const handleBackToList = () => {
     setView('list')
@@ -44,5 +51,5 @@ export function PurchaseOrdersContent() {
     return <PurchaseOrderEditPage orderId={editingOrderId} onBack={handleBackToList} />
   }
 
-  return <PurchaseOrderListPage onEdit={handleEdit} onNew={handleNew} />
+  return <PurchaseOrderListPage onEdit={handleEdit} onInbound={handleInbound} onNew={handleNew} />
 }

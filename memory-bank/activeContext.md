@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。全部五个开发阶段已完成，172 个 IPC 命令、39 个路由页面、51 张数据库表均已交付。当前版本 **v0.2.9**（2026-06-22 发布），包含自由出入库操作日志可读性优化；当前正在 `[Unreleased]` 继续打磨侧边栏入口、BOM、应收应付、错误提示、依赖检查和供应商物料维护体验。2026-07-06 已修复 `tauri 2.10.3` 与 `@tauri-apps/api 2.11.1` 的 minor mismatch，将 JS 侧 Tauri 包与插件依赖收回到 2.10 同线；随后按用户要求移除供应商物料弹窗中的有效期输入，把物料选择改成可搜索控件，放宽添加物料弹窗以完整查看较长物料信息，并将供应商可选物料收窄为原材料。BOM 新建/编辑表单也已移除生效日期输入，保存时由前后端兜底写入本地当天日期；BOM 列表停用按钮改为危险色样式以提高识别度。
+项目处于 **功能完备、持续打磨** 阶段。全部五个开发阶段已完成，172 个 IPC 命令、39 个路由页面、51 张数据库表均已交付。当前版本 **v0.2.9**（2026-06-22 发布），包含自由出入库操作日志可读性优化；当前正在 `[Unreleased]` 继续打磨侧边栏入口、BOM、应收应付、错误提示、依赖检查和供应商物料维护体验。2026-07-06 已修复 `tauri 2.10.3` 与 `@tauri-apps/api 2.11.1` 的 minor mismatch，将 JS 侧 Tauri 包与插件依赖收回到 2.10 同线；随后按用户要求移除供应商物料弹窗中的有效期输入，把物料选择改成可搜索控件，放宽添加物料弹窗以完整查看较长物料信息，并将供应商可选物料收窄为原材料。BOM 新建/编辑表单也已移除生效日期输入，保存时由前后端兜底写入本地当天日期；BOM 列表停用按钮改为危险色样式以提高识别度。采购单列表的已审核 / 部分入库行已接通采购入库执行页，点击「入库 / 继续入库」会携带采购单 ID 进入待入库明细流程；随后修复确认采购入库时 PostgreSQL `SUM(BIGINT)` 返回 `NUMERIC` 导致 Rust `i64` 解码失败的问题。
 
 ## 最近完成的工作
 
@@ -11,6 +11,8 @@
 - **供应商物料维护交互收敛**：供应商维护弹窗中，新增/编辑供货物料不再展示「有效期起/止」日期选择器。前端每次保存 payload 都会自动补 `validFrom=本地当天`、`validTo=2099-12-31`，使“关系存在即生效”；移除供货物料仍沿用现有删除动作，不做数据库迁移。物料选择从普通 `Select` 改为项目现有 `Combobox`，支持按编码、名称和规格过滤；添加物料弹窗放宽到 `sm:max-w-4xl`，物料选择字段横跨整行，长物料信息在下拉项中可换行展示。供应商弹窗调用 `getMaterialReferenceOptions('raw')`，只列出原材料，避免半成品/成品进入供应商供货报价。
 - **BOM 生效日期交互收敛**：BOM 新建/编辑表单移除「生效日期」输入控件，用户不再手动维护该字段。前端 `buildSaveBomArgs` 在 `effectiveDate` 为空时补本地当天日期；后端 `save_bom` 也通过 `normalize_bom_effective_date` 对空值兜底，数据库 `bom.effective_date` 字段继续保留并写入当天日期，不新增迁移。
 - **BOM 停用操作视觉强化**：BOM 管理列表中，处于生效状态的停用按钮从普通 `ghost` 按钮改为 `destructive` 变体，使用项目现有危险色 token 提醒用户该操作会停用当前版本。
+- **采购单入库入口接通**：采购单列表中 `approved` 状态的「入库」和 `partial_in` 状态的「继续入库」按钮不再提示开发中，而是跳转到 `/purchase-receipts?purchaseId=<id>`；采购入库主内容读取该参数后直接打开 `InboundExecutePage`，复用现有 `getPendingInboundItems` 与 `saveAndConfirmInbound` 事务链路完成入库、库存更新和采购单状态回写。
+- **采购入库确认类型修复**：修复 `save_and_confirm_inbound` 中采购单信息查询失败：`SUM(io2.total_amount)`、`SUM(allocated_discount)`、`SUM(allocated_freight)`、`SUM(allocated_other)` 在 PostgreSQL 下返回 `NUMERIC`，但代码按 `i64` 解码。现已对这些金额汇总统一追加 `::BIGINT`，保持数据库返回类型与 Rust tuple / `query_scalar::<_, i64>` 一致。
 - **pnpm 11 锁文件刷新提交**：移除 `package.json` 中的 `packageManager: pnpm@10.33.0` 固定值，`pnpm-lock.yaml` 已按当前 `pnpm 11.10.0` 重新解析现有 semver 范围。`pnpm install --frozen-lockfile --offline`、`pnpm typecheck` 与 `git diff --check` 均已通过；`pnpm exec tauri info` 在输出 Environment 后长时间未返回，已手动中断，未作为通过项。此次属于包管理器/锁文件维护，不新增 `CHANGELOG.md` 条目。
 - **BOM 保存布尔字段绑定修复**：修复保存 BOM 明细时报错 `column "is_key_part" is of type boolean but expression is of type integer`。根因是 PostgreSQL 迁移中 `bom_items.is_key_part` 为 `BOOLEAN`，但 `save_bom` 插入明细时仍沿用 SQLite 兼容思路把 `bool` 转成 `1/0` 绑定。现已在 `src-tauri/src/commands/bom.rs` 中改为直接 `.bind(item.is_key_part)`，并新增 Rust 回归测试 `save_bom_binds_is_key_part_as_boolean_for_postgres` 防止该绑定退回整数。
 - **BOM 明细添加物料搜索重置修复**：修复 `BomItemDialog` 中搜索输入后弹窗重新初始化、搜索词被清空、候选项无法按输入生效的问题。根因是 `fetchMaterials` 依赖 `searchKeyword`，导致初始化 `useEffect` 随输入变化重跑；同时 `onChange` 立即调用闭包内的 `fetchMaterials()` 会用旧关键词查询。现已将弹窗打开初始化和关键词搜索拆成两个 effect，`fetchMaterials(keyword)` 显式接收关键词，并用 `searchRequestIdRef` 避免旧异步响应覆盖新结果。新增 `tests/bom-item-dialog-search.test.mjs` 作为轻量回归保护。
@@ -46,6 +48,11 @@
 - `app/[locale]/bom/_components/bom-command-args.ts` — 保存参数构造为空时默认补本地当天日期
 - `src-tauri/src/commands/bom.rs` — `save_bom` 对空生效日期做后端兜底，保证数据库字段不为空
 - `tests/bom-command-args.test.mjs` — 覆盖 BOM 保存参数默认生效日期映射
+- `app/[locale]/purchase-orders/_components/purchase-order-table.tsx` — 将采购单入库按钮从开发中提示改为回调入口
+- `app/[locale]/purchase-orders/_components/purchase-order-list-page.tsx` — 向采购单表格透传采购入库入口回调
+- `app/[locale]/purchase-orders/_components/purchase-orders-content.tsx` — 点击采购单入库时跳转到采购入库页并携带 `purchaseId`
+- `app/[locale]/purchase-receipts/_components/purchase-receipts-content.tsx` — 读取 `purchaseId` 查询参数，直接进入入库执行页并在返回列表时清理参数
+- `src-tauri/src/commands/purchase.rs` — 对采购入库确认中的金额汇总 `SUM(BIGINT)` 结果显式转回 `BIGINT`
 - `src-tauri/src/commands/bom.rs` — 修复 `save_bom` 对 `is_key_part` 的 PostgreSQL boolean 绑定，并补回归测试
 - `app/[locale]/bom/_components/bom-item-dialog.tsx` — 拆分弹窗初始化与物料搜索 effect，修复输入后搜索失效
 - `CHANGELOG.md` — `[Unreleased]` 记录本轮用户可见变更
@@ -62,6 +69,8 @@
 - **BOM 明细物料搜索采用“打开初始化 + 关键词搜索”分离模型**：打开弹窗只重置一次表单状态；搜索词变化只刷新候选物料，不再触发表单重置。搜索函数不读取闭包里的 `searchKeyword`，统一接收显式参数，避免 React state 异步更新造成旧关键词查询。
 - **BOM 生效日期由系统默认维护**：BOM 表单不再展示生效日期，字段保留给数据库和历史数据兼容。现有记录编辑时尽量回存原值；新建或空值保存时前端与后端均兜底为本地当天 `YYYY-MM-DD`，保持现有字段格式一致。
 - **危险状态操作优先使用 Button destructive 变体**：BOM 停用按钮复用现有 `Button variant="destructive"`，不手写红色 class，保持主题 token 和暗色模式一致。
+- **采购入库入口复用现有采购入库执行页**：不在采购单列表里直接做库存事务，也不新建并行弹窗；列表只负责把 `purchaseId` 传给采购入库页，待入库数量、仓库一致性校验、库存与应付生成继续由 `saveAndConfirmInbound` 的后端事务兜底。
+- **PostgreSQL 金额聚合要显式定型**：金额字段通常按 `BIGINT/i64` 存储，但 PostgreSQL 的 `SUM(BIGINT)` 会返回 `NUMERIC`。凡是 Rust 端按 `i64` 接收金额聚合结果，SQL 中应使用 `COALESCE(SUM(...), 0)::BIGINT` 或等价 cast，避免运行时解码失败。
 - `src-tauri/src/commands/manual_stock_movement.rs` — `SaveManualMovementParams` 新增 `from_confirm`；保存流程据此跳过草稿日志；`confirm_*` 库存不足整单回滚时记 `save_draft_insufficient`
 - `lib/tauri/manual-stock-movement.ts` — `SaveManualMovementParams` 类型新增 `fromConfirm?`
 - `app/[locale]/manual-stock-movements/_components/manual-stock-movement-edit.tsx` — `executeSave` 的 `silent` 升级为 `fromConfirm`，确认过账内部调用传 `{ fromConfirm: true }`
@@ -84,6 +93,7 @@
 
 - 如后续升级 Tauri 到 `2.11.x`，需要同时调整 `src-tauri/Cargo.toml` / `Cargo.lock` 与 `package.json` / `pnpm-lock.yaml`，不要只升级 NPM 侧。
 - 若后续引入 React/jsdom 测试工具，可将当前静态回归测试升级为真实交互测试，直接模拟输入框输入和候选项过滤。
+- 采购入库入口已完成前端接通；后续可在真实 Tauri 环境中从已审核采购单点击入库，确认待入库数量、确认入库、采购单状态回写与应付生成完整链路。
 - 持续跟进打磨其他系统设置、报表或业务表单页面的细节排版与国际化缺失项。
 - 观察纯文档约束下 AI 主动更新记忆银行的执行率，若漏更新频繁再考虑更克制的兜底（如只在检测到 git 工作区有变更时才提示，而非按 mtime 一刀切）。
 
@@ -93,6 +103,8 @@
 - 本次供应商物料维护交互调整无阻塞；`pnpm typecheck`、`cargo check --manifest-path src-tauri/Cargo.toml` 与 `git diff --check` 已通过。未修改数据库迁移。
 - 本次 BOM 生效日期交互调整无阻塞；`just fmt`、`pnpm typecheck`、`cargo check --manifest-path src-tauri/Cargo.toml`、`node --experimental-strip-types --test tests/bom-command-args.test.mjs`、`cargo test normalize_bom_effective_date_defaults_blank_to_today --manifest-path src-tauri/Cargo.toml --lib` 与 `git diff --check` 已通过。未修改数据库迁移。
 - 本次 BOM 列表停用按钮视觉调整无阻塞；`pnpm typecheck` 已通过。
+- 本次采购单入库入口接通无阻塞；`just fmt` 与 `pnpm typecheck` 已通过，未修改数据库迁移和 Rust 入库事务。
+- 本次采购入库确认类型修复无阻塞；`just fmt`、`cargo check --manifest-path src-tauri/Cargo.toml` 已通过，未修改数据库迁移。
 - 本次 BOM 保存与搜索修复无阻塞；提交前 `just lint`、`node --experimental-strip-types --test tests/bom-command-args.test.mjs tests/bom-item-dialog-search.test.mjs`、`cargo test save_bom_binds_is_key_part_as_boolean_for_postgres --lib` 均已通过。
 
 ---

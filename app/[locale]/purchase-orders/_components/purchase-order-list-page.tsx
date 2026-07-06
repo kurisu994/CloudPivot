@@ -27,10 +27,11 @@ const DEFAULT_PAGE_SIZE = 50
 
 interface PurchaseOrderListPageProps {
   onEdit: (id: number) => void
+  onInbound: (id: number) => void
   onNew: () => void
 }
 
-export function PurchaseOrderListPage({ onEdit, onNew }: PurchaseOrderListPageProps) {
+export function PurchaseOrderListPage({ onEdit, onInbound, onNew }: PurchaseOrderListPageProps) {
   const t = useTranslations('purchase')
   const tc = useTranslations('common')
 
@@ -272,6 +273,7 @@ export function PurchaseOrderListPage({ onEdit, onNew }: PurchaseOrderListPagePr
           }}
           onEdit={order => onEdit(order.id)}
           onApprove={handleApprove}
+          onInbound={order => onInbound(order.id)}
           onCancel={handleCancel}
           onDelete={handleDelete}
         />
