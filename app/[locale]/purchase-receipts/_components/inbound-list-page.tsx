@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, Eye, RotateCcw, Search } from 'lucide-react'
+import { Download, Eye, Plus, RotateCcw, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -16,22 +16,30 @@ import {
 import { PaginationControls } from '@/components/common/pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Combobox } from '@/components/ui/combobox'
 import { DateRangePicker } from '@/components/ui/date-picker'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount } from '@/lib/currency'
-import type { InboundOrderFilter, InboundOrderListItem, PurchaseOrderListItem } from '@/lib/tauri'
-import { getInboundOrders, getPurchaseOrders } from '@/lib/tauri'
+import { getErrorMessage } from '@/lib/error'
+import type { InboundOrderFilter, InboundOrderListItem, PurchaseOrderDetail, PurchaseOrderListItem } from '@/lib/tauri'
+import { getInboundOrders, getPurchaseOrderDetail, getPurchaseOrders } from '@/lib/tauri'
 
 const DEFAULT_PAGE_SIZE = 50
 
+const formatQuantity = (value: number) =>
+  value.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 4,
+  })
+
 interface InboundListPageProps {
   onNewInbound: (purchaseId: number) => void
-  onNewFreeInbound: () => void
 }
 
-export function InboundListPage({ onNewInbound, onNewFreeInbound }: InboundListPageProps) {
+export function InboundListPage({ onNewInbound }: InboundListPageProps) {
   const t = useTranslations('purchase')
   const tc = useTranslations('common')
 
@@ -50,6 +58,10 @@ export function InboundListPage({ onNewInbound, onNewFreeInbound }: InboundListP
 
   // 可入库的采购单列表（用于"从采购单入库"）
   const [pendingPOs, setPendingPOs] = useState<PurchaseOrderListItem[]>([])
+  const [newInboundOpen, setNewInboundOpen] = useState(false)
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null)
+  const [selectedPODetail, setSelectedPODetail] = useState<PurchaseOrderDetail | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
 
   const loadOrders = useCallback(async () => {
     setLoading(true)
@@ -82,6 +94,37 @@ export function InboundListPage({ onNewInbound, onNewFreeInbound }: InboundListP
   useEffect(() => {
     void loadPendingPOs()
   }, [loadPendingPOs])
+  useEffect(() => {
+    if (!newInboundOpen || !selectedPurchaseId) {
+      setSelectedPODetail(null)
+      return
+    }
+
+    let ignore = false
+    setDetailLoading(true)
+    void getPurchaseOrderDetail(Number(selectedPurchaseId))
+      .then(detail => {
+        if (!ignore) {
+          setSelectedPODetail(detail)
+        }
+      })
+      .catch(error => {
+        if (!ignore) {
+          console.error('加载采购单入库进度失败', error)
+          toast.error(getErrorMessage(error, t('loadError')))
+          setSelectedPODetail(null)
+        }
+      })
+      .finally(() => {
+        if (!ignore) {
+          setDetailLoading(false)
+        }
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [newInboundOpen, selectedPurchaseId, t])
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
@@ -120,10 +163,46 @@ export function InboundListPage({ onNewInbound, onNewFreeInbound }: InboundListP
     () =>
       pendingPOs.map(po => ({
         value: String(po.id),
-        label: `${po.orderNo} - ${po.supplierName}`,
+        label: `${po.orderNo} · ${po.supplierName} · ${po.warehouseName}`,
       })),
     [pendingPOs],
   )
+  const selectedPO = useMemo(() => pendingPOs.find(po => String(po.id) === selectedPurchaseId) ?? null, [pendingPOs, selectedPurchaseId])
+  const remainingDetailRows = useMemo(
+    () =>
+      (selectedPODetail?.items ?? [])
+        .map(item => {
+          const receivedQty = item.receivedQty ?? 0
+          return {
+            id: item.id ?? `${item.materialId}-${item.sortOrder ?? 0}`,
+            materialCode: item.materialCode ?? '',
+            materialName: item.materialName ?? '',
+            spec: item.spec ?? '',
+            unitName: item.unitNameSnapshot,
+            orderQuantity: item.quantity,
+            receivedQty,
+            remainingQty: Math.max(item.quantity - receivedQty, 0),
+          }
+        })
+        .filter(item => item.remainingQty > 0),
+    [selectedPODetail],
+  )
+
+  const handleOpenNewInbound = () => {
+    setSelectedPurchaseId(null)
+    setSelectedPODetail(null)
+    setNewInboundOpen(true)
+    void loadPendingPOs()
+  }
+
+  const handleConfirmNewInbound = () => {
+    if (!selectedPurchaseId || !selectedPO) {
+      toast.error(t('fieldRequired', { field: t('sourcePurchaseOrder') }))
+      return
+    }
+    setNewInboundOpen(false)
+    onNewInbound(Number(selectedPurchaseId))
+  }
 
   const inboundTypeLabel = (type: string) => {
     const map: Record<string, string> = {
@@ -186,28 +265,12 @@ export function InboundListPage({ onNewInbound, onNewFreeInbound }: InboundListP
         </div>
       </div>
 
-      {/* 操作栏：从采购单入库 */}
+      {/* 操作栏 */}
       <div className="flex flex-wrap items-center gap-3">
-        {poItems.length > 0 && (
-          <Select
-            value=""
-            onValueChange={v => {
-              if (v) onNewInbound(Number(v))
-            }}
-            items={poItems}
-          >
-            <SelectTrigger className="w-[22.5rem]">
-              <SelectValue placeholder={t('selectPurchaseOrder')} />
-            </SelectTrigger>
-            <SelectContent>
-              {poItems.map(item => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        <Button onClick={handleOpenNewInbound}>
+          <Plus data-icon="inline-start" />
+          {t('newInbound')}
+        </Button>
         <Button variant="outline" onClick={() => toast.info(t('exportComingSoon'))}>
           <Download data-icon="inline-start" />
           {t('exportData')}
@@ -279,6 +342,106 @@ export function InboundListPage({ onNewInbound, onNewFreeInbound }: InboundListP
           />
         </BusinessListTableFooter>
       </div>
+
+      <Dialog open={newInboundOpen} onOpenChange={setNewInboundOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t('newInboundDialogTitle')}</DialogTitle>
+            <DialogDescription>{t('newInboundDialogDescription')}</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4">
+            <Combobox
+              items={poItems}
+              value={selectedPurchaseId}
+              onValueChange={setSelectedPurchaseId}
+              placeholder={t('selectPurchaseOrder')}
+              emptyText={t('noPendingPurchaseOrders')}
+              disabled={pendingPOs.length === 0}
+              popupClassName="max-w-[calc(100vw-2rem)] sm:min-w-[36rem]"
+              itemLabelClassName="whitespace-normal break-words"
+            />
+
+            {selectedPO ? (
+              <div className="grid gap-3 rounded-lg border bg-muted/30 p-3 text-sm sm:grid-cols-2">
+                <div>
+                  <div className="text-muted-foreground text-xs">{t('sourcePurchaseOrder')}</div>
+                  <div className="font-mono font-medium">{selectedPO.orderNo}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground text-xs">{t('supplier')}</div>
+                  <div className="font-medium">{selectedPO.supplierName}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground text-xs">{t('warehouse')}</div>
+                  <div>{selectedPO.warehouseName}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground text-xs">{t('payableAmount')}</div>
+                  <div className="font-medium">{formatAmount(selectedPO.payableAmount, selectedPO.currency as 'VND' | 'CNY' | 'USD')}</div>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-center text-muted-foreground text-sm">
+                {pendingPOs.length === 0 ? t('noPendingPurchaseOrders') : t('selectPurchaseOrder')}
+              </div>
+            )}
+
+            {selectedPO && (
+              <div className="rounded-lg border p-3">
+                <div className="mb-3 font-medium text-sm">{t('remainingInboundDetails')}</div>
+                {detailLoading ? (
+                  <div className="py-4 text-center text-muted-foreground text-sm">{tc('loading')}</div>
+                ) : remainingDetailRows.length > 0 ? (
+                  <div className="flex max-h-56 flex-col gap-2 overflow-auto">
+                    {remainingDetailRows.map(item => (
+                      <div key={item.id} className="rounded-md bg-muted/30 p-3">
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <div className="truncate font-medium text-sm">
+                            {item.materialCode} · {item.materialName}
+                          </div>
+                          <div className="text-muted-foreground text-xs">{item.spec || '—'}</div>
+                        </div>
+                        <div className="mt-3 grid grid-cols-3 gap-2 text-right text-sm">
+                          <div>
+                            <div className="text-muted-foreground text-xs">{t('orderQuantity')}</div>
+                            <div className="font-mono">
+                              {formatQuantity(item.orderQuantity)} {item.unitName}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground text-xs">{t('receivedQty')}</div>
+                            <div className="font-mono">
+                              {formatQuantity(item.receivedQty)} {item.unitName}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground text-xs">{t('remainingQty')}</div>
+                            <div className="font-mono font-semibold">
+                              {formatQuantity(item.remainingQty)} {item.unitName}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-4 text-center text-muted-foreground text-sm">{t('noRemainingItems')}</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewInboundOpen(false)}>
+              {tc('cancel')}
+            </Button>
+            <Button onClick={handleConfirmNewInbound} disabled={!selectedPurchaseId || !selectedPO}>
+              {t('startInbound')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

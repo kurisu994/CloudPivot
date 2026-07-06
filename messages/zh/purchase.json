@@ -46,8 +46,8 @@
     "statusCompleted": "已入库",
     "statusCancelled": "已作废",
 
-    "inboundProgress": "入库进度",
-    "progressFormat": "{received}/{total} 行",
+    "inboundProgress": "明细入库进度",
+    "progressFormat": "已完成 {received}/{total} 行",
 
     "totalRecords": "共 {count} 条",
     "perPage": "{count} 条/页",
@@ -82,6 +82,11 @@
     "confirmInboundError": "入库确认失败",
 
     "selectPurchaseOrder": "请选择采购单",
+    "newInboundDialogTitle": "新建采购入库",
+    "newInboundDialogDescription": "选择一张已审核或部分入库的采购单，系统会带入剩余待入库明细。",
+    "noPendingPurchaseOrders": "暂无可入库采购单",
+    "startInbound": "开始入库",
+    "remainingInboundDetails": "剩余待入库明细",
     "orderQuantity": "订单数量",
     "receivedQty": "累计已入库",
     "remainingQty": "剩余可入库",
@@ -120,6 +125,14 @@
     "confirmReturnTip": "确认后将扣减库存并重新计算成本，此操作不可撤销。",
     "confirmReturn": "确认退货",
     "noReturnableItems": "该入库单所有物料已全部退货",
+    "newReturnDialogTitle": "新建采购退货",
+    "newReturnDialogDescription": "先选择采购单，再选择该采购单下的原入库单；系统会带入可退明细，确认退货后将按退货单扣减库存。",
+    "selectReturnPurchaseOrder": "请选择采购单",
+    "noReturnablePurchaseOrders": "暂无可退采购单",
+    "noConfirmedInboundOrders": "暂无可选择入库单",
+    "returnableDetails": "可退明细",
+    "startReturn": "开始退货",
+    "inboundOrderCount": "{count} 张入库单",
     "lotInfo": "批次",
 
     "itemsTitle": "采购明细",

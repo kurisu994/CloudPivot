@@ -305,6 +305,7 @@ export interface PurchaseReturnListItem {
   returnNo: string
   inboundId: number
   inboundOrderNo: string
+  purchaseOrderNo: string | null
   supplierId: number
   supplierName: string
   returnDate: string

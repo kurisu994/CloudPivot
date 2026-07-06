@@ -46,8 +46,8 @@
     "statusCompleted": "Đã nhập kho",
     "statusCancelled": "Đã hủy",
 
-    "inboundProgress": "Tiến độ nhập kho",
-    "progressFormat": "{received}/{total} dòng",
+    "inboundProgress": "Tiến độ dòng nhập kho",
+    "progressFormat": "Đã hoàn thành {received}/{total} dòng",
 
     "totalRecords": "{count} bản ghi",
     "perPage": "{count} / trang",
@@ -82,6 +82,11 @@
     "confirmInboundError": "Không thể xác nhận nhập kho",
 
     "selectPurchaseOrder": "Chọn đơn mua hàng",
+    "newInboundDialogTitle": "Tạo phiếu nhập mua hàng",
+    "newInboundDialogDescription": "Chọn đơn mua hàng đã duyệt hoặc nhập một phần. Hệ thống sẽ tự động tải các dòng còn cần nhập.",
+    "noPendingPurchaseOrders": "Không có đơn mua hàng có thể nhập",
+    "startInbound": "Bắt đầu nhập kho",
+    "remainingInboundDetails": "Chi tiết còn cần nhập",
     "orderQuantity": "SL đặt hàng",
     "receivedQty": "Đã nhập",
     "remainingQty": "Còn lại",
@@ -120,6 +125,14 @@
     "confirmReturnTip": "Tồn kho sẽ bị trừ và chi phí sẽ được tính lại. Không thể hoàn tác.",
     "confirmReturn": "Xác nhận trả hàng",
     "noReturnableItems": "Tất cả vật liệu trong phiếu nhập này đã trả hết",
+    "newReturnDialogTitle": "Tạo phiếu trả hàng mua",
+    "newReturnDialogDescription": "Chọn đơn mua hàng trước, sau đó chọn phiếu nhập gốc của đơn đó. Hệ thống sẽ tải các dòng có thể trả và tồn kho sẽ bị trừ khi xác nhận trả hàng.",
+    "selectReturnPurchaseOrder": "Chọn đơn mua hàng",
+    "noReturnablePurchaseOrders": "Không có đơn mua hàng có thể trả",
+    "noConfirmedInboundOrders": "Không có phiếu nhập có thể chọn",
+    "returnableDetails": "Chi tiết có thể trả",
+    "startReturn": "Bắt đầu trả hàng",
+    "inboundOrderCount": "{count} phiếu nhập",
     "lotInfo": "Lô",
 
     "itemsTitle": "Chi tiết đơn hàng",

@@ -1634,6 +1634,7 @@ pub struct PurchaseReturnListItem {
     pub return_no: String,
     pub inbound_id: i64,
     pub inbound_order_no: String,
+    pub purchase_order_no: Option<String>,
     pub supplier_id: i64,
     pub supplier_name: String,
     pub return_date: String,
@@ -1723,32 +1724,36 @@ pub async fn get_returnable_inbound_items(
 ) -> Result<Vec<ReturnableInboundItem>, AppError> {
     let items = sqlx::query_as::<_, ReturnableInboundItem>(
         r#"
-        SELECT
-            ioi.id AS inbound_item_id,
-            ioi.material_id, m.code AS material_code, m.name AS material_name,
-            ioi.spec, ioi.unit_id, ioi.unit_name_snapshot, ioi.conversion_rate_snapshot,
-            ioi.quantity AS inbound_quantity,
-            COALESCE(
-                (SELECT SUM(pri.quantity) FROM purchase_return_items pri
-                 JOIN purchase_returns pr ON pr.id = pri.return_id
-                 WHERE pri.source_inbound_item_id = ioi.id AND pr.status = 'confirmed'),
-                0
-            ) AS already_returned_qty,
-            ioi.quantity - COALESCE(
-                (SELECT SUM(pri.quantity) FROM purchase_return_items pri
-                 JOIN purchase_returns pr ON pr.id = pri.return_id
-                 WHERE pri.source_inbound_item_id = ioi.id AND pr.status = 'confirmed'),
-                0
-            ) AS returnable_qty,
-            ioi.unit_price,
-            il.id AS lot_id,
-            ioi.lot_no
-        FROM inbound_order_items ioi
-        JOIN materials m ON m.id = ioi.material_id
-        LEFT JOIN inventory_lots il ON il.source_inbound_item_id = ioi.id
-        WHERE ioi.inbound_id = $1
-        HAVING returnable_qty > 0
-        ORDER BY ioi.sort_order, ioi.id
+        SELECT *
+        FROM (
+            SELECT
+                ioi.id AS inbound_item_id,
+                ioi.material_id, m.code AS material_code, m.name AS material_name,
+                m.spec, ioi.unit_id, ioi.unit_name_snapshot, ioi.conversion_rate_snapshot,
+                ioi.quantity AS inbound_quantity,
+                COALESCE(
+                    (SELECT SUM(pri.quantity) FROM purchase_return_items pri
+                     JOIN purchase_returns pr ON pr.id = pri.return_id
+                     WHERE pri.source_inbound_item_id = ioi.id AND pr.status = 'confirmed'),
+                    0
+                ) AS already_returned_qty,
+                ioi.quantity - COALESCE(
+                    (SELECT SUM(pri.quantity) FROM purchase_return_items pri
+                     JOIN purchase_returns pr ON pr.id = pri.return_id
+                     WHERE pri.source_inbound_item_id = ioi.id AND pr.status = 'confirmed'),
+                    0
+                ) AS returnable_qty,
+                ioi.unit_price,
+                il.id AS lot_id,
+                ioi.lot_no,
+                ioi.sort_order
+            FROM inbound_order_items ioi
+            JOIN materials m ON m.id = ioi.material_id
+            LEFT JOIN inventory_lots il ON il.source_inbound_item_id = ioi.id
+            WHERE ioi.inbound_id = $1
+        ) rows
+        WHERE returnable_qty > 0
+        ORDER BY sort_order, inbound_item_id
         "#,
     )
     .bind(inbound_id)
@@ -1768,17 +1773,19 @@ pub async fn get_purchase_returns(
     use super::order_shared::{self, ListFilterParams, ListQueryConfig};
 
     let mut count_query = QueryBuilder::<'_, Postgres>::new(
-        "SELECT COUNT(*) FROM purchase_returns pr JOIN inbound_orders io ON io.id = pr.inbound_id JOIN suppliers s ON s.id = pr.supplier_id",
+        "SELECT COUNT(*) FROM purchase_returns pr JOIN inbound_orders io ON io.id = pr.inbound_id LEFT JOIN purchase_orders po ON po.id = io.purchase_id JOIN suppliers s ON s.id = pr.supplier_id",
     );
     let mut data_query = QueryBuilder::<'_, Postgres>::new(
         r#"
         SELECT pr.id, pr.return_no, pr.inbound_id, io.order_no AS inbound_order_no,
+               po.order_no AS purchase_order_no,
                pr.supplier_id, s.name AS supplier_name,
                pr.return_date, pr.currency, pr.total_amount,
                pr.return_reason, pr.status,
                pr.created_by_name, pr.created_at::TEXT
         FROM purchase_returns pr
         JOIN inbound_orders io ON io.id = pr.inbound_id
+        LEFT JOIN purchase_orders po ON po.id = io.purchase_id
         JOIN suppliers s ON s.id = pr.supplier_id
         "#,
     );

@@ -46,8 +46,8 @@
     "statusCompleted": "Completed",
     "statusCancelled": "Cancelled",
 
-    "inboundProgress": "Inbound Progress",
-    "progressFormat": "{received}/{total} lines",
+    "inboundProgress": "Line Receipt Progress",
+    "progressFormat": "Completed {received}/{total} lines",
 
     "totalRecords": "{count} records",
     "perPage": "{count} / page",
@@ -82,6 +82,11 @@
     "confirmInboundError": "Failed to confirm receipt",
 
     "selectPurchaseOrder": "Select Purchase Order",
+    "newInboundDialogTitle": "New Purchase Receipt",
+    "newInboundDialogDescription": "Select an approved or partially received purchase order. Remaining receipt lines will be loaded automatically.",
+    "noPendingPurchaseOrders": "No receivable purchase orders",
+    "startInbound": "Start Receipt",
+    "remainingInboundDetails": "Remaining Receipt Lines",
     "orderQuantity": "Order Qty",
     "receivedQty": "Received",
     "remainingQty": "Remaining",
@@ -120,6 +125,14 @@
     "confirmReturnTip": "Inventory will be deducted and cost recalculated. This cannot be undone.",
     "confirmReturn": "Confirm Return",
     "noReturnableItems": "All items in this receipt have been fully returned",
+    "newReturnDialogTitle": "New Purchase Return",
+    "newReturnDialogDescription": "Select a purchase order first, then select one of its source receipts. Returnable lines will be loaded, and inventory will be deducted when the return is confirmed.",
+    "selectReturnPurchaseOrder": "Select Purchase Order",
+    "noReturnablePurchaseOrders": "No returnable purchase orders",
+    "noConfirmedInboundOrders": "No selectable receipt orders",
+    "returnableDetails": "Returnable Lines",
+    "startReturn": "Start Return",
+    "inboundOrderCount": "{count} receipt orders",
     "lotInfo": "Lot",
 
     "itemsTitle": "Order Items",

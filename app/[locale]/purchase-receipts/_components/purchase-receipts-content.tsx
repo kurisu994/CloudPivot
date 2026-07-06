@@ -35,12 +35,6 @@ export function PurchaseReceiptsContent() {
     setView('execute')
   }
 
-  /** 新建入库单（不关联采购单） */
-  const handleNewFreeInbound = () => {
-    setPurchaseId(null)
-    setView('execute')
-  }
-
   /** 返回列表 */
   const handleBackToList = () => {
     setView('list')
@@ -54,5 +48,5 @@ export function PurchaseReceiptsContent() {
     return <InboundExecutePage purchaseId={purchaseId} onBack={handleBackToList} />
   }
 
-  return <InboundListPage onNewInbound={handleNewInbound} onNewFreeInbound={handleNewFreeInbound} />
+  return <InboundListPage onNewInbound={handleNewInbound} />
 }
