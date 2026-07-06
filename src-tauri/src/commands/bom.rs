@@ -319,6 +319,7 @@ pub async fn get_bom_detail(db: State<'_, DbState>, id: i64) -> Result<BomDetail
 #[tauri::command]
 pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i64, AppError> {
     let status = params.status.clone().unwrap_or_else(|| "draft".to_string());
+    let effective_date = normalize_bom_effective_date(params.effective_date.as_deref());
 
     let mut tx = db
         .pool
@@ -338,7 +339,7 @@ pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i
         )
         .bind(params.material_id)
         .bind(&params.version)
-        .bind(&params.effective_date)
+        .bind(&effective_date)
         .bind(&status)
         .bind(&params.remark)
         .bind(id)
@@ -367,7 +368,7 @@ pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i
         .bind(&bom_code)
         .bind(params.material_id)
         .bind(&params.version)
-        .bind(&params.effective_date)
+        .bind(&effective_date)
         .bind(&status)
         .bind(&params.remark)
         .fetch_one(&mut *tx)
@@ -761,6 +762,14 @@ pub struct BomChildMaterialOption {
 // 内部辅助函数
 // ================================================================
 
+fn normalize_bom_effective_date(effective_date: Option<&str>) -> String {
+    effective_date
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToOwned::to_owned)
+        .unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string())
+}
+
 /// 生成 BOM 编号：BOM-YYYYMMDD-XXX
 pub(crate) async fn generate_bom_code_internal(pool: &sqlx::PgPool) -> Result<String, AppError> {
     let today = chrono::Local::now().format("%Y%m%d").to_string();
@@ -819,7 +828,7 @@ async fn ensure_bom_not_referenced(pool: &PgPool, bom_id: i64) -> Result<(), App
 mod tests {
     use sqlx::postgres::PgPoolOptions;
 
-    use super::ensure_bom_not_referenced;
+    use super::{ensure_bom_not_referenced, normalize_bom_effective_date};
 
     async fn setup_bom_reference_pool() -> sqlx::PgPool {
         let db_url =
@@ -874,6 +883,19 @@ mod tests {
         assert!(
             !production_source.contains(".bind(if item.is_key_part { 1 } else { 0 })"),
             "PostgreSQL bom_items.is_key_part 是 BOOLEAN，save_bom 必须直接绑定 bool"
+        );
+    }
+
+    #[test]
+    fn normalize_bom_effective_date_defaults_blank_to_today() {
+        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+
+        assert_eq!(normalize_bom_effective_date(None), today);
+        assert_eq!(normalize_bom_effective_date(Some("")), today);
+        assert_eq!(normalize_bom_effective_date(Some("   ")), today);
+        assert_eq!(
+            normalize_bom_effective_date(Some(" 2026-07-06 ")),
+            "2026-07-06"
         );
     }
 

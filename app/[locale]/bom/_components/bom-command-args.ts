@@ -102,6 +102,13 @@ interface SaveBomParams {
   items: SaveBomItemParams[]
 }
 
+export function getLocalDateString(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export interface SaveBomArgs extends Record<string, unknown> {
   params: SaveBomParams
 }
@@ -112,7 +119,7 @@ export function buildSaveBomArgs(input: BuildSaveBomArgsInput): SaveBomArgs {
       id: input.bomId,
       materialId: parseInt(input.materialId, 10),
       version: input.version,
-      effectiveDate: input.effectiveDate || null,
+      effectiveDate: input.effectiveDate || getLocalDateString(),
       status: input.isNew ? 'draft' : input.status,
       remark: input.remark || null,
       items: input.items.map((item, idx) => ({

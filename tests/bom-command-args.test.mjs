@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { buildSaveBomArgs, normalizeBomDetail } from '../app/[locale]/bom/_components/bom-command-args.ts'
+import { buildSaveBomArgs, getLocalDateString, normalizeBomDetail } from '../app/[locale]/bom/_components/bom-command-args.ts'
 
 test('buildSaveBomArgs maps BOM rows to save_bom camelCase params', () => {
   const args = buildSaveBomArgs({
@@ -48,6 +48,31 @@ test('buildSaveBomArgs maps BOM rows to save_bom camelCase params', () => {
     },
   })
   assert.equal('child_material_id' in args.params.items[0], false)
+})
+
+test('buildSaveBomArgs defaults empty effectiveDate to local today', () => {
+  const args = buildSaveBomArgs({
+    bomId: null,
+    materialId: '4',
+    version: 'V1.0',
+    effectiveDate: '',
+    status: 'draft',
+    isNew: true,
+    remark: '',
+    items: [
+      {
+        child_material_id: 7,
+        standard_qty: 1,
+        wastage_rate: 0,
+        process_step: null,
+        is_key_part: false,
+        substitute_id: null,
+        remark: null,
+      },
+    ],
+  })
+
+  assert.equal(args.params.effectiveDate, getLocalDateString())
 })
 
 test('normalizeBomDetail maps backend camelCase detail to page state shape', () => {

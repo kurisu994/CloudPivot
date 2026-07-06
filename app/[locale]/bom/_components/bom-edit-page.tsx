@@ -7,7 +7,6 @@ import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -421,18 +420,14 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
             <Input value={version} onChange={e => setVersion(e.target.value)} placeholder={t('form.versionPlaceholder')} />
           </div>
           <div className="grid gap-2">
-            <Label>{t('form.effectiveDate')}</Label>
-            <DatePicker value={effectiveDate} onChange={setEffectiveDate} />
-          </div>
-          <div className="col-span-2 grid gap-2 lg:col-span-3">
-            <Label>{t('form.remark')}</Label>
-            <Input value={remark} onChange={e => setRemark(e.target.value)} placeholder={t('form.remarkPlaceholder')} />
-          </div>
-          <div className="grid gap-2">
             <Label>{t('detail.standardCost')}</Label>
             <div className="text-foreground flex h-9 items-center rounded-md border px-3 font-mono text-lg font-semibold">
               {formatAmount(Math.round(totalStandardCost), 'USD')}
             </div>
+          </div>
+          <div className="col-span-2 grid gap-2 lg:col-span-4">
+            <Label>{t('form.remark')}</Label>
+            <Input value={remark} onChange={e => setRemark(e.target.value)} placeholder={t('form.remarkPlaceholder')} />
           </div>
         </div>
       </div>
