@@ -2,11 +2,12 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。全部五个开发阶段已完成，172 个 IPC 命令、39 个路由页面、51 张数据库表均已交付。当前版本 **v0.2.8**（2026-06-16 发布），包含盘点单 Excel 导出与操作员角色权限收紧；当前正在 `[Unreleased]` 打磨自由出入库操作日志的可读性。2026-07-02 已修复本地 Tauri NPM 包漂移到 `2.11.x` 导致的 `tauri 2.10.3` / `@tauri-apps/api 2.11.1` minor mismatch。
+项目处于 **功能完备、持续打磨** 阶段。全部五个开发阶段已完成，172 个 IPC 命令、39 个路由页面、51 张数据库表均已交付。当前版本 **v0.2.9**（2026-06-22 发布），包含自由出入库操作日志可读性优化；当前正在 `[Unreleased]` 继续打磨侧边栏入口、BOM、应收应付、错误提示与依赖检查。2026-07-06 已提交移除 `packageManager` 固定值的包管理器维护变更，并用当前 `pnpm 11.10.0` 重算 `pnpm-lock.yaml`。
 
 ## 最近完成的工作
 
 - **Tauri NPM / Rust 依赖 minor 对齐修复**：修复 `Error Found version mismatched Tauri packages`，根因是 `package.json` 中 Tauri NPM 依赖使用 `^2.10.1`，本地 `node_modules` 漂移到 `@tauri-apps/api@2.11.1`、`@tauri-apps/cli@2.11.3`，而 Rust `tauri` crate 锁定为 `2.10.3`。现已将 `package.json` 与 `pnpm-lock.yaml` 中 `@tauri-apps/api`、`@tauri-apps/cli`、`@tauri-apps/plugin-log`、`@tauri-apps/plugin-process`、`@tauri-apps/plugin-updater` 全部改为精确版本，执行 `pnpm install --frozen-lockfile --offline` 恢复本地安装，用 `pnpm exec tauri info` 验证不再报 mismatch，并在 `CHANGELOG.md` 的 `[Unreleased]` 记录该桌面端依赖检查修复。
+- **pnpm 11 锁文件刷新提交**：移除 `package.json` 中的 `packageManager: pnpm@10.33.0` 固定值，`pnpm-lock.yaml` 已按当前 `pnpm 11.10.0` 重新解析现有 semver 范围。`pnpm install --frozen-lockfile --offline`、`pnpm typecheck` 与 `git diff --check` 均已通过；`pnpm exec tauri info` 在输出 Environment 后长时间未返回，已手动中断，未作为通过项。此次属于包管理器/锁文件维护，不新增 `CHANGELOG.md` 条目。
 - **BOM 保存布尔字段绑定修复**：修复保存 BOM 明细时报错 `column "is_key_part" is of type boolean but expression is of type integer`。根因是 PostgreSQL 迁移中 `bom_items.is_key_part` 为 `BOOLEAN`，但 `save_bom` 插入明细时仍沿用 SQLite 兼容思路把 `bool` 转成 `1/0` 绑定。现已在 `src-tauri/src/commands/bom.rs` 中改为直接 `.bind(item.is_key_part)`，并新增 Rust 回归测试 `save_bom_binds_is_key_part_as_boolean_for_postgres` 防止该绑定退回整数。
 - **BOM 明细添加物料搜索重置修复**：修复 `BomItemDialog` 中搜索输入后弹窗重新初始化、搜索词被清空、候选项无法按输入生效的问题。根因是 `fetchMaterials` 依赖 `searchKeyword`，导致初始化 `useEffect` 随输入变化重跑；同时 `onChange` 立即调用闭包内的 `fetchMaterials()` 会用旧关键词查询。现已将弹窗打开初始化和关键词搜索拆成两个 effect，`fetchMaterials(keyword)` 显式接收关键词，并用 `searchRequestIdRef` 避免旧异步响应覆盖新结果。新增 `tests/bom-item-dialog-search.test.mjs` 作为轻量回归保护。
 - **CHANGELOG 与全量提交准备**：`CHANGELOG.md` 的 `[Unreleased]` 已补充本轮用户可见变更，包括侧边栏业务入口开放、BOM 保存/搜索修复、应收应付 PostgreSQL 兼容修复、单位/仓库错误提示优化和通用下拉宽度修复；提交前 `just lint`、BOM Node 回归测试与 BOM Rust 回归测试均已通过。
@@ -27,8 +28,8 @@
 
 ## 活跃文件
 
-- `package.json` — 固定 Tauri NPM 包精确版本，避免 `^2.10.1` 漂移到 `2.11.x`
-- `pnpm-lock.yaml` — 同步 Tauri NPM 包 importer specifier 为精确版本，保持 frozen install 一致
+- `package.json` — 移除 `packageManager: pnpm@10.33.0` 固定值，后续使用当前环境 `pnpm 11.10.0`
+- `pnpm-lock.yaml` — 按 `pnpm 11.10.0` 重新解析现有依赖范围，保持 frozen install 一致
 - `src-tauri/src/commands/bom.rs` — 修复 `save_bom` 对 `is_key_part` 的 PostgreSQL boolean 绑定，并补回归测试
 - `app/[locale]/bom/_components/bom-item-dialog.tsx` — 拆分弹窗初始化与物料搜索 effect，修复输入后搜索失效
 - `CHANGELOG.md` — `[Unreleased]` 记录本轮用户可见变更
@@ -37,7 +38,7 @@
 
 ## 已做出的决策
 
-- **Tauri 相关 NPM 包使用精确版本而非 caret**：Tauri CLI 会要求 NPM package 与 Rust crate 处于相同 major/minor。当前 Rust `tauri` 为 `2.10.3`，因此 JS 侧 `@tauri-apps/api` / `@tauri-apps/cli` 保持 `2.10.1` 是可接受的同 minor 组合；禁止 `^2.10.1` 自动解析到 `2.11.x`。后续升级 Tauri 时应同时升级 Rust crate 与 JS 包到同一 major/minor，并重新生成锁文件。
+- **Tauri JS/Rust 版本线仍需成组处理**：当前 `package.json` 的 JS 侧 Tauri 依赖已处于 `2.11.x` 范围，Rust `src-tauri/Cargo.toml` 中 `tauri` 仍是 `2.10.3`。本次只提交包管理器字段与 lockfile 刷新，不调整 Rust 侧；后续若继续处理 Tauri 版本检查，应统一升级或回收 JS/Rust 两侧，不只改一边。
 - **BOM 明细布尔字段以后按 PostgreSQL 类型直接绑定**：当前 Rust 后端只启用 `sqlx` PostgreSQL feature，`bom_items.is_key_part` 在 PG 迁移中是 `BOOLEAN`，不再用 SQLite 式 `1/0` 兼容写法。复制 BOM 明细的 `INSERT ... SELECT` 不涉及 Rust 参数绑定，可保持不变。
 - **BOM 明细物料搜索采用“打开初始化 + 关键词搜索”分离模型**：打开弹窗只重置一次表单状态；搜索词变化只刷新候选物料，不再触发表单重置。搜索函数不读取闭包里的 `searchKeyword`，统一接收显式参数，避免 React state 异步更新造成旧关键词查询。
 - `src-tauri/src/commands/manual_stock_movement.rs` — `SaveManualMovementParams` 新增 `from_confirm`；保存流程据此跳过草稿日志；`confirm_*` 库存不足整单回滚时记 `save_draft_insufficient`
@@ -67,7 +68,7 @@
 
 ## 阻塞
 
-- 本次 Tauri 依赖修复无阻塞；`node -p "require('./node_modules/@tauri-apps/api/package.json').version + ' / ' + require('./node_modules/@tauri-apps/cli/package.json').version"` 返回 `2.10.1 / 2.10.1`，`pnpm exec tauri info` 通过并显示 Rust `tauri 2.10.3`、JS `@tauri-apps/api 2.10.1`、`@tauri-apps/cli 2.10.1`。
+- 本次 pnpm 11 锁文件刷新无阻塞；`pnpm install --frozen-lockfile --offline`、`pnpm typecheck`、`git diff --check` 均已通过。`pnpm exec tauri info` 在输出 Environment 后长时间未返回，已手动中断，未作为通过项。
 - 本次 BOM 保存与搜索修复无阻塞；提交前 `just lint`、`node --experimental-strip-types --test tests/bom-command-args.test.mjs tests/bom-item-dialog-search.test.mjs`、`cargo test save_bom_binds_is_key_part_as_boolean_for_postgres --lib` 均已通过。
 
 ---
