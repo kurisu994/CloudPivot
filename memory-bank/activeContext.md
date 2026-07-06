@@ -2,10 +2,16 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。全部五个开发阶段已完成，172 个 IPC 命令、39 个路由页面、51 张数据库表均已交付。当前版本 **v0.2.9**（2026-06-22 发布），包含自由出入库操作日志可读性优化；当前正在 `[Unreleased]` 继续打磨侧边栏入口、BOM、应收应付、错误提示、依赖检查和供应商物料维护体验。2026-07-06 已修复 `tauri 2.10.3` 与 `@tauri-apps/api 2.11.1` 的 minor mismatch，将 JS 侧 Tauri 包与插件依赖收回到 2.10 同线；随后按用户要求移除供应商物料弹窗中的有效期输入，把物料选择改成可搜索控件，放宽添加物料弹窗以完整查看较长物料信息，并将供应商可选物料收窄为原材料。BOM 新建/编辑表单也已移除生效日期输入，保存时由前后端兜底写入本地当天日期；BOM 列表停用按钮改为危险色样式以提高识别度。采购单列表的已审核 / 部分入库行已接通采购入库执行页，点击「入库 / 继续入库」会携带采购单 ID 进入待入库明细流程；随后修复确认采购入库时 PostgreSQL `SUM(BIGINT)` 返回 `NUMERIC` 导致 Rust `i64` 解码失败的问题。采购入库菜单入口已从操作栏常驻采购单下拉改为「新建入库单」按钮 + 弹窗内搜索选择采购单；选中采购单后展示每个物料的订单数量、已入库数量和剩余数量。采购退货菜单入口也已改为「新建退货单」按钮 + 弹窗内先选择采购单，再选择该采购单下的原入库单并展示可退明细，再进入退货执行页按退货单扣减库存；可退明细 SQL 已修复 `ioi.spec` 不存在的问题。采购退货列表详情按钮已接通只读详情弹窗，后端新增退货单头 + 明细查询 IPC，可查看来源采购单、原入库单、供应商、仓库、确认信息、退货金额和退货明细。
+项目处于 **功能完备、持续打磨** 阶段。全部五个开发阶段已完成，172 个 IPC 命令、39 个路由页面、51 张数据库表均已交付。当前版本 **v0.2.9**（2026-06-22 发布），包含自由出入库操作日志可读性优化；当前正在 `[Unreleased]` 继续打磨侧边栏入口、BOM、应收应付、错误提示、依赖检查和供应商物料维护体验。2026-07-06 已修复 `tauri 2.10.3` 与 `@tauri-apps/api 2.11.1` 的 minor mismatch，将 JS 侧 Tauri 包与插件依赖收回到 2.10 同线；随后按用户要求移除供应商物料弹窗中的有效期输入，把物料选择改成可搜索控件，放宽添加物料弹窗以完整查看较长物料信息，并将供应商可选物料收窄为原材料。BOM 新建/编辑表单也已移除生效日期输入，保存时由前后端兜底写入本地当天日期；BOM 列表停用按钮改为危险色样式以提高识别度。采购单列表的已审核 / 部分入库行已接通采购入库执行页，点击「入库 / 继续入库」会携带采购单 ID 进入待入库明细流程；随后修复确认采购入库时 PostgreSQL `SUM(BIGINT)` 返回 `NUMERIC` 导致 Rust `i64` 解码失败的问题。采购入库菜单入口已从操作栏常驻采购单下拉改为「新建入库单」按钮 + 弹窗内搜索选择采购单；选中采购单后展示每个物料的订单数量、已入库数量和剩余数量。采购退货菜单入口也已改为「新建退货单」按钮 + 弹窗内先选择采购单，再选择该采购单下的原入库单并展示可退明细，再进入退货执行页按退货单扣减库存；可退明细 SQL 已修复 `ioi.spec` 不存在的问题。采购退货列表详情按钮已接通只读详情弹窗，后端新增退货单头 + 明细查询 IPC，可查看来源采购单、原入库单、供应商、仓库、确认信息、退货金额和退货明细。2026-07-06 本轮又按版本范围从侧边栏隐藏库存调拨和定制单管理入口，并修复生产工单详情页仓库列表 IPC 缺少 `includeDisabled` 参数、「关联BOM」下拉物料名称显示为 `undefined`、保存生产工单时 `plannedQty` 参数缺失，以及 BOM 明细展算 SQL 使用旧字段导致物料需求写入失败的问题。
 
 ## 最近完成的工作
 
+- **版本入口收敛**：按用户要求将 `config/nav.ts` 中「库存调拨」和「定制单管理」用块注释隐藏，并同步注释对应未使用的 `ClipboardCheck` / `Palette` 图标 import；`CHANGELOG.md` 的 `[Unreleased]` 入口开放说明已改为这两个模块本版本暂不开放。
+- **生产工单仓库列表 IPC 参数修复**：`app/[locale]/production-orders/_components/production-order-detail.tsx` 不再裸调 `invoke('get_warehouses')`，改为复用 `getWarehouses(false)` wrapper，保证传入 Tauri command 要求的 `includeDisabled` 参数。根因是 Rust `get_warehouses(db, include_disabled)` 必填参数在 Tauri 前端暴露为 camelCase `includeDisabled`，裸调用会在命令体执行前被参数校验拦截。
+- **生产工单关联 BOM 显示修复**：`get_bom_list` 的 `BomListItem` 通过 `#[serde(rename_all = "camelCase")]` 返回 `materialName`，生产工单页原先读取不存在的 `parent_material_name`，导致下拉显示 `undefined (V1.0)`；现已改为使用 `materialName ?? '—'` 拼接选项标签。
+- **生产工单保存参数修复**：`save_production_order` 的 `SaveProductionOrderInput` 使用 `#[serde(rename_all = "camelCase")]`，页面原先发送 `planned_qty` / `planned_start_date` / `planned_end_date`，导致必填字段 `plannedQty` 缺失。现新增 `production-order-command-args.ts` 集中构造保存 payload，统一输出 `plannedQty`、`plannedStartDate`、`plannedEndDate`。
+- **生产工单 BOM 明细展算 SQL 修复**：保存工单插入 `production_orders` 成功后，后端会从 `bom_items` 展算 `production_order_materials`。原 SQL 仍查询旧字段 `bi.material_id` / `bi.waste_rate`，但当前 PostgreSQL schema 是 `child_material_id` / `wastage_rate`；现已改为 `bi.child_material_id AS material_id` 并使用 `bi.wastage_rate`。
+- **仓库 IPC 参数回归测试**：新增 `tests/warehouse-ipc-args.test.mjs`，断言 `getWarehouses` wrapper 始终传 `{ includeDisabled }`，且生产工单详情页不再出现裸 `get_warehouses` 调用；同时同步修正 `tests/material-command-args.test.mjs` 中已过时的 snake_case 预期为 camelCase。
 - **Tauri NPM / Rust 依赖 minor 对齐修复**：修复 `Error Found version mismatched Tauri packages`，根因是 `package.json` 中 Tauri NPM 依赖使用 `^2.10.1`，本地 `node_modules` 漂移到 `@tauri-apps/api@2.11.1`、`@tauri-apps/cli@2.11.3`，而 Rust `tauri` crate 锁定为 `2.10.3`。现已将 `package.json` 与 `pnpm-lock.yaml` 中 `@tauri-apps/api`、`@tauri-apps/cli`、`@tauri-apps/plugin-log`、`@tauri-apps/plugin-process`、`@tauri-apps/plugin-updater` 全部改为精确版本，执行 `pnpm install --frozen-lockfile --offline` 恢复本地安装，用 `pnpm exec tauri info` 验证不再报 mismatch，并在 `CHANGELOG.md` 的 `[Unreleased]` 记录该桌面端依赖检查修复。
 - **Tauri JS/Rust 版本线再次收敛**：修复 `tauri (v2.10.3) : @tauri-apps/api (v2.11.1)` mismatch。`package.json` 将 `@tauri-apps/api`、`@tauri-apps/cli`、`@tauri-apps/plugin-log`、`@tauri-apps/plugin-process`、`@tauri-apps/plugin-updater` 全部固定为精确版本；`pnpm-workspace.yaml` 新增 `overrides`，强制插件 transitive `@tauri-apps/api` 也解析到 `2.10.1`。最终 `pnpm-lock.yaml` 不再包含 `@tauri-apps/api@2.11` 或 `@tauri-apps/cli@2.11`，`node_modules` 中直连 API/CLI 为 `2.10.1 / 2.10.1`。
 - **供应商物料维护交互收敛**：供应商维护弹窗中，新增/编辑供货物料不再展示「有效期起/止」日期选择器。前端每次保存 payload 都会自动补 `validFrom=本地当天`、`validTo=2099-12-31`，使“关系存在即生效”；移除供货物料仍沿用现有删除动作，不做数据库迁移。物料选择从普通 `Select` 改为项目现有 `Combobox`，支持按编码、名称和规格过滤；添加物料弹窗放宽到 `sm:max-w-4xl`，物料选择字段横跨整行，长物料信息在下拉项中可换行展示。供应商弹窗调用 `getMaterialReferenceOptions('raw')`，只列出原材料，避免半成品/成品进入供应商供货报价。
@@ -38,6 +44,16 @@
 
 ## 活跃文件
 
+- `config/nav.ts` — 本版本隐藏库存调拨和定制单管理侧边栏入口，保留注释以便后续恢复
+- `app/[locale]/production-orders/_components/production-order-detail.tsx` — 生产工单详情页仓库列表改走 `getWarehouses(false)`，关联 BOM 下拉改用 `materialName` 显示物料名称
+- `app/[locale]/production-orders/_components/production-order-command-args.ts` — 集中构造 `save_production_order` 的 camelCase 入参
+- `src-tauri/src/commands/production_order.rs` — BOM 明细展算 SQL 改用 `child_material_id` / `wastage_rate` 并补 Rust 回归测试
+- `tests/warehouse-ipc-args.test.mjs` — 覆盖仓库列表 IPC wrapper 与生产工单裸调用回归
+- `tests/production-order-bom-options.test.mjs` — 覆盖生产工单关联 BOM 选项使用 `materialName` 字段
+- `tests/production-order-command-args.test.mjs` — 覆盖生产工单保存 payload 使用 `plannedQty` 等 camelCase 字段
+- `tests/material-command-args.test.mjs` — 同步物料状态切换参数测试为当前 Tauri camelCase 约定
+- `CHANGELOG.md` — `[Unreleased]` 记录本版本暂不开放入口与生产工单仓库加载修复
+- `memory-bank/activeContext.md` — 记录本轮版本入口与 IPC 参数修复状态
 - `package.json` — 固定所有 `@tauri-apps/*` JS 包精确版本，避免 caret 漂移到 2.11.x
 - `pnpm-workspace.yaml` — 在 pnpm 11 有效配置位置增加 `overrides`，强制 transitive `@tauri-apps/api` 为 `2.10.1`
 - `pnpm-lock.yaml` — 同步 Tauri JS 包和插件 transitive API 到 2.10 同线，保持 frozen install 一致
@@ -72,6 +88,11 @@
 
 ## 已做出的决策
 
+- **库存调拨和定制单管理本轮只隐藏侧边栏入口**：用户要求“先注释掉，这版本不开放”，当前按既有阶段性开放方式处理 `config/nav.ts`，不删除路由页面、i18n 文案或后端 IPC 注册，便于后续恢复；如果后续要求硬性禁止直达 URL，需要另做路由/权限层拦截。
+- **仓库列表调用统一走 `getWarehouses` wrapper**：`get_warehouses` 的 Rust 参数是 `include_disabled`，Tauri 前端传参需要 `includeDisabled`；页面不应裸调 `invoke('get_warehouses')`，否则默认参数不会生效，容易再次触发 missing required key。
+- **生产工单关联 BOM 选项按 `get_bom_list` 的 camelCase 返回消费**：BOM 列表项没有 `parent_material_name` 字段，真实字段是 `materialName`；后续复用 `get_bom_list` 时应以 `BomListItem` 的 serde 输出名为准。
+- **生产工单保存入参按 `SaveProductionOrderInput` 的 camelCase 契约消费**：`plannedQty` 是必填字段，不能依赖 snake_case 字段名被后端自动识别；后续新增生产工单保存字段时优先放进 `production-order-command-args.ts` 并补测试。
+- **生产工单 BOM 展算必须跟随 `bom_items` 当前 schema**：当前表使用 `child_material_id` 与 `wastage_rate`，不是旧模型的 `material_id` / `waste_rate`；后续生产、定制或需求展算复用 BOM 明细时应沿用 `src-tauri/src/commands/bom.rs` 的字段口径。
 - **Tauri JS/Rust 版本线必须同 minor**：当前 Rust `src-tauri/Cargo.toml` 中 `tauri` 为 `2.10.3`，JS 侧 `@tauri-apps/api` / `@tauri-apps/cli` 固定为 `2.10.1`。pnpm 11 不再读取 `package.json` 的 `pnpm.overrides`，项目级 override 必须写在 `pnpm-workspace.yaml`；否则 Tauri 插件依赖仍可能把 transitive `@tauri-apps/api` 解析到 `2.11.x`。
 - **供应商物料生命周期由存在关系表达**：前端不再让用户维护供货物料有效期；新增后立即生效，删除后即失效。当前为避免数据库迁移和后端结构调整，保存时由前端补齐现有字段需要的 `validFrom` / `validTo` 默认值。
 - **供应商物料选择复用现有 Combobox**：项目已有 `components/ui/combobox.tsx`，支持按 label 自动过滤；供应商物料选项 label 统一拼接物料编码、名称和规格，满足用户按常见线索搜索物料的需求。针对供应商添加物料场景，仅通过可选样式参数允许下拉项长文本换行，其它页面不传参时维持原有截断展示。
@@ -105,6 +126,7 @@
 
 ## 下一步
 
+- 后续重新开放库存调拨或定制单管理时，恢复 `config/nav.ts` 中对应块注释，并同步恢复顶部 `ClipboardCheck` / `Palette` import；如版本要求禁止直达 URL，再补页面级或权限级拦截。
 - 如后续升级 Tauri 到 `2.11.x`，需要同时调整 `src-tauri/Cargo.toml` / `Cargo.lock` 与 `package.json` / `pnpm-lock.yaml`，不要只升级 NPM 侧。
 - 若后续引入 React/jsdom 测试工具，可将当前静态回归测试升级为真实交互测试，直接模拟输入框输入和候选项过滤。
 - 采购入库入口已完成前端接通；后续可在真实 Tauri 环境中从已审核采购单点击入库，确认待入库数量、确认入库、采购单状态回写与应付生成完整链路。
@@ -113,6 +135,7 @@
 
 ## 阻塞
 
+- 本次版本入口收敛与生产工单仓库 / BOM 选项 / 保存参数 / BOM 展算 SQL 修复无阻塞；`node --experimental-strip-types --test tests/*.test.mjs`、`pnpm typecheck`、`pnpm exec biome check config/nav.ts 'app/[locale]/production-orders/_components/production-order-detail.tsx' tests/warehouse-ipc-args.test.mjs tests/material-command-args.test.mjs`、`pnpm exec biome check 'app/[locale]/production-orders/_components/production-order-detail.tsx' tests/production-order-bom-options.test.mjs`、`pnpm exec biome check 'app/[locale]/production-orders/_components/production-order-detail.tsx' 'app/[locale]/production-orders/_components/production-order-command-args.ts' tests/production-order-command-args.test.mjs`、`cargo fmt --manifest-path src-tauri/Cargo.toml`、`cargo test production_bom_items_query_uses_current_bom_schema --manifest-path src-tauri/Cargo.toml --lib`、`cargo check --manifest-path src-tauri/Cargo.toml` 与 `git diff --check` 均已通过。Node 测试仍会输出既有 `MODULE_TYPELESS_PACKAGE_JSON` warning，但不影响测试结果。
 - 本次 Tauri JS/Rust 对齐修复无阻塞；`pnpm install`、`pnpm install --frozen-lockfile --offline`、`pnpm typecheck`、`pnpm exec tauri --version`、`git diff --check` 均已通过。`node -p "require('./node_modules/@tauri-apps/api/package.json').version + ' / ' + require('./node_modules/@tauri-apps/cli/package.json').version"` 返回 `2.10.1 / 2.10.1`；`rg` 确认 `pnpm-lock.yaml` 不再包含 Tauri API/CLI 2.11。`pnpm exec tauri info` 在输出 Environment 后超过 60 秒未返回，已手动中断，未作为通过项。
 - 本次供应商物料维护交互调整无阻塞；`pnpm typecheck`、`cargo check --manifest-path src-tauri/Cargo.toml` 与 `git diff --check` 已通过。未修改数据库迁移。
 - 本次 BOM 生效日期交互调整无阻塞；`just fmt`、`pnpm typecheck`、`cargo check --manifest-path src-tauri/Cargo.toml`、`node --experimental-strip-types --test tests/bom-command-args.test.mjs`、`cargo test normalize_bom_effective_date_defaults_blank_to_today --manifest-path src-tauri/Cargo.toml --lib` 与 `git diff --check` 已通过。未修改数据库迁移。

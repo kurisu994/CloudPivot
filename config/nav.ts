@@ -3,7 +3,7 @@ import {
   BarChart3,
   Box,
   Building2,
-  ClipboardCheck,
+  // ClipboardCheck,
   ClipboardList,
   CreditCard,
   Database,
@@ -22,7 +22,7 @@ import {
   PackagePlus,
   PackageSearch,
   Paintbrush,
-  Palette,
+  // Palette,
   PieChart,
   Printer,
   Receipt,
@@ -154,20 +154,26 @@ export const navConfig: NavItem[] = [
         icon: ClipboardList,
         permissionModule: 'stock_checks',
       },
+      /*
+       * 本版本暂不开放库存调拨，后续恢复时同步恢复顶部 ClipboardCheck import。
       {
         titleKey: 'nav.stockTransfers',
         href: '/stock-transfers',
         icon: ClipboardCheck,
         permissionModule: 'stock_transfers',
       },
+       */
     ],
   },
+  /*
+   * 本版本暂不开放定制单管理，后续恢复时同步恢复顶部 Palette import。
   {
     titleKey: 'nav.customOrders',
     href: '/custom-orders',
     icon: Palette,
     permissionModule: 'custom_orders',
   },
+   */
   {
     titleKey: 'nav.productionOrders',
     href: '/production-orders',

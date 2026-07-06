@@ -16,7 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import { formatAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
-import { invoke } from '@/lib/tauri'
+import { getWarehouses, invoke } from '@/lib/tauri'
+import { buildSaveProductionOrderArgs } from './production-order-command-args'
 
 // ================================================================
 // 类型定义
@@ -69,7 +70,7 @@ interface ProductionOrderDetail {
 
 interface BomOption {
   id: number
-  parent_material_name: string
+  materialName: string | null
   version: string
 }
 
@@ -158,7 +159,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
         invoke<{ items: BomOption[] }>('get_bom_list', {
           filter: { keyword: null, status: 'active', page: 1, pageSize: 200 },
         }),
-        invoke<WarehouseOption[]>('get_warehouses'),
+        getWarehouses(false),
       ])
       setBomList(bomResult.items)
       setWarehouseList(whResult)
@@ -195,17 +196,17 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
     }
     setSaving(true)
     try {
-      await invoke('save_production_order', {
-        input: {
-          id: orderId,
-          bomId: Number(formBomId),
-          customOrderId: null,
-          planned_qty: Number(formPlannedQty),
-          planned_start_date: formStartDate || null,
-          planned_end_date: formEndDate || null,
-          remark: formRemark || null,
-        },
-      })
+      await invoke(
+        'save_production_order',
+        buildSaveProductionOrderArgs({
+          orderId,
+          bomId: formBomId,
+          plannedQty: formPlannedQty,
+          plannedStartDate: formStartDate,
+          plannedEndDate: formEndDate,
+          remark: formRemark,
+        }),
+      )
       toast.success(orderId ? t('toast.updateSuccess') : t('toast.createSuccess'))
       onBack()
     } catch (err: unknown) {
@@ -359,7 +360,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
   if (isCreateMode || (detail && detail.status === 'draft')) {
     const bomItems = bomList.map(b => ({
       value: String(b.id),
-      label: `${b.parent_material_name} (${b.version})`,
+      label: `${b.materialName ?? '—'} (${b.version})`,
     }))
 
     return (

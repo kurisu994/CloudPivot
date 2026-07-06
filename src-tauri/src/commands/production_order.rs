@@ -117,6 +117,17 @@ pub struct SaveProductionOrderInput {
     pub remark: Option<String>,
 }
 
+const PRODUCTION_BOM_ITEMS_SQL: &str = r#"
+        SELECT bi.child_material_id AS material_id,
+                COALESCE(m.name, '') AS material_name,
+                m.code AS material_code,
+                bi.standard_qty, bi.wastage_rate,
+                u.name AS unit_name
+         FROM bom_items bi
+         LEFT JOIN materials m ON bi.child_material_id = m.id
+         LEFT JOIN units u ON m.base_unit_id = u.id
+         WHERE bi.bom_id = $1"#;
+
 /// 领料参数
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -556,24 +567,14 @@ pub async fn save_production_order(
         material_name: String,
         material_code: Option<String>,
         standard_qty: f64,
-        waste_rate: f64,
+        wastage_rate: f64,
         unit_name: Option<String>,
     }
-    let bom_items: Vec<BomItem> = sqlx::query_as(
-        "SELECT bi.material_id,
-                COALESCE(m.name, '') AS material_name,
-                m.code AS material_code,
-                bi.standard_qty, bi.waste_rate,
-                u.name AS unit_name
-         FROM bom_items bi
-         LEFT JOIN materials m ON bi.material_id = m.id
-         LEFT JOIN units u ON m.base_unit_id = u.id
-         WHERE bi.bom_id = $1",
-    )
-    .bind(input.bom_id)
-    .fetch_all(&mut *tx)
-    .await
-    .map_err(|e| AppError::Database(format!("查询BOM明细失败: {}", e)))?;
+    let bom_items: Vec<BomItem> = sqlx::query_as(PRODUCTION_BOM_ITEMS_SQL)
+        .bind(input.bom_id)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("查询BOM明细失败: {}", e)))?;
 
     // 获取默认原材料仓
     let default_raw_wh: Option<i64> = sqlx::query_scalar(
@@ -587,7 +588,7 @@ pub async fn save_production_order(
 
     for item in &bom_items {
         // 需求量 = 单位用量 × 计划数量 × (1 + 损耗率/100)
-        let required = item.standard_qty * input.planned_qty * (1.0 + item.waste_rate / 100.0);
+        let required = item.standard_qty * input.planned_qty * (1.0 + item.wastage_rate / 100.0);
 
         sqlx::query(
             "INSERT INTO production_order_materials (
@@ -697,6 +698,20 @@ pub async fn delete_production_order(
     .await;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::PRODUCTION_BOM_ITEMS_SQL;
+
+    #[test]
+    fn production_bom_items_query_uses_current_bom_schema() {
+        assert!(PRODUCTION_BOM_ITEMS_SQL.contains("bi.child_material_id AS material_id"));
+        assert!(PRODUCTION_BOM_ITEMS_SQL.contains("bi.wastage_rate"));
+        assert!(PRODUCTION_BOM_ITEMS_SQL.contains("ON bi.child_material_id = m.id"));
+        assert!(!PRODUCTION_BOM_ITEMS_SQL.contains("bi.material_id"));
+        assert!(!PRODUCTION_BOM_ITEMS_SQL.contains("bi.waste_rate"));
+    }
 }
 
 // ================================================================
