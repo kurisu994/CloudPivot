@@ -37,6 +37,8 @@
     "createdAt": "Ngày tạo",
     "approvedBy": "Người duyệt",
     "approvedAt": "Ngày duyệt",
+    "confirmedBy": "Người xác nhận",
+    "confirmedAt": "Thời gian xác nhận",
 
     "searchPlaceholder": "Tìm mã đơn, nhà cung cấp...",
     "allStatuses": "Tất cả trạng thái",

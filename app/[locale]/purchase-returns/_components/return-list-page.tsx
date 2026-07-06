@@ -26,6 +26,7 @@ import { formatAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
 import type { InboundOrderListItem, PurchaseReturnFilter, PurchaseReturnListItem, ReturnableInboundItem } from '@/lib/tauri'
 import { getInboundOrders, getPurchaseReturns, getReturnableInboundItems } from '@/lib/tauri'
+import { PurchaseReturnDetailDialog } from './purchase-return-detail-dialog'
 
 const DEFAULT_PAGE_SIZE = 50
 
@@ -63,6 +64,7 @@ export function ReturnListPage({ onNewReturn }: ReturnListPageProps) {
   const [selectedInboundId, setSelectedInboundId] = useState<string | null>(null)
   const [returnableItems, setReturnableItems] = useState<ReturnableInboundItem[]>([])
   const [returnableLoading, setReturnableLoading] = useState(false)
+  const [detailReturnId, setDetailReturnId] = useState<number | null>(null)
 
   const loadReturns = useCallback(async () => {
     setLoading(true)
@@ -342,7 +344,7 @@ export function ReturnListPage({ onNewReturn }: ReturnListPageProps) {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon-sm" onClick={() => toast.info(tc('developing'))} title={t('details')}>
+                    <Button variant="ghost" size="icon-sm" onClick={() => setDetailReturnId(item.id)} title={t('details')}>
                       <Eye className="size-3.5" />
                     </Button>
                   </TableCell>
@@ -488,6 +490,8 @@ export function ReturnListPage({ onNewReturn }: ReturnListPageProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PurchaseReturnDetailDialog returnId={detailReturnId} onClose={() => setDetailReturnId(null)} />
     </div>
   )
 }

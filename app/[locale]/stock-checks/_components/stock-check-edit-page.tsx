@@ -1,8 +1,8 @@
 'use client'
 
-import { ArrowLeft, CheckCircle, Download, Save, Search } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Download, Save, Search, Upload } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +19,23 @@ interface StockCheckEditPageProps {
   onBack: () => void
 }
 
+const STOCK_CHECK_ITEM_ID_HEADER = '__stock_check_item_id__'
+
+const cellToString = (value: unknown) => {
+  if (value == null) return ''
+  return String(value).trim()
+}
+
+const cellToNumber = (value: unknown) => {
+  if (value == null || value === '') return null
+  if (typeof value === 'number') return Number.isFinite(value) ? value : Number.NaN
+
+  const raw = String(value).trim()
+  if (!raw) return null
+
+  return Number(raw.replace(/,/g, ''))
+}
+
 /**
  * 盘点单编辑/详情页
  * 草稿/盘点中状态可录入实盘数量，已审核状态只读
@@ -31,8 +48,10 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
   const [detail, setDetail] = useState<StockCheckDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [importing, setImporting] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 实盘数量编辑
   const [editValues, setEditValues] = useState<Record<number, string>>({})
@@ -71,62 +90,22 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
 
   const isEditable = detail && (detail.status === 'draft' || detail.status === 'checking')
 
-  /** 状态枚举转可读文案 */
-  const statusLabel = useCallback(
-    (status: string) => {
-      switch (status) {
-        case 'draft':
-          return t('statusDraft')
-        case 'checking':
-          return t('statusChecking')
-        case 'confirmed':
-          return t('statusConfirmed')
-        default:
-          return status
-      }
-    },
-    [t],
-  )
-
-  /** 导出盘点单为 Excel（含标题区+明细表，未审核状态实盘列留空便于打印线下盘点） */
+  /** 导出盘点明细表，未审核状态实盘列留空便于打印线下盘点 */
   const handleExport = async () => {
     if (!detail) return
     try {
       const XLSX = await import('xlsx')
       const editable = detail.status === 'draft' || detail.status === 'checking'
 
-      const headers = [ti('materialCode'), ti('materialName'), ti('spec'), ti('unit'), t('systemQty'), t('actualQty'), t('diffQty'), t('remark')]
-
-      const titleRows: (string | number | null)[][] = [
-        [t('exportSheetTitle')],
-        [`${t('checkNo')}: ${detail.checkNo}`],
-        [`${t('warehouse')}: ${detail.warehouseName}`, '', `${t('checkDate')}: ${detail.checkDate}`],
-        [`${tc('status')}: ${statusLabel(detail.status)}`, '', `${t('createdBy')}: ${detail.createdByName || '-'}`],
-      ]
-      if (editable) titleRows.push([t('exportPrintHint')])
-      titleRows.push([])
+      const headers = [STOCK_CHECK_ITEM_ID_HEADER, ti('materialCode'), ti('materialName'), ti('spec'), ti('unit'), t('systemQty'), t('actualQty')]
 
       const dataRows = detail.items.map(item => {
         const actual = editable ? null : item.actualQty
-        const diff = editable ? null : item.diffQty
-        return [item.materialCode, item.materialName, item.spec ?? '', item.unitName, item.systemQty, actual, diff, item.remark ?? '']
+        return [item.id, item.materialCode, item.materialName, item.spec ?? '', item.unitName, item.systemQty, actual]
       })
 
-      const aoa = [...titleRows, headers, ...dataRows]
-      const worksheet = XLSX.utils.aoa_to_sheet(aoa)
-
-      // 列宽：编码 14 / 名称 24 / 规格 14 / 单位 8 / 数量列各 12 / 备注 20
-      worksheet['!cols'] = [{ wch: 14 }, { wch: 24 }, { wch: 14 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 20 }]
-
-      // 标题区横向合并：第 1 行合并 8 列，第 3、4 行的两段信息合并 1-3 列、5-8 列
-      worksheet['!merges'] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } },
-        { s: { r: 1, c: 0 }, e: { r: 1, c: headers.length - 1 } },
-        { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
-        { s: { r: 2, c: 4 }, e: { r: 2, c: 7 } },
-        { s: { r: 3, c: 0 }, e: { r: 3, c: 3 } },
-        { s: { r: 3, c: 4 }, e: { r: 3, c: 7 } },
-      ]
+      const worksheet = XLSX.utils.aoa_to_sheet([headers, ...dataRows])
+      worksheet['!cols'] = [{ wch: 12, hidden: true }, { wch: 14 }, { wch: 24 }, { wch: 14 }, { wch: 8 }, { wch: 12 }, { wch: 12 }]
 
       const workbook = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(workbook, worksheet, t('exportSheetTitle'))
@@ -134,6 +113,105 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
       toast.success(t('exportSuccess'))
     } catch (error) {
       toast.error(getErrorMessage(error, t('exportFailed')))
+    }
+  }
+
+  const handleImportClick = () => {
+    if (!isEditable) {
+      toast.error(t('importReadonly'))
+      return
+    }
+    fileInputRef.current?.click()
+  }
+
+  const handleImportFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file || !detail || !isEditable) return
+
+    setImporting(true)
+    try {
+      const XLSX = await import('xlsx')
+      const data = await file.arrayBuffer()
+      const workbook = XLSX.read(data, { type: 'array' })
+      const firstSheetName = workbook.SheetNames[0]
+      if (!firstSheetName) {
+        throw new Error(t('importTemplateInvalid'))
+      }
+
+      const worksheet = workbook.Sheets[firstSheetName]
+      const rows = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1, defval: '' })
+      const header = rows[0] ?? []
+      if (cellToString(header[0]) !== STOCK_CHECK_ITEM_ID_HEADER) {
+        throw new Error(t('importTemplateInvalid'))
+      }
+
+      const itemMap = new Map(detail.items.map(item => [item.id, item]))
+      const seenItemIds = new Set<number>()
+      const updates: UpdateStockCheckItemParams[] = []
+      const errors: string[] = []
+
+      for (let index = 1; index < rows.length; index += 1) {
+        const row = rows[index] ?? []
+        if (row.every(cell => cellToString(cell) === '')) continue
+
+        const rowNumber = index + 1
+        const itemId = cellToNumber(row[0])
+        const actualQty = cellToNumber(row[6])
+
+        if (itemId == null || !Number.isInteger(itemId)) {
+          errors.push(t('importRowError', { row: rowNumber, reason: t('importReasonMissingId') }))
+          continue
+        }
+
+        const item = itemMap.get(itemId)
+        if (!item) {
+          errors.push(t('importRowError', { row: rowNumber, reason: t('importReasonUnknownItem') }))
+          continue
+        }
+
+        if (seenItemIds.has(item.id)) {
+          errors.push(t('importRowError', { row: rowNumber, reason: t('importReasonDuplicateItem') }))
+          continue
+        }
+        seenItemIds.add(item.id)
+
+        const materialCode = cellToString(row[1])
+        if (materialCode && materialCode !== item.materialCode) {
+          errors.push(t('importRowError', { row: rowNumber, reason: t('importReasonMaterialMismatch') }))
+          continue
+        }
+
+        if (actualQty == null) continue
+        if (!Number.isFinite(actualQty) || actualQty < 0) {
+          errors.push(t('importRowError', { row: rowNumber, reason: t('importReasonInvalidQty') }))
+          continue
+        }
+
+        updates.push({
+          itemId: item.id,
+          actualQty,
+          remark: item.remark,
+        })
+      }
+
+      if (errors.length > 0) {
+        const visibleErrors = errors.slice(0, 3).join('；')
+        const suffix = errors.length > 3 ? `；${t('importMoreErrors', { count: errors.length - 3 })}` : ''
+        throw new Error(`${visibleErrors}${suffix}`)
+      }
+
+      if (updates.length === 0) {
+        throw new Error(t('importNoValidRows'))
+      }
+
+      await updateStockCheckItems(detail.id, updates)
+      toast.success(t('importSuccess', { count: updates.length }))
+      await loadDetail()
+    } catch (error) {
+      toast.error(getErrorMessage(error, t('importFailed')))
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -221,12 +299,25 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
         </div>
         {detail && (
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleExport}>
+            <Button
+              variant="outline"
+              className="border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+              onClick={handleExport}
+            >
               <Download data-icon="inline-start" />
               {t('exportExcel')}
             </Button>
             {isEditable && (
               <>
+                <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImportFileChange} />
+                <Button
+                  className="bg-blue-600 text-white hover:bg-blue-700 focus-visible:border-blue-500 focus-visible:ring-blue-500/30 dark:bg-blue-500 dark:hover:bg-blue-600"
+                  onClick={handleImportClick}
+                  disabled={importing}
+                >
+                  <Upload data-icon="inline-start" />
+                  {importing ? tc('loading') : t('importExcel')}
+                </Button>
                 <Button variant="outline" onClick={handleSave} disabled={saving}>
                   <Save data-icon="inline-start" />
                   {saving ? tc('loading') : t('saveActualQty')}

@@ -272,6 +272,7 @@ pub fn run() {
             // 采购退货
             commands::purchase::get_returnable_inbound_items,
             commands::purchase::get_purchase_returns,
+            commands::purchase::get_purchase_return_detail,
             commands::purchase::save_and_confirm_purchase_return,
             // 销售管理
             commands::sales::get_sales_orders,

@@ -37,6 +37,8 @@
     "createdAt": "Created At",
     "approvedBy": "Approved By",
     "approvedAt": "Approved At",
+    "confirmedBy": "Confirmed By",
+    "confirmedAt": "Confirmed At",
 
     "searchPlaceholder": "Search order no., supplier...",
     "allStatuses": "All Statuses",

@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。全部五个开发阶段已完成，172 个 IPC 命令、39 个路由页面、51 张数据库表均已交付。当前版本 **v0.2.9**（2026-06-22 发布），包含自由出入库操作日志可读性优化；当前正在 `[Unreleased]` 继续打磨侧边栏入口、BOM、应收应付、错误提示、依赖检查和供应商物料维护体验。2026-07-06 已修复 `tauri 2.10.3` 与 `@tauri-apps/api 2.11.1` 的 minor mismatch，将 JS 侧 Tauri 包与插件依赖收回到 2.10 同线；随后按用户要求移除供应商物料弹窗中的有效期输入，把物料选择改成可搜索控件，放宽添加物料弹窗以完整查看较长物料信息，并将供应商可选物料收窄为原材料。BOM 新建/编辑表单也已移除生效日期输入，保存时由前后端兜底写入本地当天日期；BOM 列表停用按钮改为危险色样式以提高识别度。采购单列表的已审核 / 部分入库行已接通采购入库执行页，点击「入库 / 继续入库」会携带采购单 ID 进入待入库明细流程；随后修复确认采购入库时 PostgreSQL `SUM(BIGINT)` 返回 `NUMERIC` 导致 Rust `i64` 解码失败的问题。采购入库菜单入口已从操作栏常驻采购单下拉改为「新建入库单」按钮 + 弹窗内搜索选择采购单；选中采购单后展示每个物料的订单数量、已入库数量和剩余数量。采购退货菜单入口也已改为「新建退货单」按钮 + 弹窗内先选择采购单，再选择该采购单下的原入库单并展示可退明细，再进入退货执行页按退货单扣减库存；可退明细 SQL 已修复 `ioi.spec` 不存在的问题。
+项目处于 **功能完备、持续打磨** 阶段。全部五个开发阶段已完成，172 个 IPC 命令、39 个路由页面、51 张数据库表均已交付。当前版本 **v0.2.9**（2026-06-22 发布），包含自由出入库操作日志可读性优化；当前正在 `[Unreleased]` 继续打磨侧边栏入口、BOM、应收应付、错误提示、依赖检查和供应商物料维护体验。2026-07-06 已修复 `tauri 2.10.3` 与 `@tauri-apps/api 2.11.1` 的 minor mismatch，将 JS 侧 Tauri 包与插件依赖收回到 2.10 同线；随后按用户要求移除供应商物料弹窗中的有效期输入，把物料选择改成可搜索控件，放宽添加物料弹窗以完整查看较长物料信息，并将供应商可选物料收窄为原材料。BOM 新建/编辑表单也已移除生效日期输入，保存时由前后端兜底写入本地当天日期；BOM 列表停用按钮改为危险色样式以提高识别度。采购单列表的已审核 / 部分入库行已接通采购入库执行页，点击「入库 / 继续入库」会携带采购单 ID 进入待入库明细流程；随后修复确认采购入库时 PostgreSQL `SUM(BIGINT)` 返回 `NUMERIC` 导致 Rust `i64` 解码失败的问题。采购入库菜单入口已从操作栏常驻采购单下拉改为「新建入库单」按钮 + 弹窗内搜索选择采购单；选中采购单后展示每个物料的订单数量、已入库数量和剩余数量。采购退货菜单入口也已改为「新建退货单」按钮 + 弹窗内先选择采购单，再选择该采购单下的原入库单并展示可退明细，再进入退货执行页按退货单扣减库存；可退明细 SQL 已修复 `ioi.spec` 不存在的问题。采购退货列表详情按钮已接通只读详情弹窗，后端新增退货单头 + 明细查询 IPC，可查看来源采购单、原入库单、供应商、仓库、确认信息、退货金额和退货明细。
 
 ## 最近完成的工作
 
@@ -16,13 +16,14 @@
 - **采购入库菜单交互优化**：采购入库列表页不再把采购单选择下拉长期放在操作栏；改为点击「新建入库单」打开 `Dialog`，在弹窗内用 `Combobox` 搜索并选择已审核 / 部分入库采购单。选中后加载采购单详情，展示采购单号、供应商、仓库、金额摘要，以及「剩余待入库明细」：每个未完成物料显示订单数量、已入库数量、剩余数量和单位，再点击「开始入库」进入执行页。
 - **采购退货菜单交互优化**：采购退货列表页不再把原入库单下拉长期放在操作栏；改为点击「新建退货单」打开 `Dialog`，在弹窗内先用 `Combobox` 选择采购单，再选择该采购单下的已确认入库单。选中原入库单后调用 `getReturnableInboundItems` 展示「可退明细」：每个物料显示入库数量、已退数量、可退数量和单位；存在可退明细时才允许点击「开始退货」进入退货执行页，最终由 `saveAndConfirmPurchaseReturn` 扣减库存并生成退货单。
 - **采购退货可退明细 SQL 修复**：`inbound_order_items` 表没有 `spec` 字段，`get_returnable_inbound_items` 原查询 `ioi.spec` 会导致选择原入库单时报错。现改为取 `materials.spec`，并将可退数量计算包成派生表后用外层 `WHERE returnable_qty > 0` 过滤，避免 PostgreSQL 下使用 `HAVING` 过滤别名的不稳定写法。
+- **采购退货详情逻辑完善**：采购退货列表中的详情按钮不再提示开发中；新增 `get_purchase_return_detail` IPC，按退货单 ID 查询退货单头、来源采购单、原入库单、供应商、仓库、确认信息和退货明细。前端新增 `PurchaseReturnDetailDialog`，列表点击眼睛按钮即可查看退货单只读详情；详情弹窗宽度已放宽到桌面 `sm:max-w-6xl` / 大屏 `xl:max-w-7xl`，避免明细内容拥挤；`CHANGELOG.md` 与三语采购文案同步补充。
 - **pnpm 11 锁文件刷新提交**：移除 `package.json` 中的 `packageManager: pnpm@10.33.0` 固定值，`pnpm-lock.yaml` 已按当前 `pnpm 11.10.0` 重新解析现有 semver 范围。`pnpm install --frozen-lockfile --offline`、`pnpm typecheck` 与 `git diff --check` 均已通过；`pnpm exec tauri info` 在输出 Environment 后长时间未返回，已手动中断，未作为通过项。此次属于包管理器/锁文件维护，不新增 `CHANGELOG.md` 条目。
 - **BOM 保存布尔字段绑定修复**：修复保存 BOM 明细时报错 `column "is_key_part" is of type boolean but expression is of type integer`。根因是 PostgreSQL 迁移中 `bom_items.is_key_part` 为 `BOOLEAN`，但 `save_bom` 插入明细时仍沿用 SQLite 兼容思路把 `bool` 转成 `1/0` 绑定。现已在 `src-tauri/src/commands/bom.rs` 中改为直接 `.bind(item.is_key_part)`，并新增 Rust 回归测试 `save_bom_binds_is_key_part_as_boolean_for_postgres` 防止该绑定退回整数。
 - **BOM 明细添加物料搜索重置修复**：修复 `BomItemDialog` 中搜索输入后弹窗重新初始化、搜索词被清空、候选项无法按输入生效的问题。根因是 `fetchMaterials` 依赖 `searchKeyword`，导致初始化 `useEffect` 随输入变化重跑；同时 `onChange` 立即调用闭包内的 `fetchMaterials()` 会用旧关键词查询。现已将弹窗打开初始化和关键词搜索拆成两个 effect，`fetchMaterials(keyword)` 显式接收关键词，并用 `searchRequestIdRef` 避免旧异步响应覆盖新结果。新增 `tests/bom-item-dialog-search.test.mjs` 作为轻量回归保护。
 - **CHANGELOG 与全量提交准备**：`CHANGELOG.md` 的 `[Unreleased]` 已补充本轮用户可见变更，包括侧边栏业务入口开放、BOM 保存/搜索修复、应收应付 PostgreSQL 兼容修复、单位/仓库错误提示优化和通用下拉宽度修复；提交前 `just lint`、BOM Node 回归测试与 BOM Rust 回归测试均已通过。
 - **自由出入库操作日志区分两类草稿来源**：`SaveManualMovementParams` 新增 `from_confirm` 入参，确认过账流程内部的静默保存传 `fromConfirm: true`，后端据此跳过「保存草稿」(`save_batch_movement`) 日志——直接确认过账不再多出一条无意义草稿记录。`confirm_manual_stock_movement` 出库预检发现库存不足、整单回滚保留草稿时，单独记录新动作 `save_draft_insufficient`，与用户主动保存的 `save_batch_movement` 区分。操作日志页 `ACTION_KEYS` 注册该动作，`messages/{zh,en,vi}/settings.json` 的 `actions` 命名空间补齐三语文案（中文「库存不足保留草稿」）。前端 `executeSave` 原 `silent` 选项升级为 `fromConfirm`，同时承担 toast 静默与日志抑制两个意图。
 - **操作员角色权限二次收紧（盘点 / 自由出入库过账）**：新增迁移 `012_operator_revoke_stock_checks.sql` 与 `013_operator_revoke_manual_stock_confirm.sql`，分别回收操作员对 `stock_checks` 全部权限与 `manual_stock.confirm` 权限；侧边栏据 `permissionModule` 自动隐藏「库存盘点」入口。后端 `confirm_manual_stock_movement` 把 `require_auth` 替换为 `require_permission("manual_stock", "confirm")`，越权调用统一返回"权限不足"。前端自由出入库编辑页（`manual-stock-movement-edit.tsx`）与列表行（`manual-stock-movements-list.tsx`）按 `usePermission().can('manual_stock', 'confirm')` 控制「确认过账」按钮显隐，操作员仅保留草稿录入与编辑/删除入口。
-- **盘点单 Excel 导出功能**：在盘点单详情页（`stock-check-edit-page.tsx`）标题栏新增"导出 Excel"按钮（detail 加载后即可见，不受 draft/checking/confirmed 状态限制）。导出表格含标题区（盘点单号 / 仓库 / 盘点日期 / 状态 / 创建人 / 打印提示）+ 明细表（物料编码 / 物料名称 / 规格 / 单位 / 系统库存 / 实盘数量 / 盈亏数量 / 备注）。draft/checking 状态实盘列和盈亏列留空便于打印线下手填；confirmed 状态填充已确认值用于归档。复用项目已有的 `xlsx@0.18.5` 依赖（动态 import），用 AOA + 列宽 + 合并单元格组装，未抽到 `lib/business-excel.ts` 以避免污染其物料/期初导入模板的纯粹用途。三语在 `messages/{zh,en,vi}/inventory.json` 的 `stockChecks` 命名空间新增 `exportExcel`、`exportSuccess`、`exportFailed`、`remark`、`exportSheetTitle`、`exportPrintHint` 六键。
+- **盘点单 Excel 导入导出功能**：在盘点单详情页（`stock-check-edit-page.tsx`）标题栏提供"导出 Excel"和"导入 Excel"按钮，并用绿色描边的导出按钮、蓝色填充的导入按钮区分动作。导出内容已按用户要求简化为纯明细表，用户可见列只保留物料编码、物料名称、规格、单位、系统库存、实盘数量，不再包含顶部单据信息、打印提示、「盈亏数量」和「备注」列；导出文件额外写入隐藏明细 ID 列，用于导入时精确匹配当前盘点单明细。导入仅在 draft/checking 状态可用，读取填好的实盘数量后复用现有 `updateStockCheckItems` 保存，空白实盘数量跳过，负数/非数字/模板不匹配会中止并提示错误行。未修改数据库结构。
 - **外观设置大字号滑块重构（iOS风格）**：将传统开关式大字体模式重构为 12px -> 20px（共 5 档）的滑块刻度选择。
 - **拖拽防抖与性能吞吐优化**：将拖拽过程中的字号状态在本地以 `tempValue` 进行托管，拖动期间仅更新本地预览及数字高亮，将向 Tauri 数据库发起持久化 IPC 写入的 `onChange` 动作推迟到 `pointerup`（松手）时仅触发一次。这彻底消除了此前鼠标微移都在后台阻塞进行数据库事务排队造成的严重卡顿，滑块拖动完全零延迟跟手。
 - **滑块吸附动效与遮挡修复**：拖动时使用绝对定位直接计算 left，去除了过渡动画使得滑块极其跟手；松手或点击 Aa 按钮时利用 200ms 的过渡平滑吸附到刻度上。使用绝对定位将滑轨中线、圆形滑块与下方的刻度数字（`top-[32px]`）进行物理空间解耦，彻底修复了圆形滑块遮挡刻度数字（如 14）的缺陷。
@@ -57,8 +58,12 @@
 - `app/[locale]/purchase-receipts/_components/purchase-receipts-content.tsx` — 读取 `purchaseId` 查询参数，直接进入入库执行页并在返回列表时清理参数
 - `app/[locale]/purchase-receipts/_components/inbound-list-page.tsx` — 采购入库菜单入口改为「新建入库单」按钮 + 可搜索采购单选择弹窗
 - `app/[locale]/purchase-returns/_components/return-list-page.tsx` — 采购退货菜单入口改为「新建退货单」按钮 + 采购单优先的原入库单选择弹窗，并展示可退明细
+- `app/[locale]/purchase-returns/_components/purchase-return-detail-dialog.tsx` — 采购退货单只读详情弹窗，展示单头、确认信息与退货明细
+- `lib/tauri/purchase.ts` — 增加采购退货详情类型与 `getPurchaseReturnDetail`
 - `messages/{zh,en,vi}/purchase.json` — 补充采购入库与采购退货新建弹窗文案
-- `src-tauri/src/commands/purchase.rs` — 对采购入库确认中的金额汇总 `SUM(BIGINT)` 结果显式转回 `BIGINT`；修复采购退货可退明细查询的规格字段来源和可退数量过滤
+- `src-tauri/src/commands/purchase.rs` — 对采购入库确认中的金额汇总 `SUM(BIGINT)` 结果显式转回 `BIGINT`；修复采购退货可退明细查询的规格字段来源和可退数量过滤；新增采购退货详情查询
+- `src-tauri/src/lib.rs` — 注册采购退货详情 IPC 命令
+- `app/[locale]/stock-checks/_components/stock-check-edit-page.tsx` — 盘点单 Excel 导出改为纯明细表并写入隐藏明细 ID，支持导入填好的 Excel 自动回填实盘数量
 - `src-tauri/src/commands/bom.rs` — 修复 `save_bom` 对 `is_key_part` 的 PostgreSQL boolean 绑定，并补回归测试
 - `app/[locale]/bom/_components/bom-item-dialog.tsx` — 拆分弹窗初始化与物料搜索 effect，修复输入后搜索失效
 - `CHANGELOG.md` — `[Unreleased]` 记录本轮用户可见变更
@@ -78,6 +83,7 @@
 - **采购入库入口复用现有采购入库执行页**：不在采购单列表里直接做库存事务，也不新建并行弹窗；列表只负责把 `purchaseId` 传给采购入库页，待入库数量、仓库一致性校验、库存与应付生成继续由 `saveAndConfirmInbound` 的后端事务兜底。
 - **采购入库菜单入口采用显式新建动作**：用户从「采购入库」菜单进入时，主操作应是「新建入库单」，采购单选择放进弹窗内完成；这样列表页操作栏只保留明确动作，不再让用户先面对一个含义不清的采购单下拉框。采购单列表行内的「入库 / 继续入库」仍保留直达执行页。
 - **采购退货菜单入口也采用显式新建动作，并以采购单为主视角**：用户从「采购退货」菜单进入时，主操作是「新建退货单」；弹窗先选采购单，再选该采购单下的原入库单并预览可退数量。退货执行页继续作为退货单确认和库存扣减的工作台，保持单据语义和成本追溯都清晰。
+- **采购退货详情采用列表弹窗而非新路由**：当前退货详情只读查看不涉及编辑或重新提交，列表眼睛按钮打开 `PurchaseReturnDetailDialog` 更轻量；后端新增独立 `get_purchase_return_detail` 聚合单头和明细，避免前端用列表项和可退明细接口拼装已确认退货单历史数据。
 - **PostgreSQL 金额聚合要显式定型**：金额字段通常按 `BIGINT/i64` 存储，但 PostgreSQL 的 `SUM(BIGINT)` 会返回 `NUMERIC`。凡是 Rust 端按 `i64` 接收金额聚合结果，SQL 中应使用 `COALESCE(SUM(...), 0)::BIGINT` 或等价 cast，避免运行时解码失败。
 - `src-tauri/src/commands/manual_stock_movement.rs` — `SaveManualMovementParams` 新增 `from_confirm`；保存流程据此跳过草稿日志；`confirm_*` 库存不足整单回滚时记 `save_draft_insufficient`
 - `lib/tauri/manual-stock-movement.ts` — `SaveManualMovementParams` 类型新增 `fromConfirm?`
@@ -91,7 +97,7 @@
 
 - **用 `from_confirm` 显式标志而非日志侧去重来抑制草稿记录**：确认过账必须先落库最新明细，这步静默保存与用户主动「保存草稿」走同一个 `save_manual_stock_movement` 命令。与其事后在日志里做时间窗/差异比对去重，不如让调用方显式声明来源——`fromConfirm` 既驱动前端 toast 静默，又驱动后端跳过 `save_batch_movement` 日志，单一标志同时表达两个意图，保证日志与用户实际动作一一对应。库存不足回滚保留草稿是另一种语义，单列 `save_draft_insufficient` 动作而非复用 `save_batch_movement`。
 - **操作员权限收紧采用"迁移 + 后端守卫 + 前端按权限隐藏"三层兜底**：数据库层一次性 DELETE `role_permissions` 行（向前兼容已存在数据库的最简方式）；后端 `require_permission` 即使前端被绕过也会拦截；前端按 `usePermission().can(...)` 隐藏入口避免无效点击。三层职责分明，不在前端做角色硬编码（如 `user.role === 'operator'`），让权限始终以数据库为单一真实来源。
-- **盘点 Excel 导出逻辑不抽进 `lib/business-excel.ts`**：现有 `downloadBusinessWorkbook` 只服务于"列定义 + 数据行"的简单导入模板用途（物料、期初库存），盘点单需要 AOA + 合并单元格 + 列宽 + 标题区，差异较大。抽公共 helper 反而会让 `business-excel.ts` 变成多分支胶水代码，因此就近放在盘点页面内，按需 `await import('xlsx')`。
+- **盘点 Excel 导入导出继续就近维护**：盘点单导入导出当前只是该页面的业务明细表闭环，仍就近放在 `stock-check-edit-page.tsx` 并按需 `await import('xlsx')`；不抽进 `lib/business-excel.ts`，避免影响物料/期初库存导入模板的职责边界。导入匹配以隐藏明细 ID 为准，不按物料编码直接匹配，避免同一物料存在多批次行时写错明细。
 - **导出按钮在所有状态可见**：draft/checking 用于打印线下盘点（实盘列空），confirmed 用于归档（实盘列填）；不限制到 isEditable 是因为已审核也常有打印归档需求。
 - **撤回 Stop hook 兜底，改为纯文档约束**：实践中 hook 在无代码变更的纯咨询会话也会触发拦截，打扰频率高于收益；判定 AI 自觉性 + 文档强约束已足够，hook 不再保留。
 - **三处规则按职责分工去重**：全局 `CLAUDE.md` 讲方法论（如何生成 6 文件、采集源映射），项目 `CLAUDE.md` 讲消费（按需读取路由）+ 一句话指向全局更新约定，项目 `AGENTS.md` 保留通用会话收尾规则；避免逐字复述。
@@ -116,6 +122,8 @@
 - 本次采购入库菜单交互优化无阻塞；`just fmt`、`pnpm typecheck` 与 `git diff --check` 已通过，未修改数据库迁移。
 - 本次采购退货菜单交互优化无阻塞；`just fmt`、`pnpm typecheck` 与 `git diff --check` 已通过，未修改数据库迁移。
 - 本次采购退货可退明细 SQL 修复无阻塞；`cargo check --manifest-path src-tauri/Cargo.toml` 与 `just fmt` 已通过，未修改数据库迁移。
+- 本次采购退货详情逻辑完善无阻塞；`just fmt`、`pnpm typecheck`、`cargo check --manifest-path src-tauri/Cargo.toml` 与 `git diff --check` 已通过，未修改数据库迁移。详情弹窗宽度微调后，补充执行 `pnpm typecheck` 与 `git diff --check` 通过。
+- 本次盘点单 Excel 导入导出简化无阻塞；`just fmt`、`pnpm typecheck` 与 `git diff --check` 已通过，未修改数据库迁移。导入/导出按钮视觉区分调整后补充执行同一组检查通过。
 - 本次 BOM 保存与搜索修复无阻塞；提交前 `just lint`、`node --experimental-strip-types --test tests/bom-command-args.test.mjs tests/bom-item-dialog-search.test.mjs`、`cargo test save_bom_binds_is_key_part_as_boolean_for_postgres --lib` 均已通过。
 
 ---

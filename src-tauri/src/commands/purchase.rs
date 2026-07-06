@@ -1646,6 +1646,87 @@ pub struct PurchaseReturnListItem {
     pub created_at: Option<String>,
 }
 
+/// 采购退货详情
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PurchaseReturnDetail {
+    pub id: i64,
+    pub return_no: String,
+    pub inbound_id: i64,
+    pub inbound_order_no: String,
+    pub purchase_id: Option<i64>,
+    pub purchase_order_no: Option<String>,
+    pub supplier_id: i64,
+    pub supplier_name: String,
+    pub warehouse_id: i64,
+    pub warehouse_name: String,
+    pub return_date: String,
+    pub currency: String,
+    pub exchange_rate: f64,
+    pub return_reason: Option<String>,
+    pub total_amount: i64,
+    pub total_amount_base: i64,
+    pub status: String,
+    pub remark: Option<String>,
+    pub created_by_name: Option<String>,
+    pub confirmed_by_name: Option<String>,
+    pub confirmed_at: Option<String>,
+    pub created_at: Option<String>,
+    pub updated_at: Option<String>,
+    pub items: Vec<PurchaseReturnDetailItem>,
+}
+
+/// 采购退货详情头数据库行
+#[derive(Debug, sqlx::FromRow)]
+struct PurchaseReturnHeadRow {
+    id: i64,
+    return_no: String,
+    inbound_id: i64,
+    inbound_order_no: String,
+    purchase_id: Option<i64>,
+    purchase_order_no: Option<String>,
+    supplier_id: i64,
+    supplier_name: String,
+    warehouse_id: i64,
+    warehouse_name: String,
+    return_date: String,
+    currency: String,
+    exchange_rate: f64,
+    return_reason: Option<String>,
+    total_amount: i64,
+    total_amount_base: i64,
+    status: String,
+    remark: Option<String>,
+    created_by_name: Option<String>,
+    confirmed_by_name: Option<String>,
+    confirmed_at: Option<String>,
+    created_at: Option<String>,
+    updated_at: Option<String>,
+}
+
+/// 采购退货详情明细
+#[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct PurchaseReturnDetailItem {
+    pub id: i64,
+    pub source_inbound_item_id: i64,
+    pub lot_id: Option<i64>,
+    pub lot_no: Option<String>,
+    pub material_id: i64,
+    pub material_code: String,
+    pub material_name: String,
+    pub spec: Option<String>,
+    pub unit_id: i64,
+    pub unit_name_snapshot: String,
+    pub conversion_rate_snapshot: f64,
+    pub inbound_quantity: f64,
+    pub base_quantity: f64,
+    pub quantity: f64,
+    pub unit_price: i64,
+    pub amount: i64,
+    pub remark: Option<String>,
+}
+
 /// 采购退货列表筛选
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -1821,6 +1902,87 @@ pub async fn get_purchase_returns(
         "退货单",
     )
     .await
+}
+
+/// 获取采购退货详情（含明细行）
+#[tauri::command]
+pub async fn get_purchase_return_detail(
+    db: State<'_, DbState>,
+    id: i64,
+) -> Result<PurchaseReturnDetail, AppError> {
+    let head = sqlx::query_as::<_, PurchaseReturnHeadRow>(
+        r#"
+        SELECT pr.id, pr.return_no, pr.inbound_id,
+               io.order_no AS inbound_order_no,
+               io.purchase_id, po.order_no AS purchase_order_no,
+               pr.supplier_id, s.name AS supplier_name,
+               io.warehouse_id, w.name AS warehouse_name,
+               pr.return_date, pr.currency, pr.exchange_rate,
+               pr.return_reason, pr.total_amount, pr.total_amount_base,
+               pr.status, pr.remark,
+               pr.created_by_name, pr.confirmed_by_name, pr.confirmed_at::TEXT,
+               pr.created_at::TEXT, pr.updated_at::TEXT
+        FROM purchase_returns pr
+        JOIN inbound_orders io ON io.id = pr.inbound_id
+        LEFT JOIN purchase_orders po ON po.id = io.purchase_id
+        JOIN suppliers s ON s.id = pr.supplier_id
+        JOIN warehouses w ON w.id = io.warehouse_id
+        WHERE pr.id = $1
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(&db.pool)
+    .await
+    .map_err(|e| AppError::Database(format!("查询退货单详情失败: {}", e)))?
+    .ok_or_else(|| AppError::Business("退货单不存在".to_string()))?;
+
+    let items = sqlx::query_as::<_, PurchaseReturnDetailItem>(
+        r#"
+        SELECT pri.id, pri.source_inbound_item_id,
+               pri.lot_id, COALESCE(il.lot_no, ioi.lot_no) AS lot_no,
+               pri.material_id, m.code AS material_code, m.name AS material_name, m.spec,
+               pri.unit_id, pri.unit_name_snapshot, pri.conversion_rate_snapshot,
+               ioi.quantity AS inbound_quantity,
+               pri.base_quantity, pri.quantity, pri.unit_price, pri.amount, pri.remark
+        FROM purchase_return_items pri
+        JOIN inbound_order_items ioi ON ioi.id = pri.source_inbound_item_id
+        JOIN materials m ON m.id = pri.material_id
+        LEFT JOIN inventory_lots il ON il.id = pri.lot_id
+        WHERE pri.return_id = $1
+        ORDER BY pri.id
+        "#,
+    )
+    .bind(id)
+    .fetch_all(&db.pool)
+    .await
+    .map_err(|e| AppError::Database(format!("查询退货单明细失败: {}", e)))?;
+
+    Ok(PurchaseReturnDetail {
+        id: head.id,
+        return_no: head.return_no,
+        inbound_id: head.inbound_id,
+        inbound_order_no: head.inbound_order_no,
+        purchase_id: head.purchase_id,
+        purchase_order_no: head.purchase_order_no,
+        supplier_id: head.supplier_id,
+        supplier_name: head.supplier_name,
+        warehouse_id: head.warehouse_id,
+        warehouse_name: head.warehouse_name,
+        return_date: head.return_date,
+        currency: head.currency,
+        exchange_rate: head.exchange_rate,
+        return_reason: head.return_reason,
+        total_amount: head.total_amount,
+        total_amount_base: head.total_amount_base,
+        status: head.status,
+        remark: head.remark,
+        created_by_name: head.created_by_name,
+        confirmed_by_name: head.confirmed_by_name,
+        confirmed_at: head.confirmed_at,
+        created_at: head.created_at,
+        updated_at: head.updated_at,
+        items,
+    })
 }
 
 /// 保存并确认采购退货单（核心事务）

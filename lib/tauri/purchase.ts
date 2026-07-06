@@ -317,6 +317,55 @@ export interface PurchaseReturnListItem {
   createdAt: string | null
 }
 
+/** 采购退货详情明细 */
+export interface PurchaseReturnDetailItem {
+  id: number
+  sourceInboundItemId: number
+  lotId: number | null
+  lotNo: string | null
+  materialId: number
+  materialCode: string
+  materialName: string
+  spec: string | null
+  unitId: number
+  unitNameSnapshot: string
+  conversionRateSnapshot: number
+  inboundQuantity: number
+  baseQuantity: number
+  quantity: number
+  unitPrice: number
+  amount: number
+  remark: string | null
+}
+
+/** 采购退货详情 */
+export interface PurchaseReturnDetail {
+  id: number
+  returnNo: string
+  inboundId: number
+  inboundOrderNo: string
+  purchaseId: number | null
+  purchaseOrderNo: string | null
+  supplierId: number
+  supplierName: string
+  warehouseId: number
+  warehouseName: string
+  returnDate: string
+  currency: string
+  exchangeRate: number
+  returnReason: string | null
+  totalAmount: number
+  totalAmountBase: number
+  status: string
+  remark: string | null
+  createdByName: string | null
+  confirmedByName: string | null
+  confirmedAt: string | null
+  createdAt: string | null
+  updatedAt: string | null
+  items: PurchaseReturnDetailItem[]
+}
+
 /** 采购退货列表筛选 */
 export interface PurchaseReturnFilter {
   keyword?: string
@@ -383,6 +432,14 @@ export async function getPurchaseReturns(filter: PurchaseReturnFilter): Promise<
     return invoke<PaginatedResponse<PurchaseReturnListItem>>('get_purchase_returns', { filter })
   }
   return { total: 0, items: [], page: filter.page, pageSize: filter.pageSize }
+}
+
+/** 获取采购退货详情 */
+export async function getPurchaseReturnDetail(id: number): Promise<PurchaseReturnDetail> {
+  if (isTauriEnv()) {
+    return invoke<PurchaseReturnDetail>('get_purchase_return_detail', { id })
+  }
+  throw new Error('非 Tauri 环境暂不支持')
 }
 
 /** 保存并确认采购退货 */

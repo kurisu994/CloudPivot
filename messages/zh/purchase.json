@@ -37,6 +37,8 @@
     "createdAt": "创建时间",
     "approvedBy": "审核人",
     "approvedAt": "审核时间",
+    "confirmedBy": "确认人",
+    "confirmedAt": "确认时间",
 
     "searchPlaceholder": "搜索单号、供应商名称...",
     "allStatuses": "全部状态",
