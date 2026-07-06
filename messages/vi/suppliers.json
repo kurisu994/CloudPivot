@@ -93,6 +93,7 @@
     "materialDialogDescription": "Quản lý báo giá, thời gian giao hàng, MOQ và cờ ưu tiên",
     "materialName": "Vật tư",
     "materialPlaceholder": "Chọn vật tư",
+    "materialNoMatches": "Không có vật tư phù hợp",
     "quotePrice": "Báo giá",
     "leadDays": "Số ngày giao hàng",
     "minOrderQty": "Số lượng tối thiểu",

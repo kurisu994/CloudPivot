@@ -93,6 +93,7 @@ export interface MaterialReferenceOption {
   id: number
   code: string
   name: string
+  materialType: 'raw' | 'semi' | 'finished'
   spec: string | null
   unitName: string | null
 }
@@ -208,10 +209,10 @@ const MOCK_SUPPLIERS: SupplierListItem[] = [
 
 /** Mock 供应商详情（Web 调试模式） */
 const MOCK_MATERIAL_REFERENCE_OPTIONS: MaterialReferenceOption[] = [
-  { id: 1, code: 'M-0001', name: '白橡实木板', spec: '2440×1220', unitName: '张' },
-  { id: 2, code: 'M-0002', name: '不锈钢铰链', spec: '40mm', unitName: '个' },
-  { id: 3, code: 'M-0015', name: 'NC 底漆', spec: '18L', unitName: '桶' },
-  { id: 4, code: 'M-0032', name: '真皮面料', spec: '1.4mm', unitName: '米' },
+  { id: 1, code: 'M-0001', name: '白橡实木板', materialType: 'raw', spec: '2440×1220', unitName: '张' },
+  { id: 2, code: 'M-0002', name: '不锈钢铰链', materialType: 'raw', spec: '40mm', unitName: '个' },
+  { id: 3, code: 'M-0015', name: 'NC 底漆', materialType: 'raw', spec: '18L', unitName: '桶' },
+  { id: 4, code: 'M-0032', name: '真皮面料', materialType: 'raw', spec: '1.4mm', unitName: '米' },
 ]
 
 const MOCK_SUPPLIER_DETAILS: Record<number, SupplierDetailResponse> = {
@@ -575,12 +576,15 @@ export async function getSupplierCategories(): Promise<string[]> {
   return [...new Set(MOCK_SUPPLIERS.map(s => s.businessCategory).filter(Boolean) as string[])]
 }
 
-export async function getMaterialReferenceOptions(): Promise<MaterialReferenceOption[]> {
+export async function getMaterialReferenceOptions(materialType?: MaterialReferenceOption['materialType']): Promise<MaterialReferenceOption[]> {
   if (isTauriEnv()) {
-    return invoke<MaterialReferenceOption[]>('get_material_reference_options')
+    return invoke<MaterialReferenceOption[]>('get_material_reference_options', { materialType: materialType ?? null })
   }
 
-  return structuredClone(MOCK_MATERIAL_REFERENCE_OPTIONS)
+  const options = materialType
+    ? MOCK_MATERIAL_REFERENCE_OPTIONS.filter(option => option.materialType === materialType)
+    : MOCK_MATERIAL_REFERENCE_OPTIONS
+  return structuredClone(options)
 }
 
 export async function saveSupplierMaterial(params: SaveSupplierMaterialParams): Promise<number> {

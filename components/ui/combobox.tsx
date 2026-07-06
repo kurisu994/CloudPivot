@@ -17,6 +17,8 @@ interface ComboboxProps {
   emptyText?: string
   disabled?: boolean
   className?: string
+  popupClassName?: string
+  itemLabelClassName?: string
 }
 
 /**
@@ -25,7 +27,17 @@ interface ComboboxProps {
  * `items` 为 `{ value, label }[]`，输入文本时按 `label` 自动过滤，无需额外搜索框。
  * 选中项以 value 字符串对外暴露，清空时回传 null。
  */
-export function Combobox({ items, value, onValueChange, placeholder, emptyText = '无匹配项', disabled, className }: ComboboxProps) {
+export function Combobox({
+  items,
+  value,
+  onValueChange,
+  placeholder,
+  emptyText = '无匹配项',
+  disabled,
+  className,
+  popupClassName,
+  itemLabelClassName,
+}: ComboboxProps) {
   const selected = items.find(i => i.value === value) ?? null
 
   return (
@@ -50,7 +62,12 @@ export function Combobox({ items, value, onValueChange, placeholder, emptyText =
       </div>
       <ComboboxPrimitive.Portal>
         <ComboboxPrimitive.Positioner sideOffset={4} className="isolate z-50">
-          <ComboboxPrimitive.Popup className="bg-popover text-popover-foreground ring-foreground/10 max-h-(--available-height) w-(--anchor-width) min-w-36 overflow-y-auto rounded-lg p-1 shadow-md ring-1 outline-none">
+          <ComboboxPrimitive.Popup
+            className={cn(
+              'bg-popover text-popover-foreground ring-foreground/10 max-h-(--available-height) w-(--anchor-width) min-w-36 overflow-y-auto rounded-lg p-1 shadow-md ring-1 outline-none',
+              popupClassName,
+            )}
+          >
             <ComboboxPrimitive.Empty className="text-muted-foreground px-2 py-4 text-center text-sm">{emptyText}</ComboboxPrimitive.Empty>
             <ComboboxPrimitive.List>
               {(item: ComboboxOption) => (
@@ -59,7 +76,7 @@ export function Combobox({ items, value, onValueChange, placeholder, emptyText =
                   value={item}
                   className="focus:bg-accent focus:text-accent-foreground data-highlighted:bg-accent data-highlighted:text-accent-foreground relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1.5 pr-8 pl-2 text-sm outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-50"
                 >
-                  <span className="flex-1 truncate">{item.label}</span>
+                  <span className={cn('flex-1 truncate', itemLabelClassName)}>{item.label}</span>
                   <ComboboxPrimitive.ItemIndicator className="absolute right-2 flex items-center">
                     <CheckIcon className="size-4" />
                   </ComboboxPrimitive.ItemIndicator>

@@ -117,6 +117,7 @@ pub struct MaterialReferenceOption {
     pub id: i64,
     pub code: String,
     pub name: String,
+    pub material_type: String,
     pub spec: Option<String>,
     pub unit_name: Option<String>,
 }
@@ -913,16 +914,30 @@ pub async fn get_supplier_categories(db: State<'_, DbState>) -> Result<Vec<Strin
 #[tauri::command]
 pub async fn get_material_reference_options(
     db: State<'_, DbState>,
+    material_type: Option<String>,
 ) -> Result<Vec<MaterialReferenceOption>, AppError> {
+    let material_type = material_type
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+
+    if let Some(value) = material_type {
+        if !matches!(value, "raw" | "semi" | "finished") {
+            return Err(AppError::Business("物料类型无效".to_string()));
+        }
+    }
+
     sqlx::query_as::<_, MaterialReferenceOption>(
         r#"
-        SELECT m.id, m.code, m.name, m.spec, u.name AS unit_name
+        SELECT m.id, m.code, m.name, m.material_type, m.spec, u.name AS unit_name
         FROM materials m
         LEFT JOIN units u ON u.id = m.base_unit_id
         WHERE m.is_enabled = TRUE
+          AND ($1::TEXT IS NULL OR m.material_type = $1)
         ORDER BY m.code ASC, m.id ASC
         "#,
     )
+    .bind(material_type)
     .fetch_all(&db.pool)
     .await
     .map_err(|e| AppError::Database(format!("获取物料选项失败: {}", e)))

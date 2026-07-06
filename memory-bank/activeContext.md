@@ -2,13 +2,13 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。全部五个开发阶段已完成，172 个 IPC 命令、39 个路由页面、51 张数据库表均已交付。当前版本 **v0.2.9**（2026-06-22 发布），包含自由出入库操作日志可读性优化；当前正在 `[Unreleased]` 继续打磨侧边栏入口、BOM、应收应付、错误提示、依赖检查和供应商物料维护体验。2026-07-06 已修复 `tauri 2.10.3` 与 `@tauri-apps/api 2.11.1` 的 minor mismatch，将 JS 侧 Tauri 包与插件依赖收回到 2.10 同线；随后按用户要求移除供应商物料弹窗中的有效期输入。
+项目处于 **功能完备、持续打磨** 阶段。全部五个开发阶段已完成，172 个 IPC 命令、39 个路由页面、51 张数据库表均已交付。当前版本 **v0.2.9**（2026-06-22 发布），包含自由出入库操作日志可读性优化；当前正在 `[Unreleased]` 继续打磨侧边栏入口、BOM、应收应付、错误提示、依赖检查和供应商物料维护体验。2026-07-06 已修复 `tauri 2.10.3` 与 `@tauri-apps/api 2.11.1` 的 minor mismatch，将 JS 侧 Tauri 包与插件依赖收回到 2.10 同线；随后按用户要求移除供应商物料弹窗中的有效期输入，把物料选择改成可搜索控件，放宽添加物料弹窗以完整查看较长物料信息，并将供应商可选物料收窄为原材料。
 
 ## 最近完成的工作
 
 - **Tauri NPM / Rust 依赖 minor 对齐修复**：修复 `Error Found version mismatched Tauri packages`，根因是 `package.json` 中 Tauri NPM 依赖使用 `^2.10.1`，本地 `node_modules` 漂移到 `@tauri-apps/api@2.11.1`、`@tauri-apps/cli@2.11.3`，而 Rust `tauri` crate 锁定为 `2.10.3`。现已将 `package.json` 与 `pnpm-lock.yaml` 中 `@tauri-apps/api`、`@tauri-apps/cli`、`@tauri-apps/plugin-log`、`@tauri-apps/plugin-process`、`@tauri-apps/plugin-updater` 全部改为精确版本，执行 `pnpm install --frozen-lockfile --offline` 恢复本地安装，用 `pnpm exec tauri info` 验证不再报 mismatch，并在 `CHANGELOG.md` 的 `[Unreleased]` 记录该桌面端依赖检查修复。
 - **Tauri JS/Rust 版本线再次收敛**：修复 `tauri (v2.10.3) : @tauri-apps/api (v2.11.1)` mismatch。`package.json` 将 `@tauri-apps/api`、`@tauri-apps/cli`、`@tauri-apps/plugin-log`、`@tauri-apps/plugin-process`、`@tauri-apps/plugin-updater` 全部固定为精确版本；`pnpm-workspace.yaml` 新增 `overrides`，强制插件 transitive `@tauri-apps/api` 也解析到 `2.10.1`。最终 `pnpm-lock.yaml` 不再包含 `@tauri-apps/api@2.11` 或 `@tauri-apps/cli@2.11`，`node_modules` 中直连 API/CLI 为 `2.10.1 / 2.10.1`。
-- **供应商物料有效期交互收敛**：供应商维护弹窗中，新增/编辑供货物料不再展示「有效期起/止」日期选择器。前端每次保存 payload 都会自动补 `validFrom=本地当天`、`validTo=2099-12-31`，使“关系存在即生效”；移除供货物料仍沿用现有删除动作，不做数据库迁移或后端结构调整。
+- **供应商物料维护交互收敛**：供应商维护弹窗中，新增/编辑供货物料不再展示「有效期起/止」日期选择器。前端每次保存 payload 都会自动补 `validFrom=本地当天`、`validTo=2099-12-31`，使“关系存在即生效”；移除供货物料仍沿用现有删除动作，不做数据库迁移。物料选择从普通 `Select` 改为项目现有 `Combobox`，支持按编码、名称和规格过滤；添加物料弹窗放宽到 `sm:max-w-4xl`，物料选择字段横跨整行，长物料信息在下拉项中可换行展示。供应商弹窗调用 `getMaterialReferenceOptions('raw')`，只列出原材料，避免半成品/成品进入供应商供货报价。
 - **pnpm 11 锁文件刷新提交**：移除 `package.json` 中的 `packageManager: pnpm@10.33.0` 固定值，`pnpm-lock.yaml` 已按当前 `pnpm 11.10.0` 重新解析现有 semver 范围。`pnpm install --frozen-lockfile --offline`、`pnpm typecheck` 与 `git diff --check` 均已通过；`pnpm exec tauri info` 在输出 Environment 后长时间未返回，已手动中断，未作为通过项。此次属于包管理器/锁文件维护，不新增 `CHANGELOG.md` 条目。
 - **BOM 保存布尔字段绑定修复**：修复保存 BOM 明细时报错 `column "is_key_part" is of type boolean but expression is of type integer`。根因是 PostgreSQL 迁移中 `bom_items.is_key_part` 为 `BOOLEAN`，但 `save_bom` 插入明细时仍沿用 SQLite 兼容思路把 `bool` 转成 `1/0` 绑定。现已在 `src-tauri/src/commands/bom.rs` 中改为直接 `.bind(item.is_key_part)`，并新增 Rust 回归测试 `save_bom_binds_is_key_part_as_boolean_for_postgres` 防止该绑定退回整数。
 - **BOM 明细添加物料搜索重置修复**：修复 `BomItemDialog` 中搜索输入后弹窗重新初始化、搜索词被清空、候选项无法按输入生效的问题。根因是 `fetchMaterials` 依赖 `searchKeyword`，导致初始化 `useEffect` 随输入变化重跑；同时 `onChange` 立即调用闭包内的 `fetchMaterials()` 会用旧关键词查询。现已将弹窗打开初始化和关键词搜索拆成两个 effect，`fetchMaterials(keyword)` 显式接收关键词，并用 `searchRequestIdRef` 避免旧异步响应覆盖新结果。新增 `tests/bom-item-dialog-search.test.mjs` 作为轻量回归保护。
@@ -33,7 +33,11 @@
 - `package.json` — 固定所有 `@tauri-apps/*` JS 包精确版本，避免 caret 漂移到 2.11.x
 - `pnpm-workspace.yaml` — 在 pnpm 11 有效配置位置增加 `overrides`，强制 transitive `@tauri-apps/api` 为 `2.10.1`
 - `pnpm-lock.yaml` — 同步 Tauri JS 包和插件 transitive API 到 2.10 同线，保持 frozen install 一致
-- `app/[locale]/suppliers/_components/supplier-dialog.tsx` — 移除供应商供货物料有效期输入，保存时前端自动补默认有效期
+- `app/[locale]/suppliers/_components/supplier-dialog.tsx` — 移除供应商供货物料有效期输入，保存时前端自动补默认有效期；物料选择改为可搜索 `Combobox`，添加物料弹窗放宽且物料字段占满整行，并只请求原材料选项
+- `components/ui/combobox.tsx` — 增加可选的弹层与下拉项文本样式参数，默认不影响其它使用点
+- `lib/tauri/supplier.ts` — `getMaterialReferenceOptions` 增加可选 `materialType` 参数，mock 选项带 `materialType`
+- `src-tauri/src/commands/supplier.rs` — `get_material_reference_options` 支持可选物料类型筛选，默认仍返回全部启用物料
+- `messages/{zh,en,vi}/suppliers.json` — 补充供应商物料搜索空结果文案
 - `CHANGELOG.md` — `[Unreleased]` 记录供应商物料维护体验变化
 - `src-tauri/src/commands/bom.rs` — 修复 `save_bom` 对 `is_key_part` 的 PostgreSQL boolean 绑定，并补回归测试
 - `app/[locale]/bom/_components/bom-item-dialog.tsx` — 拆分弹窗初始化与物料搜索 effect，修复输入后搜索失效
@@ -45,6 +49,8 @@
 
 - **Tauri JS/Rust 版本线必须同 minor**：当前 Rust `src-tauri/Cargo.toml` 中 `tauri` 为 `2.10.3`，JS 侧 `@tauri-apps/api` / `@tauri-apps/cli` 固定为 `2.10.1`。pnpm 11 不再读取 `package.json` 的 `pnpm.overrides`，项目级 override 必须写在 `pnpm-workspace.yaml`；否则 Tauri 插件依赖仍可能把 transitive `@tauri-apps/api` 解析到 `2.11.x`。
 - **供应商物料生命周期由存在关系表达**：前端不再让用户维护供货物料有效期；新增后立即生效，删除后即失效。当前为避免数据库迁移和后端结构调整，保存时由前端补齐现有字段需要的 `validFrom` / `validTo` 默认值。
+- **供应商物料选择复用现有 Combobox**：项目已有 `components/ui/combobox.tsx`，支持按 label 自动过滤；供应商物料选项 label 统一拼接物料编码、名称和规格，满足用户按常见线索搜索物料的需求。针对供应商添加物料场景，仅通过可选样式参数允许下拉项长文本换行，其它页面不传参时维持原有截断展示。
+- **供应商供货物料限定为原材料**：供应商维护的是采购供货报价，半成品和成品通常由生产/销售链路管理，不应默认出现在供应商供货物料候选中。通用 `get_material_reference_options` 不全局收窄，只新增可选 `material_type` 筛选，供应商弹窗传 `raw`，避免影响销售单、自由出入库等复用点。
 - **BOM 明细布尔字段以后按 PostgreSQL 类型直接绑定**：当前 Rust 后端只启用 `sqlx` PostgreSQL feature，`bom_items.is_key_part` 在 PG 迁移中是 `BOOLEAN`，不再用 SQLite 式 `1/0` 兼容写法。复制 BOM 明细的 `INSERT ... SELECT` 不涉及 Rust 参数绑定，可保持不变。
 - **BOM 明细物料搜索采用“打开初始化 + 关键词搜索”分离模型**：打开弹窗只重置一次表单状态；搜索词变化只刷新候选物料，不再触发表单重置。搜索函数不读取闭包里的 `searchKeyword`，统一接收显式参数，避免 React state 异步更新造成旧关键词查询。
 - `src-tauri/src/commands/manual_stock_movement.rs` — `SaveManualMovementParams` 新增 `from_confirm`；保存流程据此跳过草稿日志；`confirm_*` 库存不足整单回滚时记 `save_draft_insufficient`
@@ -75,7 +81,7 @@
 ## 阻塞
 
 - 本次 Tauri JS/Rust 对齐修复无阻塞；`pnpm install`、`pnpm install --frozen-lockfile --offline`、`pnpm typecheck`、`pnpm exec tauri --version`、`git diff --check` 均已通过。`node -p "require('./node_modules/@tauri-apps/api/package.json').version + ' / ' + require('./node_modules/@tauri-apps/cli/package.json').version"` 返回 `2.10.1 / 2.10.1`；`rg` 确认 `pnpm-lock.yaml` 不再包含 Tauri API/CLI 2.11。`pnpm exec tauri info` 在输出 Environment 后超过 60 秒未返回，已手动中断，未作为通过项。
-- 本次供应商物料有效期交互调整无阻塞；`pnpm typecheck` 与 `git diff --check` 已通过。未修改数据库迁移或 Rust IPC 结构。
+- 本次供应商物料维护交互调整无阻塞；`pnpm typecheck`、`cargo check --manifest-path src-tauri/Cargo.toml` 与 `git diff --check` 已通过。未修改数据库迁移。
 - 本次 BOM 保存与搜索修复无阻塞；提交前 `just lint`、`node --experimental-strip-types --test tests/bom-command-args.test.mjs tests/bom-item-dialog-search.test.mjs`、`cargo test save_bom_binds_is_key_part_as_boolean_for_postgres --lib` 均已通过。
 
 ---

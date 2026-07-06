@@ -93,6 +93,7 @@
     "materialDialogDescription": "维护供应商报价、交货周期、最小起订量及首选标记",
     "materialName": "物料",
     "materialPlaceholder": "请选择物料",
+    "materialNoMatches": "没有匹配的物料",
     "quotePrice": "报价",
     "leadDays": "交货周期(天)",
     "minOrderQty": "最小起订量",

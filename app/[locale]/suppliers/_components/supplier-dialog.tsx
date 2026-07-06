@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Combobox } from '@/components/ui/combobox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -231,7 +232,7 @@ export function SupplierDialog({ open, onOpenChange, supplierId, onSaved }: Supp
     () =>
       materialOptions.map(option => ({
         value: option.id.toString(),
-        label: `${option.code} · ${option.name}`,
+        label: `${option.code} · ${option.name}${option.spec ? ` · ${option.spec}` : ''}`,
       })),
     [materialOptions],
   )
@@ -248,7 +249,7 @@ export function SupplierDialog({ open, onOpenChange, supplierId, onSaved }: Supp
 
     try {
       const [options, codeOrDetail] = await Promise.all([
-        getMaterialReferenceOptions(),
+        getMaterialReferenceOptions('raw'),
         supplierId === null ? generateSupplierCode() : getSupplierDetail(supplierId),
       ])
 
@@ -660,31 +661,23 @@ export function SupplierDialog({ open, onOpenChange, supplierId, onSaved }: Supp
       </Dialog>
 
       <Dialog open={materialDialogOpen} onOpenChange={setMaterialDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>{materialForm.id ? t('editMaterial') : t('addMaterial')}</DialogTitle>
             <DialogDescription>{t('materialDialogDescription')}</DialogDescription>
           </DialogHeader>
           <FieldGroup>
-            <div className="grid grid-cols-2 gap-4">
-              <Field>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field className="md:col-span-2">
                 <FieldLabel>{t('materialName')}</FieldLabel>
-                <Select
+                <Combobox
                   value={materialForm.materialId}
-                  onValueChange={value => value && setMaterialForm(prev => ({ ...prev, materialId: value }))}
+                  onValueChange={value => setMaterialForm(prev => ({ ...prev, materialId: value ?? '' }))}
                   items={materialItems}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('materialPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {materialItems.map(item => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder={t('materialPlaceholder')}
+                  emptyText={t('materialNoMatches')}
+                  itemLabelClassName="whitespace-normal break-words leading-relaxed"
+                />
               </Field>
               <Field>
                 <FieldLabel>{t('quotePrice')}</FieldLabel>
@@ -739,7 +732,7 @@ export function SupplierDialog({ open, onOpenChange, supplierId, onSaved }: Supp
                   <Switch checked={materialForm.isPreferred} onCheckedChange={value => setMaterialForm(prev => ({ ...prev, isPreferred: value }))} />
                 </div>
               </Field>
-              <Field className="col-span-2">
+              <Field className="md:col-span-2">
                 <FieldLabel>{t('remark')}</FieldLabel>
                 <Input value={materialForm.remark} onChange={event => setMaterialForm(prev => ({ ...prev, remark: event.target.value }))} />
               </Field>

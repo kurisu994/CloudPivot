@@ -93,6 +93,7 @@
     "materialDialogDescription": "Manage quote, lead time, MOQ, and preferred supplier flag",
     "materialName": "Material",
     "materialPlaceholder": "Select material",
+    "materialNoMatches": "No matching materials",
     "quotePrice": "Quote Price",
     "leadDays": "Lead Days",
     "minOrderQty": "MOQ",
