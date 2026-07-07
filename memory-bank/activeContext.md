@@ -2,11 +2,12 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。全部五个开发阶段已完成，174 个 IPC 命令、39 个路由页面、51 张数据库表均已交付。当前版本 **v0.2.9**（2026-06-22 发布），包含自由出入库操作日志可读性优化；当前正在 `[Unreleased]` 继续打磨侧边栏入口、BOM、应收应付、错误提示、依赖检查和供应商物料维护体验。2026-07-06 已修复 `tauri 2.10.3` 与 `@tauri-apps/api 2.11.1` 的 minor mismatch，将 JS 侧 Tauri 包与插件依赖收回到 2.10 同线；随后按用户要求移除供应商物料弹窗中的有效期输入，把物料选择改成可搜索控件，放宽添加物料弹窗以完整查看较长物料信息，并将供应商可选物料收窄为原材料。BOM 新建/编辑表单也已移除生效日期输入，保存时由前后端兜底写入本地当天日期；BOM 列表停用按钮改为危险色样式以提高识别度。采购单列表的已审核 / 部分入库行已接通采购入库执行页，点击「入库 / 继续入库」会携带采购单 ID 进入待入库明细流程；随后修复确认采购入库时 PostgreSQL `SUM(BIGINT)` 返回 `NUMERIC` 导致 Rust `i64` 解码失败的问题。采购入库菜单入口已从操作栏常驻采购单下拉改为「新建入库单」按钮 + 弹窗内搜索选择采购单；选中采购单后展示每个物料的订单数量、已入库数量和剩余数量。采购退货菜单入口也已改为「新建退货单」按钮 + 弹窗内先选择采购单，再选择该采购单下的原入库单并展示可退明细，再进入退货执行页按退货单扣减库存；可退明细 SQL 已修复 `ioi.spec` 不存在的问题。采购退货列表详情按钮已接通只读详情弹窗，后端新增退货单头 + 明细查询 IPC，可查看来源采购单、原入库单、供应商、仓库、确认信息、退货金额和退货明细。2026-07-06 本轮又按版本范围从侧边栏隐藏库存调拨和定制单管理入口，并修复生产工单详情页仓库列表 IPC 缺少 `includeDisabled` 参数、「关联BOM」下拉物料名称显示为 `undefined`、保存生产工单时 `plannedQty` 参数缺失，以及 BOM 明细展算 SQL 使用旧字段导致物料需求写入失败的问题。2026-07-07 已将首页 Dashboard 的待补货 KPI 改为只读统计 IPC，不再在应用启动时调用会写入 `replenishment_rules` / `replenishment_logs` 的补货建议刷新链路，降低多人同时打开应用时的数据库写入压力；随后将销售单明细添加物料改为弹窗搜索 + 待加入清单模式，并新增销售专用物料选项 IPC，返回真实基础单位、销售价和按仓库聚合的可用库存；同日又按用户纠正，将目标从采购入库切回采购单，把采购单明细添加也改为弹窗搜索 + 待加入清单模式，候选范围保持为当前供应商的供货物料。
+项目处于 **功能完备、持续打磨** 阶段。全部五个开发阶段已完成，174 个 IPC 命令、39 个路由页面、51 张数据库表均已交付。当前版本 **v0.2.9**（2026-06-22 发布），包含自由出入库操作日志可读性优化；当前正在 `[Unreleased]` 继续打磨侧边栏入口、BOM、应收应付、错误提示、依赖检查和供应商物料维护体验。2026-07-06 已修复 `tauri 2.10.3` 与 `@tauri-apps/api 2.11.1` 的 minor mismatch，将 JS 侧 Tauri 包与插件依赖收回到 2.10 同线；随后按用户要求移除供应商物料弹窗中的有效期输入，把物料选择改成可搜索控件，放宽添加物料弹窗以完整查看较长物料信息，并将供应商可选物料收窄为原材料。BOM 新建/编辑表单也已移除生效日期输入，保存时由前后端兜底写入本地当天日期；BOM 列表停用按钮改为危险色样式以提高识别度。采购单列表的已审核 / 部分入库行已接通采购入库执行页，点击「入库 / 继续入库」会携带采购单 ID 进入待入库明细流程；随后修复确认采购入库时 PostgreSQL `SUM(BIGINT)` 返回 `NUMERIC` 导致 Rust `i64` 解码失败的问题。采购入库菜单入口已从操作栏常驻采购单下拉改为「新建入库单」按钮 + 弹窗内搜索选择采购单；选中采购单后展示每个物料的订单数量、已入库数量和剩余数量。采购退货菜单入口也已改为「新建退货单」按钮 + 弹窗内先选择采购单，再选择该采购单下的原入库单并展示可退明细，再进入退货执行页按退货单扣减库存；可退明细 SQL 已修复 `ioi.spec` 不存在的问题。采购退货列表详情按钮已接通只读详情弹窗，后端新增退货单头 + 明细查询 IPC，可查看来源采购单、原入库单、供应商、仓库、确认信息、退货金额和退货明细。2026-07-06 本轮又按版本范围从侧边栏隐藏库存调拨和定制单管理入口，并修复生产工单详情页仓库列表 IPC 缺少 `includeDisabled` 参数、「关联BOM」下拉物料名称显示为 `undefined`、保存生产工单时 `plannedQty` 参数缺失，以及 BOM 明细展算 SQL 使用旧字段导致物料需求写入失败的问题。2026-07-07 已将首页 Dashboard 的待补货 KPI 改为只读统计 IPC，不再在应用启动时调用会写入 `replenishment_rules` / `replenishment_logs` 的补货建议刷新链路，降低多人同时打开应用时的数据库写入压力；随后将销售单明细添加物料改为弹窗搜索 + 待加入清单模式，并新增销售专用物料选项 IPC，返回真实基础单位、销售价和按仓库聚合的可用库存；同日又按用户纠正，将目标从采购入库切回采购单，把采购单明细添加也改为弹窗搜索 + 待加入清单模式，候选范围保持为当前供应商的供货物料。随后按用户要求暂时隐藏生产工单和财务管理侧边栏菜单，保留路由、权限和后端能力，待后续测试通过后再开放。
 
 ## 最近完成的工作
 
 - **版本入口收敛**：按用户要求将 `config/nav.ts` 中「库存调拨」和「定制单管理」用块注释隐藏，并同步注释对应未使用的 `ClipboardCheck` / `Palette` 图标 import；`CHANGELOG.md` 的 `[Unreleased]` 入口开放说明已改为这两个模块本版本暂不开放。
+- **生产工单与财务管理菜单暂时隐藏**：按用户要求将 `config/nav.ts` 中「生产工单」和「财务管理」侧边栏入口用块注释隐藏，并同步注释仅供这些入口使用的 `Hammer` / `Wallet` / `CreditCard` 图标 import；路由页面、权限模块、i18n 文案和后端 IPC 保持不变，等待后续测试通过后再开放。`CHANGELOG.md` 的 `[Unreleased]` 已补充当前入口收敛记录。
 - **Dashboard 补货统计改为只读**：新增 `get_replenishment_dashboard_summary` IPC，首页 `MetricsCards` 不再调用 `ensureReplenishmentRules()` / `getReplenishmentSuggestions({})`。统计命令按现有安全库存、日均消耗和紧急度规则计算 `total` / `urgent`，但不补齐策略、不删除或插入 `replenishment_logs`；未配置策略的启用物料按默认补货参数纳入统计，显式禁用策略的物料不计入。
 - **销售单明细添加物料弹窗化**：新建/编辑销售单时，销售明细不再用普通 `Select` 选中即追加。新增 `SalesMaterialPickerDialog`，左侧按编码/名称/规格/单位过滤物料并展示规格、单位、当前出库仓可用库存和销售价，右侧维护待加入清单，可在确认前填写销售数量、单价、行折扣和备注。确认后批量写入销售明细，后续仍可在明细表内微调。
 - **采购单明细添加物料弹窗化**：用户纠正目标为采购单而非采购入库后，采购单编辑页不再用顶部快速添加 `Select` 选中即追加。新增 `PurchaseMaterialPickerDialog`，左侧搜索当前供应商的供货物料并展示规格、单位、采购价和交期，右侧维护待加入清单，可在确认前填写采购数量、单价和备注。确认后批量写入采购明细，保存参数和后端采购单事务保持不变。
@@ -47,7 +48,7 @@
 
 ## 活跃文件
 
-- `config/nav.ts` — 本版本隐藏库存调拨和定制单管理侧边栏入口，保留注释以便后续恢复
+- `config/nav.ts` — 本版本隐藏库存调拨、定制单管理、生产工单和财务管理侧边栏入口，保留注释以便后续恢复
 - `src-tauri/src/commands/replenishment.rs` — 新增只读 Dashboard 补货统计 IPC，复用补货数量与紧急度计算但不写补货日志
 - `src-tauri/src/lib.rs` — 注册 `get_replenishment_dashboard_summary`
 - `lib/tauri/replenishment.ts` — 新增 `ReplenishmentDashboardSummary` 类型与 `getReplenishmentDashboardSummary` wrapper
@@ -70,7 +71,7 @@
 - `tests/production-order-bom-options.test.mjs` — 覆盖生产工单关联 BOM 选项使用 `materialName` 字段
 - `tests/production-order-command-args.test.mjs` — 覆盖生产工单保存 payload 使用 `plannedQty` 等 camelCase 字段
 - `tests/material-command-args.test.mjs` — 同步物料状态切换参数测试为当前 Tauri camelCase 约定
-- `CHANGELOG.md` — `[Unreleased]` 记录本版本暂不开放入口与生产工单仓库加载修复
+- `CHANGELOG.md` — `[Unreleased]` 记录本版本暂不开放入口、生产工单仓库加载修复和生产/财务菜单收敛
 - `memory-bank/activeContext.md` — 记录本轮版本入口与 IPC 参数修复状态
 - `package.json` — 固定所有 `@tauri-apps/*` JS 包精确版本，避免 caret 漂移到 2.11.x
 - `pnpm-workspace.yaml` — 在 pnpm 11 有效配置位置增加 `overrides`，强制 transitive `@tauri-apps/api` 为 `2.10.1`
@@ -107,6 +108,7 @@
 ## 已做出的决策
 
 - **库存调拨和定制单管理本轮只隐藏侧边栏入口**：用户要求“先注释掉，这版本不开放”，当前按既有阶段性开放方式处理 `config/nav.ts`，不删除路由页面、i18n 文案或后端 IPC 注册，便于后续恢复；如果后续要求硬性禁止直达 URL，需要另做路由/权限层拦截。
+- **生产工单和财务管理本轮也只隐藏侧边栏入口**：用户要求“先注释掉，后续测试后再开放”，当前同样只处理 `config/nav.ts` 导航配置和未使用图标 import，不删除 `/production-orders`、`/finance/*` 路由、权限种子、i18n 文案或 Rust IPC；如果后续要求禁止直达 URL，需要另补页面级或权限级拦截。
 - **首页补货 KPI 必须走只读统计而不是建议刷新**：`get_replenishment_suggestions` 的职责包含生成可操作建议并落 `replenishment_logs`，适合补货页面；Dashboard 只需要数量和紧急数量，不能在应用启动时为每个用户重复清理/插入 pending 建议，也不应为了统计而调用 `ensure_replenishment_rules` 写默认策略。只读统计命令对缺失策略使用默认参数计算，保持看板可用且避免启动写库。
 - **销售单选料使用销售专用接口而不是通用物料引用接口**：通用 `get_material_reference_options` 缺少 `base_unit_id`、`sale_price` 和仓库可用库存，导致旧销售单添加明细只能临时把 `unitId` 写成 `materialId`。销售单改用 `get_sales_material_options(warehouseId)`，明确按当前出库仓展示库存并带出销售价，保持供应商/自由出入库等其它物料引用场景不受影响。
 - **采购单选料继续限定当前供应商供货物料**：本轮用户纠正目标是采购单明细添加交互，不是采购入库。采购单与销售单不同，候选应来自 `get_supplier_materials_for_purchase(supplierId)`，保持供应商报价、采购价和交期约束；本轮只把旧的选中即追加下拉改成弹窗搜索 + 待加入清单，不新增后端 IPC，也不放开为任意物料选择。
@@ -147,7 +149,7 @@
 
 ## 下一步
 
-- 后续重新开放库存调拨或定制单管理时，恢复 `config/nav.ts` 中对应块注释，并同步恢复顶部 `ClipboardCheck` / `Palette` import；如版本要求禁止直达 URL，再补页面级或权限级拦截。
+- 后续重新开放库存调拨、定制单管理、生产工单或财务管理时，恢复 `config/nav.ts` 中对应块注释，并同步恢复顶部 `ClipboardCheck` / `Palette` / `Hammer` / `Wallet` / `CreditCard` import；如版本要求禁止直达 URL，再补页面级或权限级拦截。
 - 后续如需在补货建议页面进一步减少刷新写入，可考虑把 `get_replenishment_suggestions` 拆成“只读计算”和“显式生成/刷新建议”两个动作，避免筛选、搜索时反复重建 pending 日志。
 - 后续可基于真实销售录单反馈继续增强销售物料弹窗，例如按物料类型筛选、显示图片/客户历史价、支持键盘连续录入或库存不足提示升级。
 - 后续可基于真实采购录单反馈继续增强采购物料弹窗，例如展示供应商历史报价、最近采购价、最小起订量，或补充键盘连续录入能力。
@@ -159,6 +161,7 @@
 
 ## 阻塞
 
+- 本次生产工单与财务管理菜单暂时隐藏无阻塞；`pnpm exec biome check config/nav.ts`、`pnpm typecheck` 与 `git diff --check` 均已通过。未修改路由、权限、数据库迁移或后端 IPC。
 - 本次 Dashboard 补货统计只读化无阻塞；`just fmt`、`node --experimental-strip-types --test tests/replenishment-dashboard-summary.test.mjs`、`pnpm typecheck`、`cargo check --manifest-path src-tauri/Cargo.toml`、`pnpm exec biome check 'app/[locale]/_components/dashboard/metrics-cards.tsx' lib/tauri/replenishment.ts`、`git diff --check` 与 `just lint` 均已通过。
 - 本次销售单明细添加物料弹窗化无阻塞；`node --experimental-strip-types --test tests/sales-material-picker.test.mjs`、`pnpm typecheck`、`cargo check --manifest-path src-tauri/Cargo.toml`、`pnpm exec biome check 'app/[locale]/sales-orders/_components/sales-order-edit-page.tsx' 'app/[locale]/sales-orders/_components/sales-material-picker-dialog.tsx' lib/tauri/sales.ts messages/zh/sales.json messages/en/sales.json messages/vi/sales.json tests/sales-material-picker.test.mjs`、`git diff --check` 与 `just lint` 均已通过。
 - 本次采购单明细添加物料弹窗化无阻塞；`node --experimental-strip-types --test tests/purchase-material-picker.test.mjs tests/sales-material-picker.test.mjs`、`pnpm typecheck`、`cargo check --manifest-path src-tauri/Cargo.toml`、`pnpm exec biome check 'app/[locale]/purchase-orders/_components/purchase-order-edit-page.tsx' 'app/[locale]/purchase-orders/_components/purchase-material-picker-dialog.tsx' messages/zh/purchase.json messages/en/purchase.json messages/vi/purchase.json tests/purchase-material-picker.test.mjs CHANGELOG.md`、`git diff --check` 与 `just lint` 均已通过。
