@@ -276,6 +276,7 @@ pub fn run() {
             commands::purchase::save_and_confirm_purchase_return,
             // 销售管理
             commands::sales::get_sales_orders,
+            commands::sales::get_sales_material_options,
             commands::sales::get_sales_order_detail,
             commands::sales::save_sales_order,
             commands::sales::approve_sales_order,

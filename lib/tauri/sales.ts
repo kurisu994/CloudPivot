@@ -2,6 +2,32 @@ import type { PaginatedResponse } from './core'
 import { invoke, isTauriEnv } from './core'
 
 // ================================================================
+// 销售单物料选择
+// ================================================================
+
+/** 销售单添加物料选项 */
+export interface SalesMaterialOption {
+  materialId: number
+  materialCode: string
+  materialName: string
+  materialType: 'raw' | 'semi' | 'finished'
+  spec: string | null
+  unitId: number
+  unitName: string | null
+  conversionRate: number
+  salePrice: number
+  availableQty: number
+}
+
+/** 获取销售单可选物料 */
+export async function getSalesMaterialOptions(warehouseId?: number | null): Promise<SalesMaterialOption[]> {
+  if (isTauriEnv()) {
+    return invoke<SalesMaterialOption[]>('get_sales_material_options', { warehouseId: warehouseId ?? null })
+  }
+  return []
+}
+
+// ================================================================
 // 销售出库
 // ================================================================
 

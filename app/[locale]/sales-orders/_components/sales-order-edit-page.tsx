@@ -14,8 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
-import type { CustomerListItem, MaterialReferenceOption, WarehouseItem } from '@/lib/tauri'
-import { getCustomers, getMaterialReferenceOptions, getWarehouses, invoke } from '@/lib/tauri'
+import type { CustomerListItem, WarehouseItem } from '@/lib/tauri'
+import { getCustomers, getWarehouses, invoke } from '@/lib/tauri'
+import { SalesMaterialPickerDialog, type SalesMaterialPickerDraft } from './sales-material-picker-dialog'
 
 // ================================================================
 // 类型定义
@@ -125,11 +126,11 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
 
   // 明细行
   const [items, setItems] = useState<ItemRow[]>([])
+  const [materialPickerOpen, setMaterialPickerOpen] = useState(false)
 
   // 下拉选项
   const [customers, setCustomers] = useState<CustomerListItem[]>([])
   const [warehouses, setWarehouses] = useState<WarehouseItem[]>([])
-  const [materialOptions, setMaterialOptions] = useState<MaterialReferenceOption[]>([])
 
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -162,17 +163,12 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
   // 数据加载
   // ================================================================
 
-  /** 加载客户、仓库和物料选项 */
+  /** 加载客户和仓库选项 */
   const loadOptions = useCallback(async () => {
     try {
-      const [customerResult, warehouseResult, materials] = await Promise.all([
-        getCustomers({ page: 1, pageSize: 999 }),
-        getWarehouses(false),
-        getMaterialReferenceOptions(),
-      ])
+      const [customerResult, warehouseResult] = await Promise.all([getCustomers({ page: 1, pageSize: 999 }), getWarehouses(false)])
       setCustomers(customerResult.items)
       setWarehouses(warehouseResult)
-      setMaterialOptions(materials)
     } catch (error) {
       console.error('加载选项失败', error)
     }
@@ -252,34 +248,18 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
   // 明细行操作
   // ================================================================
 
-  /** 从物料选择器添加一行 */
-  const handleAddMaterial = (materialId: string) => {
-    if (!materialId) return
-    const mat = materialOptions.find(m => String(m.id) === materialId)
-    if (!mat) return
-
-    // 检查是否已添加
-    if (items.some(item => item.materialId === mat.id)) {
-      toast.error(tc('itemExists', { name: mat.name }))
-      return
-    }
-
-    const newItem: ItemRow = {
-      key: nextKey(),
-      materialId: mat.id,
-      materialCode: mat.code,
-      materialName: mat.name,
-      spec: mat.spec ?? '',
-      unitId: mat.id, // 物料参考选项中 unitName 对应的 unitId 需要后端提供，暂用 materialId
-      unitName: mat.unitName ?? '',
-      conversionRate: 1,
-      quantity: '1',
-      unitPrice: '0',
-      lineDiscount: '0',
-      amount: 0,
-      remark: '',
-    }
-    setItems(prev => [...prev, newItem])
+  /** 从物料弹窗批量添加明细 */
+  const handleAddMaterials = (drafts: SalesMaterialPickerDraft[]) => {
+    setItems(prev => {
+      const existingIds = new Set(prev.map(item => item.materialId))
+      const nextItems: ItemRow[] = drafts
+        .filter(item => !existingIds.has(item.materialId))
+        .map(item => ({
+          key: nextKey(),
+          ...item,
+        }))
+      return [...prev, ...nextItems]
+    })
   }
 
   /** 更新明细行字段 */
@@ -376,8 +356,6 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
   const warehouseItems = useMemo(() => warehouses.map(w => ({ value: String(w.id), label: w.name })), [warehouses])
 
   const currencyItems = useMemo(() => CURRENCY_OPTIONS.map(c => ({ value: c.value, label: c.label })), [])
-
-  const materialSelectItems = useMemo(() => materialOptions.map(m => ({ value: String(m.id), label: `${m.name} [${m.code}]` })), [materialOptions])
 
   // ================================================================
   // 渲染
@@ -523,28 +501,20 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
       <div className="border-border bg-card rounded-xl border shadow-sm">
         <div className="flex items-center justify-between border-b px-6 py-4">
           <h3 className="text-foreground font-semibold">{t('itemsTitle')}</h3>
-          {/* 物料选择器 */}
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-sm">{t('addMaterial')}</span>
-            <Select
-              value=""
-              onValueChange={v => {
-                if (v) handleAddMaterial(v)
-              }}
-              items={materialSelectItems}
-            >
-              <SelectTrigger className="w-[17.5rem]">
-                <SelectValue placeholder={t('addMaterial')} />
-              </SelectTrigger>
-              <SelectContent>
-                {materialSelectItems.map(m => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (!warehouseId) {
+                toast.error(t('pleaseSelectWarehouseFirst'))
+                return
+              }
+              setMaterialPickerOpen(true)
+            }}
+          >
+            <Plus className="size-4" />
+            {t('addMaterial')}
+          </Button>
         </div>
 
         <div className="overflow-x-auto">
@@ -556,7 +526,7 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
                 <TableHead className="w-[9.375rem]">{t('materialName')}</TableHead>
                 <TableHead className="w-[5.625rem]">{t('spec')}</TableHead>
                 <TableHead className="w-[3.75rem]">{t('unit')}</TableHead>
-                <TableHead className="w-[5.625rem]">{t('thisQuantity')}</TableHead>
+                <TableHead className="w-[5.625rem]">{t('salesQuantity')}</TableHead>
                 <TableHead className="w-[6.875rem]">{t('unitPrice')}</TableHead>
                 <TableHead className="w-[5rem]">{t('lineDiscount')}</TableHead>
                 <TableHead className="w-[7.5rem] text-right">{t('amount')}</TableHead>
@@ -627,6 +597,15 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
           </Table>
         </div>
       </div>
+
+      <SalesMaterialPickerDialog
+        open={materialPickerOpen}
+        onOpenChange={setMaterialPickerOpen}
+        warehouseId={warehouseId ? Number(warehouseId) : null}
+        currency={currency as 'VND' | 'CNY' | 'USD'}
+        existingMaterialIds={items.map(item => item.materialId)}
+        onConfirm={handleAddMaterials}
+      />
 
       {/* 金额汇总 */}
       <div className="border-border bg-card rounded-xl border p-6 shadow-sm">

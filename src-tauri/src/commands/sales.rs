@@ -153,6 +153,22 @@ pub struct SalesOrderFilter {
     pub page_size: i32,
 }
 
+/// 销售单添加物料选项
+#[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct SalesMaterialOption {
+    pub material_id: i64,
+    pub material_code: String,
+    pub material_name: String,
+    pub material_type: String,
+    pub spec: Option<String>,
+    pub unit_id: i64,
+    pub unit_name: Option<String>,
+    pub conversion_rate: f64,
+    pub sale_price: i64,
+    pub available_qty: f64,
+}
+
 // ================================================================
 // 校验与工具函数
 // ================================================================
@@ -339,6 +355,54 @@ pub async fn get_sales_orders(
         "销售单",
     )
     .await
+}
+
+/// 获取销售单可选物料
+#[tauri::command]
+pub async fn get_sales_material_options(
+    db: State<'_, DbState>,
+    warehouse_id: Option<i64>,
+) -> Result<Vec<SalesMaterialOption>, AppError> {
+    if matches!(warehouse_id, Some(id) if id <= 0) {
+        return Err(AppError::Business("出库仓库无效".to_string()));
+    }
+
+    sqlx::query_as::<_, SalesMaterialOption>(
+        r#"
+        SELECT
+            m.id AS material_id,
+            m.code AS material_code,
+            m.name AS material_name,
+            m.material_type,
+            m.spec,
+            m.base_unit_id AS unit_id,
+            u.name AS unit_name,
+            COALESCE(m.conversion_rate, 1.0) AS conversion_rate,
+            COALESCE(m.sale_price, 0) AS sale_price,
+            COALESCE(inv.available_qty, 0.0) AS available_qty
+        FROM materials m
+        LEFT JOIN units u ON u.id = m.base_unit_id
+        LEFT JOIN (
+            SELECT material_id, SUM(available_qty) AS available_qty
+            FROM inventory
+            WHERE ($1::BIGINT IS NULL OR warehouse_id = $1)
+            GROUP BY material_id
+        ) inv ON inv.material_id = m.id
+        WHERE m.is_enabled = TRUE
+        ORDER BY
+            CASE m.material_type
+                WHEN 'finished' THEN 1
+                WHEN 'semi' THEN 2
+                ELSE 3
+            END,
+            m.code ASC,
+            m.id ASC
+        "#,
+    )
+    .bind(warehouse_id)
+    .fetch_all(&db.pool)
+    .await
+    .map_err(|e| AppError::Database(format!("获取销售物料选项失败: {}", e)))
 }
 
 /// 销售单头数据库行

@@ -16,6 +16,7 @@ import { formatAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
 import type { PurchaseOrderDetail, SavePurchaseOrderParams, SupplierListItem, SupplierMaterialForPurchase, WarehouseItem } from '@/lib/tauri'
 import { getPurchaseOrderDetail, getSupplierMaterialsForPurchase, getSuppliers, getWarehouses, savePurchaseOrder } from '@/lib/tauri'
+import { PurchaseMaterialPickerDialog, type PurchaseMaterialPickerDraft } from './purchase-material-picker-dialog'
 
 // ================================================================
 // 类型定义
@@ -82,6 +83,7 @@ export function PurchaseOrderEditPage({ orderId, onBack }: PurchaseOrderEditPage
 
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [materialPickerOpen, setMaterialPickerOpen] = useState(false)
 
   // 持久化计数器，避免渲染时重置导致 key 重复
   const keyCounterRef = useRef(0)
@@ -179,7 +181,10 @@ export function PurchaseOrderEditPage({ orderId, onBack }: PurchaseOrderEditPage
 
   // 供应商变更时加载物料报价并带出币种
   useEffect(() => {
-    if (!supplierId) return
+    if (!supplierId) {
+      setSupplierMaterials([])
+      return
+    }
     const sid = Number(supplierId)
     if (sid > 0) {
       void loadSupplierMaterials(sid)
@@ -199,28 +204,29 @@ export function PurchaseOrderEditPage({ orderId, onBack }: PurchaseOrderEditPage
   // 明细行操作
   // ================================================================
 
-  /** 从供应商物料报价添加一行 */
-  const handleAddFromSupplier = (material: SupplierMaterialForPurchase) => {
-    // 检查是否已添加
-    if (items.some(item => item.materialId === material.materialId)) {
-      toast.error(t('materialAlreadyAdded', { name: material.materialName }))
-      return
+  /** 批量添加供应商物料报价 */
+  const handleAddMaterials = (materials: PurchaseMaterialPickerDraft[]) => {
+    const existingIds = new Set(items.map(item => item.materialId))
+    const newItems: ItemRow[] = materials
+      .filter(material => !existingIds.has(material.materialId))
+      .map(material => ({
+        key: nextKey(),
+        materialId: material.materialId,
+        materialCode: material.materialCode,
+        materialName: material.materialName,
+        spec: material.spec,
+        unitId: material.unitId,
+        unitName: material.unitName,
+        conversionRate: material.conversionRate,
+        quantity: material.quantity,
+        unitPrice: material.unitPrice,
+        amount: material.amount,
+        remark: material.remark,
+      }))
+
+    if (newItems.length > 0) {
+      setItems(prev => [...prev, ...newItems])
     }
-    const newItem: ItemRow = {
-      key: nextKey(),
-      materialId: material.materialId,
-      materialCode: material.materialCode,
-      materialName: material.materialName,
-      spec: material.spec ?? '',
-      unitId: material.unitId,
-      unitName: material.unitName ?? '',
-      conversionRate: material.conversionRate,
-      quantity: '1',
-      unitPrice: String(material.unitPrice),
-      amount: material.unitPrice, // 1 × unitPrice
-      remark: '',
-    }
-    setItems(prev => [...prev, newItem])
   }
 
   /** 更新明细行字段 */
@@ -314,6 +320,7 @@ export function PurchaseOrderEditPage({ orderId, onBack }: PurchaseOrderEditPage
   const warehouseItems = useMemo(() => warehouses.map(w => ({ value: String(w.id), label: w.name })), [warehouses])
 
   const currencyItems = useMemo(() => CURRENCY_OPTIONS.map(c => ({ value: c.value, label: c.label })), [])
+  const existingMaterialIds = useMemo(() => items.map(item => item.materialId), [items])
 
   // ================================================================
   // 渲染
@@ -453,35 +460,10 @@ export function PurchaseOrderEditPage({ orderId, onBack }: PurchaseOrderEditPage
       <div className="border-border bg-card rounded-xl border shadow-sm">
         <div className="flex items-center justify-between border-b px-6 py-4">
           <h3 className="text-foreground font-semibold">{t('itemsTitle')}</h3>
-          {/* 从供应商物料快速添加 */}
-          {supplierMaterials.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-sm">{t('quickAdd')}</span>
-              <Select
-                value=""
-                onValueChange={v => {
-                  if (!v) return
-                  const mat = supplierMaterials.find(m => String(m.materialId) === v)
-                  if (mat) handleAddFromSupplier(mat)
-                }}
-                items={supplierMaterials.map(m => ({
-                  value: String(m.materialId),
-                  label: `${m.materialName} [${m.materialCode}]`,
-                }))}
-              >
-                <SelectTrigger className="w-[17.5rem]">
-                  <SelectValue placeholder={t('selectSupplierMaterial')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {supplierMaterials.map(m => (
-                    <SelectItem key={m.materialId} value={String(m.materialId)}>
-                      {m.materialName} [{m.materialCode}]
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <Button variant="outline" size="sm" onClick={() => setMaterialPickerOpen(true)} disabled={!supplierId}>
+            <Plus data-icon="inline-start" />
+            {t('addPurchaseMaterial')}
+          </Button>
         </div>
 
         <div className="overflow-x-auto">
@@ -552,6 +534,16 @@ export function PurchaseOrderEditPage({ orderId, onBack }: PurchaseOrderEditPage
           </Table>
         </div>
       </div>
+
+      <PurchaseMaterialPickerDialog
+        open={materialPickerOpen}
+        supplierSelected={!!supplierId}
+        materials={supplierMaterials}
+        currency={currency as 'VND' | 'CNY' | 'USD'}
+        existingMaterialIds={existingMaterialIds}
+        onOpenChange={setMaterialPickerOpen}
+        onConfirm={handleAddMaterials}
+      />
 
       {/* 金额汇总 */}
       <div className="border-border bg-card rounded-xl border p-6 shadow-sm">
