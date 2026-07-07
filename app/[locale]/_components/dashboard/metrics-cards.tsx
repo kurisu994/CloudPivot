@@ -6,12 +6,11 @@ import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import {
-  ensureReplenishmentRules,
   getInventoryList,
   getPayables,
   getPurchaseReportSummary,
   getReceivables,
-  getReplenishmentSuggestions,
+  getReplenishmentDashboardSummary,
   getSalesReportSummary,
 } from '@/lib/tauri'
 import { addDays, formatDashboardUsd, formatLocalDate } from './format'
@@ -100,10 +99,9 @@ export function MetricsCards() {
   useEffect(() => {
     void (async () => {
       try {
-        await ensureReplenishmentRules()
-        const suggestions = await getReplenishmentSuggestions({})
-        setReplenishmentCount(suggestions.length)
-        setUrgentDelta(suggestions.filter(s => s.urgency === 'urgent').length)
+        const summary = await getReplenishmentDashboardSummary()
+        setReplenishmentCount(summary.total)
+        setUrgentDelta(summary.urgent)
       } catch (e) {
         console.error('[Dashboard] 补货建议查询失败:', e)
         setError(true)

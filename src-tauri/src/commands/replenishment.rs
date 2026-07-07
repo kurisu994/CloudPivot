@@ -45,6 +45,14 @@ pub struct ReplenishmentSuggestion {
     pub log_id: Option<i64>,
 }
 
+/// Dashboard 补货统计（只读，不写入补货日志）
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReplenishmentDashboardSummary {
+    pub total: i64,
+    pub urgent: i64,
+}
+
 /// 策略配置项（前端展示用）
 #[derive(Debug, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -135,6 +143,19 @@ struct MaterialInventoryRow {
     pref_supplier_name: Option<String>,
     pref_supply_price: Option<i64>,
     pref_supply_currency: Option<String>,
+}
+
+/// Dashboard 补货统计行（内部查询用）
+#[derive(Debug, sqlx::FromRow)]
+struct ReplenishmentDashboardRow {
+    material_id: i64,
+    safety_stock: f64,
+    physical_qty: f64,
+    reserved_qty: f64,
+    analysis_days: Option<i32>,
+    lead_days: Option<i32>,
+    safety_days: Option<i32>,
+    batch_multiple: Option<f64>,
 }
 
 // ================================================================
@@ -239,6 +260,161 @@ pub async fn ensure_replenishment_rules(db: State<'_, DbState>) -> Result<i64, A
     .map_err(|e| AppError::Database(format!("创建默认补货规则失败: {}", e)))?;
 
     Ok(result.rows_affected() as i64)
+}
+
+/// 获取 Dashboard 补货统计（只读）
+///
+/// 用于首页 KPI 卡片。该命令不补齐策略、不写入 replenishment_logs，
+/// 避免多用户打开应用时产生大量无意义写入。
+#[tauri::command]
+pub async fn get_replenishment_dashboard_summary(
+    db: State<'_, DbState>,
+) -> Result<ReplenishmentDashboardSummary, AppError> {
+    log::info!("补货查询: get_replenishment_dashboard_summary");
+    let (default_analysis, default_lead, default_safety) = get_default_params(&db.pool).await;
+    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+
+    // 未配置策略的启用物料按默认参数计算；显式禁用策略的物料不计入统计。
+    let rows: Vec<ReplenishmentDashboardRow> = sqlx::query_as(
+        r#"
+        SELECT
+            m.id AS material_id,
+            m.safety_stock,
+            COALESCE(inv.physical_qty, 0.0) AS physical_qty,
+            COALESCE(inv.reserved_qty, 0.0) AS reserved_qty,
+            rr.analysis_days,
+            rr.lead_days,
+            rr.safety_days,
+            rr.batch_multiple
+        FROM materials m
+        LEFT JOIN replenishment_rules rr ON rr.material_id = m.id
+        LEFT JOIN (
+            SELECT material_id,
+                   SUM(quantity) AS physical_qty,
+                   SUM(reserved_qty) AS reserved_qty
+            FROM inventory
+            GROUP BY material_id
+        ) inv ON inv.material_id = m.id
+        WHERE m.is_enabled = TRUE
+          AND (rr.id IS NULL OR rr.is_enabled = TRUE)
+          AND m.id NOT IN (
+              SELECT material_id FROM replenishment_logs
+              WHERE suggestion_date = $1
+                AND status IN ('ignored', 'ordered')
+          )
+        "#,
+    )
+    .bind(&today)
+    .fetch_all(&db.pool)
+    .await
+    .map_err(|e| AppError::Database(format!("查询 Dashboard 补货统计数据失败: {}", e)))?;
+
+    if rows.is_empty() {
+        return Ok(ReplenishmentDashboardSummary {
+            total: 0,
+            urgent: 0,
+        });
+    }
+
+    let max_analysis_days = rows
+        .iter()
+        .map(|r| r.analysis_days.unwrap_or(default_analysis))
+        .max()
+        .unwrap_or(default_analysis);
+
+    let consumption_rows: Vec<(i64, f64)> = sqlx::query_as(
+        r#"
+        SELECT material_id, SUM(ABS(quantity)) AS total_out
+        FROM inventory_transactions
+        WHERE transaction_type IN ('sales_out', 'production_out')
+          AND created_at >= NOW() + ($1 || ' days')::INTERVAL
+        GROUP BY material_id
+        "#,
+    )
+    .bind(format!("-{}", max_analysis_days))
+    .fetch_all(&db.pool)
+    .await
+    .map_err(|e| AppError::Database(format!("查询 Dashboard 出库流水失败: {}", e)))?;
+
+    let mut consumption_map: std::collections::HashMap<i64, f64> = std::collections::HashMap::new();
+    for (mid, total) in consumption_rows {
+        consumption_map.insert(mid, total);
+    }
+
+    let mut summary = ReplenishmentDashboardSummary {
+        total: 0,
+        urgent: 0,
+    };
+
+    for row in &rows {
+        let analysis_days = row.analysis_days.unwrap_or(default_analysis);
+        let lead_days = row.lead_days.unwrap_or(default_lead);
+        let safety_days = row.safety_days.unwrap_or(default_safety);
+        let batch_multiple = row.batch_multiple.unwrap_or(1.0);
+        let available_qty = row.physical_qty - row.reserved_qty;
+        let total_out = consumption_map
+            .get(&row.material_id)
+            .copied()
+            .unwrap_or(0.0);
+
+        let daily_consumption = if analysis_days == max_analysis_days {
+            total_out / analysis_days as f64
+        } else {
+            let precise: Option<(f64,)> = sqlx::query_as(
+                r#"
+                SELECT COALESCE(SUM(ABS(quantity)), 0.0)
+                FROM inventory_transactions
+                WHERE material_id = $1
+                  AND transaction_type IN ('sales_out', 'production_out')
+                  AND created_at >= NOW() + ($2 || ' days')::INTERVAL
+                "#,
+            )
+            .bind(row.material_id)
+            .bind(format!("-{}", analysis_days))
+            .fetch_optional(&db.pool)
+            .await
+            .map_err(|e| AppError::Database(format!("查询 Dashboard 物料出库流水失败: {}", e)))?;
+
+            let precise_total = precise.map(|(v,)| v).unwrap_or(0.0);
+            precise_total / analysis_days as f64
+        };
+
+        let days_until_stockout = if daily_consumption > 0.0 {
+            available_qty / daily_consumption
+        } else {
+            999.0
+        };
+        let suggested_qty = calculate_suggested_qty(
+            available_qty,
+            row.safety_stock,
+            daily_consumption,
+            lead_days,
+            safety_days,
+            batch_multiple,
+        );
+
+        if suggested_qty <= 0.0 && available_qty >= row.safety_stock {
+            continue;
+        }
+
+        summary.total += 1;
+        if determine_urgency(
+            days_until_stockout,
+            lead_days,
+            available_qty,
+            row.safety_stock,
+        ) == "urgent"
+        {
+            summary.urgent += 1;
+        }
+    }
+
+    log::info!(
+        "get_replenishment_dashboard_summary 完成, 待补货={}, 紧急={}",
+        summary.total,
+        summary.urgent
+    );
+    Ok(summary)
 }
 
 /// 获取补货建议列表（核心计算引擎）

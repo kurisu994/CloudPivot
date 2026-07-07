@@ -30,6 +30,12 @@ export interface ReplenishmentSuggestion {
   logId: number | null
 }
 
+/** Dashboard 补货统计 */
+export interface ReplenishmentDashboardSummary {
+  total: number
+  urgent: number
+}
+
 /** 补货建议筛选参数 */
 export interface SuggestionFilter {
   urgency?: string
@@ -92,6 +98,12 @@ export async function ensureReplenishmentRules(): Promise<number> {
 export async function getReplenishmentSuggestions(filter: SuggestionFilter): Promise<ReplenishmentSuggestion[]> {
   if (!isTauriEnv()) return []
   return invoke<ReplenishmentSuggestion[]>('get_replenishment_suggestions', { filter })
+}
+
+/** 获取 Dashboard 补货统计（只读，不写补货日志） */
+export async function getReplenishmentDashboardSummary(): Promise<ReplenishmentDashboardSummary> {
+  if (!isTauriEnv()) return { total: 0, urgent: 0 }
+  return invoke<ReplenishmentDashboardSummary>('get_replenishment_dashboard_summary')
 }
 
 /** 获取补货策略配置列表 */

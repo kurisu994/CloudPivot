@@ -2,11 +2,12 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。全部五个开发阶段已完成，172 个 IPC 命令、39 个路由页面、51 张数据库表均已交付。当前版本 **v0.2.9**（2026-06-22 发布），包含自由出入库操作日志可读性优化；当前正在 `[Unreleased]` 继续打磨侧边栏入口、BOM、应收应付、错误提示、依赖检查和供应商物料维护体验。2026-07-06 已修复 `tauri 2.10.3` 与 `@tauri-apps/api 2.11.1` 的 minor mismatch，将 JS 侧 Tauri 包与插件依赖收回到 2.10 同线；随后按用户要求移除供应商物料弹窗中的有效期输入，把物料选择改成可搜索控件，放宽添加物料弹窗以完整查看较长物料信息，并将供应商可选物料收窄为原材料。BOM 新建/编辑表单也已移除生效日期输入，保存时由前后端兜底写入本地当天日期；BOM 列表停用按钮改为危险色样式以提高识别度。采购单列表的已审核 / 部分入库行已接通采购入库执行页，点击「入库 / 继续入库」会携带采购单 ID 进入待入库明细流程；随后修复确认采购入库时 PostgreSQL `SUM(BIGINT)` 返回 `NUMERIC` 导致 Rust `i64` 解码失败的问题。采购入库菜单入口已从操作栏常驻采购单下拉改为「新建入库单」按钮 + 弹窗内搜索选择采购单；选中采购单后展示每个物料的订单数量、已入库数量和剩余数量。采购退货菜单入口也已改为「新建退货单」按钮 + 弹窗内先选择采购单，再选择该采购单下的原入库单并展示可退明细，再进入退货执行页按退货单扣减库存；可退明细 SQL 已修复 `ioi.spec` 不存在的问题。采购退货列表详情按钮已接通只读详情弹窗，后端新增退货单头 + 明细查询 IPC，可查看来源采购单、原入库单、供应商、仓库、确认信息、退货金额和退货明细。2026-07-06 本轮又按版本范围从侧边栏隐藏库存调拨和定制单管理入口，并修复生产工单详情页仓库列表 IPC 缺少 `includeDisabled` 参数、「关联BOM」下拉物料名称显示为 `undefined`、保存生产工单时 `plannedQty` 参数缺失，以及 BOM 明细展算 SQL 使用旧字段导致物料需求写入失败的问题。
+项目处于 **功能完备、持续打磨** 阶段。全部五个开发阶段已完成，173 个 IPC 命令、39 个路由页面、51 张数据库表均已交付。当前版本 **v0.2.9**（2026-06-22 发布），包含自由出入库操作日志可读性优化；当前正在 `[Unreleased]` 继续打磨侧边栏入口、BOM、应收应付、错误提示、依赖检查和供应商物料维护体验。2026-07-06 已修复 `tauri 2.10.3` 与 `@tauri-apps/api 2.11.1` 的 minor mismatch，将 JS 侧 Tauri 包与插件依赖收回到 2.10 同线；随后按用户要求移除供应商物料弹窗中的有效期输入，把物料选择改成可搜索控件，放宽添加物料弹窗以完整查看较长物料信息，并将供应商可选物料收窄为原材料。BOM 新建/编辑表单也已移除生效日期输入，保存时由前后端兜底写入本地当天日期；BOM 列表停用按钮改为危险色样式以提高识别度。采购单列表的已审核 / 部分入库行已接通采购入库执行页，点击「入库 / 继续入库」会携带采购单 ID 进入待入库明细流程；随后修复确认采购入库时 PostgreSQL `SUM(BIGINT)` 返回 `NUMERIC` 导致 Rust `i64` 解码失败的问题。采购入库菜单入口已从操作栏常驻采购单下拉改为「新建入库单」按钮 + 弹窗内搜索选择采购单；选中采购单后展示每个物料的订单数量、已入库数量和剩余数量。采购退货菜单入口也已改为「新建退货单」按钮 + 弹窗内先选择采购单，再选择该采购单下的原入库单并展示可退明细，再进入退货执行页按退货单扣减库存；可退明细 SQL 已修复 `ioi.spec` 不存在的问题。采购退货列表详情按钮已接通只读详情弹窗，后端新增退货单头 + 明细查询 IPC，可查看来源采购单、原入库单、供应商、仓库、确认信息、退货金额和退货明细。2026-07-06 本轮又按版本范围从侧边栏隐藏库存调拨和定制单管理入口，并修复生产工单详情页仓库列表 IPC 缺少 `includeDisabled` 参数、「关联BOM」下拉物料名称显示为 `undefined`、保存生产工单时 `plannedQty` 参数缺失，以及 BOM 明细展算 SQL 使用旧字段导致物料需求写入失败的问题。2026-07-07 已将首页 Dashboard 的待补货 KPI 改为只读统计 IPC，不再在应用启动时调用会写入 `replenishment_rules` / `replenishment_logs` 的补货建议刷新链路，降低多人同时打开应用时的数据库写入压力。
 
 ## 最近完成的工作
 
 - **版本入口收敛**：按用户要求将 `config/nav.ts` 中「库存调拨」和「定制单管理」用块注释隐藏，并同步注释对应未使用的 `ClipboardCheck` / `Palette` 图标 import；`CHANGELOG.md` 的 `[Unreleased]` 入口开放说明已改为这两个模块本版本暂不开放。
+- **Dashboard 补货统计改为只读**：新增 `get_replenishment_dashboard_summary` IPC，首页 `MetricsCards` 不再调用 `ensureReplenishmentRules()` / `getReplenishmentSuggestions({})`。统计命令按现有安全库存、日均消耗和紧急度规则计算 `total` / `urgent`，但不补齐策略、不删除或插入 `replenishment_logs`；未配置策略的启用物料按默认补货参数纳入统计，显式禁用策略的物料不计入。
 - **生产工单仓库列表 IPC 参数修复**：`app/[locale]/production-orders/_components/production-order-detail.tsx` 不再裸调 `invoke('get_warehouses')`，改为复用 `getWarehouses(false)` wrapper，保证传入 Tauri command 要求的 `includeDisabled` 参数。根因是 Rust `get_warehouses(db, include_disabled)` 必填参数在 Tauri 前端暴露为 camelCase `includeDisabled`，裸调用会在命令体执行前被参数校验拦截。
 - **生产工单关联 BOM 显示修复**：`get_bom_list` 的 `BomListItem` 通过 `#[serde(rename_all = "camelCase")]` 返回 `materialName`，生产工单页原先读取不存在的 `parent_material_name`，导致下拉显示 `undefined (V1.0)`；现已改为使用 `materialName ?? '—'` 拼接选项标签。
 - **生产工单保存参数修复**：`save_production_order` 的 `SaveProductionOrderInput` 使用 `#[serde(rename_all = "camelCase")]`，页面原先发送 `planned_qty` / `planned_start_date` / `planned_end_date`，导致必填字段 `plannedQty` 缺失。现新增 `production-order-command-args.ts` 集中构造保存 payload，统一输出 `plannedQty`、`plannedStartDate`、`plannedEndDate`。
@@ -45,6 +46,11 @@
 ## 活跃文件
 
 - `config/nav.ts` — 本版本隐藏库存调拨和定制单管理侧边栏入口，保留注释以便后续恢复
+- `src-tauri/src/commands/replenishment.rs` — 新增只读 Dashboard 补货统计 IPC，复用补货数量与紧急度计算但不写补货日志
+- `src-tauri/src/lib.rs` — 注册 `get_replenishment_dashboard_summary`
+- `lib/tauri/replenishment.ts` — 新增 `ReplenishmentDashboardSummary` 类型与 `getReplenishmentDashboardSummary` wrapper
+- `app/[locale]/_components/dashboard/metrics-cards.tsx` — 首页待补货 KPI 改为调用只读统计 wrapper
+- `tests/replenishment-dashboard-summary.test.mjs` — 回归保护 Dashboard 不再调用会写库的补货建议接口
 - `app/[locale]/production-orders/_components/production-order-detail.tsx` — 生产工单详情页仓库列表改走 `getWarehouses(false)`，关联 BOM 下拉改用 `materialName` 显示物料名称
 - `app/[locale]/production-orders/_components/production-order-command-args.ts` — 集中构造 `save_production_order` 的 camelCase 入参
 - `src-tauri/src/commands/production_order.rs` — BOM 明细展算 SQL 改用 `child_material_id` / `wastage_rate` 并补 Rust 回归测试
@@ -89,6 +95,7 @@
 ## 已做出的决策
 
 - **库存调拨和定制单管理本轮只隐藏侧边栏入口**：用户要求“先注释掉，这版本不开放”，当前按既有阶段性开放方式处理 `config/nav.ts`，不删除路由页面、i18n 文案或后端 IPC 注册，便于后续恢复；如果后续要求硬性禁止直达 URL，需要另做路由/权限层拦截。
+- **首页补货 KPI 必须走只读统计而不是建议刷新**：`get_replenishment_suggestions` 的职责包含生成可操作建议并落 `replenishment_logs`，适合补货页面；Dashboard 只需要数量和紧急数量，不能在应用启动时为每个用户重复清理/插入 pending 建议，也不应为了统计而调用 `ensure_replenishment_rules` 写默认策略。只读统计命令对缺失策略使用默认参数计算，保持看板可用且避免启动写库。
 - **仓库列表调用统一走 `getWarehouses` wrapper**：`get_warehouses` 的 Rust 参数是 `include_disabled`，Tauri 前端传参需要 `includeDisabled`；页面不应裸调 `invoke('get_warehouses')`，否则默认参数不会生效，容易再次触发 missing required key。
 - **生产工单关联 BOM 选项按 `get_bom_list` 的 camelCase 返回消费**：BOM 列表项没有 `parent_material_name` 字段，真实字段是 `materialName`；后续复用 `get_bom_list` 时应以 `BomListItem` 的 serde 输出名为准。
 - **生产工单保存入参按 `SaveProductionOrderInput` 的 camelCase 契约消费**：`plannedQty` 是必填字段，不能依赖 snake_case 字段名被后端自动识别；后续新增生产工单保存字段时优先放进 `production-order-command-args.ts` 并补测试。
@@ -127,6 +134,7 @@
 ## 下一步
 
 - 后续重新开放库存调拨或定制单管理时，恢复 `config/nav.ts` 中对应块注释，并同步恢复顶部 `ClipboardCheck` / `Palette` import；如版本要求禁止直达 URL，再补页面级或权限级拦截。
+- 后续如需在补货建议页面进一步减少刷新写入，可考虑把 `get_replenishment_suggestions` 拆成“只读计算”和“显式生成/刷新建议”两个动作，避免筛选、搜索时反复重建 pending 日志。
 - 如后续升级 Tauri 到 `2.11.x`，需要同时调整 `src-tauri/Cargo.toml` / `Cargo.lock` 与 `package.json` / `pnpm-lock.yaml`，不要只升级 NPM 侧。
 - 若后续引入 React/jsdom 测试工具，可将当前静态回归测试升级为真实交互测试，直接模拟输入框输入和候选项过滤。
 - 采购入库入口已完成前端接通；后续可在真实 Tauri 环境中从已审核采购单点击入库，确认待入库数量、确认入库、采购单状态回写与应付生成完整链路。
@@ -135,6 +143,7 @@
 
 ## 阻塞
 
+- 本次 Dashboard 补货统计只读化无阻塞；`just fmt`、`node --experimental-strip-types --test tests/replenishment-dashboard-summary.test.mjs`、`pnpm typecheck`、`cargo check --manifest-path src-tauri/Cargo.toml`、`pnpm exec biome check 'app/[locale]/_components/dashboard/metrics-cards.tsx' lib/tauri/replenishment.ts`、`git diff --check` 与 `just lint` 均已通过。
 - 本次版本入口收敛与生产工单仓库 / BOM 选项 / 保存参数 / BOM 展算 SQL 修复无阻塞；`node --experimental-strip-types --test tests/*.test.mjs`、`pnpm typecheck`、`pnpm exec biome check config/nav.ts 'app/[locale]/production-orders/_components/production-order-detail.tsx' tests/warehouse-ipc-args.test.mjs tests/material-command-args.test.mjs`、`pnpm exec biome check 'app/[locale]/production-orders/_components/production-order-detail.tsx' tests/production-order-bom-options.test.mjs`、`pnpm exec biome check 'app/[locale]/production-orders/_components/production-order-detail.tsx' 'app/[locale]/production-orders/_components/production-order-command-args.ts' tests/production-order-command-args.test.mjs`、`cargo fmt --manifest-path src-tauri/Cargo.toml`、`cargo test production_bom_items_query_uses_current_bom_schema --manifest-path src-tauri/Cargo.toml --lib`、`cargo check --manifest-path src-tauri/Cargo.toml` 与 `git diff --check` 均已通过。Node 测试仍会输出既有 `MODULE_TYPELESS_PACKAGE_JSON` warning，但不影响测试结果。
 - 本次 Tauri JS/Rust 对齐修复无阻塞；`pnpm install`、`pnpm install --frozen-lockfile --offline`、`pnpm typecheck`、`pnpm exec tauri --version`、`git diff --check` 均已通过。`node -p "require('./node_modules/@tauri-apps/api/package.json').version + ' / ' + require('./node_modules/@tauri-apps/cli/package.json').version"` 返回 `2.10.1 / 2.10.1`；`rg` 确认 `pnpm-lock.yaml` 不再包含 Tauri API/CLI 2.11。`pnpm exec tauri info` 在输出 Environment 后超过 60 秒未返回，已手动中断，未作为通过项。
 - 本次供应商物料维护交互调整无阻塞；`pnpm typecheck`、`cargo check --manifest-path src-tauri/Cargo.toml` 与 `git diff --check` 已通过。未修改数据库迁移。

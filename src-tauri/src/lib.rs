@@ -341,6 +341,7 @@ pub fn run() {
             commands::production_order::cancel_production_order,
             // 智能补货
             commands::replenishment::ensure_replenishment_rules,
+            commands::replenishment::get_replenishment_dashboard_summary,
             commands::replenishment::get_replenishment_suggestions,
             commands::replenishment::get_replenishment_rules,
             commands::replenishment::update_replenishment_rule,
