@@ -30,7 +30,8 @@
       "newVersion": "New Version",
       "save": "Save",
       "cancel": "Cancel",
-      "backToList": "Back to List"
+      "backToList": "Back to List",
+      "compare": "Compare"
     },
     "table": {
       "materialCode": "Product Code",
@@ -84,7 +85,19 @@
       "totalQty": "Total Needed",
       "currentStock": "Current Stock",
       "shortage": "Shortage",
-      "noShortage": "—"
+      "noShortage": "—",
+      "mode": {
+        "production": "By production qty",
+        "container": "By container qty (TC)"
+      },
+      "unitContainer": "pcs/container",
+      "totalQtyTc": "Container Usage (TC)"
+    },
+    "compare": {
+      "title": "BOM Usage Comparison",
+      "selectHint": "Select at least 2 BOMs to compare",
+      "total": "Total",
+      "empty": "No items in selected BOMs"
     },
     "reverseLookup": {
       "title": "Material Reverse Lookup",

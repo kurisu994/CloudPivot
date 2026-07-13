@@ -30,7 +30,8 @@
       "newVersion": "Phiên bản mới",
       "save": "Lưu",
       "cancel": "Hủy",
-      "backToList": "Quay lại danh sách"
+      "backToList": "Quay lại danh sách",
+      "compare": "So sánh"
     },
     "table": {
       "materialCode": "Mã sản phẩm",
@@ -84,7 +85,19 @@
       "totalQty": "Tổng cần",
       "currentStock": "Tồn kho",
       "shortage": "Thiếu",
-      "noShortage": "—"
+      "noShortage": "—",
+      "mode": {
+        "production": "Theo số lượng sản xuất",
+        "container": "Theo số lượng đóng cont (TC)"
+      },
+      "unitContainer": "cái/cont",
+      "totalQtyTc": "Định mức nguyên cont (TC)"
+    },
+    "compare": {
+      "title": "So sánh định mức BOM",
+      "selectHint": "Chọn ít nhất 2 BOM để so sánh",
+      "total": "Tổng cộng",
+      "empty": "BOM đã chọn chưa có chi tiết"
     },
     "reverseLookup": {
       "title": "Tra cứu ngược vật tư",

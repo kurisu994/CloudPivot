@@ -30,7 +30,8 @@
       "newVersion": "新版本",
       "save": "保存",
       "cancel": "取消",
-      "backToList": "返回列表"
+      "backToList": "返回列表",
+      "compare": "对比用量"
     },
     "table": {
       "materialCode": "成品编码",
@@ -84,7 +85,19 @@
       "totalQty": "总需用量",
       "currentStock": "当前库存",
       "shortage": "缺口",
-      "noShortage": "—"
+      "noShortage": "—",
+      "mode": {
+        "production": "按生产数量",
+        "container": "按装柜件数 (TC)"
+      },
+      "unitContainer": "件/柜",
+      "totalQtyTc": "整柜用量 (TC)"
+    },
+    "compare": {
+      "title": "BOM 用量对比",
+      "selectHint": "勾选至少 2 个 BOM 后可对比",
+      "total": "合计",
+      "empty": "所选 BOM 暂无明细"
     },
     "reverseLookup": {
       "title": "物料反查",

@@ -34,6 +34,23 @@ export function translateProcessStep(step: string, t: BomTranslator): string {
 }
 
 /**
+ * 工序分组排序比较器：预设工序按定义顺序，自定义工序随后按字典序，
+ * 空字符串（未分组）恒排最后。
+ */
+export function compareProcessSteps(a: string, b: string): number {
+  if (a === b) return 0
+  if (a === '') return 1
+  if (b === '') return -1
+  const order: readonly string[] = PRESET_PROCESS_STEP_KEYS
+  const idxA = order.indexOf(a)
+  const idxB = order.indexOf(b)
+  if (idxA !== -1 && idxB !== -1) return idxA - idxB
+  if (idxA !== -1) return -1
+  if (idxB !== -1) return 1
+  return a.localeCompare(b)
+}
+
+/**
  * 工序输入归一化：输入文本若匹配预设 key 或当前语言的预设 label（忽略大小写），
  * 转存为对应 key，避免同一工序以 key 和字面文本两种形式混存导致分组分裂；
  * 其余自定义文本去除首尾空白后原样保存。

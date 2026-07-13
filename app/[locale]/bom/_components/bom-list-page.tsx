@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Copy, Layers, Pencil, Play, Plus, Search, Square, Trash2 } from 'lucide-react'
+import { ArrowLeftRight, ChevronLeft, ChevronRight, Copy, Layers, Pencil, Play, Plus, Search, Square, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -16,6 +16,7 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { PaginationControls } from '@/components/common/pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -117,9 +118,10 @@ function StatusBadge({ status, t }: { status: string; t: (key: string) => string
 interface BomListPageProps {
   onEditBom: (id: number) => void
   onNewBom: () => void
+  onCompare: (ids: number[]) => void
 }
 
-export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
+export function BomListPage({ onEditBom, onNewBom, onCompare }: BomListPageProps) {
   const t = useTranslations('bom')
   const tc = useTranslations('common')
 
@@ -137,6 +139,9 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
   // 复制弹窗
   const [copyDialogOpen, setCopyDialogOpen] = useState(false)
   const [copySourceId, setCopySourceId] = useState<number | null>(null)
+
+  // 比较视图勾选（保持勾选顺序，作为比较列顺序）
+  const [compareSelectedIds, setCompareSelectedIds] = useState<number[]>([])
 
   // 确认对话框状态
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null)
@@ -277,6 +282,11 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
     fetchBomList()
   }
 
+  /** 切换比较勾选 */
+  const toggleCompareSelect = (id: number) => {
+    setCompareSelectedIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]))
+  }
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   return (
@@ -321,6 +331,16 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
           <Plus data-icon="inline-start" />
           {t('actions.add')}
         </Button>
+        <Button
+          variant="outline"
+          disabled={compareSelectedIds.length < 2}
+          title={t('compare.selectHint')}
+          onClick={() => onCompare(compareSelectedIds)}
+        >
+          <ArrowLeftRight data-icon="inline-start" />
+          {t('actions.compare')}
+          {compareSelectedIds.length > 0 && ` (${compareSelectedIds.length})`}
+        </Button>
       </div>
 
       {/* BOM 列表表格 */}
@@ -348,6 +368,13 @@ export function BomListPage({ onEditBom, onNewBom }: BomListPageProps) {
                 <TableRow key={bom.id} className="group cursor-pointer" onClick={() => onEditBom(bom.id)}>
                   <TableCell className={BUSINESS_LIST_STICKY_CELL_CLASS}>
                     <div className="flex items-center gap-2">
+                      <span onClick={e => e.stopPropagation()}>
+                        <Checkbox
+                          checked={compareSelectedIds.includes(bom.id)}
+                          onCheckedChange={() => toggleCompareSelect(bom.id)}
+                          aria-label={t('actions.compare')}
+                        />
+                      </span>
                       <Layers className="text-muted-foreground size-4 shrink-0" />
                       <div className="min-w-0">
                         <div className="truncate font-medium">{bom.materialName ?? '—'}</div>

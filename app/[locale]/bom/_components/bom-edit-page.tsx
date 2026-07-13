@@ -16,7 +16,7 @@ import { getErrorMessage } from '@/lib/error'
 import { invoke, isTauriEnv } from '@/lib/tauri'
 import { type BomDetailPageState, type BomDetailResponse, type BomItemPageRow, buildSaveBomArgs, normalizeBomDetail } from './bom-command-args'
 import { BomItemDialog } from './bom-item-dialog'
-import { PRESET_PROCESS_STEP_KEYS, translateProcessStep } from './process-steps'
+import { compareProcessSteps, translateProcessStep } from './process-steps'
 
 /* ------------------------------------------------------------------ */
 /*  类型定义                                                           */
@@ -196,6 +196,10 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
   const [demandQty, setDemandQty] = useState<string>('10')
   const [demandResults, setDemandResults] = useState<DemandItem[]>([])
   const [demandLoading, setDemandLoading] = useState(false)
+  // 计算模式：按生产数量 / 按装柜件数（TC，对标 Excel 整柜用量列）
+  const [demandMode, setDemandMode] = useState<'production' | 'container'>('production')
+  // 当前结果对应的计算模式（切换下拉不影响已算出的结果表头）
+  const [calculatedMode, setCalculatedMode] = useState<'production' | 'container'>('production')
 
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -218,6 +222,15 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
     }, 0)
   }, [items])
 
+  /** 需求计算模式选项 */
+  const demandModeItems = useMemo(
+    () => [
+      { value: 'production', label: t('demand.mode.production') },
+      { value: 'container', label: t('demand.mode.container') },
+    ],
+    [t],
+  )
+
   /** 提取当前明细中已用到的工序，用于联想 */
   const usedProcessSteps = useMemo(() => {
     const steps = items.map(item => item.process_step).filter((step): step is string => !!step)
@@ -237,19 +250,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
     }
 
     // 按预设顺序对工序排序，未预设的自定义工序排在其后，最后是未分组
-    const presetOrder: readonly string[] = PRESET_PROCESS_STEP_KEYS
-    const sortedSteps = Object.keys(groups).sort((a, b) => {
-      if (a === '') return 1
-      if (b === '') return -1
-
-      const idxA = presetOrder.indexOf(a)
-      const idxB = presetOrder.indexOf(b)
-
-      if (idxA !== -1 && idxB !== -1) return idxA - idxB
-      if (idxA !== -1) return -1
-      if (idxB !== -1) return 1
-      return a.localeCompare(b)
-    })
+    const sortedSteps = Object.keys(groups).sort(compareProcessSteps)
 
     return sortedSteps.map(step => ({
       step,
@@ -367,6 +368,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
 
     if (!bomId && items.length === 0) return
 
+    setCalculatedMode(demandMode)
     setDemandLoading(true)
 
     if (!isTauriEnv() || !bomId) {
@@ -596,9 +598,21 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
         <div className="border-border bg-card rounded-xl border p-6 shadow-sm">
           <h3 className="text-foreground mb-4 font-semibold">{t('demand.title')}</h3>
           <div className="mb-4 flex items-center gap-3">
-            <Label>{t('demand.quantity')}</Label>
+            {/* 计算模式：按生产数量 / 按装柜件数（TC） */}
+            <Select value={demandMode} onValueChange={v => setDemandMode(v === 'container' ? 'container' : 'production')} items={demandModeItems}>
+              <SelectTrigger className="w-[11rem]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {demandModeItems.map(item => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Input type="number" className="w-[7.5rem]" value={demandQty} onChange={e => setDemandQty(e.target.value)} min={1} />
-            <span className="text-muted-foreground text-sm">{t('demand.unit')}</span>
+            <span className="text-muted-foreground text-sm">{demandMode === 'container' ? t('demand.unitContainer') : t('demand.unit')}</span>
             <Button size="sm" onClick={handleCalcDemand} disabled={demandLoading}>
               <Calculator data-icon="inline-start" />
               {t('actions.calcDemand')}
@@ -614,7 +628,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
                     <TableHead>{t('items.spec')}</TableHead>
                     <TableHead>{t('items.unit')}</TableHead>
                     <TableHead>{t('demand.singleQty')}</TableHead>
-                    <TableHead>{t('demand.totalQty')}</TableHead>
+                    <TableHead>{calculatedMode === 'container' ? t('demand.totalQtyTc') : t('demand.totalQty')}</TableHead>
                     <TableHead>{t('demand.currentStock')}</TableHead>
                     <TableHead>{t('demand.shortage')}</TableHead>
                   </TableRow>
