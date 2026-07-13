@@ -71,6 +71,8 @@
       "substitute": "替代物料",
       "remark": "备注",
       "actions": "操作",
+      "ungrouped": "未分组",
+      "groupCount": "{count} 项物料",
       "noItems": "暂无明细，点击「添加物料」"
     },
     "demand": {
@@ -108,8 +110,14 @@
         "cutting": "开料",
         "assembly": "组装",
         "painting": "涂装",
-        "packaging": "包装"
-      }
+        "packaging": "包装",
+        "sewing": "缝纫",
+        "woodworking": "木工",
+        "foam": "贴棉",
+        "upholstery": "扪工",
+        "ironwork": "铁架"
+      },
+      "processStepPlaceholder": "选择或输入工序..."
     },
     "copyDialog": {
       "title": "复制 BOM 新版本",

@@ -9,7 +9,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { invoke, isTauriEnv } from '@/lib/tauri'
 
 import type { BomItemRow } from './bom-edit-page'
@@ -22,6 +21,7 @@ interface ChildMaterialOption {
   id: number
   code: string
   name: string
+  name_vi: string | null
   spec: string | null
   materialType: string
   unitName: string | null
@@ -29,17 +29,33 @@ interface ChildMaterialOption {
 }
 
 /* ------------------------------------------------------------------ */
+/*  预设工序 key 列表                                                    */
+/* ------------------------------------------------------------------ */
+
+/** 系统预设的工序 key，存储时用英文 key，展示时走 i18n 翻译 */
+const PRESET_PROCESS_STEP_KEYS = ['sewing', 'woodworking', 'foam', 'upholstery', 'ironwork', 'cutting', 'assembly', 'painting', 'packaging'] as const
+
+/* ------------------------------------------------------------------ */
 /*  Mock 数据                                                          */
 /* ------------------------------------------------------------------ */
 
 const MOCK_CHILD_MATERIALS: ChildMaterialOption[] = [
-  { id: 1, code: 'M-0001', name: '白橡实木板', spec: '2440×1220', materialType: 'raw', unitName: '张', ref_cost_price: 28000 },
-  { id: 2, code: 'M-0002', name: '不锈钢铰链', spec: '40mm', materialType: 'raw', unitName: '个', ref_cost_price: 48 },
-  { id: 7, code: 'M-0007', name: '木方', spec: '40×40', materialType: 'raw', unitName: '根', ref_cost_price: 1200 },
-  { id: 8, code: 'M-0008', name: '不锈钢腿', spec: '710mm', materialType: 'raw', unitName: '个', ref_cost_price: 3500 },
-  { id: 9, code: 'M-0009', name: '螺丝M6', spec: '30mm', materialType: 'raw', unitName: '个', ref_cost_price: 15 },
-  { id: 10, code: 'M-0010', name: '木蜡油', spec: null, materialType: 'raw', unitName: '千克', ref_cost_price: 6800 },
-  { id: 11, code: 'M-0011', name: '包装纸箱', spec: '特大', materialType: 'raw', unitName: '个', ref_cost_price: 2200 },
+  {
+    id: 1,
+    code: 'M-0001',
+    name: '白橡实木板',
+    name_vi: 'Gỗ sồi trắng',
+    spec: '2440×1220',
+    materialType: 'raw',
+    unitName: '张',
+    ref_cost_price: 28000,
+  },
+  { id: 2, code: 'M-0002', name: '不锈钢铰链', name_vi: 'Bản lề inox', spec: '40mm', materialType: 'raw', unitName: '个', ref_cost_price: 48 },
+  { id: 7, code: 'M-0007', name: '木方', name_vi: 'Thanh gỗ', spec: '40×40', materialType: 'raw', unitName: '根', ref_cost_price: 1200 },
+  { id: 8, code: 'M-0008', name: '不锈钢腿', name_vi: 'Chân inox', spec: '710mm', materialType: 'raw', unitName: '个', ref_cost_price: 3500 },
+  { id: 9, code: 'M-0009', name: '螺丝M6', name_vi: 'Ốc vít M6', spec: '30mm', materialType: 'raw', unitName: '个', ref_cost_price: 15 },
+  { id: 10, code: 'M-0010', name: '木蜡油', name_vi: 'Dầu sáp gỗ', spec: null, materialType: 'raw', unitName: '千克', ref_cost_price: 6800 },
+  { id: 11, code: 'M-0011', name: '包装纸箱', name_vi: 'Thùng carton', spec: '特大', materialType: 'raw', unitName: '个', ref_cost_price: 2200 },
 ]
 
 /* ------------------------------------------------------------------ */
@@ -51,12 +67,14 @@ interface BomItemDialogProps {
   onOpenChange: (open: boolean) => void
   editingItem: BomItemRow | null
   onSave: (item: BomItemRow) => void
+  /** 当前 BOM 明细中已使用的工序值集合，用于联想去重 */
+  usedProcessSteps?: string[]
 }
 
 /**
  * BOM 明细编辑弹窗：添加或编辑一行 BOM 明细
  */
-export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomItemDialogProps) {
+export function BomItemDialog({ open, onOpenChange, editingItem, onSave, usedProcessSteps = [] }: BomItemDialogProps) {
   const t = useTranslations('bom')
   const isEdit = editingItem !== null
 
@@ -73,16 +91,31 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
   const [isKeyPart, setIsKeyPart] = useState(false)
   const [itemRemark, setItemRemark] = useState('')
 
-  const processStepItems = useMemo(
-    () => [
-      { value: '', label: '—' },
-      { value: 'cutting', label: t('form.processSteps.cutting') },
-      { value: 'assembly', label: t('form.processSteps.assembly') },
-      { value: 'painting', label: t('form.processSteps.painting') },
-      { value: 'packaging', label: t('form.processSteps.packaging') },
-    ],
-    [t],
-  )
+  // 工序输入焦点状态，控制建议下拉显隐
+  const [processStepFocused, setProcessStepFocused] = useState(false)
+  const processStepRef = useRef<HTMLDivElement>(null)
+
+  /**
+   * 工序建议列表：预设工序 + 已用工序（去重），按输入关键词过滤
+   * 每项包含 key（存储值）和 label（展示文本）
+   */
+  const processStepSuggestions = useMemo(() => {
+    // 构建预设工序选项（key → i18n 翻译 label）
+    const presetOptions = PRESET_PROCESS_STEP_KEYS.map(key => ({
+      key,
+      label: t(`form.processSteps.${key}` as any) as string,
+    }))
+
+    // 已用工序中非预设 key 的自定义值
+    const customUsed = usedProcessSteps.filter(v => v && !PRESET_PROCESS_STEP_KEYS.includes(v as any)).map(v => ({ key: v, label: v }))
+
+    const all = [...presetOptions, ...customUsed]
+
+    // 按输入关键词过滤
+    if (!processStep) return all
+    const kw = processStep.toLowerCase()
+    return all.filter(opt => opt.key.toLowerCase().includes(kw) || opt.label.toLowerCase().includes(kw))
+  }, [t, usedProcessSteps, processStep])
 
   /** 搜索物料 */
   const fetchMaterials = useCallback(async (keyword: string) => {
@@ -121,6 +154,7 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
         id: editingItem.child_material_id,
         code: editingItem.materialCode ?? '',
         name: editingItem.materialName ?? '',
+        name_vi: editingItem.materialNameVi ?? null,
         spec: editingItem.material_spec ?? null,
         materialType: 'raw',
         unitName: editingItem.unitName ?? null,
@@ -150,6 +184,19 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
     void fetchMaterials(searchKeyword)
   }, [fetchMaterials, isEdit, open, searchKeyword, selectedMaterial])
 
+  // 点击工序建议区域外时关闭下拉
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (processStepRef.current && !processStepRef.current.contains(e.target as Node)) {
+        setProcessStepFocused(false)
+      }
+    }
+    if (processStepFocused) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [processStepFocused])
+
   const handleSave = () => {
     if (!selectedMaterial) return
     const qty = parseFloat(standardQty) || 0
@@ -160,6 +207,7 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
       child_material_id: selectedMaterial.id,
       materialCode: selectedMaterial.code,
       materialName: selectedMaterial.name,
+      materialNameVi: selectedMaterial.name_vi,
       material_spec: selectedMaterial.spec,
       unitName: selectedMaterial.unitName,
       ref_cost_price: selectedMaterial.ref_cost_price,
@@ -208,7 +256,10 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
                         setSearchKeyword('')
                       }}
                     >
-                      <span className="font-medium">{m.name}</span>
+                      <span className="font-medium">
+                        {m.name}
+                        {m.name_vi && <span className="text-muted-foreground ml-1.5 text-xs font-normal">({m.name_vi})</span>}
+                      </span>
                       <span className="text-muted-foreground text-xs">{m.code}</span>
                       {m.spec && <span className="text-muted-foreground text-xs">({m.spec})</span>}
                       <span className="text-muted-foreground ml-auto text-xs">{m.unitName}</span>
@@ -219,7 +270,10 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
               {selectedMaterial && (
                 <div className="bg-muted flex items-center justify-between rounded-md px-3 py-2">
                   <span className="text-sm font-medium">
-                    {selectedMaterial.name} ({selectedMaterial.code}){selectedMaterial.spec && ` — ${selectedMaterial.spec}`}
+                    {selectedMaterial.name}
+                    {selectedMaterial.name_vi && ` (${selectedMaterial.name_vi})`}
+                    {` (${selectedMaterial.code})`}
+                    {selectedMaterial.spec && ` — ${selectedMaterial.spec}`}
                   </span>
                   <Button variant="ghost" size="sm" onClick={() => setSelectedMaterial(null)}>
                     ✕
@@ -233,7 +287,10 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
             <div className="grid gap-2">
               <Label>{t('items.materialName')}</Label>
               <div className="bg-muted rounded-md px-3 py-2 text-sm">
-                {selectedMaterial.name} ({selectedMaterial.code}){selectedMaterial.spec && ` — ${selectedMaterial.spec}`}
+                {selectedMaterial.name}
+                {selectedMaterial.name_vi && ` (${selectedMaterial.name_vi})`}
+                {` (${selectedMaterial.code})`}
+                {selectedMaterial.spec && ` — ${selectedMaterial.spec}`}
               </div>
             </div>
           )}
@@ -250,20 +307,35 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave }: BomIt
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
+            {/* 工序选择：自由输入 + 预设/已用工序联想 */}
+            <div className="relative grid gap-2" ref={processStepRef}>
               <Label>{t('items.processStep')}</Label>
-              <Select value={processStep} onValueChange={v => setProcessStep(v ?? '')} items={processStepItems}>
-                <SelectTrigger>
-                  <SelectValue placeholder="—" />
-                </SelectTrigger>
-                <SelectContent>
-                  {processStepItems.map(item => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
+              <Input
+                value={processStep}
+                onChange={e => setProcessStep(e.target.value)}
+                onFocus={() => setProcessStepFocused(true)}
+                placeholder={t('form.processStepPlaceholder')}
+              />
+              {processStepFocused && processStepSuggestions.length > 0 && (
+                <div className="border-border bg-popover absolute top-[calc(100%+0.25rem)] right-0 left-0 z-50 max-h-[12.5rem] overflow-y-auto rounded-md border shadow-md">
+                  {processStepSuggestions.map(opt => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      className="hover:bg-accent hover:text-accent-foreground flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm"
+                      onMouseDown={e => {
+                        // 用 mousedown 而非 click，防止 input blur 先关闭下拉
+                        e.preventDefault()
+                        setProcessStep(opt.key)
+                        setProcessStepFocused(false)
+                      }}
+                    >
+                      <span>{opt.label}</span>
+                      {opt.key !== opt.label && <span className="text-muted-foreground text-xs">({opt.key})</span>}
+                    </button>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              )}
             </div>
             <div className="flex items-end gap-2 pb-1">
               <Checkbox id="is-key-part" checked={isKeyPart} onCheckedChange={v => setIsKeyPart(v === true)} />

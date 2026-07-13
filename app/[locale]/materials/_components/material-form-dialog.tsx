@@ -23,6 +23,7 @@ interface MaterialFormData {
   id: number | null
   code: string
   name: string
+  nameVi: string
   materialType: string
   categoryId: number | null
   spec: string
@@ -48,6 +49,7 @@ const EMPTY_FORM: MaterialFormData = {
   id: null,
   code: '',
   name: '',
+  nameVi: '',
   materialType: 'raw',
   categoryId: null,
   spec: '',
@@ -148,6 +150,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
           id: materialId,
           code: 'M-0001',
           name: '测试物料',
+          nameVi: 'Vật tư thử nghiệm',
           materialType: 'raw',
         })
         setInitializing(false)
@@ -158,6 +161,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
           setForm({
             ...detail,
             code: detail.code ?? '',
+            nameVi: detail.nameVi ?? '',
             spec: detail.spec ?? '',
             texture: detail.texture ?? '',
             color: detail.color ?? '',
@@ -254,7 +258,7 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
               {/* ━━━ 基本信息 ━━━ */}
               <SectionTitle title={t('form.sectionBasic')} />
               <FieldGroup>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   {/* 物料编码 */}
                   <Field>
                     <FieldLabel htmlFor="code">{t('form.code')}</FieldLabel>
@@ -274,6 +278,17 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                       aria-invalid={!!errors.name || undefined}
                     />
                     {errors.name && <FieldError>{errors.name}</FieldError>}
+                  </Field>
+
+                  {/* 越南文名称 */}
+                  <Field>
+                    <FieldLabel htmlFor="nameVi">{t('form.nameVi')}</FieldLabel>
+                    <Input
+                      id="nameVi"
+                      placeholder={t('form.nameViPlaceholder')}
+                      value={form.nameVi}
+                      onChange={e => setField('nameVi', e.target.value)}
+                    />
                   </Field>
                 </div>
 

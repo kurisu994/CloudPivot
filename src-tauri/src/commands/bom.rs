@@ -49,6 +49,7 @@ pub struct BomItemDetail {
     pub child_material_id: i64,
     pub material_code: Option<String>,
     pub material_name: Option<String>,
+    pub material_name_vi: Option<String>,
     pub material_spec: Option<String>,
     pub unit_name: Option<String>,
     pub ref_cost_price: Option<i64>,
@@ -279,7 +280,7 @@ pub async fn get_bom_detail(db: State<'_, DbState>, id: i64) -> Result<BomDetail
     // 查询明细
     let items = sqlx::query_as::<_, BomItemDetail>(
         r#"SELECT bi.id, bi.bom_id, bi.child_material_id,
-                  m.code as material_code, m.name as material_name, m.spec as material_spec,
+                  m.code as material_code, m.name as material_name, m.name_vi as material_name_vi, m.spec as material_spec,
                   u.name as unit_name, m.ref_cost_price,
                   bi.standard_qty, bi.wastage_rate, bi.actual_qty,
                   bi.process_step, bi.is_key_part, bi.substitute_id,

@@ -104,7 +104,10 @@ export function MaterialTable({
                       <Checkbox />
                       <div className="min-w-0">
                         <div className="text-muted-foreground font-mono text-[0.625rem]">{row.code}</div>
-                        <div className="text-foreground truncate font-bold">{row.name}</div>
+                        <div className="text-foreground truncate font-bold">
+                          {row.name}
+                          {row.nameVi && <span className="text-muted-foreground ml-1.5 text-xs font-normal">({row.nameVi})</span>}
+                        </div>
                       </div>
                     </div>
                   </TableCell>

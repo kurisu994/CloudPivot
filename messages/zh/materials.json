@@ -63,6 +63,8 @@
       "codePlaceholder": "自动生成或手动输入",
       "name": "物料名称",
       "namePlaceholder": "请输入物料全称",
+      "nameVi": "越南语名称",
+      "nameViPlaceholder": "请输入越南语全称",
       "type": "物料类型",
       "category": "所属分类",
       "categoryPlaceholder": "请选择分类",

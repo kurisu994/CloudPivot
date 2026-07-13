@@ -231,6 +231,7 @@ pub struct MaterialListItem {
     pub spec: Option<String>,
     pub base_unit_id: i64,
     pub unit_name: Option<String>,
+    pub name_vi: Option<String>,
     pub ref_cost_price: i64,
     pub sale_price: i64,
     pub safety_stock: f64,
@@ -248,7 +249,7 @@ pub async fn get_materials(
     let mut data_query = QueryBuilder::<'_, Postgres>::new(
         "SELECT m.id, m.code, m.name, m.material_type, m.category_id, 
                 c.name as category_name, m.spec, m.base_unit_id, u.name as unit_name,
-                m.ref_cost_price, m.sale_price, m.safety_stock, m.max_stock,
+                m.name_vi, m.ref_cost_price, m.sale_price, m.safety_stock, m.max_stock,
                 m.is_enabled, m.created_at::TEXT
          FROM materials m
          LEFT JOIN categories c ON m.category_id = c.id
@@ -363,7 +364,7 @@ pub async fn get_material_by_id(
     sqlx::query_as::<_, SaveMaterialParams>(
         r#"
         SELECT 
-            id, code, name, material_type, category_id, spec,
+            id, code, name, name_vi, material_type, category_id, spec,
             base_unit_id, aux_unit_id, conversion_rate,
             ref_cost_price, sale_price, safety_stock, max_stock,
             lot_tracking_mode, texture, color, surface_craft,
@@ -384,6 +385,7 @@ pub struct SaveMaterialParams {
     pub id: Option<i64>,
     pub code: String,
     pub name: String,
+    pub name_vi: Option<String>,
     pub material_type: String,
     pub category_id: Option<i64>,
     pub spec: Option<String>,
@@ -448,17 +450,18 @@ pub async fn save_material(
         // Update
         sqlx::query(
             "UPDATE materials SET
-                code = $1, name = $2, material_type = $3, category_id = $4, spec = $5,
-                base_unit_id = $6, aux_unit_id = $7, conversion_rate = $8, 
-                ref_cost_price = COALESCE($9, 0), sale_price = COALESCE($10, 0),
-                safety_stock = COALESCE($11, 0), max_stock = COALESCE($12, 0),
-                lot_tracking_mode = COALESCE($13, 'none'), texture = $14, color = $15,
-                surface_craft = $16, length_mm = $17, width_mm = $18, height_mm = $19,
-                barcode = $20, remark = $21, updated_at = NOW()
-             WHERE id = $22",
+                code = $1, name = $2, name_vi = $3, material_type = $4, category_id = $5, spec = $6,
+                base_unit_id = $7, aux_unit_id = $8, conversion_rate = $9, 
+                ref_cost_price = COALESCE($10, 0), sale_price = COALESCE($11, 0),
+                safety_stock = COALESCE($12, 0), max_stock = COALESCE($13, 0),
+                lot_tracking_mode = COALESCE($14, 'none'), texture = $15, color = $16,
+                surface_craft = $17, length_mm = $18, width_mm = $19, height_mm = $20,
+                barcode = $21, remark = $22, updated_at = NOW()
+             WHERE id = $23",
         )
         .bind(&code)
         .bind(&params.name)
+        .bind(&params.name_vi)
         .bind(&params.material_type)
         .bind(params.category_id)
         .bind(&params.spec)
@@ -488,20 +491,21 @@ pub async fn save_material(
         // Insert
         let id: i64 = sqlx::query_scalar(
             "INSERT INTO materials (
-                code, name, material_type, category_id, spec,
+                code, name, name_vi, material_type, category_id, spec,
                 base_unit_id, aux_unit_id, conversion_rate,
                 ref_cost_price, sale_price, safety_stock, max_stock,
                 lot_tracking_mode, texture, color, surface_craft,
                 length_mm, width_mm, height_mm, barcode, remark,
                 is_enabled, created_at, updated_at
             ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 0), COALESCE($10, 0),
-                COALESCE($11, 0), COALESCE($12, 0), COALESCE($13, 'none'), $14, $15, $16,
-                $17, $18, $19, $20, $21, TRUE, NOW(), NOW()
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, 0), COALESCE($11, 0),
+                COALESCE($12, 0), COALESCE($13, 0), COALESCE($14, 'none'), $15, $16, $17,
+                $18, $19, $20, $21, $22, TRUE, NOW(), NOW()
             ) RETURNING id",
         )
         .bind(&code)
         .bind(&params.name)
+        .bind(&params.name_vi)
         .bind(&params.material_type)
         .bind(params.category_id)
         .bind(&params.spec)

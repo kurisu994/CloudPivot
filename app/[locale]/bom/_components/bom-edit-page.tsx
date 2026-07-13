@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Calculator, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
@@ -71,13 +71,14 @@ const MOCK_BOM_DETAIL: BomDetail = {
       child_material_id: 1,
       materialCode: 'M-0001',
       materialName: '白橡实木板',
+      materialNameVi: 'Gỗ sồi trắng',
       material_spec: '2440×1220',
       unitName: '张',
       ref_cost_price: 28000,
       standard_qty: 2.5,
       wastage_rate: 5,
       actual_qty: 2.625,
-      process_step: 'cutting',
+      process_step: 'sewing',
       is_key_part: true,
       substitute_id: null,
       substitute_name: null,
@@ -88,13 +89,14 @@ const MOCK_BOM_DETAIL: BomDetail = {
       child_material_id: 7,
       materialCode: 'M-0007',
       materialName: '木方',
+      materialNameVi: 'Thanh gỗ',
       material_spec: '40×40',
       unitName: '根',
       ref_cost_price: 1200,
       standard_qty: 4,
       wastage_rate: 3,
       actual_qty: 4.12,
-      process_step: 'cutting',
+      process_step: 'woodworking',
       is_key_part: false,
       substitute_id: null,
       substitute_name: null,
@@ -105,6 +107,7 @@ const MOCK_BOM_DETAIL: BomDetail = {
       child_material_id: 8,
       materialCode: 'M-0008',
       materialName: '不锈钢腿',
+      materialNameVi: 'Chân inox',
       material_spec: '710mm',
       unitName: '个',
       ref_cost_price: 3500,
@@ -122,6 +125,7 @@ const MOCK_BOM_DETAIL: BomDetail = {
       child_material_id: 9,
       materialCode: 'M-0009',
       materialName: '螺丝M6',
+      materialNameVi: 'Ốc vít M6',
       material_spec: '30mm',
       unitName: '个',
       ref_cost_price: 15,
@@ -139,6 +143,7 @@ const MOCK_BOM_DETAIL: BomDetail = {
       child_material_id: 10,
       materialCode: 'M-0010',
       materialName: '木蜡油',
+      materialNameVi: 'Dầu sáp gỗ',
       material_spec: null,
       unitName: '千克',
       ref_cost_price: 6800,
@@ -210,6 +215,45 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
       const cost = (item.ref_cost_price ?? 0) * actualQty
       return sum + cost
     }, 0)
+  }, [items])
+
+  /** 提取当前明细中已用到的工序，用于联想 */
+  const usedProcessSteps = useMemo(() => {
+    const steps = items.map(item => item.process_step).filter((step): step is string => !!step)
+    return Array.from(new Set(steps))
+  }, [items])
+
+  /** 将 BOM 明细按工序分组，以便在表格中以分组标题行展示 */
+  const groupedItems = useMemo(() => {
+    const groups: { [step: string]: { item: BomItemRow; originalIndex: number }[] } = {}
+    for (let index = 0; index < items.length; index++) {
+      const item = items[index]
+      const step = item.process_step || ''
+      if (!groups[step]) {
+        groups[step] = []
+      }
+      groups[step].push({ item, originalIndex: index })
+    }
+
+    // 按预设顺序对工序排序，未预设的自定义工序排在其后，最后是未分组
+    const sortedSteps = Object.keys(groups).sort((a, b) => {
+      if (a === '') return 1
+      if (b === '') return -1
+
+      const presetOrder = ['sewing', 'woodworking', 'foam', 'upholstery', 'ironwork', 'cutting', 'assembly', 'painting', 'packaging']
+      const idxA = presetOrder.indexOf(a)
+      const idxB = presetOrder.indexOf(b)
+
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB
+      if (idxA !== -1) return -1
+      if (idxB !== -1) return 1
+      return a.localeCompare(b)
+    })
+
+    return sortedSteps.map(step => ({
+      step,
+      list: groups[step],
+    }))
   }, [items])
 
   /** 加载父项物料选项 */
@@ -472,46 +516,72 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
                   </TableCell>
                 </TableRow>
               ) : (
-                items.map((item, idx) => {
-                  const actualQty = item.standard_qty * (1 + item.wastage_rate / 100)
-                  const cost = (item.ref_cost_price ?? 0) * actualQty
+                groupedItems.map(({ step, list }) => {
+                  const stepLabel = step ? translateProcessStep(step, t) : t('items.ungrouped')
+                  const countLabel = t('items.groupCount', { count: list.length })
+
                   return (
-                    <TableRow key={`${item.child_material_id}-${idx}`} className="group">
-                      <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
-                      <TableCell>
-                        <div className="min-w-0">
-                          <div className="truncate font-medium">{item.materialName}</div>
-                          <div className="text-muted-foreground truncate text-xs">{item.materialCode}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground truncate">{item.material_spec ?? '—'}</TableCell>
-                      <TableCell>{item.unitName ?? '—'}</TableCell>
-                      <TableCell className="font-mono">{item.standard_qty}</TableCell>
-                      <TableCell className="font-mono">{item.wastage_rate}%</TableCell>
-                      <TableCell className="font-mono">{actualQty.toFixed(2)}</TableCell>
-                      <TableCell className="font-mono">{formatAmount(item.ref_cost_price ?? 0, 'USD')}</TableCell>
-                      <TableCell className="font-mono font-semibold">{formatAmount(Math.round(cost), 'USD')}</TableCell>
-                      <TableCell>
-                        {item.process_step ? <Badge variant="outline">{t(`form.processSteps.${item.process_step}` as any)}</Badge> : '—'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingItemIndex(idx)
-                              setItemDialogOpen(true)
-                            }}
-                          >
-                            <Pencil className="size-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleRemoveItem(idx)}>
-                            <Trash2 className="text-destructive size-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    <Fragment key={step}>
+                      {/* 分组标题行 */}
+                      <TableRow className="bg-muted/40 hover:bg-muted/40 font-medium">
+                        <TableCell colSpan={11} className="py-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="px-2 py-0.5 text-xs">
+                              {stepLabel}
+                            </Badge>
+                            <span className="text-muted-foreground font-normal">({countLabel})</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      {/* 明细行 */}
+                      {list.map(({ item, originalIndex }) => {
+                        const actualQty = item.standard_qty * (1 + item.wastage_rate / 100)
+                        const cost = (item.ref_cost_price ?? 0) * actualQty
+                        return (
+                          <TableRow key={`${item.child_material_id}-${originalIndex}`} className="group">
+                            <TableCell className="text-muted-foreground">{originalIndex + 1}</TableCell>
+                            <TableCell>
+                              <div className="min-w-0">
+                                <div className="truncate font-medium">
+                                  {item.materialName}
+                                  {item.materialNameVi && (
+                                    <span className="text-muted-foreground ml-1.5 text-xs font-normal">({item.materialNameVi})</span>
+                                  )}
+                                </div>
+                                <div className="text-muted-foreground truncate text-xs">{item.materialCode}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground truncate">{item.material_spec ?? '—'}</TableCell>
+                            <TableCell>{item.unitName ?? '—'}</TableCell>
+                            <TableCell className="font-mono">{item.standard_qty}</TableCell>
+                            <TableCell className="font-mono">{item.wastage_rate}%</TableCell>
+                            <TableCell className="font-mono">{actualQty.toFixed(2)}</TableCell>
+                            <TableCell className="font-mono">{formatAmount(item.ref_cost_price ?? 0, 'USD')}</TableCell>
+                            <TableCell className="font-mono font-semibold">{formatAmount(Math.round(cost), 'USD')}</TableCell>
+                            <TableCell>
+                              {item.process_step ? <Badge variant="outline">{translateProcessStep(item.process_step, t)}</Badge> : '—'}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingItemIndex(originalIndex)
+                                    setItemDialogOpen(true)
+                                  }}
+                                >
+                                  <Pencil className="size-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleRemoveItem(originalIndex)}>
+                                  <Trash2 className="text-destructive size-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </Fragment>
                   )
                 })
               )}
@@ -585,7 +655,25 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
         }}
         editingItem={editingItemIndex !== null ? items[editingItemIndex] : null}
         onSave={handleItemSave}
+        usedProcessSteps={usedProcessSteps}
       />
     </div>
   )
+}
+
+/* ------------------------------------------------------------------ */
+/*  工序名称翻译辅助                                                     */
+/* ------------------------------------------------------------------ */
+
+/** 预设工序 key 集合，用于判断是否走 i18n 翻译 */
+const KNOWN_PROCESS_STEP_KEYS = new Set(['sewing', 'woodworking', 'foam', 'upholstery', 'ironwork', 'cutting', 'assembly', 'painting', 'packaging'])
+
+/**
+ * 工序值翻译：匹配预设 key 走 i18n，否则原样展示
+ */
+function translateProcessStep(step: string, t: ReturnType<typeof useTranslations<'bom'>>) {
+  if (KNOWN_PROCESS_STEP_KEYS.has(step)) {
+    return t(`form.processSteps.${step}` as any)
+  }
+  return step
 }

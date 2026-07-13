@@ -71,6 +71,8 @@
       "substitute": "Substitute",
       "remark": "Remark",
       "actions": "Actions",
+      "ungrouped": "Ungrouped",
+      "groupCount": "{count} items",
       "noItems": "No items yet. Click \"Add Material\""
     },
     "demand": {
@@ -108,8 +110,14 @@
         "cutting": "Cutting",
         "assembly": "Assembly",
         "painting": "Painting",
-        "packaging": "Packaging"
-      }
+        "packaging": "Packaging",
+        "sewing": "Sewing",
+        "woodworking": "Woodworking",
+        "foam": "Foam Padding",
+        "upholstery": "Upholstery",
+        "ironwork": "Ironwork"
+      },
+      "processStepPlaceholder": "Select or type process..."
     },
     "copyDialog": {
       "title": "Copy BOM New Version",

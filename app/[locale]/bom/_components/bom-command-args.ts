@@ -4,6 +4,7 @@ export interface BomItemPageRow {
   child_material_id: number
   materialCode: string | null
   materialName: string | null
+  materialNameVi: string | null
   material_spec: string | null
   unitName: string | null
   ref_cost_price: number | null
@@ -39,6 +40,7 @@ export interface BomItemResponse {
   childMaterialId: number
   materialCode: string | null
   materialName: string | null
+  materialNameVi: string | null
   materialSpec: string | null
   unitName: string | null
   refCostPrice: number | null
@@ -155,6 +157,7 @@ export function normalizeBomDetail(detail: BomDetailResponse): BomDetailPageStat
       child_material_id: item.childMaterialId,
       materialCode: item.materialCode,
       materialName: item.materialName,
+      materialNameVi: item.materialNameVi,
       material_spec: item.materialSpec,
       unitName: item.unitName,
       ref_cost_price: item.refCostPrice,

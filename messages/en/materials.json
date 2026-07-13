@@ -63,6 +63,8 @@
       "codePlaceholder": "Auto generated or input manually",
       "name": "Material Name",
       "namePlaceholder": "Enter material full name",
+      "nameVi": "Vietnamese Name",
+      "nameViPlaceholder": "Enter Vietnamese full name",
       "type": "Material Type",
       "category": "Category",
       "categoryPlaceholder": "Select category",

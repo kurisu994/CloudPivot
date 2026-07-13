@@ -63,6 +63,8 @@
       "codePlaceholder": "Tự động hoặc nhập tay",
       "name": "Tên vật tư",
       "namePlaceholder": "Nhập tên đầy đủ vật tư",
+      "nameVi": "Tên tiếng Việt",
+      "nameViPlaceholder": "Nhập tên đầy đủ tiếng Việt",
       "type": "Loại vật tư",
       "category": "Danh mục",
       "categoryPlaceholder": "Chọn danh mục",

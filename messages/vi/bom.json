@@ -71,6 +71,8 @@
       "substitute": "Thay thế",
       "remark": "Ghi chú",
       "actions": "Thao tác",
+      "ungrouped": "Chưa phân loại",
+      "groupCount": "{count} vật tư",
       "noItems": "Chưa có chi tiết. Nhấn \"Thêm vật tư\""
     },
     "demand": {
@@ -108,8 +110,14 @@
         "cutting": "Cắt",
         "assembly": "Lắp ráp",
         "painting": "Sơn",
-        "packaging": "Đóng gói"
-      }
+        "packaging": "Đóng gói",
+        "sewing": "May",
+        "woodworking": "Khung gỗ",
+        "foam": "Dán mút",
+        "upholstery": "Bọc nệm",
+        "ironwork": "Khung sắt"
+      },
+      "processStepPlaceholder": "Chọn hoặc nhập công đoạn..."
     },
     "copyDialog": {
       "title": "Sao chép phiên bản BOM mới",

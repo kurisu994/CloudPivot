@@ -37,6 +37,7 @@ export interface MaterialItem {
   safetyStock: number
   maxStock: number
   isEnabled: boolean
+  nameVi: string | null
   createdAt: string | null
 }
 
@@ -81,6 +82,7 @@ const MOCK_MATERIALS: MaterialItem[] = [
     id: 1,
     code: 'M-1002',
     name: '真皮三人沙发',
+    nameVi: 'Sofa da 3 chỗ',
     materialType: 'finished',
     categoryId: 3,
     categoryName: '客厅',
@@ -98,6 +100,7 @@ const MOCK_MATERIALS: MaterialItem[] = [
     id: 2,
     code: 'M-0001',
     name: '白橡实木板',
+    nameVi: 'Gỗ sồi trắng',
     materialType: 'raw',
     categoryId: 1,
     categoryName: '木材',
@@ -115,6 +118,7 @@ const MOCK_MATERIALS: MaterialItem[] = [
     id: 3,
     code: 'M-0002',
     name: '不锈钢铰链',
+    nameVi: 'Bản lề inox',
     materialType: 'raw',
     categoryId: 2,
     categoryName: '五金',
@@ -132,6 +136,7 @@ const MOCK_MATERIALS: MaterialItem[] = [
     id: 4,
     code: 'M-1001',
     name: '北欧实木餐桌',
+    nameVi: 'Bàn ăn gỗ tự nhiên',
     materialType: 'finished',
     categoryId: 4,
     categoryName: '餐厅',
