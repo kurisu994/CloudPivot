@@ -1,3 +1,15 @@
+/** 开料明细行（页面状态，snake_case 与明细行约定一致） */
+export interface BomCuttingPageRow {
+  part_name: string | null
+  length_mm: number | null
+  width_mm: number | null
+  height_mm: number | null
+  qty: number
+  spec: string | null
+  remark: string | null
+  sort_order: number
+}
+
 export interface BomItemPageRow {
   id?: number
   bomId?: number
@@ -17,6 +29,7 @@ export interface BomItemPageRow {
   substitute_name: string | null
   remark: string | null
   sort_order: number
+  cutting_details: BomCuttingPageRow[]
 }
 
 export interface BomDetailPageState {
@@ -31,7 +44,22 @@ export interface BomDetailPageState {
   effective_date: string | null
   total_standard_cost: number
   remark: string | null
+  container_qty: number | null
   items: BomItemPageRow[]
+}
+
+/** 开料明细行（后端 camelCase 响应） */
+export interface BomCuttingResponse {
+  id?: number
+  bomItemId?: number
+  partName: string | null
+  lengthMm: number | null
+  widthMm: number | null
+  heightMm: number | null
+  qty: number
+  spec: string | null
+  remark: string | null
+  sortOrder: number
 }
 
 export interface BomItemResponse {
@@ -53,6 +81,7 @@ export interface BomItemResponse {
   substituteName: string | null
   remark: string | null
   sortOrder: number
+  cuttingDetails: BomCuttingResponse[]
 }
 
 export interface BomDetailResponse {
@@ -69,6 +98,7 @@ export interface BomDetailResponse {
   remark: string | null
   createdAt: string | null
   updatedAt: string | null
+  containerQty: number | null
   items: BomItemResponse[]
 }
 
@@ -80,7 +110,21 @@ interface BuildSaveBomArgsInput {
   status: string
   isNew: boolean
   remark: string
-  items: Pick<BomItemPageRow, 'child_material_id' | 'standard_qty' | 'wastage_rate' | 'process_step' | 'is_key_part' | 'substitute_id' | 'remark'>[]
+  items: Pick<
+    BomItemPageRow,
+    'child_material_id' | 'standard_qty' | 'wastage_rate' | 'process_step' | 'is_key_part' | 'substitute_id' | 'remark' | 'cutting_details'
+  >[]
+}
+
+interface SaveCuttingDetailParams {
+  partName: string | null
+  lengthMm: number | null
+  widthMm: number | null
+  heightMm: number | null
+  qty: number
+  spec: string | null
+  remark: string | null
+  sortOrder: number
 }
 
 interface SaveBomItemParams {
@@ -92,6 +136,7 @@ interface SaveBomItemParams {
   substituteId: number | null
   remark: string | null
   sortOrder: number
+  cuttingDetails: SaveCuttingDetailParams[]
 }
 
 interface SaveBomParams {
@@ -133,6 +178,16 @@ export function buildSaveBomArgs(input: BuildSaveBomArgsInput): SaveBomArgs {
         substituteId: item.substitute_id,
         remark: item.remark || null,
         sortOrder: idx + 1,
+        cuttingDetails: (item.cutting_details ?? []).map((detail, detailIdx) => ({
+          partName: detail.part_name || null,
+          lengthMm: detail.length_mm,
+          widthMm: detail.width_mm,
+          heightMm: detail.height_mm,
+          qty: detail.qty,
+          spec: detail.spec || null,
+          remark: detail.remark || null,
+          sortOrder: detailIdx + 1,
+        })),
       })),
     },
   }
@@ -151,6 +206,7 @@ export function normalizeBomDetail(detail: BomDetailResponse): BomDetailPageStat
     effective_date: detail.effectiveDate,
     total_standard_cost: detail.totalStandardCost,
     remark: detail.remark,
+    container_qty: detail.containerQty,
     items: detail.items.map(item => ({
       id: item.id,
       bomId: item.bomId,
@@ -170,6 +226,16 @@ export function normalizeBomDetail(detail: BomDetailResponse): BomDetailPageStat
       substitute_name: item.substituteName,
       remark: item.remark,
       sort_order: item.sortOrder,
+      cutting_details: (item.cuttingDetails ?? []).map(detail => ({
+        part_name: detail.partName,
+        length_mm: detail.lengthMm,
+        width_mm: detail.widthMm,
+        height_mm: detail.heightMm,
+        qty: detail.qty,
+        spec: detail.spec,
+        remark: detail.remark,
+        sort_order: detail.sortOrder,
+      })),
     })),
   }
 }

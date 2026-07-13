@@ -40,6 +40,22 @@ pub struct BomFilter {
     pub page_size: i32,
 }
 
+/// BOM 开料明细行（部位级拆解）
+#[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct BomCuttingDetail {
+    pub id: i64,
+    pub bom_item_id: i64,
+    pub part_name: Option<String>,
+    pub length_mm: Option<f64>,
+    pub width_mm: Option<f64>,
+    pub height_mm: Option<f64>,
+    pub qty: f64,
+    pub spec: Option<String>,
+    pub remark: Option<String>,
+    pub sort_order: i32,
+}
+
 /// BOM 明细项（含物料信息）
 #[derive(Debug, Serialize, FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -62,6 +78,9 @@ pub struct BomItemDetail {
     pub substitute_name: Option<String>,
     pub remark: Option<String>,
     pub sort_order: i32,
+    /// 开料明细，明细查询后单独填充
+    #[sqlx(skip)]
+    pub cutting_details: Vec<BomCuttingDetail>,
 }
 
 /// BOM 详情（头 + 明细）
@@ -81,6 +100,8 @@ pub struct BomDetail {
     pub remark: Option<String>,
     pub created_at: Option<String>,
     pub updated_at: Option<String>,
+    /// 成品每柜件数（来自物料主数据，需求计算 TC 模式自动带入）
+    pub container_qty: Option<i64>,
     pub items: Vec<BomItemDetail>,
 }
 
@@ -100,6 +121,7 @@ struct BomHeaderRow {
     remark: Option<String>,
     created_at: Option<String>,
     updated_at: Option<String>,
+    container_qty: Option<i64>,
 }
 
 /// 保存 BOM 参数
@@ -125,6 +147,22 @@ pub struct SaveBomItemParams {
     pub process_step: Option<String>,
     pub is_key_part: bool,
     pub substitute_id: Option<i64>,
+    pub remark: Option<String>,
+    pub sort_order: i32,
+    #[serde(default)]
+    pub cutting_details: Vec<SaveCuttingDetailParams>,
+}
+
+/// 保存 BOM 开料明细参数
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveCuttingDetailParams {
+    pub part_name: Option<String>,
+    pub length_mm: Option<f64>,
+    pub width_mm: Option<f64>,
+    pub height_mm: Option<f64>,
+    pub qty: f64,
+    pub spec: Option<String>,
     pub remark: Option<String>,
     pub sort_order: i32,
 }
@@ -267,7 +305,8 @@ pub async fn get_bom_detail(db: State<'_, DbState>, id: i64) -> Result<BomDetail
         r#"SELECT b.id, b.bom_code, b.material_id,
                   m.code as material_code, m.name as material_name, m.spec as material_spec,
                   b.version, b.status, b.effective_date, b.total_standard_cost,
-                  b.remark, b.created_at::TEXT, b.updated_at::TEXT
+                  b.remark, b.created_at::TEXT, b.updated_at::TEXT,
+                  m.container_qty
            FROM bom b
            LEFT JOIN materials m ON b.material_id = m.id
            WHERE b.id = $1"#,
@@ -278,7 +317,7 @@ pub async fn get_bom_detail(db: State<'_, DbState>, id: i64) -> Result<BomDetail
     .map_err(|e| AppError::Database(format!("获取 BOM 详情失败: {}", e)))?;
 
     // 查询明细
-    let items = sqlx::query_as::<_, BomItemDetail>(
+    let mut items = sqlx::query_as::<_, BomItemDetail>(
         r#"SELECT bi.id, bi.bom_id, bi.child_material_id,
                   m.code as material_code, m.name as material_name, m.name_vi as material_name_vi, m.spec as material_spec,
                   u.name as unit_name, m.ref_cost_price,
@@ -298,6 +337,25 @@ pub async fn get_bom_detail(db: State<'_, DbState>, id: i64) -> Result<BomDetail
     .await
     .map_err(|e| AppError::Database(format!("获取 BOM 明细失败: {}", e)))?;
 
+    // 查询开料明细并按明细行归组
+    let cutting_rows = sqlx::query_as::<_, BomCuttingDetail>(
+        r#"SELECT id, bom_item_id, part_name, length_mm, width_mm, height_mm,
+                  qty, spec, remark, sort_order
+           FROM bom_cutting_details
+           WHERE bom_item_id IN (SELECT id FROM bom_items WHERE bom_id = $1)
+           ORDER BY sort_order ASC, id ASC"#,
+    )
+    .bind(id)
+    .fetch_all(&db.pool)
+    .await
+    .map_err(|e| AppError::Database(format!("获取 BOM 开料明细失败: {}", e)))?;
+
+    for row in cutting_rows {
+        if let Some(item) = items.iter_mut().find(|i| i.id == row.bom_item_id) {
+            item.cutting_details.push(row);
+        }
+    }
+
     Ok(BomDetail {
         id: header.id,
         bom_code: header.bom_code,
@@ -312,6 +370,7 @@ pub async fn get_bom_detail(db: State<'_, DbState>, id: i64) -> Result<BomDetail
         remark: header.remark,
         created_at: header.created_at,
         updated_at: header.updated_at,
+        container_qty: header.container_qty,
         items,
     })
 }
@@ -348,6 +407,15 @@ pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i
         .await
         .map_err(|e| AppError::Database(format!("更新 BOM 失败: {}", e)))?;
 
+        // 删除旧开料明细（明细行删除重建后 id 会变化，必须先清理）
+        sqlx::query(
+            "DELETE FROM bom_cutting_details WHERE bom_item_id IN (SELECT id FROM bom_items WHERE bom_id = $1)",
+        )
+        .bind(id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("删除旧开料明细失败: {}", e)))?;
+
         // 删除旧明细
         sqlx::query("DELETE FROM bom_items WHERE bom_id = $1")
             .bind(id)
@@ -377,14 +445,15 @@ pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i
         .map_err(|e| AppError::Database(format!("创建 BOM 失败: {}", e)))?;
     }
 
-    // 插入新明细
+    // 插入新明细（含开料明细）
     for item in &params.items {
-        sqlx::query(
+        let item_id: i64 = sqlx::query_scalar(
             r#"INSERT INTO bom_items (
                 bom_id, child_material_id, standard_qty, wastage_rate,
                 process_step, is_key_part, substitute_id, remark, sort_order,
                 created_at, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())"#,
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+            RETURNING id"#,
         )
         .bind(bom_id)
         .bind(item.child_material_id)
@@ -395,9 +464,30 @@ pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i
         .bind(item.substitute_id)
         .bind(&item.remark)
         .bind(item.sort_order)
-        .execute(&mut *tx)
+        .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("插入 BOM 明细失败: {}", e)))?;
+
+        for detail in &item.cutting_details {
+            sqlx::query(
+                r#"INSERT INTO bom_cutting_details (
+                    bom_item_id, part_name, length_mm, width_mm, height_mm,
+                    qty, spec, remark, sort_order, created_at, updated_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())"#,
+            )
+            .bind(item_id)
+            .bind(&detail.part_name)
+            .bind(detail.length_mm)
+            .bind(detail.width_mm)
+            .bind(detail.height_mm)
+            .bind(detail.qty)
+            .bind(&detail.spec)
+            .bind(&detail.remark)
+            .bind(detail.sort_order)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("插入开料明细失败: {}", e)))?;
+        }
     }
 
     // 重新计算标准成本（USD 最小货币单位）
@@ -457,6 +547,14 @@ pub async fn delete_bom(db: State<'_, DbState>, id: i64) -> Result<(), AppError>
         .begin()
         .await
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
+
+    sqlx::query(
+        "DELETE FROM bom_cutting_details WHERE bom_item_id IN (SELECT id FROM bom_items WHERE bom_id = $1)",
+    )
+    .bind(id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("删除 BOM 开料明细失败: {}", e)))?;
 
     sqlx::query("DELETE FROM bom_items WHERE bom_id = $1")
         .bind(id)
@@ -565,21 +663,44 @@ pub async fn copy_bom(
     .await
     .map_err(|e| AppError::Database(format!("创建新 BOM 失败: {}", e)))?;
 
-    // 复制明细
-    sqlx::query(
-        r#"INSERT INTO bom_items (bom_id, child_material_id, standard_qty, wastage_rate,
-                                   process_step, is_key_part, substitute_id, remark, sort_order,
-                                   created_at, updated_at)
-           SELECT $1, child_material_id, standard_qty, wastage_rate,
-                  process_step, is_key_part, substitute_id, remark, sort_order,
-                  NOW(), NOW()
-           FROM bom_items WHERE bom_id = $2"#,
-    )
-    .bind(new_id)
-    .bind(source_id)
-    .execute(&mut *tx)
-    .await
-    .map_err(|e| AppError::Database(format!("复制 BOM 明细失败: {}", e)))?;
+    // 逐行复制明细，保留新旧明细 id 映射以级联复制开料明细
+    let source_item_ids: Vec<(i64,)> =
+        sqlx::query_as("SELECT id FROM bom_items WHERE bom_id = $1 ORDER BY sort_order ASC, id ASC")
+            .bind(source_id)
+            .fetch_all(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("查询源 BOM 明细失败: {}", e)))?;
+
+    for (old_item_id,) in source_item_ids {
+        let new_item_id: i64 = sqlx::query_scalar(
+            r#"INSERT INTO bom_items (bom_id, child_material_id, standard_qty, wastage_rate,
+                                       process_step, is_key_part, substitute_id, remark, sort_order,
+                                       created_at, updated_at)
+               SELECT $1, child_material_id, standard_qty, wastage_rate,
+                      process_step, is_key_part, substitute_id, remark, sort_order,
+                      NOW(), NOW()
+               FROM bom_items WHERE id = $2
+               RETURNING id"#,
+        )
+        .bind(new_id)
+        .bind(old_item_id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("复制 BOM 明细失败: {}", e)))?;
+
+        sqlx::query(
+            r#"INSERT INTO bom_cutting_details (bom_item_id, part_name, length_mm, width_mm, height_mm,
+                                                 qty, spec, remark, sort_order, created_at, updated_at)
+               SELECT $1, part_name, length_mm, width_mm, height_mm,
+                      qty, spec, remark, sort_order, NOW(), NOW()
+               FROM bom_cutting_details WHERE bom_item_id = $2"#,
+        )
+        .bind(new_item_id)
+        .bind(old_item_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("复制开料明细失败: {}", e)))?;
+    }
 
     // 复制标准成本
     sqlx::query(

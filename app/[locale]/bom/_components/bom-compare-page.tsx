@@ -54,6 +54,7 @@ function mockItem(row: {
     substitute_name: null,
     remark: null,
     sort_order: 0,
+    cutting_details: [],
   }
 }
 
@@ -70,6 +71,7 @@ const MOCK_COMPARE_DETAILS: BomDetailPageState[] = [
     effective_date: '2026-06-01',
     total_standard_cost: 0,
     remark: null,
+    container_qty: 95,
     items: [
       mockItem({
         child_material_id: 21,
@@ -105,6 +107,7 @@ const MOCK_COMPARE_DETAILS: BomDetailPageState[] = [
     effective_date: '2026-06-01',
     total_standard_cost: 0,
     remark: null,
+    container_qty: 38,
     items: [
       mockItem({
         child_material_id: 21,

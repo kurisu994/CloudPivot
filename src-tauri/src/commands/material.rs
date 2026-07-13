@@ -363,13 +363,15 @@ pub async fn get_material_by_id(
 ) -> Result<SaveMaterialParams, AppError> {
     sqlx::query_as::<_, SaveMaterialParams>(
         r#"
-        SELECT 
+        SELECT
             id, code, name, name_vi, material_type, category_id, spec,
             base_unit_id, aux_unit_id, conversion_rate,
             ref_cost_price, sale_price, safety_stock, max_stock,
             lot_tracking_mode, texture, color, surface_craft,
-            length_mm, width_mm, height_mm, barcode, remark
-        FROM materials 
+            length_mm, width_mm, height_mm, barcode, remark,
+            customer_item_no, pack_length_mm, pack_width_mm, pack_height_mm,
+            net_weight_kg, gross_weight_kg, packing_method, container_qty
+        FROM materials
         WHERE id = $1
         "#,
     )
@@ -405,6 +407,15 @@ pub struct SaveMaterialParams {
     pub height_mm: Option<f64>,
     pub barcode: Option<String>,
     pub remark: Option<String>,
+    // 包装与装柜信息（主要用于成品）
+    pub customer_item_no: Option<String>,
+    pub pack_length_mm: Option<f64>,
+    pub pack_width_mm: Option<f64>,
+    pub pack_height_mm: Option<f64>,
+    pub net_weight_kg: Option<f64>,
+    pub gross_weight_kg: Option<f64>,
+    pub packing_method: Option<String>,
+    pub container_qty: Option<i64>,
 }
 
 /// 生成下一个物料编码（格式由系统配置决定，默认 `M-0001`）
@@ -459,13 +470,16 @@ pub async fn save_material(
         sqlx::query(
             "UPDATE materials SET
                 code = $1, name = $2, name_vi = $3, material_type = $4, category_id = $5, spec = $6,
-                base_unit_id = $7, aux_unit_id = $8, conversion_rate = $9, 
+                base_unit_id = $7, aux_unit_id = $8, conversion_rate = $9,
                 ref_cost_price = COALESCE($10, 0), sale_price = COALESCE($11, 0),
                 safety_stock = COALESCE($12, 0), max_stock = COALESCE($13, 0),
                 lot_tracking_mode = COALESCE($14, 'none'), texture = $15, color = $16,
                 surface_craft = $17, length_mm = $18, width_mm = $19, height_mm = $20,
-                barcode = $21, remark = $22, updated_at = NOW()
-             WHERE id = $23",
+                barcode = $21, remark = $22,
+                customer_item_no = $23, pack_length_mm = $24, pack_width_mm = $25,
+                pack_height_mm = $26, net_weight_kg = $27, gross_weight_kg = $28,
+                packing_method = $29, container_qty = $30, updated_at = NOW()
+             WHERE id = $31",
         )
         .bind(&code)
         .bind(&params.name)
@@ -489,6 +503,14 @@ pub async fn save_material(
         .bind(params.height_mm)
         .bind(&params.barcode)
         .bind(&params.remark)
+        .bind(&params.customer_item_no)
+        .bind(params.pack_length_mm)
+        .bind(params.pack_width_mm)
+        .bind(params.pack_height_mm)
+        .bind(params.net_weight_kg)
+        .bind(params.gross_weight_kg)
+        .bind(&params.packing_method)
+        .bind(params.container_qty)
         .bind(id)
         .execute(&db.pool)
         .await
@@ -504,11 +526,14 @@ pub async fn save_material(
                 ref_cost_price, sale_price, safety_stock, max_stock,
                 lot_tracking_mode, texture, color, surface_craft,
                 length_mm, width_mm, height_mm, barcode, remark,
+                customer_item_no, pack_length_mm, pack_width_mm, pack_height_mm,
+                net_weight_kg, gross_weight_kg, packing_method, container_qty,
                 is_enabled, created_at, updated_at
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, 0), COALESCE($11, 0),
                 COALESCE($12, 0), COALESCE($13, 0), COALESCE($14, 'none'), $15, $16, $17,
-                $18, $19, $20, $21, $22, TRUE, NOW(), NOW()
+                $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+                TRUE, NOW(), NOW()
             ) RETURNING id",
         )
         .bind(&code)
@@ -533,6 +558,14 @@ pub async fn save_material(
         .bind(params.height_mm)
         .bind(&params.barcode)
         .bind(&params.remark)
+        .bind(&params.customer_item_no)
+        .bind(params.pack_length_mm)
+        .bind(params.pack_width_mm)
+        .bind(params.pack_height_mm)
+        .bind(params.net_weight_kg)
+        .bind(params.gross_weight_kg)
+        .bind(&params.packing_method)
+        .bind(params.container_qty)
         .fetch_one(&db.pool)
         .await
         .map_err(|e| AppError::Database(format!("创建物料失败: {}", e)))?;

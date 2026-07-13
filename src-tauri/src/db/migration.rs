@@ -102,6 +102,16 @@ fn get_migrations() -> Vec<Migration> {
             name: "materials_name_vi",
             sql: include_str!("../../migrations/postgres/014_materials_name_vi.sql"),
         },
+        Migration {
+            version: 15,
+            name: "materials_packaging",
+            sql: include_str!("../../migrations/postgres/015_materials_packaging.sql"),
+        },
+        Migration {
+            version: 16,
+            name: "bom_cutting_details",
+            sql: include_str!("../../migrations/postgres/016_bom_cutting_details.sql"),
+        },
     ]
 }
 

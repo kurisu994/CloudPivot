@@ -216,6 +216,8 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave, usedPro
       substitute_name: null,
       remark: itemRemark || null,
       sort_order: 0,
+      // 编辑时保留已有开料明细，新增行为空
+      cutting_details: editingItem?.cutting_details ?? [],
     })
   }
 

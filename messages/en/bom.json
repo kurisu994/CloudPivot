@@ -99,6 +99,20 @@
       "total": "Total",
       "empty": "No items in selected BOMs"
     },
+    "cutting": {
+      "title": "Cutting Details",
+      "partName": "Part",
+      "length": "L (mm)",
+      "width": "W (mm)",
+      "height": "H/Thk (mm)",
+      "qty": "Qty",
+      "spec": "Spec",
+      "specPlaceholder": "e.g. 25 density 50 hardness",
+      "remark": "Remark",
+      "volume": "Volume (m³)",
+      "totalVolume": "Total Volume",
+      "addRow": "Add Part"
+    },
     "reverseLookup": {
       "title": "Material Reverse Lookup",
       "placeholder": "Enter material name/code to see which BOMs use it",

@@ -43,6 +43,14 @@ interface MaterialFormData {
   heightMm: number | null
   barcode: string
   remark: string
+  customerItemNo: string
+  packLengthMm: number | null
+  packWidthMm: number | null
+  packHeightMm: number | null
+  netWeightKg: number | null
+  grossWeightKg: number | null
+  packingMethod: string
+  containerQty: number | null
 }
 
 const EMPTY_FORM: MaterialFormData = {
@@ -69,6 +77,14 @@ const EMPTY_FORM: MaterialFormData = {
   heightMm: null,
   barcode: '',
   remark: '',
+  customerItemNo: '',
+  packLengthMm: null,
+  packWidthMm: null,
+  packHeightMm: null,
+  netWeightKg: null,
+  grossWeightKg: null,
+  packingMethod: '',
+  containerQty: null,
 }
 
 /* ------------------------------------------------------------------ */
@@ -169,6 +185,8 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
             barcode: detail.barcode ?? '',
             remark: detail.remark ?? '',
             lotTrackingMode: detail.lotTrackingMode ?? 'none',
+            customerItemNo: detail.customerItemNo ?? '',
+            packingMethod: detail.packingMethod ?? '',
           })
         })
         .catch(e => {
@@ -529,6 +547,101 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                   </Field>
                 </FieldGroup>
               </div>
+
+              {/* ━━━ 包装与装柜 ━━━ */}
+              <SectionTitle title={t('form.sectionPacking')} />
+              <FieldGroup>
+                <div className="grid grid-cols-3 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="customerItemNo">{t('form.customerItemNo')}</FieldLabel>
+                    <Input
+                      id="customerItemNo"
+                      placeholder={t('form.customerItemNoPlaceholder')}
+                      value={form.customerItemNo}
+                      onChange={e => setField('customerItemNo', e.target.value)}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="packingMethod">{t('form.packingMethod')}</FieldLabel>
+                    <Input
+                      id="packingMethod"
+                      placeholder={t('form.packingMethodPlaceholder')}
+                      value={form.packingMethod}
+                      onChange={e => setField('packingMethod', e.target.value)}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="containerQty">{t('form.containerQty')}</FieldLabel>
+                    <Input
+                      id="containerQty"
+                      type="number"
+                      min={0}
+                      value={form.containerQty ?? ''}
+                      onChange={e => setField('containerQty', parseInt(e.target.value, 10) || null)}
+                      placeholder="0"
+                    />
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel>{t('form.packDimensions')}</FieldLabel>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          value={form.packLengthMm ?? ''}
+                          onChange={e => setField('packLengthMm', parseFloat(e.target.value) || null)}
+                          placeholder="0"
+                        />
+                        <span className="text-muted-foreground absolute top-2.5 right-3 text-xs">{t('form.labelL')}</span>
+                      </div>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          value={form.packWidthMm ?? ''}
+                          onChange={e => setField('packWidthMm', parseFloat(e.target.value) || null)}
+                          placeholder="0"
+                        />
+                        <span className="text-muted-foreground absolute top-2.5 right-3 text-xs">{t('form.labelW')}</span>
+                      </div>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          value={form.packHeightMm ?? ''}
+                          onChange={e => setField('packHeightMm', parseFloat(e.target.value) || null)}
+                          placeholder="0"
+                        />
+                        <span className="text-muted-foreground absolute top-2.5 right-3 text-xs">{t('form.labelH')}</span>
+                      </div>
+                    </div>
+                  </Field>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field>
+                      <FieldLabel htmlFor="netWeight">{t('form.netWeightKg')}</FieldLabel>
+                      <Input
+                        id="netWeight"
+                        type="number"
+                        min={0}
+                        value={form.netWeightKg ?? ''}
+                        onChange={e => setField('netWeightKg', parseFloat(e.target.value) || null)}
+                        placeholder="0"
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="grossWeight">{t('form.grossWeightKg')}</FieldLabel>
+                      <Input
+                        id="grossWeight"
+                        type="number"
+                        min={0}
+                        value={form.grossWeightKg ?? ''}
+                        onChange={e => setField('grossWeightKg', parseFloat(e.target.value) || null)}
+                        placeholder="0"
+                      />
+                    </Field>
+                  </div>
+                </div>
+              </FieldGroup>
 
               {/* ━━━ 其他信息 ━━━ */}
               <SectionTitle title={t('form.sectionOther')} />

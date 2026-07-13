@@ -99,6 +99,20 @@
       "total": "Tổng cộng",
       "empty": "BOM đã chọn chưa có chi tiết"
     },
+    "cutting": {
+      "title": "Chi tiết cắt liệu",
+      "partName": "Bộ phận",
+      "length": "Dài (mm)",
+      "width": "Rộng (mm)",
+      "height": "Cao/Dày (mm)",
+      "qty": "SL",
+      "spec": "Quy cách",
+      "specPlaceholder": "VD: 25 tỷ trọng 50 độ cứng",
+      "remark": "Ghi chú",
+      "volume": "Thể tích (m³)",
+      "totalVolume": "Tổng thể tích",
+      "addRow": "Thêm bộ phận"
+    },
     "reverseLookup": {
       "title": "Tra cứu ngược vật tư",
       "placeholder": "Nhập tên/mã vật tư để xem BOM nào sử dụng",

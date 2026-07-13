@@ -21,6 +21,18 @@ test('buildSaveBomArgs maps BOM rows to save_bom camelCase params', () => {
         is_key_part: true,
         substitute_id: null,
         remark: '',
+        cutting_details: [
+          {
+            part_name: '背耳',
+            length_mm: 110,
+            width_mm: 30,
+            height_mm: 20,
+            qty: 12,
+            spec: '25密度 50硬度',
+            remark: null,
+            sort_order: 0,
+          },
+        ],
       },
     ],
   })
@@ -43,6 +55,18 @@ test('buildSaveBomArgs maps BOM rows to save_bom camelCase params', () => {
           substituteId: null,
           remark: null,
           sortOrder: 1,
+          cuttingDetails: [
+            {
+              partName: '背耳',
+              lengthMm: 110,
+              widthMm: 30,
+              heightMm: 20,
+              qty: 12,
+              spec: '25密度 50硬度',
+              remark: null,
+              sortOrder: 1,
+            },
+          ],
         },
       ],
     },

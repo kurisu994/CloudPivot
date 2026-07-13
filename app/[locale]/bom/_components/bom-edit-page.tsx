@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Calculator, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Calculator, Pencil, Plus, Scissors, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -15,6 +15,7 @@ import { formatAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
 import { invoke, isTauriEnv } from '@/lib/tauri'
 import { type BomDetailPageState, type BomDetailResponse, type BomItemPageRow, buildSaveBomArgs, normalizeBomDetail } from './bom-command-args'
+import { BomCuttingDialog } from './bom-cutting-dialog'
 import { BomItemDialog } from './bom-item-dialog'
 import { compareProcessSteps, translateProcessStep } from './process-steps'
 
@@ -67,6 +68,7 @@ const MOCK_BOM_DETAIL: BomDetail = {
   effective_date: '2026-03-15',
   total_standard_cost: 4500,
   remark: null,
+  container_qty: 95,
   items: [
     {
       child_material_id: 1,
@@ -85,6 +87,7 @@ const MOCK_BOM_DETAIL: BomDetail = {
       substitute_name: null,
       remark: null,
       sort_order: 1,
+      cutting_details: [],
     },
     {
       child_material_id: 7,
@@ -103,6 +106,10 @@ const MOCK_BOM_DETAIL: BomDetail = {
       substitute_name: null,
       remark: null,
       sort_order: 2,
+      cutting_details: [
+        { part_name: '背耳', length_mm: 110, width_mm: 30, height_mm: 20, qty: 12, spec: null, remark: null, sort_order: 1 },
+        { part_name: '座框', length_mm: 420, width_mm: 40, height_mm: 40, qty: 4, spec: null, remark: null, sort_order: 2 },
+      ],
     },
     {
       child_material_id: 8,
@@ -121,6 +128,7 @@ const MOCK_BOM_DETAIL: BomDetail = {
       substitute_name: null,
       remark: null,
       sort_order: 3,
+      cutting_details: [],
     },
     {
       child_material_id: 9,
@@ -139,6 +147,7 @@ const MOCK_BOM_DETAIL: BomDetail = {
       substitute_name: null,
       remark: null,
       sort_order: 4,
+      cutting_details: [],
     },
     {
       child_material_id: 10,
@@ -157,6 +166,7 @@ const MOCK_BOM_DETAIL: BomDetail = {
       substitute_name: null,
       remark: null,
       sort_order: 5,
+      cutting_details: [],
     },
   ],
 }
@@ -200,6 +210,11 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
   const [demandMode, setDemandMode] = useState<'production' | 'container'>('production')
   // 当前结果对应的计算模式（切换下拉不影响已算出的结果表头）
   const [calculatedMode, setCalculatedMode] = useState<'production' | 'container'>('production')
+  // 成品每柜件数（物料主数据），切换到 TC 模式时自动带入
+  const [containerQty, setContainerQty] = useState<number | null>(null)
+
+  // 开料明细弹窗对应的明细行索引
+  const [cuttingItemIndex, setCuttingItemIndex] = useState<number | null>(null)
 
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -286,6 +301,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
       setBomCode(detail.bom_code)
       setStatus(detail.status)
       setItems(detail.items)
+      setContainerQty(detail.container_qty)
       setLoading(false)
       return
     }
@@ -298,6 +314,7 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
       setBomCode(detail.bom_code)
       setStatus(detail.status)
       setItems(detail.items)
+      setContainerQty(detail.container_qty)
     } catch (e) {
       toast.error(getErrorMessage(e, t('notifications.loadFailed')))
     } finally {
@@ -576,6 +593,20 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
                                 >
                                   <Pencil className="size-3.5" />
                                 </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setCuttingItemIndex(originalIndex)}
+                                  title={t('cutting.title')}
+                                  className="relative"
+                                >
+                                  <Scissors className="size-3.5" />
+                                  {item.cutting_details.length > 0 && (
+                                    <span className="bg-primary text-primary-foreground absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-[0.5625rem] leading-none">
+                                      {item.cutting_details.length}
+                                    </span>
+                                  )}
+                                </Button>
                                 <Button variant="ghost" size="sm" onClick={() => handleRemoveItem(originalIndex)}>
                                   <Trash2 className="text-destructive size-3.5" />
                                 </Button>
@@ -598,8 +629,18 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
         <div className="border-border bg-card rounded-xl border p-6 shadow-sm">
           <h3 className="text-foreground mb-4 font-semibold">{t('demand.title')}</h3>
           <div className="mb-4 flex items-center gap-3">
-            {/* 计算模式：按生产数量 / 按装柜件数（TC） */}
-            <Select value={demandMode} onValueChange={v => setDemandMode(v === 'container' ? 'container' : 'production')} items={demandModeItems}>
+            {/* 计算模式：按生产数量 / 按装柜件数（TC），切到 TC 时自动带入物料主数据的每柜件数 */}
+            <Select
+              value={demandMode}
+              onValueChange={v => {
+                const mode = v === 'container' ? 'container' : 'production'
+                setDemandMode(mode)
+                if (mode === 'container' && containerQty) {
+                  setDemandQty(String(containerQty))
+                }
+              }}
+              items={demandModeItems}
+            >
               <SelectTrigger className="w-[11rem]">
                 <SelectValue />
               </SelectTrigger>
@@ -671,6 +712,21 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
         editingItem={editingItemIndex !== null ? items[editingItemIndex] : null}
         onSave={handleItemSave}
         usedProcessSteps={usedProcessSteps}
+      />
+
+      {/* 开料明细弹窗 */}
+      <BomCuttingDialog
+        open={cuttingItemIndex !== null}
+        onOpenChange={open => {
+          if (!open) setCuttingItemIndex(null)
+        }}
+        materialLabel={cuttingItemIndex !== null ? (items[cuttingItemIndex]?.materialName ?? '') : ''}
+        details={cuttingItemIndex !== null ? (items[cuttingItemIndex]?.cutting_details ?? []) : []}
+        onSave={details => {
+          if (cuttingItemIndex === null) return
+          setItems(prev => prev.map((row, i) => (i === cuttingItemIndex ? { ...row, cutting_details: details } : row)))
+          setCuttingItemIndex(null)
+        }}
       />
     </div>
   )

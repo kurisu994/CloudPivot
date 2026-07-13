@@ -99,6 +99,20 @@
       "total": "合计",
       "empty": "所选 BOM 暂无明细"
     },
+    "cutting": {
+      "title": "开料明细",
+      "partName": "部位",
+      "length": "长 (mm)",
+      "width": "宽 (mm)",
+      "height": "高/厚 (mm)",
+      "qty": "数量",
+      "spec": "规格",
+      "specPlaceholder": "如 25密度 50硬度",
+      "remark": "备注",
+      "volume": "体积 (m³)",
+      "totalVolume": "体积合计",
+      "addRow": "添加部位"
+    },
     "reverseLookup": {
       "title": "物料反查",
       "placeholder": "输入物料名称/编码，查看该物料被哪些 BOM 使用",
