@@ -21,11 +21,11 @@ interface ChildMaterialOption {
   id: number
   code: string
   name: string
-  name_vi: string | null
+  nameVi: string | null
   spec: string | null
   materialType: string
   unitName: string | null
-  ref_cost_price: number
+  refCostPrice: number
 }
 
 /* ------------------------------------------------------------------ */
@@ -44,18 +44,18 @@ const MOCK_CHILD_MATERIALS: ChildMaterialOption[] = [
     id: 1,
     code: 'M-0001',
     name: '白橡实木板',
-    name_vi: 'Gỗ sồi trắng',
+    nameVi: 'Gỗ sồi trắng',
     spec: '2440×1220',
     materialType: 'raw',
     unitName: '张',
-    ref_cost_price: 28000,
+    refCostPrice: 28000,
   },
-  { id: 2, code: 'M-0002', name: '不锈钢铰链', name_vi: 'Bản lề inox', spec: '40mm', materialType: 'raw', unitName: '个', ref_cost_price: 48 },
-  { id: 7, code: 'M-0007', name: '木方', name_vi: 'Thanh gỗ', spec: '40×40', materialType: 'raw', unitName: '根', ref_cost_price: 1200 },
-  { id: 8, code: 'M-0008', name: '不锈钢腿', name_vi: 'Chân inox', spec: '710mm', materialType: 'raw', unitName: '个', ref_cost_price: 3500 },
-  { id: 9, code: 'M-0009', name: '螺丝M6', name_vi: 'Ốc vít M6', spec: '30mm', materialType: 'raw', unitName: '个', ref_cost_price: 15 },
-  { id: 10, code: 'M-0010', name: '木蜡油', name_vi: 'Dầu sáp gỗ', spec: null, materialType: 'raw', unitName: '千克', ref_cost_price: 6800 },
-  { id: 11, code: 'M-0011', name: '包装纸箱', name_vi: 'Thùng carton', spec: '特大', materialType: 'raw', unitName: '个', ref_cost_price: 2200 },
+  { id: 2, code: 'M-0002', name: '不锈钢铰链', nameVi: 'Bản lề inox', spec: '40mm', materialType: 'raw', unitName: '个', refCostPrice: 48 },
+  { id: 7, code: 'M-0007', name: '木方', nameVi: 'Thanh gỗ', spec: '40×40', materialType: 'raw', unitName: '根', refCostPrice: 1200 },
+  { id: 8, code: 'M-0008', name: '不锈钢腿', nameVi: 'Chân inox', spec: '710mm', materialType: 'raw', unitName: '个', refCostPrice: 3500 },
+  { id: 9, code: 'M-0009', name: '螺丝M6', nameVi: 'Ốc vít M6', spec: '30mm', materialType: 'raw', unitName: '个', refCostPrice: 15 },
+  { id: 10, code: 'M-0010', name: '木蜡油', nameVi: 'Dầu sáp gỗ', spec: null, materialType: 'raw', unitName: '千克', refCostPrice: 6800 },
+  { id: 11, code: 'M-0011', name: '包装纸箱', nameVi: 'Thùng carton', spec: '特大', materialType: 'raw', unitName: '个', refCostPrice: 2200 },
 ]
 
 /* ------------------------------------------------------------------ */
@@ -154,11 +154,11 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave, usedPro
         id: editingItem.child_material_id,
         code: editingItem.materialCode ?? '',
         name: editingItem.materialName ?? '',
-        name_vi: editingItem.materialNameVi ?? null,
+        nameVi: editingItem.materialNameVi ?? null,
         spec: editingItem.material_spec ?? null,
         materialType: 'raw',
         unitName: editingItem.unitName ?? null,
-        ref_cost_price: editingItem.ref_cost_price ?? 0,
+        refCostPrice: editingItem.ref_cost_price ?? 0,
       })
       setStandardQty(editingItem.standard_qty.toString())
       setWastageRate(editingItem.wastage_rate.toString())
@@ -207,10 +207,10 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave, usedPro
       child_material_id: selectedMaterial.id,
       materialCode: selectedMaterial.code,
       materialName: selectedMaterial.name,
-      materialNameVi: selectedMaterial.name_vi,
+      materialNameVi: selectedMaterial.nameVi,
       material_spec: selectedMaterial.spec,
       unitName: selectedMaterial.unitName,
-      ref_cost_price: selectedMaterial.ref_cost_price,
+      ref_cost_price: selectedMaterial.refCostPrice,
       standard_qty: qty,
       wastage_rate: wastage,
       actual_qty: actualQty,
@@ -258,7 +258,7 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave, usedPro
                     >
                       <span className="font-medium">
                         {m.name}
-                        {m.name_vi && <span className="text-muted-foreground ml-1.5 text-xs font-normal">({m.name_vi})</span>}
+                        {m.nameVi && <span className="text-muted-foreground ml-1.5 text-xs font-normal">({m.nameVi})</span>}
                       </span>
                       <span className="text-muted-foreground text-xs">{m.code}</span>
                       {m.spec && <span className="text-muted-foreground text-xs">({m.spec})</span>}
@@ -271,7 +271,7 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave, usedPro
                 <div className="bg-muted flex items-center justify-between rounded-md px-3 py-2">
                   <span className="text-sm font-medium">
                     {selectedMaterial.name}
-                    {selectedMaterial.name_vi && ` (${selectedMaterial.name_vi})`}
+                    {selectedMaterial.nameVi && ` (${selectedMaterial.nameVi})`}
                     {` (${selectedMaterial.code})`}
                     {selectedMaterial.spec && ` — ${selectedMaterial.spec}`}
                   </span>
@@ -288,7 +288,7 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave, usedPro
               <Label>{t('items.materialName')}</Label>
               <div className="bg-muted rounded-md px-3 py-2 text-sm">
                 {selectedMaterial.name}
-                {selectedMaterial.name_vi && ` (${selectedMaterial.name_vi})`}
+                {selectedMaterial.nameVi && ` (${selectedMaterial.nameVi})`}
                 {` (${selectedMaterial.code})`}
                 {selectedMaterial.spec && ` — ${selectedMaterial.spec}`}
               </div>

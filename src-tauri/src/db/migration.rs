@@ -97,6 +97,11 @@ fn get_migrations() -> Vec<Migration> {
                 "../../migrations/postgres/013_operator_revoke_manual_stock_confirm.sql"
             ),
         },
+        Migration {
+            version: 14,
+            name: "materials_name_vi",
+            sql: include_str!("../../migrations/postgres/014_materials_name_vi.sql"),
+        },
     ]
 }
 

@@ -716,7 +716,7 @@ pub async fn get_bom_child_materials(
         if !kw.is_empty() {
             let like = format!("%{}%", kw);
             return sqlx::query_as::<_, BomChildMaterialOption>(
-                r#"SELECT m.id, m.code, m.name, m.spec, m.material_type,
+                r#"SELECT m.id, m.code, m.name, m.name_vi, m.spec, m.material_type,
                           u.name as unit_name, m.ref_cost_price
                    FROM materials m
                    LEFT JOIN units u ON m.base_unit_id = u.id
@@ -733,7 +733,7 @@ pub async fn get_bom_child_materials(
     }
 
     sqlx::query_as::<_, BomChildMaterialOption>(
-        r#"SELECT m.id, m.code, m.name, m.spec, m.material_type,
+        r#"SELECT m.id, m.code, m.name, m.name_vi, m.spec, m.material_type,
                   u.name as unit_name, m.ref_cost_price
            FROM materials m
            LEFT JOIN units u ON m.base_unit_id = u.id
@@ -753,6 +753,7 @@ pub struct BomChildMaterialOption {
     pub id: i64,
     pub code: String,
     pub name: String,
+    pub name_vi: Option<String>,
     pub spec: Option<String>,
     pub material_type: String,
     pub unit_name: Option<String>,
