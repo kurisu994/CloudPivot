@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { invoke, isTauriEnv } from '@/lib/tauri'
 
 import type { BomItemRow } from './bom-edit-page'
+import { isPresetProcessStep, normalizeProcessStep, PRESET_PROCESS_STEP_KEYS, translateProcessStep } from './process-steps'
 
 /* ------------------------------------------------------------------ */
 /*  类型                                                               */
@@ -27,13 +28,6 @@ interface ChildMaterialOption {
   unitName: string | null
   refCostPrice: number
 }
-
-/* ------------------------------------------------------------------ */
-/*  预设工序 key 列表                                                    */
-/* ------------------------------------------------------------------ */
-
-/** 系统预设的工序 key，存储时用英文 key，展示时走 i18n 翻译 */
-const PRESET_PROCESS_STEP_KEYS = ['sewing', 'woodworking', 'foam', 'upholstery', 'ironwork', 'cutting', 'assembly', 'painting', 'packaging'] as const
 
 /* ------------------------------------------------------------------ */
 /*  Mock 数据                                                          */
@@ -96,24 +90,25 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave, usedPro
   const processStepRef = useRef<HTMLDivElement>(null)
 
   /**
-   * 工序建议列表：预设工序 + 已用工序（去重），按输入关键词过滤
-   * 每项包含 key（存储值）和 label（展示文本）
+   * 工序建议列表：预设工序 + 已用工序（去重），按输入关键词过滤。
+   * 输入框中始终展示 label，保存时由 normalizeProcessStep 归一为存储 key。
    */
   const processStepSuggestions = useMemo(() => {
     // 构建预设工序选项（key → i18n 翻译 label）
     const presetOptions = PRESET_PROCESS_STEP_KEYS.map(key => ({
       key,
-      label: t(`form.processSteps.${key}` as any) as string,
+      label: translateProcessStep(key, t),
     }))
+    const presetLabels = new Set(presetOptions.map(opt => opt.label))
 
-    // 已用工序中非预设 key 的自定义值
-    const customUsed = usedProcessSteps.filter(v => v && !PRESET_PROCESS_STEP_KEYS.includes(v as any)).map(v => ({ key: v, label: v }))
+    // 已用工序中的自定义值（排除预设 key 及与预设 label 重复的字面文本）
+    const customUsed = usedProcessSteps.filter(v => v && !isPresetProcessStep(v) && !presetLabels.has(v)).map(v => ({ key: v, label: v }))
 
     const all = [...presetOptions, ...customUsed]
 
     // 按输入关键词过滤
-    if (!processStep) return all
-    const kw = processStep.toLowerCase()
+    const kw = processStep.trim().toLowerCase()
+    if (!kw) return all
     return all.filter(opt => opt.key.toLowerCase().includes(kw) || opt.label.toLowerCase().includes(kw))
   }, [t, usedProcessSteps, processStep])
 
@@ -162,7 +157,8 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave, usedPro
       })
       setStandardQty(editingItem.standard_qty.toString())
       setWastageRate(editingItem.wastage_rate.toString())
-      setProcessStep(editingItem.process_step ?? '')
+      // 预设 key 转为当前语言 label 展示，保存时再归一回 key
+      setProcessStep(editingItem.process_step ? translateProcessStep(editingItem.process_step, t) : '')
       setIsKeyPart(editingItem.is_key_part)
       setItemRemark(editingItem.remark ?? '')
       setMaterialOptions([])
@@ -176,7 +172,7 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave, usedPro
       setSearchKeyword('')
       setMaterialOptions([])
     }
-  }, [open, editingItem])
+  }, [open, editingItem, t])
 
   // 搜索词变化只刷新候选项，不重新初始化表单。
   useEffect(() => {
@@ -214,7 +210,7 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave, usedPro
       standard_qty: qty,
       wastage_rate: wastage,
       actual_qty: actualQty,
-      process_step: processStep || null,
+      process_step: normalizeProcessStep(processStep, t) || null,
       is_key_part: isKeyPart,
       substitute_id: null,
       substitute_name: null,
@@ -326,12 +322,11 @@ export function BomItemDialog({ open, onOpenChange, editingItem, onSave, usedPro
                       onMouseDown={e => {
                         // 用 mousedown 而非 click，防止 input blur 先关闭下拉
                         e.preventDefault()
-                        setProcessStep(opt.key)
+                        setProcessStep(opt.label)
                         setProcessStepFocused(false)
                       }}
                     >
                       <span>{opt.label}</span>
-                      {opt.key !== opt.label && <span className="text-muted-foreground text-xs">({opt.key})</span>}
                     </button>
                   ))}
                 </div>

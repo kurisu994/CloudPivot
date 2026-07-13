@@ -16,6 +16,7 @@ import { getErrorMessage } from '@/lib/error'
 import { invoke, isTauriEnv } from '@/lib/tauri'
 import { type BomDetailPageState, type BomDetailResponse, type BomItemPageRow, buildSaveBomArgs, normalizeBomDetail } from './bom-command-args'
 import { BomItemDialog } from './bom-item-dialog'
+import { PRESET_PROCESS_STEP_KEYS, translateProcessStep } from './process-steps'
 
 /* ------------------------------------------------------------------ */
 /*  类型定义                                                           */
@@ -236,11 +237,11 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
     }
 
     // 按预设顺序对工序排序，未预设的自定义工序排在其后，最后是未分组
+    const presetOrder: readonly string[] = PRESET_PROCESS_STEP_KEYS
     const sortedSteps = Object.keys(groups).sort((a, b) => {
       if (a === '') return 1
       if (b === '') return -1
 
-      const presetOrder = ['sewing', 'woodworking', 'foam', 'upholstery', 'ironwork', 'cutting', 'assembly', 'painting', 'packaging']
       const idxA = presetOrder.indexOf(a)
       const idxB = presetOrder.indexOf(b)
 
@@ -659,21 +660,4 @@ export function BomEditPage({ bomId, onBack }: BomEditPageProps) {
       />
     </div>
   )
-}
-
-/* ------------------------------------------------------------------ */
-/*  工序名称翻译辅助                                                     */
-/* ------------------------------------------------------------------ */
-
-/** 预设工序 key 集合，用于判断是否走 i18n 翻译 */
-const KNOWN_PROCESS_STEP_KEYS = new Set(['sewing', 'woodworking', 'foam', 'upholstery', 'ironwork', 'cutting', 'assembly', 'painting', 'packaging'])
-
-/**
- * 工序值翻译：匹配预设 key 走 i18n，否则原样展示
- */
-function translateProcessStep(step: string, t: ReturnType<typeof useTranslations<'bom'>>) {
-  if (KNOWN_PROCESS_STEP_KEYS.has(step)) {
-    return t(`form.processSteps.${step}` as any)
-  }
-  return step
 }

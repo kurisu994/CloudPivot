@@ -424,6 +424,14 @@ pub async fn save_material(
         value => value.to_string(),
     };
 
+    // 越南文名空白输入归一为 NULL，避免存入空串
+    let name_vi = params
+        .name_vi
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_owned);
+
     // Check if code exists
     let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM materials WHERE code = $1")
         .bind(&code)
@@ -461,7 +469,7 @@ pub async fn save_material(
         )
         .bind(&code)
         .bind(&params.name)
-        .bind(&params.name_vi)
+        .bind(&name_vi)
         .bind(&params.material_type)
         .bind(params.category_id)
         .bind(&params.spec)
@@ -505,7 +513,7 @@ pub async fn save_material(
         )
         .bind(&code)
         .bind(&params.name)
-        .bind(&params.name_vi)
+        .bind(&name_vi)
         .bind(&params.material_type)
         .bind(params.category_id)
         .bind(&params.spec)
