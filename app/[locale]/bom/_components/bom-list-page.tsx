@@ -32,19 +32,19 @@ import { BomReverseLookup } from './bom-reverse-lookup'
 
 export interface BomListItem {
   id: number
-  bom_code: string
+  bomCode: string
   materialId: number
   materialCode: string | null
   materialName: string | null
-  material_spec: string | null
+  materialSpec: string | null
   version: string
   status: string
-  effective_date: string | null
-  total_standard_cost: number
-  item_count: number
+  effectiveDate: string | null
+  totalStandardCost: number
+  itemCount: number
   remark: string | null
-  created_at: string | null
-  updated_at: string | null
+  createdAt: string | null
+  updatedAt: string | null
 }
 
 /* ------------------------------------------------------------------ */
@@ -54,51 +54,51 @@ export interface BomListItem {
 const MOCK_BOMS: BomListItem[] = [
   {
     id: 1,
-    bom_code: 'BOM-20260401-001',
+    bomCode: 'BOM-20260401-001',
     materialId: 4,
     materialCode: 'FP-001',
     materialName: '实木餐椅',
-    material_spec: '450×520×880mm',
+    materialSpec: '450×520×880mm',
     version: 'V2.0',
     status: 'active',
-    effective_date: '2026-03-15',
-    total_standard_cost: 4500,
-    item_count: 6,
+    effectiveDate: '2026-03-15',
+    totalStandardCost: 4500,
+    itemCount: 6,
     remark: null,
-    created_at: '2026-03-10',
-    updated_at: '2026-03-15',
+    createdAt: '2026-03-10',
+    updatedAt: '2026-03-15',
   },
   {
     id: 2,
-    bom_code: 'BOM-20260401-002',
+    bomCode: 'BOM-20260401-002',
     materialId: 4,
     materialCode: 'FP-001',
     materialName: '实木餐椅',
-    material_spec: '450×520×880mm',
+    materialSpec: '450×520×880mm',
     version: 'V1.0',
     status: 'inactive',
-    effective_date: '2026-02-01',
-    total_standard_cost: 4200,
-    item_count: 5,
+    effectiveDate: '2026-02-01',
+    totalStandardCost: 4200,
+    itemCount: 5,
     remark: null,
-    created_at: '2026-02-01',
-    updated_at: '2026-03-15',
+    createdAt: '2026-02-01',
+    updatedAt: '2026-03-15',
   },
   {
     id: 3,
-    bom_code: 'BOM-20260401-003',
+    bomCode: 'BOM-20260401-003',
     materialId: 5,
     materialCode: 'FP-002',
     materialName: '橡木茶几',
-    material_spec: '1200×600×450mm',
+    materialSpec: '1200×600×450mm',
     version: 'V1.0',
     status: 'draft',
-    effective_date: null,
-    total_standard_cost: 6800,
-    item_count: 8,
+    effectiveDate: null,
+    totalStandardCost: 6800,
+    itemCount: 8,
     remark: null,
-    created_at: '2026-03-20',
-    updated_at: '2026-03-20',
+    createdAt: '2026-03-20',
+    updatedAt: '2026-03-20',
   },
 ]
 
@@ -378,7 +378,7 @@ export function BomListPage({ onEditBom, onNewBom, onCompare }: BomListPageProps
                       <Layers className="text-muted-foreground size-4 shrink-0" />
                       <div className="min-w-0">
                         <div className="truncate font-medium">{bom.materialName ?? '—'}</div>
-                        {bom.material_spec && <div className="text-muted-foreground truncate text-xs">{bom.material_spec}</div>}
+                        {bom.materialSpec && <div className="text-muted-foreground truncate text-xs">{bom.materialSpec}</div>}
                       </div>
                     </div>
                   </TableCell>
@@ -389,9 +389,9 @@ export function BomListPage({ onEditBom, onNewBom, onCompare }: BomListPageProps
                   <TableCell>
                     <StatusBadge status={bom.status} t={t} />
                   </TableCell>
-                  <TableCell className="font-mono">{formatAmount(bom.total_standard_cost, 'USD')}</TableCell>
-                  <TableCell className="text-center">{bom.item_count}</TableCell>
-                  <TableCell className="text-muted-foreground">{bom.created_at?.slice(0, 10) ?? '—'}</TableCell>
+                  <TableCell className="font-mono">{formatAmount(bom.totalStandardCost, 'USD')}</TableCell>
+                  <TableCell className="text-center">{bom.itemCount}</TableCell>
+                  <TableCell className="text-muted-foreground">{bom.createdAt?.slice(0, 10) ?? '—'}</TableCell>
                   <TableCell onClick={e => e.stopPropagation()}>
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="sm" onClick={() => onEditBom(bom.id)} title={t('actions.edit')}>

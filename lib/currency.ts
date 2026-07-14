@@ -98,6 +98,11 @@ export function formatAmount(
     showThousands?: boolean
   },
 ): string {
+  // 非法数值（NaN/Infinity/undefined）兜底展示为占位符，避免界面出现 "NaN"
+  if (!Number.isFinite(amount)) {
+    return '—'
+  }
+
   const config = CURRENCY_CONFIGS[currency]
   const showSymbol = options?.showSymbol ?? true
   const showThousands = options?.showThousands ?? true
