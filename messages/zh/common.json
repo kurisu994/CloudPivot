@@ -96,6 +96,7 @@
     "exchangeRate": "汇率管理",
     "dataManagement": "数据管理",
     "operationLogs": "操作日志",
+    "printAudit": "打印审计",
     "appearance": "外观设置",
     "userManagement": "用户管理",
     "about": "关于"

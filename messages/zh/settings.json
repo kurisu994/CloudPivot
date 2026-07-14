@@ -423,6 +423,20 @@
         "delete_batch_movement": "删除自由出入库"
       }
     },
+    "printAudit": {
+      "templateType": "单据类型",
+      "allTemplates": "全部单据",
+      "businessId": "单据 ID",
+      "businessIdPlaceholder": "输入单据 ID",
+      "operator": "操作员",
+      "operatorPlaceholder": "输入操作员姓名",
+      "time": "打印时间",
+      "device": "设备信息",
+      "query": "查询",
+      "loading": "加载中...",
+      "noData": "暂无打印记录",
+      "totalRecords": "共 {count} 条记录"
+    },
     "about": {
       "title": "关于",
       "version": "版本",

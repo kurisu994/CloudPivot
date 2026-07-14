@@ -1,8 +1,8 @@
 //! 打印模板系统 IPC 命令
 //!
-//! 包含模板配置 CRUD（5 IPC）和打印审计日志写入：
+//! 包含模板配置 CRUD（5 IPC）和打印审计日志读写：
 //! - get_print_template / list_print_templates / save_print_template / reset_print_template_to_default
-//! - log_print_event
+//! - log_print_event / list_print_logs
 //!
 //! 模板配置 JSON 结构由前端 `lib/print/types.ts` 的 `PrintTemplateConfig` 定义，
 //! 后端不解析其内容，只负责存取和审计字段。
@@ -12,7 +12,7 @@ use serde_json::Value as JsonValue;
 use sqlx::FromRow;
 use tauri::State;
 
-use super::CurrentUser;
+use super::{CurrentUser, PaginatedResponse};
 use crate::db::DbState;
 use crate::error::AppError;
 
@@ -63,6 +63,32 @@ pub struct SavePrintTemplateParams {
 pub struct LogPrintEventParams {
     pub template_key: String,
     pub business_id: Option<i64>,
+    pub user_agent: Option<String>,
+}
+
+/// 打印审计日志筛选参数
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PrintLogFilter {
+    pub template_key: Option<String>,
+    pub business_id: Option<i64>,
+    /// 操作员姓名（模糊匹配）
+    pub operator: Option<String>,
+    pub date_from: Option<String>,
+    pub date_to: Option<String>,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+/// 打印审计日志记录（返回前端）
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PrintLogItem {
+    pub id: i64,
+    pub template_key: String,
+    pub business_id: Option<i64>,
+    pub operator: String,
+    pub printed_at: String,
     pub user_agent: Option<String>,
 }
 
@@ -329,6 +355,103 @@ pub async fn log_print_event(
     .map_err(|e| AppError::Database(format!("写入打印审计日志失败: {}", e)))?;
 
     Ok(())
+}
+
+/// 查询打印审计日志列表
+///
+/// 支持按单据类型、单据 ID、操作员（模糊）、日期范围筛选，按打印时间倒序分页返回。
+/// 需要 `print_log.view` 权限。
+#[tauri::command]
+pub async fn list_print_logs(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    filter: PrintLogFilter,
+) -> Result<PaginatedResponse<PrintLogItem>, AppError> {
+    current_user.require_permission("print_log", "view")?;
+
+    let page = filter.page.max(1);
+    let page_size = filter.page_size.clamp(1, 500);
+    let offset = (page - 1) * page_size;
+
+    // 动态构建 WHERE 子句（count 与 list 保持一致）
+    let mut count_qb = sqlx::QueryBuilder::new("SELECT COUNT(*) FROM print_log WHERE 1=1");
+    let mut list_qb = sqlx::QueryBuilder::new(
+        "SELECT id, template_key, business_id, operator, printed_at::TEXT, user_agent
+         FROM print_log WHERE 1=1",
+    );
+
+    if let Some(ref key) = filter.template_key {
+        for qb in [&mut count_qb, &mut list_qb] {
+            qb.push(" AND template_key = ");
+            qb.push_bind(key);
+        }
+    }
+    if let Some(bid) = filter.business_id {
+        for qb in [&mut count_qb, &mut list_qb] {
+            qb.push(" AND business_id = ");
+            qb.push_bind(bid);
+        }
+    }
+    if let Some(ref op) = filter.operator {
+        for qb in [&mut count_qb, &mut list_qb] {
+            qb.push(" AND operator ILIKE '%' || ");
+            qb.push_bind(op);
+            qb.push(" || '%'");
+        }
+    }
+    if let Some(ref df) = filter.date_from {
+        for qb in [&mut count_qb, &mut list_qb] {
+            qb.push(" AND printed_at >= ");
+            qb.push_bind(df);
+            qb.push("::date");
+        }
+    }
+    // 结束日期按整天包含（printed_at < 次日零点）
+    if let Some(ref dt) = filter.date_to {
+        for qb in [&mut count_qb, &mut list_qb] {
+            qb.push(" AND printed_at < ");
+            qb.push_bind(dt);
+            qb.push("::date + 1");
+        }
+    }
+
+    let total: i64 = count_qb
+        .build_query_scalar::<i64>()
+        .fetch_one(&db.pool)
+        .await
+        .map_err(|e| AppError::Database(format!("查询打印审计日志总数失败: {}", e)))?;
+
+    list_qb.push(" ORDER BY printed_at DESC, id DESC LIMIT ");
+    list_qb.push_bind(page_size as i64);
+    list_qb.push(" OFFSET ");
+    list_qb.push_bind(offset as i64);
+
+    let rows = list_qb
+        .build_query_as::<(i64, String, Option<i64>, String, String, Option<String>)>()
+        .fetch_all(&db.pool)
+        .await
+        .map_err(|e| AppError::Database(format!("查询打印审计日志列表失败: {}", e)))?;
+
+    let items: Vec<PrintLogItem> = rows
+        .into_iter()
+        .map(
+            |(id, template_key, business_id, operator, printed_at, user_agent)| PrintLogItem {
+                id,
+                template_key,
+                business_id,
+                operator,
+                printed_at,
+                user_agent,
+            },
+        )
+        .collect();
+
+    Ok(PaginatedResponse {
+        total,
+        items,
+        page,
+        page_size,
+    })
 }
 
 // ================================================================

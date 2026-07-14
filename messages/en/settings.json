@@ -423,6 +423,20 @@
         "delete_batch_movement": "Delete Manual Stock Movement"
       }
     },
+    "printAudit": {
+      "templateType": "Document Type",
+      "allTemplates": "All Documents",
+      "businessId": "Document ID",
+      "businessIdPlaceholder": "Enter document ID",
+      "operator": "Operator",
+      "operatorPlaceholder": "Enter operator name",
+      "time": "Printed At",
+      "device": "Device Info",
+      "query": "Query",
+      "loading": "Loading...",
+      "noData": "No print records",
+      "totalRecords": "{count} records in total"
+    },
     "about": {
       "title": "About",
       "version": "Version",

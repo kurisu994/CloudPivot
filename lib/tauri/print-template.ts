@@ -1,3 +1,4 @@
+import type { PaginatedResponse } from './core'
 import { invoke, isTauriEnv } from './core'
 
 // ---- 类型定义 ----
@@ -14,6 +15,34 @@ export type PrintTemplateKey =
   | 'stock_check'
   | 'stock_transfer'
   | 'production_order'
+
+/** 全部模板 key（顺序即下拉展示顺序） */
+export const PRINT_TEMPLATE_KEYS: PrintTemplateKey[] = [
+  'manual_stock_movement',
+  'purchase_order',
+  'purchase_receipt',
+  'purchase_return',
+  'sales_order',
+  'sales_delivery',
+  'sales_return',
+  'stock_check',
+  'stock_transfer',
+  'production_order',
+]
+
+/** 模板 key → settings.printSettings.templates 下的文案键 */
+export const PRINT_TEMPLATE_LABEL_KEYS: Record<PrintTemplateKey, string> = {
+  manual_stock_movement: 'manualStockMovement',
+  purchase_order: 'purchaseOrder',
+  purchase_receipt: 'purchaseReceipt',
+  purchase_return: 'purchaseReturn',
+  sales_order: 'salesOrder',
+  sales_delivery: 'salesDelivery',
+  sales_return: 'salesReturn',
+  stock_check: 'stockCheck',
+  stock_transfer: 'stockTransfer',
+  production_order: 'productionOrder',
+}
 
 /** 列宽 6 档（按字符宽，等宽字体） */
 export type PrintColumnWidth = 4 | 6 | 8 | 10 | 12 | 16
@@ -96,6 +125,28 @@ export interface LogPrintEventParams {
   userAgent: string | null
 }
 
+/** 打印审计日志记录 */
+export interface PrintLogItem {
+  id: number
+  templateKey: string
+  businessId: number | null
+  operator: string
+  printedAt: string
+  userAgent: string | null
+}
+
+/** 打印审计日志筛选参数 */
+export interface PrintLogFilter {
+  templateKey?: string | null
+  businessId?: number | null
+  /** 操作员姓名（模糊匹配） */
+  operator?: string | null
+  dateFrom?: string | null
+  dateTo?: string | null
+  page: number
+  pageSize: number
+}
+
 // ---- 非 Tauri 环境的内置 mock default ----
 
 function mockDefaultRecord(key: PrintTemplateKey): PrintTemplateRecord {
@@ -145,19 +196,7 @@ export async function listPrintTemplates(): Promise<PrintTemplateListItem[]> {
   if (isTauriEnv()) {
     return invoke<PrintTemplateListItem[]>('list_print_templates')
   }
-  const keys: PrintTemplateKey[] = [
-    'manual_stock_movement',
-    'purchase_order',
-    'purchase_receipt',
-    'purchase_return',
-    'sales_order',
-    'sales_delivery',
-    'sales_return',
-    'stock_check',
-    'stock_transfer',
-    'production_order',
-  ]
-  return keys.map(k => ({ templateKey: k, isCustomized: false }))
+  return PRINT_TEMPLATE_KEYS.map(k => ({ templateKey: k, isCustomized: false }))
 }
 
 /** 保存模板配置（upsert） */
@@ -179,4 +218,12 @@ export async function logPrintEvent(params: LogPrintEventParams): Promise<void> 
   if (isTauriEnv()) {
     return invoke<void>('log_print_event', { params })
   }
+}
+
+/** 查询打印审计日志列表（需要 print_log.view 权限） */
+export async function listPrintLogs(filter: PrintLogFilter): Promise<PaginatedResponse<PrintLogItem>> {
+  if (!isTauriEnv()) {
+    return { total: 0, items: [], page: filter.page, pageSize: filter.pageSize }
+  }
+  return invoke<PaginatedResponse<PrintLogItem>>('list_print_logs', { filter })
 }

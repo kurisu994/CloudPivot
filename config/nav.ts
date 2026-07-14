@@ -28,6 +28,7 @@ import {
   Receipt,
   RotateCcw,
   Ruler,
+  ScrollText,
   Settings,
   ShoppingCart,
   TrendingUp,
@@ -280,6 +281,12 @@ export const navConfig: NavItem[] = [
         href: '/settings/operation-logs',
         icon: FileText,
         permissionModule: 'operation_logs',
+      },
+      {
+        titleKey: 'nav.printAudit',
+        href: '/settings/print-audit',
+        icon: ScrollText,
+        permissionModule: 'print_log',
       },
       {
         titleKey: 'nav.appearance',

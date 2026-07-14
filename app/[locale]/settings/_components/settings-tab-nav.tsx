@@ -15,6 +15,7 @@ const SETTINGS_TABS = [
   { href: '/settings/exchange-rate', titleKey: 'nav.exchangeRate', permissionModule: 'settings_general' },
   { href: '/settings/data-management', titleKey: 'nav.dataManagement', permissionModule: 'data_management' },
   { href: '/settings/operation-logs', titleKey: 'nav.operationLogs', permissionModule: 'operation_logs' },
+  { href: '/settings/print-audit', titleKey: 'nav.printAudit', permissionModule: 'print_log' },
   { href: '/settings/appearance', titleKey: 'nav.appearance', permissionModule: 'settings_appearance' },
 ] as const
 

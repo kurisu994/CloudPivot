@@ -423,6 +423,20 @@
         "delete_batch_movement": "Xóa xuất nhập tự do"
       }
     },
+    "printAudit": {
+      "templateType": "Loại chứng từ",
+      "allTemplates": "Tất cả chứng từ",
+      "businessId": "ID chứng từ",
+      "businessIdPlaceholder": "Nhập ID chứng từ",
+      "operator": "Người thao tác",
+      "operatorPlaceholder": "Nhập tên người thao tác",
+      "time": "Thời gian in",
+      "device": "Thông tin thiết bị",
+      "query": "Tra cứu",
+      "loading": "Đang tải...",
+      "noData": "Chưa có bản ghi in",
+      "totalRecords": "Tổng cộng {count} bản ghi"
+    },
     "about": {
       "title": "Giới thiệu",
       "version": "Phiên bản",

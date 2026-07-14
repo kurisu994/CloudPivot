@@ -306,6 +306,7 @@ pub fn run() {
             commands::print_template::save_print_template,
             commands::print_template::reset_print_template_to_default,
             commands::print_template::log_print_event,
+            commands::print_template::list_print_logs,
             // 库存盘点
             commands::inventory::get_stock_checks,
             commands::inventory::get_stock_check_detail,
