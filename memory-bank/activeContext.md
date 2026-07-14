@@ -2,10 +2,11 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.0**（2026-07-07 发布）。本轮完成了 BOM 迭代的全部工作：P0/P1 上线后的代码 review 修复（迁移注册、选料查询字段对齐）、工序输入按语言展示与归一存储，以及 **P2 全部四项**——多 SKU 用量对比视图、装柜量 (TC) 计算模式、开料单子系统（迁移 016 新表 `bom_cutting_details`）、物料包装与装柜信息扩展（迁移 015）。方案关键取舍已经用户确认：产品头字段直接加在 materials，开料明细挂 bom_items。随后（2026-07-14）完成了 TODOS 里最后一项 **打印审计查询页**，TODOS 清空。
+项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.0**（2026-07-07 发布）。本轮（2026-07-14）完成 **物料禁用治理**：物料列表默认按「启用」筛选；有库存的物料禁止禁用（后端校验库存汇总）；禁用后物料从库存查询、盘点快照、库龄分析、补货规则列表、供应商供货物料列表中隐藏，所有单据选料入口均已确认过滤。此前完成了 BOM 迭代全部工作（P0/P1 review 修复、工序归一存储、P2 四项：多 SKU 用量对比、TC 计算模式、开料单子系统迁移 016、物料包装装柜信息迁移 015）和打印审计查询页，TODOS 清空。
 
 ## 最近完成的工作
 
+- **物料禁用治理（2026-07-14）**：`toggle_material_status` 禁用前校验 `SUM(inventory.quantity) > 0` 则返回业务错误（错误文案由后端直出中文，前端 `getErrorMessage` 透传，无需 i18n）；盘点快照 SQL、`get_inventory_list`、库龄分析补 `is_enabled = TRUE` 过滤；补货规则列表、供应商供货物料列表在 JOIN materials 条件上过滤（配置数据保留，重新启用后恢复显示）。**取舍**：采购/销售历史报表和库存流水不过滤禁用物料——历史事实记录，过滤会导致合计与实际交易额不符。物料列表默认状态筛选 `'active'`，重置也回到 `'active'`。选料入口排查结论：销售/采购/BOM/调拨/手工出入库/定制单/补货建议均已有过滤（调拨与手工出入库共用 `get_material_reference_options`）。
 - **打印审计查询页（2026-07-14）**：新增 `list_print_logs` 读 IPC（QueryBuilder 动态筛选：单据类型 / 单据 ID / 操作员模糊 / 日期范围整天包含，`print_log.view` 权限门控，权限与索引在迁移 011 已就绪、无需新迁移）；系统设置新增「打印审计」子页（settings-tab-nav + config/nav.ts 双入口，permissionModule `print_log`，默认仅 admin 可见）；模板 key 常量与文案键映射收拢到 `lib/tauri/print-template.ts` 导出复用。
 - **BOM P0/P1 review 修复**：修复迁移 014 未注册进 `migration.rs` 导致 `name_vi` 列从未创建的运行时阻塞问题；`get_bom_child_materials` 选料查询补充 `name_vi` 返回；前端选料接口字段名对齐后端 serde camelCase（顺带修复参考成本静默为 0 的既有 bug）；删除后端不会执行的 SQLite 迁移死文件（Cargo 仅启用 postgres feature）。
 - **工序输入按语言展示并归一存储**：工序输入框展示当前语言 label（编辑时预设 key 反译展示），保存时 `normalizeProcessStep` 将匹配预设 key 或当前语言 label 的输入归一为英文 key，避免同一工序以 key 与字面文本混存导致分组分裂；预设工序常量与翻译/排序辅助收拢至 `process-steps.ts` 单一定义处。
@@ -17,9 +18,12 @@
 
 ## 活跃文件
 
+- `src-tauri/src/commands/material.rs` — toggle_material_status 库存校验
+- `src-tauri/src/commands/inventory.rs` — 盘点快照 + 库存列表启用过滤
+- `src-tauri/src/commands/replenishment.rs` / `supplier.rs` / `reports.rs` — 禁用物料隐藏
+- `app/[locale]/materials/_components/materials-client-page.tsx` — 默认「启用」筛选
 - `src-tauri/src/db/migration.rs` — 注册迁移 014（materials name_vi）
 - `src-tauri/src/commands/bom.rs` — 选料查询补充 name_vi
-- `src-tauri/src/commands/material.rs` — name_vi 空串归一 NULL
 - `app/[locale]/bom/_components/process-steps.ts` — 预设工序唯一定义 + 翻译/归一化/分组排序辅助
 - `app/[locale]/bom/_components/bom-compare-page.tsx` — 多 SKU 用量对比视图（新）
 - `app/[locale]/bom/_components/bom-content.tsx` — 增加 compare 视图路由
@@ -39,6 +43,7 @@
 
 ## 下一步
 
+- 在应用里验证物料禁用链路：对有库存物料点禁用应弹「仍有库存」提示；清空库存后禁用成功，确认库存查询/盘点新建/补货策略/供应商供货物料等页面均不再显示该物料。
 - 启动应用触发迁移 014/015/016 后，用 YC-1002/YC-1003 真实数据完整试录一遍（工序联想、分组展示、双语名、对比视图、TC 自动带入、开料明细）。
 - 用 admin 账号打印一张自由出入库单后到「系统设置 → 打印审计」验证查询链路。
 - TODOS.md 已全部清空，无遗留待办。
