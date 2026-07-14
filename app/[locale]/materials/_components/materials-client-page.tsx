@@ -175,7 +175,7 @@ export function MaterialsClientPage() {
   const [keyword, setKeyword] = useState('')
   const [categoryId, setCategoryId] = useState<string>('all')
   const [materialType, setMaterialType] = useState<string>('all')
-  const [status, setStatus] = useState<string>('all')
+  const [status, setStatus] = useState<string>('active')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(50)
 
@@ -306,7 +306,7 @@ export function MaterialsClientPage() {
     setKeyword('')
     setCategoryId('all')
     setMaterialType('all')
-    setStatus('all')
+    setStatus('active')
     setPage(1)
   }
 
