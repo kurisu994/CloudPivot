@@ -664,12 +664,13 @@ pub async fn copy_bom(
     .map_err(|e| AppError::Database(format!("创建新 BOM 失败: {}", e)))?;
 
     // 逐行复制明细，保留新旧明细 id 映射以级联复制开料明细
-    let source_item_ids: Vec<(i64,)> =
-        sqlx::query_as("SELECT id FROM bom_items WHERE bom_id = $1 ORDER BY sort_order ASC, id ASC")
-            .bind(source_id)
-            .fetch_all(&mut *tx)
-            .await
-            .map_err(|e| AppError::Database(format!("查询源 BOM 明细失败: {}", e)))?;
+    let source_item_ids: Vec<(i64,)> = sqlx::query_as(
+        "SELECT id FROM bom_items WHERE bom_id = $1 ORDER BY sort_order ASC, id ASC",
+    )
+    .bind(source_id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("查询源 BOM 明细失败: {}", e)))?;
 
     for (old_item_id,) in source_item_ids {
         let new_item_id: i64 = sqlx::query_scalar(

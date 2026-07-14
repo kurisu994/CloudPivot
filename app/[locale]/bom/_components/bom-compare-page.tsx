@@ -243,9 +243,13 @@ export function BomComparePage({ bomIds, onBack }: BomComparePageProps) {
 
       {/* 比较表 */}
       {loading ? (
-        <div className="border-border bg-card text-muted-foreground flex min-h-0 flex-1 items-center justify-center rounded-xl border py-20 shadow-sm">{t('loading')}</div>
+        <div className="border-border bg-card text-muted-foreground flex min-h-0 flex-1 items-center justify-center rounded-xl border py-20 shadow-sm">
+          {t('loading')}
+        </div>
       ) : !hasRows ? (
-        <div className="border-border bg-card text-muted-foreground flex min-h-0 flex-1 items-center justify-center rounded-xl border py-20 shadow-sm">{t('compare.empty')}</div>
+        <div className="border-border bg-card text-muted-foreground flex min-h-0 flex-1 items-center justify-center rounded-xl border py-20 shadow-sm">
+          {t('compare.empty')}
+        </div>
       ) : (
         <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
           <BusinessListTableShell className="border-border bg-card rounded-xl border shadow-sm" tableClassName="table-auto">
