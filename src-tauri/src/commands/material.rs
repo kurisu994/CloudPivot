@@ -580,6 +580,22 @@ pub async fn toggle_material_status(
     id: i64,
     is_enabled: bool,
 ) -> Result<(), AppError> {
+    // 禁用前校验：仍有库存的物料不允许禁用
+    if !is_enabled {
+        let stock: Option<f64> =
+            sqlx::query_scalar("SELECT SUM(quantity) FROM inventory WHERE material_id = $1")
+                .bind(id)
+                .fetch_one(&db.pool)
+                .await
+                .map_err(|e| AppError::Database(format!("查询物料库存失败: {}", e)))?;
+
+        if stock.unwrap_or(0.0) > 0.0 {
+            return Err(AppError::Business(
+                "该物料仍有库存，不能禁用；请先清空库存后再操作".to_string(),
+            ));
+        }
+    }
+
     sqlx::query("UPDATE materials SET is_enabled = $1, updated_at = NOW() WHERE id = $2")
         .bind(is_enabled)
         .bind(id)

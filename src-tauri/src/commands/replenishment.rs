@@ -769,7 +769,7 @@ pub async fn get_replenishment_rules(
     filter: RuleFilter,
 ) -> Result<PaginatedResponse<ReplenishmentRule>, AppError> {
     let mut count_query = QueryBuilder::<'_, Postgres>::new(
-        "SELECT COUNT(*) FROM replenishment_rules rr JOIN materials m ON m.id = rr.material_id",
+        "SELECT COUNT(*) FROM replenishment_rules rr JOIN materials m ON m.id = rr.material_id AND m.is_enabled = TRUE",
     );
     let mut data_query = QueryBuilder::<'_, Postgres>::new(
         r#"
@@ -778,7 +778,7 @@ pub async fn get_replenishment_rules(
                rr.preferred_supplier_id, s.name AS supplier_name,
                rr.is_enabled
         FROM replenishment_rules rr
-        JOIN materials m ON m.id = rr.material_id
+        JOIN materials m ON m.id = rr.material_id AND m.is_enabled = TRUE
         LEFT JOIN suppliers s ON s.id = rr.preferred_supplier_id
         "#,
     );

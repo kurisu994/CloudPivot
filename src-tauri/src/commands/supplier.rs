@@ -429,7 +429,7 @@ async fn load_supplier_materials(
                sm.min_order_qty, sm.is_preferred, sm.valid_from, sm.valid_to,
                sm.last_purchase_date, sm.remark
         FROM supplier_materials sm
-        INNER JOIN materials m ON m.id = sm.material_id
+        INNER JOIN materials m ON m.id = sm.material_id AND m.is_enabled = TRUE
         LEFT JOIN units u ON u.id = m.base_unit_id
         WHERE sm.supplier_id = $1
         ORDER BY sm.is_preferred DESC, sm.updated_at DESC, sm.id DESC

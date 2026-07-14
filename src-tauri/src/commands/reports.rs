@@ -540,6 +540,7 @@ pub async fn get_inventory_aging_analysis(
         FROM inventory_lots il
         JOIN materials m ON m.id = il.material_id
         WHERE il.qty_on_hand > 0
+          AND m.is_enabled = TRUE
           AND COALESCE(m.lot_tracking_mode, 'none') IN ('optional', 'required')
           AND ($1 IS NULL OR il.warehouse_id = $1)
           AND ($2 IS NULL OR m.category_id = $2)
@@ -576,6 +577,7 @@ pub async fn get_inventory_aging_analysis(
         FROM inventory_lots il
         JOIN materials m ON m.id = il.material_id
         WHERE il.qty_on_hand > 0
+          AND m.is_enabled = TRUE
           AND COALESCE(m.lot_tracking_mode, 'none') IN ('optional', 'required')
           AND ($1 IS NULL OR il.warehouse_id = $1)
           AND ($2 IS NULL OR m.category_id = $2)

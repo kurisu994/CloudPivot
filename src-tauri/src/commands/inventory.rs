@@ -376,7 +376,7 @@ pub async fn get_inventory_list(
     );
     let base_from = r#"
         FROM inventory inv
-        JOIN materials m ON m.id = inv.material_id
+        JOIN materials m ON m.id = inv.material_id AND m.is_enabled = TRUE
         JOIN warehouses w ON w.id = inv.warehouse_id
         LEFT JOIN categories c ON c.id = m.category_id
     "#;
@@ -1025,6 +1025,11 @@ const STOCK_CHECK_INVENTORY_SNAPSHOT_SQL: &str = r#"
     SELECT $1, inv.material_id, inv.quantity, inv.quantity, inv.avg_cost
     FROM inventory inv
     WHERE inv.warehouse_id = $2
+      AND EXISTS (
+          SELECT 1
+          FROM materials m
+          WHERE m.id = inv.material_id AND m.is_enabled = TRUE
+      )
       AND (
           $3::BIGINT IS NULL
           OR EXISTS (
@@ -1043,6 +1048,11 @@ const STOCK_CHECK_LOT_SNAPSHOT_SQL: &str = r#"
     FROM inventory_lots il
     WHERE il.warehouse_id = $2
       AND il.qty_on_hand > 0
+      AND EXISTS (
+          SELECT 1
+          FROM materials m
+          WHERE m.id = il.material_id AND m.is_enabled = TRUE
+      )
       AND (
           $3::BIGINT IS NULL
           OR EXISTS (
