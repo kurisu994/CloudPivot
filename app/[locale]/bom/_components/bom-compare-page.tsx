@@ -5,9 +5,10 @@ import { useTranslations } from 'next-intl'
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { BUSINESS_LIST_STICKY_CELL_CLASS, BUSINESS_LIST_STICKY_HEAD_CLASS, BusinessListTableShell } from '@/components/common/business-list-table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { getErrorMessage } from '@/lib/error'
 import { invoke, isTauriEnv } from '@/lib/tauri'
 import { type BomDetailPageState, type BomDetailResponse, normalizeBomDetail } from './bom-command-args'
@@ -241,72 +242,70 @@ export function BomComparePage({ bomIds, onBack }: BomComparePageProps) {
       </div>
 
       {/* 比较表 */}
-      <div className="border-border bg-card min-h-0 flex-1 overflow-auto rounded-xl border p-6 shadow-sm">
-        {loading ? (
-          <div className="text-muted-foreground flex items-center justify-center py-20">{t('loading')}</div>
-        ) : !hasRows ? (
-          <div className="text-muted-foreground flex items-center justify-center py-20">{t('compare.empty')}</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[12rem]">{t('items.materialName')}</TableHead>
-                  <TableHead className="min-w-[7rem]">{t('items.spec')}</TableHead>
-                  <TableHead className="w-[4rem]">{t('items.unit')}</TableHead>
-                  {details.map(detail => (
-                    <TableHead key={detail.id} className="min-w-[7rem]">
-                      <div className="min-w-0">
-                        <div className="truncate">{detail.materialName ?? detail.bom_code}</div>
-                        <div className="text-muted-foreground text-xs font-normal">{detail.version}</div>
+      {loading ? (
+        <div className="border-border bg-card text-muted-foreground flex min-h-0 flex-1 items-center justify-center rounded-xl border py-20 shadow-sm">{t('loading')}</div>
+      ) : !hasRows ? (
+        <div className="border-border bg-card text-muted-foreground flex min-h-0 flex-1 items-center justify-center rounded-xl border py-20 shadow-sm">{t('compare.empty')}</div>
+      ) : (
+        <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+          <BusinessListTableShell className="border-border bg-card rounded-xl border shadow-sm" tableClassName="table-auto">
+            <TableHeader className="sticky top-0 z-30 bg-white dark:bg-slate-950">
+              <TableRow>
+                <TableHead className={`min-w-[12rem] ${BUSINESS_LIST_STICKY_HEAD_CLASS}`}>{t('items.materialName')}</TableHead>
+                <TableHead className="min-w-[7rem]">{t('items.spec')}</TableHead>
+                <TableHead className="w-[4rem]">{t('items.unit')}</TableHead>
+                {details.map(detail => (
+                  <TableHead key={detail.id} className="min-w-[7rem]">
+                    <div className="min-w-0">
+                      <div className="truncate">{detail.materialName ?? detail.bom_code}</div>
+                      <div className="text-muted-foreground text-xs font-normal">{detail.version}</div>
+                    </div>
+                  </TableHead>
+                ))}
+                <TableHead className="min-w-[5rem] font-semibold">{t('compare.total')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {groupedRows.map(({ step, rows }) => (
+                <Fragment key={step}>
+                  {/* 工序分组标题行 */}
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableCell colSpan={totalColumns} className="py-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="px-2 py-0.5 text-xs">
+                          {step ? translateProcessStep(step, t) : t('items.ungrouped')}
+                        </Badge>
+                        <span className="text-muted-foreground">({t('items.groupCount', { count: rows.length })})</span>
                       </div>
-                    </TableHead>
-                  ))}
-                  <TableHead className="min-w-[5rem] font-semibold">{t('compare.total')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {groupedRows.map(({ step, rows }) => (
-                  <Fragment key={step}>
-                    {/* 工序分组标题行 */}
-                    <TableRow className="bg-muted/40 hover:bg-muted/40">
-                      <TableCell colSpan={totalColumns} className="py-2 text-xs">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="px-2 py-0.5 text-xs">
-                            {step ? translateProcessStep(step, t) : t('items.ungrouped')}
-                          </Badge>
-                          <span className="text-muted-foreground">({t('items.groupCount', { count: rows.length })})</span>
+                    </TableCell>
+                  </TableRow>
+                  {rows.map(row => (
+                    <TableRow key={`${step}-${row.childMaterialId}`} className="group">
+                      <TableCell className={BUSINESS_LIST_STICKY_CELL_CLASS}>
+                        <div className="min-w-0">
+                          <div className="truncate font-medium">
+                            {row.materialName}
+                            {row.materialNameVi && <span className="text-muted-foreground ml-1.5 text-xs font-normal">({row.materialNameVi})</span>}
+                          </div>
+                          <div className="text-muted-foreground truncate text-xs">{row.materialCode}</div>
                         </div>
                       </TableCell>
-                    </TableRow>
-                    {rows.map(row => (
-                      <TableRow key={`${step}-${row.childMaterialId}`}>
-                        <TableCell>
-                          <div className="min-w-0">
-                            <div className="truncate font-medium">
-                              {row.materialName}
-                              {row.materialNameVi && <span className="text-muted-foreground ml-1.5 text-xs font-normal">({row.materialNameVi})</span>}
-                            </div>
-                            <div className="text-muted-foreground truncate text-xs">{row.materialCode}</div>
-                          </div>
+                      <TableCell className="text-muted-foreground truncate">{row.spec ?? '—'}</TableCell>
+                      <TableCell>{row.unitName ?? '—'}</TableCell>
+                      {row.qtys.map((qty, qtyIndex) => (
+                        <TableCell key={details[qtyIndex]?.id ?? qtyIndex} className="font-mono">
+                          {qty != null ? formatQty(qty) : <span className="text-muted-foreground">—</span>}
                         </TableCell>
-                        <TableCell className="text-muted-foreground truncate">{row.spec ?? '—'}</TableCell>
-                        <TableCell>{row.unitName ?? '—'}</TableCell>
-                        {row.qtys.map((qty, qtyIndex) => (
-                          <TableCell key={details[qtyIndex]?.id ?? qtyIndex} className="font-mono">
-                            {qty != null ? formatQty(qty) : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                        ))}
-                        <TableCell className="font-mono font-semibold">{formatQty(row.total)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </Fragment>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </div>
+                      ))}
+                      <TableCell className="font-mono font-semibold">{formatQty(row.total)}</TableCell>
+                    </TableRow>
+                  ))}
+                </Fragment>
+              ))}
+            </TableBody>
+          </BusinessListTableShell>
+        </div>
+      )}
     </div>
   )
 }
