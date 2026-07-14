@@ -415,7 +415,7 @@ pub struct SaveMaterialParams {
     pub net_weight_kg: Option<f64>,
     pub gross_weight_kg: Option<f64>,
     pub packing_method: Option<String>,
-    pub container_qty: Option<i64>,
+    pub container_qty: Option<i32>,
 }
 
 /// 生成下一个物料编码（格式由系统配置决定，默认 `M-0001`）

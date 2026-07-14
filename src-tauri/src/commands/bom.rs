@@ -101,7 +101,7 @@ pub struct BomDetail {
     pub created_at: Option<String>,
     pub updated_at: Option<String>,
     /// 成品每柜件数（来自物料主数据，需求计算 TC 模式自动带入）
-    pub container_qty: Option<i64>,
+    pub container_qty: Option<i32>,
     pub items: Vec<BomItemDetail>,
 }
 
@@ -121,7 +121,7 @@ struct BomHeaderRow {
     remark: Option<String>,
     created_at: Option<String>,
     updated_at: Option<String>,
-    container_qty: Option<i64>,
+    container_qty: Option<i32>,
 }
 
 /// 保存 BOM 参数
@@ -758,7 +758,7 @@ pub async fn calculate_bom_demand(
                   m.code, m.name, m.spec,
                   u.name as unit_name,
                   bi.standard_qty, bi.wastage_rate,
-                  (SELECT COALESCE(SUM(inv.qty_on_hand), 0) FROM inventory inv WHERE inv.material_id = bi.child_material_id) as current_stock
+                  (SELECT COALESCE(SUM(inv.quantity), 0) FROM inventory inv WHERE inv.material_id = bi.child_material_id) as current_stock
            FROM bom_items bi
            LEFT JOIN materials m ON bi.child_material_id = m.id
            LEFT JOIN units u ON m.base_unit_id = u.id
