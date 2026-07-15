@@ -26,6 +26,9 @@
   - `save_and_confirm_sales_return` 改为：退货行金额 = 原出库行折后 `amount` × 退货数量 ÷ 出库数量；退完剩余数量的最后一笔用倒挤法（出库行金额 − 已退金额）消除尾差；剩余可退金额钳制不为负（兼容修复前按原价入账的历史退货单）。
   - `get_returnable_outbound_items` 新增返回 `outbound_amount`（`ooi.amount`），退货页（`return-execute-page.tsx`）行金额与合计预览改为同口径比例计算。
   - 明细表仍存原价 `unit_price` 快照，`amount` 存折后金额，未改表结构。
+- **操作手册同步与全量截图对齐 (2026-07-15)**：
+  - 手册文字同步：修改 `docs/user-manual/08-sales.md` 及 `all_in_one_manual.md` 中的销售退货章节，加入了最新的折后比例倒算及尾差处理逻辑说明。
+  - 全量截图更新：清理了 `.next` 缓存，使用内置 browser 子代理重新访问并截取了 26 张干净的最新系统页面截图（特别是此前因缓存 404 白屏的系统设置子页面及库存报表），全量复制到 `docs/user-manual/images/`。
 
 ## 活跃文件
 
@@ -35,6 +38,8 @@
 - `app/[locale]/sales-deliveries/_components/outbound-execute-page.tsx` — 出库执行
 - `app/[locale]/sales-returns/_components/return-execute-page.tsx` — 退货执行
 - `lib/tauri/sales.ts` — 销售 IPC 类型声明
+- `docs/user-manual/08-sales.md` — 用户手册销售模块说明
+- `docs/user-manual/all_in_one_manual.md` — 合并版用户手册说明
 
 ## 已做出的决策
 
@@ -44,10 +49,9 @@
 
 ## 下一步
 
-- 实测验证一：带行折扣的销售单 → 保存 → 出库 → 退货全链路金额核对（cargo check / tsc 已通过，未跑运行时验证）。
+- 实测验证一：带行折扣 of 销售单 → 保存 → 出库 → 退货全链路金额核对（cargo check / tsc 已通过，未跑运行时验证）。
 - 实测验证二：路径 A 全链路——定制单（确认）→ 定制 BOM → 开工单 → 领料出库 → 开始生产 → 完工入库 → 转销售单 → 审核 → 销售出库 → 应收 → 财务收款登记。
 - 确认后补 CHANGELOG 并提交（改动尚未 commit）。
-- 操作手册同步：第八章出库/退货金额口径、第十章定制单与工单"暂未开放"警告块需移除、第十二章财务管理开放说明。
 
 ## 阻塞
 
