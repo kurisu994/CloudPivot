@@ -2,56 +2,72 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.0**（2026-07-07 发布）。本轮（2026-07-14）完成 **物料禁用治理**：物料列表默认按「启用」筛选；有库存的物料禁止禁用（后端校验库存汇总）；禁用后物料从库存查询、盘点快照、库龄分析、补货规则列表、供应商供货物料列表中隐藏，所有单据选料入口均已确认过滤。此前完成了 BOM 迭代全部工作（P0/P1 review 修复、工序归一存储、P2 四项：多 SKU 用量对比、TC 计算模式、开料单子系统迁移 016、物料包装装柜信息迁移 015）和打印审计查询页，TODOS 清空。
+项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.1**（2026-07-15 发布）。本轮（2026-07-15）完成了 **云枢 CloudPivot IMS 用户操作手册 (User Manual) 的全面生成**：
+- 完成了 Next.js 独立运行模式（纯前端 Mock 降级策略下）的开发服务器启动和测试。
+- 完成了 12 张核心界面 UI 截图的自动化/手动捕获并存盘至项目 `docs/user-manual/images/`。
+- 将操作手册合理拆分为一个主索引文件与 15 个具体章节/附录的子文件，并为每一个页面和其细化的表单、按钮与业务公式编写了极其详尽的用户使用指引。
 
 ## 最近完成的工作
 
-- **物料禁用治理（2026-07-14）**：`toggle_material_status` 禁用前校验 `SUM(inventory.quantity) > 0` 则返回业务错误（错误文案由后端直出中文，前端 `getErrorMessage` 透传，无需 i18n）；盘点快照 SQL、`get_inventory_list`、库龄分析补 `is_enabled = TRUE` 过滤；补货规则列表、供应商供货物料列表在 JOIN materials 条件上过滤（配置数据保留，重新启用后恢复显示）。**取舍**：采购/销售历史报表和库存流水不过滤禁用物料——历史事实记录，过滤会导致合计与实际交易额不符。物料列表默认状态筛选 `'active'`，重置也回到 `'active'`。选料入口排查结论：销售/采购/BOM/调拨/手工出入库/定制单/补货建议均已有过滤（调拨与手工出入库共用 `get_material_reference_options`）。
-- **打印审计查询页（2026-07-14）**：新增 `list_print_logs` 读 IPC（QueryBuilder 动态筛选：单据类型 / 单据 ID / 操作员模糊 / 日期范围整天包含，`print_log.view` 权限门控，权限与索引在迁移 011 已就绪、无需新迁移）；系统设置新增「打印审计」子页（settings-tab-nav + config/nav.ts 双入口，permissionModule `print_log`，默认仅 admin 可见）；模板 key 常量与文案键映射收拢到 `lib/tauri/print-template.ts` 导出复用。
-- **BOM P0/P1 review 修复**：修复迁移 014 未注册进 `migration.rs` 导致 `name_vi` 列从未创建的运行时阻塞问题；`get_bom_child_materials` 选料查询补充 `name_vi` 返回；前端选料接口字段名对齐后端 serde camelCase（顺带修复参考成本静默为 0 的既有 bug）；删除后端不会执行的 SQLite 迁移死文件（Cargo 仅启用 postgres feature）。
-- **工序输入按语言展示并归一存储**：工序输入框展示当前语言 label（编辑时预设 key 反译展示），保存时 `normalizeProcessStep` 将匹配预设 key 或当前语言 label 的输入归一为英文 key，避免同一工序以 key 与字面文本混存导致分组分裂；预设工序常量与翻译/排序辅助收拢至 `process-steps.ts` 单一定义处。
-- **多 SKU 用量对比视图 (P2)**：BOM 列表首列增加勾选框（保持勾选顺序即列顺序），勾选 ≥2 个 BOM 后进入对比视图；按工序分组、同物料合并为一行，并排展示各 BOM 标准用量与合计，对标 Excel 多配置汇总 sheet。纯前端实现，复用 `get_bom_detail`，零后端改动。
-- **装柜量 (TC) 计算模式 (P2)**：需求计算区增加「按生产数量 / 按装柜件数 (TC)」模式切换，容器模式下结果表头显示「整柜用量 (TC)」；结果表头跟随计算时的模式而非下拉即时状态。
-- **物料越南文名空串归一**：`save_material` 对 `name_vi` trim + 空串过滤，留空存 NULL 而非空串。
-- **开料单子系统 (P2)**：迁移 016 新建 `bom_cutting_details`（bom_item_id 代码级关联，无外键）；开料明细随 `save_bom` 同事务「先删后插」（因明细行删除重建 id 会变）、随 `get_bom_detail` 嵌套返回（`#[sqlx(skip)]` 填充）、`copy_bom` 改逐行复制以级联开料行、`delete_bom` 先清开料行。前端明细行加剪刀按钮（含行数角标）打开开料弹窗，部位/长宽高/数量/规格/备注行式编辑，体积（m³）自动计算并合计。
-- **物料包装与装柜信息 (P2)**：迁移 015 给 `materials` 加 8 列（customer_item_no、pack_length/width/height_mm、net/gross_weight_kg、packing_method、container_qty）；物料表单新增「包装与装柜」区块；BOM 详情头返回 `container_qty`，需求计算切到 TC 模式时自动带入每柜件数。
+- **操作手册生成与 PDF 整合 (2026-07-15)**：
+  - 编写并建立了操作手册主页 `docs/user-manual/README.md`，包含 22 个章节的详细索引目录，并专门添加了 macOS 首次打开时未配置 Apple Developer 代码签名和公证 (Notarization) 时的 Finder 右键打开以及使用 `xattr -cr` 修复“已损坏，无法打开”的具体命令行步骤。
+  - **追加截图**：本轮累计追加截取并存盘 8 张高清核心界面截图。至此，全手册的插图总数已达 **26 张**，实现了业务流程的图文覆盖。
+  - **状态说明标注**：在「定制单与生产工单」（第十章）和「财务管理」（第十二章）的文档顶部，明确添加了 **GFM 警告块说明当前版本中这些模块处于待定（暂未开放）阶段**。
+  - **大白话极简润色全覆盖**：针对 30-50 岁没有太多电脑操作经验的工厂新手用户，对全部已开放章节进行了 **全面彻底的大白话润色**。
+  - **合并与整合 PDF**：编写 Node.js 脚本，去除了目录文件的跳转外链，并注入了 `<div style="page-break-before: always;"></div>` 分页符。成功将 15 个子章节拼合生成为单文件 [all_in_one_manual.md](file:///Users/kurisu/develop/RustroverProjects/CloudPivot/docs/user-manual/all_in_one_manual.md)。
+  - **PDF 成功生成**：调用 `markdown-pdf` 工具，成功将图文并茂的合并文档转成高品质 PDF 手册 [CloudPivot_IMS_User_Manual.pdf](file:///Users/kurisu/develop/RustroverProjects/CloudPivot/docs/user-manual/CloudPivot_IMS_User_Manual.pdf)，方便打印和传输。
+  - 创建并编写了 `docs/user-manual/02-login-and-setup.md`（登录、密码校验锁定、强制改密、4步初始化向导）。
+  - 创建并编写了 `docs/user-manual/03-layout.md`（侧边栏窄版折叠交互、Tooltip、选中高亮、头部栏切换与个人中心）。
+  - 创建并编写了 `docs/user-manual/04-dashboard.md`（6个KPI卡片的计算口径、近30天销售采购折线趋势、饼图占比及代办卡片）。
+  - 创建并编写了 `docs/user-manual/05-base-data.md`（物料管理筛选与导入导出预览、大型物料表单6大区块详解、分类树拖拽、供应商与客户信用额度校验）。
+  - 创建并编写了 `docs/user-manual/06-bom.md`（BOM版本生效停用规则、子件用量损耗、需求展算和反查工具）。
+  - 创建并编写了 `docs/user-manual/07-purchase.md`（采购单录入与费用计算、分批入库的 110% 溢量控制、多批次折扣/附加费用比例分摊与最后一笔倒挤算法、采购退货）。
+  - 创建并编写了 `docs/user-manual/08-sales.md`（销售单折扣叠加、可用库存强制零库存拦截与信用度报警、出库 FIFO 分配与手动重排、出库标准/实际成本快照固化、退货成本溯源）。
+  - 创建并编写了 `docs/user-manual/09-inventory.md`（库存查询三指标解析、批量自由出入库草稿、风控大额二确、单事务原子过账与缺口表格提示、流水、盘点及保护警告）。
+  - 创建并编写了 `docs/user-manual/10-custom-and-production.md`（定制单加价、定制 BOM、原材料 FIFO 锁定、工单生命周期状态机、120% 超领拦截、完工实际成本计算与分配）。
+  - 创建并编写了 `docs/user-manual/11-replenishment.md`（日均消耗与断货天数计算公式、四项策略控制参数、建议采购量算式以及一键拆单采购）。
+  - 创建并编写了 `docs/user-manual/12-finance.md`（应付/应收账期到期红字报警、收付款登记字段、退货财务 return_offset 轧差冲减计算方法）。
+  - 创建并编写了 `docs/user-manual/13-reports.md`（毛利双轨制口径切换算法、收发存勾稽关系、库龄饼图划分、滞销分析与数据下钻）。
+  - 创建并编写了 `docs/user-manual/14-settings.md`（企业基本参数、编码前缀与流水预览、库存规则映射、双语组合打印、1 USD = N 外币汇率快照、SQL 物理备份与日志审计）。
+  - 创建并编写了 `docs/user-manual/15-print-guide.md`（九种单据固定格式打印模板、Windows 打印服务器新建 14×22cm 自定义纸张、驱动首选项对齐走纸、偏移校调与故障自查）。
+  - 创建并编写了 `docs/user-manual/appendix.md`（编码规则汇总对照、列表与表单快捷键、常见使用问题 FAQ 库以及进销存术语表）。
 
 ## 活跃文件
 
-- `src-tauri/src/commands/material.rs` — toggle_material_status 库存校验
-- `src-tauri/src/commands/inventory.rs` — 盘点快照 + 库存列表启用过滤
-- `src-tauri/src/commands/replenishment.rs` / `supplier.rs` / `reports.rs` — 禁用物料隐藏
-- `app/[locale]/materials/_components/materials-client-page.tsx` — 默认「启用」筛选
-- `src-tauri/src/db/migration.rs` — 注册迁移 014（materials name_vi）
-- `src-tauri/src/commands/bom.rs` — 选料查询补充 name_vi
-- `app/[locale]/bom/_components/process-steps.ts` — 预设工序唯一定义 + 翻译/归一化/分组排序辅助
-- `app/[locale]/bom/_components/bom-compare-page.tsx` — 多 SKU 用量对比视图（新）
-- `app/[locale]/bom/_components/bom-content.tsx` — 增加 compare 视图路由
-- `app/[locale]/bom/_components/bom-list-page.tsx` — 比较勾选框 + 对比按钮
-- `app/[locale]/bom/_components/bom-edit-page.tsx` — 需求计算 TC 模式；分组排序改用共享比较器
-- `app/[locale]/bom/_components/bom-item-dialog.tsx` — 工序输入 label 展示 + 保存归一化
-- `messages/{zh,en,vi}/bom.json` — compare 段、demand 模式/TC 文案
-- `TODOS.md` — BOM P2 已完成项勾除，剩余两项标注依赖 schema 确认
+- `docs/user-manual/README.md` — 操作手册主索引
+- `docs/user-manual/02-login-and-setup.md` — 登录与向导
+- `docs/user-manual/03-layout.md` — 界面布局
+- `docs/user-manual/04-dashboard.md` — 首页看板
+- `docs/user-manual/05-base-data.md` — 基础数据
+- `docs/user-manual/06-bom.md` — BOM 物料清单
+- `docs/user-manual/07-purchase.md` — 采购管理
+- `docs/user-manual/08-sales.md` — 销售管理
+- `docs/user-manual/09-inventory.md` — 库存管理
+- `docs/user-manual/10-custom-and-production.md` — 定制与工单
+- `docs/user-manual/11-replenishment.md` — 智能补货
+- `docs/user-manual/12-finance.md` — 财务辅助
+- `docs/user-manual/13-reports.md` — 报表中心
+- `docs/user-manual/14-settings.md` — 系统设置
+- `docs/user-manual/15-print-guide.md` — 打印配置指南
+- `docs/user-manual/appendix.md` — 附录与术语表
+- `docs/user-manual/images/` — 12张核心界面高清截图备份
 
 ## 已做出的决策
 
-- **工序存储 key、展示 label、保存归一化**：输入框始终显示当前语言 label，保存时精确匹配预设 key 或当前语言 label（忽略大小写）则归一为 key，其余原样存文本。不改共享 Combobox 组件（base-ui 严格单选、自由文本失焦重置，改造影响面大）。
-- **多 SKU 对比纯前端合并**：不新增后端命令，前端 `Promise.all` 拉取各 BOM 详情后按 `process_step` 分组、`child_material_id` 合并行；同 BOM 同工序重复物料累加。
-- **TC 作为需求计算的模式而非独立功能**：TC = 单件用量 × 每柜件数，与需求计算同构；装柜量自动填充待产品头扩展（每柜件数字段）落地后再接入。
-- **迁移必须注册进 `migration.rs` 静态列表才会执行**：新增迁移文件本身不生效；且迁移 SQL 不带 `IF NOT EXISTS` 时严禁手动预跑 DDL，否则迁移器会因列已存在而启动失败。
-- **BOM 工序步骤灵活化采用前端自由文本输入**（沿用）：`bom_items.process_step` 保持 TEXT，预设 9 种家具工序英文 key 存储、i18n 展示。
+- **操作手册拆分组织**：为防止单文件过大导致读取和渲染速度慢，将手册合理拆分为 1 个索引和 15 个独立子 Markdown。
+- **突出实际业务与计算规则**：不仅讲解按钮如何点，还写入了系统后台的业务算法（如移动平均成本计算、双轨制毛利、多批次运费折后金额分摊倒挤、以及 FIFO 批次占扣等），提升了手册对业务人员的使用指导价值。
 
 ## 下一步
 
-- 在应用里验证物料禁用链路：对有库存物料点禁用应弹「仍有库存」提示；清空库存后禁用成功，确认库存查询/盘点新建/补货策略/供应商供货物料等页面均不再显示该物料。
-- 启动应用触发迁移 014/015/016 后，用 YC-1002/YC-1003 真实数据完整试录一遍（工序联想、分组展示、双语名、对比视图、TC 自动带入、开料明细）。
-- 用 admin 账号打印一张自由出入库单后到「系统设置 → 打印审计」验证查询链路。
+- 等待用户审阅最新生成的详尽版操作手册。
+- 确认是否需要对操作手册进行多语言（如越南语、英语）翻译或做其他细节补充。
 - TODOS.md 已全部清空，无遗留待办。
 
 ## 阻塞
 
-- 无代码阻塞；`pnpm typecheck`、`pnpm lint`（biome）、`cargo check`、22 项 Node 单元测试全量通过。迁移 014/015/016 在下次应用启动时自动执行，严禁手动预跑 DDL。
+- 无。
 
 ---
 
 > **使用说明**：每次会话结束前，更新此文件中的「活跃文件」「已做出的决策」「下一步」「阻塞」部分。新会话开始时，AI 读取此文件即可快速同步上下文。
+
