@@ -12,14 +12,14 @@
 │  └───────────────┬───────────────────────┘   │
 │                  │ IPC (invoke)               │
 │  ┌───────────────┴───────────────────────┐   │
-│  │  Rust Backend (172 IPC 命令)           │   │
+│  │  Rust Backend (182 IPC 命令)           │   │
 │  │  sqlx + bcrypt + chrono + uuid        │   │
 │  └───────────────┬───────────────────────┘   │
 └──────────────────┼───────────────────────────┘
                    │ TCP (PostgreSQL)
           ┌────────┴────────┐
           │  PostgreSQL DB  │
-          │  (51 张业务表)   │
+          │  (57 张业务表)   │
           └─────────────────┘
 ```
 
@@ -27,7 +27,7 @@
 
 ```
 app/[locale]/                # Next.js App Router + i18n 路由
-  {模块名}/page.tsx          # 业务页面（39 个路由）
+  {模块名}/page.tsx          # 业务页面（40 个路由）
     _components/             # 页面私有组件（下划线前缀）
 components/
   ui/                        # shadcn/ui 组件（base-nova 风格）
@@ -41,7 +41,7 @@ lib/
   tauri.ts                   # IPC 统一导出入口
   tauri/                     # IPC 分域封装
 src-tauri/src/
-  commands/                  # IPC 命令模块（15 个文件）
+  commands/                  # IPC 命令模块（22 个文件，含 order_shared.rs / inventory_ops.rs 共享逻辑）
   db/                        # 连接池 + 自管理迁移
   migrations/postgres/       # PostgreSQL DDL 迁移
 ```

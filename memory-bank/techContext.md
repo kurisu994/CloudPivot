@@ -9,15 +9,15 @@
 | Next.js | 16.2.2 | App Router + SSG（Tauri 构建时启用 `output: 'export'`） |
 | React | 19.2.4 | React 19 新特性 |
 | TypeScript | 5.9.3 | 严格模式 |
-| Tailwind CSS | 4.2.4 | v4 新语法 |
-| @base-ui/react | 1.4.1 | shadcn/ui base-nova 底层 |
-| next-intl | 4.9.1 | i18n 国际化 |
+| Tailwind CSS | 4.3.2 | v4 新语法 |
+| @base-ui/react | 1.6.0 | shadcn/ui base-nova 底层 |
+| next-intl | 4.13.1 | i18n 国际化 |
 | next-themes | 0.4.6 | 主题切换 |
 | recharts | 3.8.0 | 图表库 |
-| date-fns | 4.3.0 | 日期处理 |
+| date-fns | 4.4.0 | 日期处理 |
 | react-day-picker | 10.0.1 | 日期选择器 |
-| react-arborist | 3.5.0 | 树形组件（分类管理） |
-| lucide-react | 1.8.0 | 图标库 |
+| react-arborist | 3.13.1 | 树形组件（分类管理） |
+| lucide-react | 1.23.0 | 图标库 |
 | sonner | 2.0.7 | Toast 通知 |
 | xlsx | 0.18.5 | Excel 导出 |
 | Biome | 2.4.11 | Lint + Format（替代 ESLint + Prettier） |
@@ -45,17 +45,17 @@
 | 技术 | 说明 |
 |------|------|
 | PostgreSQL | 远程共享数据库 |
-| 表数量 | 51 张业务表 |
-| 迁移文件 | 13 个（001_init ~ 013_operator 权限收紧） |
+| 表数量 | 57 张业务表 |
+| 迁移文件 | 16 个（001_init ~ 016_bom_cutting_details） |
 | 连接方式 | `DATABASE_URL` 编译时注入 |
 
-## IPC 命令概览（172 个）
+## IPC 命令概览（182 个）
 
 按模块分布：
 
 | 模块 | 命令数 | 文件 |
 |------|--------|------|
-| 基础（ping/login/config/权限） | 13 | `mod.rs` |
+| 基础（ping/login/config/权限） | 14 | `mod.rs` |
 | 数据管理 | 7 | `data_management.rs` |
 | 认证持久化 | 3 | `keychain.rs` |
 | 用户管理 | 10 | `user_management.rs` |
@@ -66,15 +66,16 @@
 | 仓库 | 8 | `warehouse.rs` |
 | 单位 | 5 | `unit.rs` |
 | BOM | 10 | `bom.rs` |
-| 采购 | 13 | `purchase.rs` |
-| 销售 | 12 | `sales.rs` |
+| 采购 | 14 | `purchase.rs` |
+| 销售 | 13 | `sales.rs` |
 | 库存 | 13 | `inventory.rs` |
 | 自由出入库 | 5 | `manual_stock_movement.rs` |
 | 定制单 | 10 | `custom_order.rs` |
 | 生产工单 | 10 | `production_order.rs` |
-| 智能补货 | 7 | `replenishment.rs` |
+| 智能补货 | 8 | `replenishment.rs` |
 | 财务 | 6 | `finance.rs` |
 | 报表 | 10 | `reports.rs` |
+| 打印模板 | 6 | `print_template.rs` |
 
 ## 构建与部署
 
