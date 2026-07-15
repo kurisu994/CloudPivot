@@ -19,16 +19,16 @@ interface ProductionOrderListItem {
   orderNo: string
   bomId: number
   customOrderId: number | null
-  custom_order_no: string | null
-  output_material_id: number
-  output_material_name: string
-  planned_qty: number
-  completed_qty: number
+  customOrderNo: string | null
+  outputMaterialId: number
+  outputMaterialName: string
+  plannedQty: number
+  completedQty: number
   status: string
-  planned_start_date: string | null
-  planned_end_date: string | null
-  actual_start_date: string | null
-  created_at: string | null
+  plannedStartDate: string | null
+  plannedEndDate: string | null
+  actualStartDate: string | null
+  createdAt: string | null
 }
 
 interface Props {

@@ -10,14 +10,14 @@ import { Button } from '@/components/ui/button'
 interface ProductionOrderListItem {
   id: number
   orderNo: string
-  custom_order_no: string | null
-  output_material_name: string
-  planned_qty: number
-  completed_qty: number
+  customOrderNo: string | null
+  outputMaterialName: string
+  plannedQty: number
+  completedQty: number
   status: string
-  planned_start_date: string | null
-  actual_start_date: string | null
-  created_at: string | null
+  plannedStartDate: string | null
+  actualStartDate: string | null
+  createdAt: string | null
 }
 
 interface Props {
@@ -72,14 +72,14 @@ export function ProductionOrderTable({ items, loading, onEdit, onDelete }: Props
           items.map(item => (
             <tr key={item.id} className="hover:bg-muted/50 border-b transition-colors">
               <td className="bg-background sticky left-0 z-10 px-3 py-2.5 text-sm font-medium">{item.orderNo}</td>
-              <td className="px-3 py-2.5 text-sm">{item.output_material_name}</td>
-              <td className="px-3 py-2.5 text-right text-sm">{item.planned_qty}</td>
+              <td className="px-3 py-2.5 text-sm">{item.outputMaterialName}</td>
+              <td className="px-3 py-2.5 text-right text-sm">{item.plannedQty}</td>
               <td className="px-3 py-2.5 text-right text-sm">
-                {item.completed_qty} / {item.planned_qty}
+                {item.completedQty} / {item.plannedQty}
               </td>
               <td className="px-3 py-2.5 text-center text-sm">{getStatusBadge(item.status, t)}</td>
-              <td className="px-3 py-2.5 text-sm">{item.custom_order_no ?? '—'}</td>
-              <td className="px-3 py-2.5 text-sm">{item.actual_start_date ?? '—'}</td>
+              <td className="px-3 py-2.5 text-sm">{item.customOrderNo ?? '—'}</td>
+              <td className="px-3 py-2.5 text-sm">{item.actualStartDate ?? '—'}</td>
               <td className="px-3 py-2.5 text-right">
                 <div className="flex items-center justify-end gap-1">
                   {item.status === 'draft' ? (

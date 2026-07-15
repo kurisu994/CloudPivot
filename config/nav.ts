@@ -5,12 +5,12 @@ import {
   Building2,
   // ClipboardCheck,
   ClipboardList,
-  // CreditCard,
+  CreditCard,
   Database,
   DollarSign,
   FileText,
   FolderTree,
-  // Hammer,
+  Hammer,
   Hash,
   Layers,
   LayoutDashboard,
@@ -22,7 +22,7 @@ import {
   PackagePlus,
   PackageSearch,
   Paintbrush,
-  // Palette,
+  Palette,
   PieChart,
   Printer,
   Receipt,
@@ -36,7 +36,7 @@ import {
   Undo2,
   UserCog,
   Users,
-  // Wallet,
+  Wallet,
   Warehouse,
 } from 'lucide-react'
 
@@ -58,7 +58,7 @@ export interface NavItem {
  * 侧边栏导航配置
  * 对应 UI 原型 §1.1 的 12 大模块
  *
- * 阶段性裁剪：库存调拨、定制单管理、生产工单、财务管理暂不开放。
+ * 阶段性裁剪：库存调拨暂不开放。
  * 暂不开放的菜单用块注释隐藏，后续测试通过后去掉对应注释（及顶部图标 import）即可。
  */
 export const navConfig: NavItem[] = [
@@ -165,24 +165,18 @@ export const navConfig: NavItem[] = [
        */
     ],
   },
-  /*
-   * 本版本暂不开放定制单管理，后续恢复时同步恢复顶部 Palette import。
   {
     titleKey: 'nav.customOrders',
     href: '/custom-orders',
     icon: Palette,
     permissionModule: 'custom_orders',
   },
-   */
-  /*
-   * 生产工单菜单暂不开放，后续测试通过后恢复时同步恢复顶部 Hammer import。
   {
     titleKey: 'nav.productionOrders',
     href: '/production-orders',
     icon: Hammer,
     permissionModule: 'production_orders',
   },
-   */
   // 智能补货
   {
     titleKey: 'nav.replenishment',
@@ -190,8 +184,6 @@ export const navConfig: NavItem[] = [
     icon: Lightbulb,
     permissionModule: 'replenishment',
   },
-  /*
-   * 财务管理菜单暂不开放，后续测试通过后恢复时同步恢复顶部 Wallet / CreditCard import。
   {
     titleKey: 'nav.finance',
     href: '/finance/payables',
@@ -206,7 +198,6 @@ export const navConfig: NavItem[] = [
       },
     ],
   },
-   */
   // 报表中心（阶段性仅开放：库存报表）
   {
     titleKey: 'nav.reports',

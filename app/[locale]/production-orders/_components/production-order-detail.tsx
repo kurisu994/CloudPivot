@@ -28,42 +28,42 @@ interface ProductionMaterialItem {
   materialId: number
   materialName: string
   materialCode: string | null
-  required_qty: number
-  picked_qty: number
-  returned_qty: number
+  requiredQty: number
+  pickedQty: number
+  returnedQty: number
   unitName: string | null
   warehouseId: number | null
 }
 
 interface ProductionCompletionItem {
   id: number
-  completion_no: string
+  completionNo: string
   quantity: number
   warehouseId: number
   warehouseName: string | null
-  unit_cost: number
+  unitCost: number
   remark: string | null
-  completed_at: string | null
+  completedAt: string | null
 }
 
 interface ProductionOrderDetail {
   id: number
   orderNo: string
   bomId: number
-  bom_name: string
+  bomName: string
   customOrderId: number | null
-  custom_order_no: string | null
-  output_material_id: number
-  output_material_name: string
-  planned_qty: number
-  completed_qty: number
+  customOrderNo: string | null
+  outputMaterialId: number
+  outputMaterialName: string
+  plannedQty: number
+  completedQty: number
   status: string
-  planned_start_date: string | null
-  planned_end_date: string | null
-  actual_start_date: string | null
-  actual_end_date: string | null
+  plannedStartDate: string | null
+  plannedEndDate: string | null
+  actualStartDate: string | null
+  actualEndDate: string | null
   remark: string | null
-  created_at: string | null
+  createdAt: string | null
   materials: ProductionMaterialItem[]
   completions: ProductionCompletionItem[]
 }
@@ -99,9 +99,9 @@ function getStatusBadge(status: string, t: (key: string) => string) {
 
 /** 领料状态 */
 function getPickStatus(mat: ProductionMaterialItem, t: (key: string) => string) {
-  const net = mat.picked_qty - mat.returned_qty
+  const net = mat.pickedQty - mat.returnedQty
   if (net <= 0) return <Badge variant="outline">{t('picking.statusNone')}</Badge>
-  if (net >= mat.required_qty) return <Badge variant="default">{t('picking.statusFull')}</Badge>
+  if (net >= mat.requiredQty) return <Badge variant="default">{t('picking.statusFull')}</Badge>
   return <Badge variant="secondary">{t('picking.statusPartial')}</Badge>
 }
 
@@ -179,9 +179,9 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
   useEffect(() => {
     if (detail && detail.status === 'draft') {
       setFormBomId(String(detail.bomId))
-      setFormPlannedQty(String(detail.planned_qty))
-      setFormStartDate(detail.planned_start_date ?? '')
-      setFormEndDate(detail.planned_end_date ?? '')
+      setFormPlannedQty(String(detail.plannedQty))
+      setFormStartDate(detail.plannedStartDate ?? '')
+      setFormEndDate(detail.plannedEndDate ?? '')
       setFormRemark(detail.remark ?? '')
     }
   }, [detail])
@@ -446,7 +446,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
   const canReturn = detail.status === 'picking' || detail.status === 'producing'
   const canStart = detail.status === 'picking'
   const canComplete = detail.status === 'producing'
-  const canFinish = detail.status === 'producing' && detail.completed_qty > 0
+  const canFinish = detail.status === 'producing' && detail.completedQty > 0
   const canCancel = !isTerminal
 
   return (
@@ -474,36 +474,36 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
               <span className="text-muted-foreground">{t('orderNo')}:</span> <span className="font-medium">{detail.orderNo}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">{t('relatedBom')}:</span> <span className="font-medium">{detail.bom_name}</span>
+              <span className="text-muted-foreground">{t('relatedBom')}:</span> <span className="font-medium">{detail.bomName}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">{t('outputMaterial')}:</span> <span className="font-medium">{detail.output_material_name}</span>
+              <span className="text-muted-foreground">{t('outputMaterial')}:</span> <span className="font-medium">{detail.outputMaterialName}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">{t('plannedQty')}:</span> <span className="font-medium">{detail.planned_qty}</span>
+              <span className="text-muted-foreground">{t('plannedQty')}:</span> <span className="font-medium">{detail.plannedQty}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('completedQty')}:</span>{' '}
               <span className="font-medium">
-                {detail.completed_qty} / {detail.planned_qty}
+                {detail.completedQty} / {detail.plannedQty}
               </span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('relatedCustomOrder')}:</span>{' '}
-              <span className="font-medium">{detail.custom_order_no ?? '—'}</span>
+              <span className="font-medium">{detail.customOrderNo ?? '—'}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">{t('plannedStartDate')}:</span> <span>{detail.planned_start_date ?? '—'}</span>
+              <span className="text-muted-foreground">{t('plannedStartDate')}:</span> <span>{detail.plannedStartDate ?? '—'}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">{t('plannedEndDate')}:</span> <span>{detail.planned_end_date ?? '—'}</span>
+              <span className="text-muted-foreground">{t('plannedEndDate')}:</span> <span>{detail.plannedEndDate ?? '—'}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">{t('actualStartDate')}:</span> <span>{detail.actual_start_date ?? '—'}</span>
+              <span className="text-muted-foreground">{t('actualStartDate')}:</span> <span>{detail.actualStartDate ?? '—'}</span>
             </div>
-            {detail.actual_end_date && (
+            {detail.actualEndDate && (
               <div>
-                <span className="text-muted-foreground">{t('actualEndDate')}:</span> <span>{detail.actual_end_date}</span>
+                <span className="text-muted-foreground">{t('actualEndDate')}:</span> <span>{detail.actualEndDate}</span>
               </div>
             )}
             {detail.remark && (
@@ -556,10 +556,10 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
                       <div className="font-medium">{mat.materialName}</div>
                       {mat.materialCode && <div className="text-muted-foreground text-xs">{mat.materialCode}</div>}
                     </td>
-                    <td className="px-3 py-2 text-right text-sm">{mat.required_qty}</td>
-                    <td className="px-3 py-2 text-right text-sm">{mat.picked_qty}</td>
-                    <td className="px-3 py-2 text-right text-sm">{mat.returned_qty}</td>
-                    <td className="px-3 py-2 text-right text-sm font-medium">{(mat.picked_qty - mat.returned_qty).toFixed(2)}</td>
+                    <td className="px-3 py-2 text-right text-sm">{mat.requiredQty}</td>
+                    <td className="px-3 py-2 text-right text-sm">{mat.pickedQty}</td>
+                    <td className="px-3 py-2 text-right text-sm">{mat.returnedQty}</td>
+                    <td className="px-3 py-2 text-right text-sm font-medium">{(mat.pickedQty - mat.returnedQty).toFixed(2)}</td>
                     <td className="px-3 py-2 text-center text-sm">{mat.unitName ?? '—'}</td>
                     <td className="px-3 py-2 text-center text-sm">{getPickStatus(mat, t)}</td>
                     {!isTerminal && (
@@ -570,7 +570,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
                               {t('picking.pickMaterial')}
                             </Button>
                           )}
-                          {canReturn && mat.picked_qty - mat.returned_qty > 0 && (
+                          {canReturn && mat.pickedQty - mat.returnedQty > 0 && (
                             <Button variant="ghost" size="sm" onClick={() => openReturnDialog(mat)}>
                               {t('picking.returnMaterial')}
                             </Button>
@@ -621,17 +621,17 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
                 <>
                   {detail.completions.map(comp => (
                     <tr key={comp.id} className="hover:bg-muted/50 border-b transition-colors">
-                      <td className="px-3 py-2 text-sm">{comp.completion_no}</td>
+                      <td className="px-3 py-2 text-sm">{comp.completionNo}</td>
                       <td className="px-3 py-2 text-right text-sm">{comp.quantity}</td>
                       <td className="px-3 py-2 text-sm">{comp.warehouseName ?? '—'}</td>
-                      <td className="px-3 py-2 text-right text-sm">{formatAmount(comp.unit_cost, 'VND')}</td>
-                      <td className="px-3 py-2 text-sm">{comp.completed_at ?? '—'}</td>
+                      <td className="px-3 py-2 text-right text-sm">{formatAmount(comp.unitCost, 'VND')}</td>
+                      <td className="px-3 py-2 text-sm">{comp.completedAt ?? '—'}</td>
                     </tr>
                   ))}
                   <tr className="bg-muted/30 font-medium">
                     <td className="px-3 py-2 text-sm">{t('completion.total')}</td>
                     <td className="px-3 py-2 text-right text-sm">
-                      {detail.completions.reduce((sum, c) => sum + c.quantity, 0)} / {detail.planned_qty}
+                      {detail.completions.reduce((sum, c) => sum + c.quantity, 0)} / {detail.plannedQty}
                     </td>
                     <td colSpan={3} />
                   </tr>

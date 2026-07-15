@@ -85,7 +85,7 @@ export function CustomOrderListPage({ onEdit, onNew }: CustomOrderListPageProps)
           keyword: filters.keyword || null,
           customerId: filters.customerId || null,
           status: filters.status || null,
-          custom_type: filters.customType || null,
+          customType: filters.customType || null,
           dateFrom: filters.dateFrom || null,
           dateTo: filters.dateTo || null,
           page: currentPage,

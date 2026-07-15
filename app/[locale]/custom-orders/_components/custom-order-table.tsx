@@ -24,16 +24,16 @@ export interface CustomOrderListItem {
   customerId: number
   customerName: string
   orderDate: string
-  delivery_date: string | null
+  deliveryDate: string | null
   currency: string
-  custom_type: string
+  customType: string
   priority: string
   status: string
-  ref_material_name: string | null
-  quote_amount: number
-  cost_amount: number
-  item_count: number
-  created_at: string | null
+  refMaterialName: string | null
+  quoteAmount: number
+  costAmount: number
+  itemCount: number
+  createdAt: string | null
 }
 
 /** 状态对应的样式 */
@@ -185,16 +185,16 @@ export function CustomOrderTable({
                   {/* 定制类型 */}
                   <TableCell>
                     <Badge variant="outline" className="text-xs">
-                      {t(TYPE_LABEL_KEYS[order.custom_type] || 'typeFull')}
+                      {t(TYPE_LABEL_KEYS[order.customType] || 'typeFull')}
                     </Badge>
                   </TableCell>
 
                   {/* 参考产品 */}
-                  <TableCell className="text-sm">{order.ref_material_name || '—'}</TableCell>
+                  <TableCell className="text-sm">{order.refMaterialName || '—'}</TableCell>
 
                   {/* 报价金额 */}
                   <TableCell className="text-right font-medium">
-                    {formatAmount(order.quote_amount, order.currency as 'VND' | 'CNY' | 'USD')}
+                    {formatAmount(order.quoteAmount, order.currency as 'VND' | 'CNY' | 'USD')}
                   </TableCell>
 
                   {/* 优先级 */}
