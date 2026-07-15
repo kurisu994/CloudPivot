@@ -22,9 +22,9 @@
 | **七、采购管理** | 怎么给供应商下采购单、货到了怎么入库、退货怎么办 | [07-purchase.md](07-purchase.md) |
 | **八、销售管理** | 怎么给客户开销售单、怎么发货出库、退货怎么退款 | [08-sales.md](08-sales.md) |
 | **九、库存管理** | 怎么查库存、仓库盘点怎么记、两个仓库之间怎么调拨 | [09-inventory.md](09-inventory.md) |
-| **十、定制单与生产工单** | 定制家具怎么做、车间怎么领料、完工怎么进成品仓 *(暂未开放)* | [10-custom-and-production.md](10-custom-and-production.md) |
+| **十、定制单与生产工单** | 定制家具怎么做、车间怎么领料、完工怎么进成品仓 | [10-custom-and-production.md](10-custom-and-production.md) |
 | **十一、智能补货** | 仓库快没料了，怎么让电脑自动算要买多少料 | [11-replenishment.md](11-replenishment.md) |
-| **十二、财务管理** | 欠供应商多少钱、客户欠我们多少钱、怎么记收付款 *(暂未开放)* | [12-finance.md](12-finance.md) |
+| **十二、财务管理** | 欠供应商多少钱、客户欠我们多少钱、怎么记收付款 | [12-finance.md](12-finance.md) |
 | **十三、报表中心** | 查账目明细、利润有多少、哪些料积压了 | [13-reports.md](13-reports.md) |
 | **十四、系统设置** | 改厂名、改单据编号规则、改汇率和打印设置 | [14-settings.md](14-settings.md) |
 | **十五、打印指南** | 怎么连打印机、怎么打印送货单（尤其是针式打印机） | [15-print-guide.md](15-print-guide.md) |

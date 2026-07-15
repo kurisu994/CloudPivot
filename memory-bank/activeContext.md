@@ -2,66 +2,52 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.1**（2026-07-15 发布）。本轮（2026-07-15）完成了 **云枢 CloudPivot IMS 用户操作手册 (User Manual) 的全面生成**：
-- 完成了 Next.js 独立运行模式（纯前端 Mock 降级策略下）的开发服务器启动和测试。
-- 完成了 12 张核心界面 UI 截图的自动化/手动捕获并存盘至项目 `docs/user-manual/images/`。
-- 将操作手册合理拆分为一个主索引文件与 15 个具体章节/附录的子文件，并为每一个页面和其细化的表单、按钮与业务公式编写了极其详尽的用户使用指引。
+项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.1**（2026-07-15 发布）。本轮（2026-07-15）完成了 **销售链路行折扣口径的系列修复**（未提交），起因是保存销售单报错 `missing field discountRate`。
 
 ## 最近完成的工作
 
-- **操作手册生成与 PDF 整合 (2026-07-15)**：
-  - 编写并建立了操作手册主页 `docs/user-manual/README.md`，包含 22 个章节的详细索引目录，并专门添加了 macOS 首次打开时未配置 Apple Developer 代码签名和公证 (Notarization) 时的 Finder 右键打开以及使用 `xattr -cr` 修复“已损坏，无法打开”的具体命令行步骤。
-  - **追加截图**：本轮累计追加截取并存盘 8 张高清核心界面截图。至此，全手册的插图总数已达 **26 张**，实现了业务流程的图文覆盖。
-  - **状态说明标注**：在「定制单与生产工单」（第十章）和「财务管理」（第十二章）的文档顶部，明确添加了 **GFM 警告块说明当前版本中这些模块处于待定（暂未开放）阶段**。
-  - **大白话极简润色全覆盖**：针对 30-50 岁没有太多电脑操作经验的工厂新手用户，对全部已开放章节进行了 **全面彻底的大白话润色**。
-  - **合并与整合 PDF**：编写 Node.js 脚本，去除了目录文件的跳转外链，并注入了 `<div style="page-break-before: always;"></div>` 分页符。成功将 15 个子章节拼合生成为单文件 [all_in_one_manual.md](file:///Users/kurisu/develop/RustroverProjects/CloudPivot/docs/user-manual/all_in_one_manual.md)。
-  - **PDF 成功生成**：调用 `markdown-pdf` 工具，成功将图文并茂的合并文档转成高品质 PDF 手册 [CloudPivot_IMS_User_Manual.pdf](file:///Users/kurisu/develop/RustroverProjects/CloudPivot/docs/user-manual/CloudPivot_IMS_User_Manual.pdf)，方便打印和传输。
-  - 创建并编写了 `docs/user-manual/02-login-and-setup.md`（登录、密码校验锁定、强制改密、4步初始化向导）。
-  - 创建并编写了 `docs/user-manual/03-layout.md`（侧边栏窄版折叠交互、Tooltip、选中高亮、头部栏切换与个人中心）。
-  - 创建并编写了 `docs/user-manual/04-dashboard.md`（6个KPI卡片的计算口径、近30天销售采购折线趋势、饼图占比及代办卡片）。
-  - 创建并编写了 `docs/user-manual/05-base-data.md`（物料管理筛选与导入导出预览、大型物料表单6大区块详解、分类树拖拽、供应商与客户信用额度校验）。
-  - 创建并编写了 `docs/user-manual/06-bom.md`（BOM版本生效停用规则、子件用量损耗、需求展算和反查工具）。
-  - 创建并编写了 `docs/user-manual/07-purchase.md`（采购单录入与费用计算、分批入库的 110% 溢量控制、多批次折扣/附加费用比例分摊与最后一笔倒挤算法、采购退货）。
-  - 创建并编写了 `docs/user-manual/08-sales.md`（销售单折扣叠加、可用库存强制零库存拦截与信用度报警、出库 FIFO 分配与手动重排、出库标准/实际成本快照固化、退货成本溯源）。
-  - 创建并编写了 `docs/user-manual/09-inventory.md`（库存查询三指标解析、批量自由出入库草稿、风控大额二确、单事务原子过账与缺口表格提示、流水、盘点及保护警告）。
-  - 创建并编写了 `docs/user-manual/10-custom-and-production.md`（定制单加价、定制 BOM、原材料 FIFO 锁定、工单生命周期状态机、120% 超领拦截、完工实际成本计算与分配）。
-  - 创建并编写了 `docs/user-manual/11-replenishment.md`（日均消耗与断货天数计算公式、四项策略控制参数、建议采购量算式以及一键拆单采购）。
-  - 创建并编写了 `docs/user-manual/12-finance.md`（应付/应收账期到期红字报警、收付款登记字段、退货财务 return_offset 轧差冲减计算方法）。
-  - 创建并编写了 `docs/user-manual/13-reports.md`（毛利双轨制口径切换算法、收发存勾稽关系、库龄饼图划分、滞销分析与数据下钻）。
-  - 创建并编写了 `docs/user-manual/14-settings.md`（企业基本参数、编码前缀与流水预览、库存规则映射、双语组合打印、1 USD = N 外币汇率快照、SQL 物理备份与日志审计）。
-  - 创建并编写了 `docs/user-manual/15-print-guide.md`（九种单据固定格式打印模板、Windows 打印服务器新建 14×22cm 自定义纸张、驱动首选项对齐走纸、偏移校调与故障自查）。
-  - 创建并编写了 `docs/user-manual/appendix.md`（编码规则汇总对照、列表与表单快捷键、常见使用问题 FAQ 库以及进销存术语表）。
+- **打通"定制单 → 工单 → 销售出库 → 财务"链路（路径 A）并开放财务菜单 (2026-07-15)**：
+  - 业务决策：生产流程以**定制单为枢纽**（定制单 → 开工单 / 转销售单），不做普通销售单直连工单（`production_orders` 无 `sales_order_id`，暂不加）。
+  - `config/nav.ts` 开放财务管理菜单（应付/应收，恢复 `Wallet`/`CreditCard` import）；定制单/工单菜单为用户手工放开（此前未提交的工作区改动）。
+  - 修复定制单模块（未测试就隐藏的存量 bug）：保存 payload 用下划线键导致 `save_custom_order` 必报 `missing field customType`；BOM 下拉调用了不存在的 `get_boms` 命令（改为 `get_bom_list` + 前端按参考物料过滤生效版本）；列表按定制类型筛选键名错误被静默忽略；详情/表格几乎所有展示字段下划线访问驼峰响应导致满屏 undefined。
+  - 修复工单模块同类问题：`production-order-detail/table/list-page` 三个文件的响应字段全部对齐驼峰。
+  - 财务模块（`lib/tauri/finance.ts` + payables/receivables 页面）核对无问题。
+  - 验证：`pnpm typecheck` 通过；本轮无后端改动。全链路运行时实测待做。
+
+- **销售明细行折扣字段改名对齐 (2026-07-15)**：
+  - 根因：前端明细行折扣叫 `lineDiscount`，后端 serde 期望 `discountRate`（`discount_rate` 的 camelCase），导致 `save_sales_order` 反序列化失败。
+  - 前端统一改名为 `discountRate`：`sales-order-edit-page.tsx`、`sales-material-picker-dialog.tsx`、`outbound-execute-page.tsx`、`lib/tauri/sales.ts`（`PendingOutboundItem`、`SaveOutboundItemParams`）。
+  - UI 表头翻译 key `t('lineDiscount')`（"行折扣"文案）保留不变。
+  - 顺带修复：编辑旧销售单折扣框显示 "undefined"、出库页金额计算 NaN 两个隐患。
+- **出库金额纳入行折扣 (2026-07-15)**：
+  - 后端 `SaveOutboundItemParams` 新增必填 `discount_rate`（含 0~100 校验），新增 `calc_outbound_line_amount` 辅助函数（先取整毛额再抹减折扣，与销售单行金额算法一致）。
+  - 出库货款小计 `outbound_total` 与明细 `amount` 均按折后计算，费用分摊比例与应收金额口径恢复正确。
+- **退货金额按比例倒算 (2026-07-15)**：
+  - `save_and_confirm_sales_return` 改为：退货行金额 = 原出库行折后 `amount` × 退货数量 ÷ 出库数量；退完剩余数量的最后一笔用倒挤法（出库行金额 − 已退金额）消除尾差；剩余可退金额钳制不为负（兼容修复前按原价入账的历史退货单）。
+  - `get_returnable_outbound_items` 新增返回 `outbound_amount`（`ooi.amount`），退货页（`return-execute-page.tsx`）行金额与合计预览改为同口径比例计算。
+  - 明细表仍存原价 `unit_price` 快照，`amount` 存折后金额，未改表结构。
 
 ## 活跃文件
 
-- `docs/user-manual/README.md` — 操作手册主索引
-- `docs/user-manual/02-login-and-setup.md` — 登录与向导
-- `docs/user-manual/03-layout.md` — 界面布局
-- `docs/user-manual/04-dashboard.md` — 首页看板
-- `docs/user-manual/05-base-data.md` — 基础数据
-- `docs/user-manual/06-bom.md` — BOM 物料清单
-- `docs/user-manual/07-purchase.md` — 采购管理
-- `docs/user-manual/08-sales.md` — 销售管理
-- `docs/user-manual/09-inventory.md` — 库存管理
-- `docs/user-manual/10-custom-and-production.md` — 定制与工单
-- `docs/user-manual/11-replenishment.md` — 智能补货
-- `docs/user-manual/12-finance.md` — 财务辅助
-- `docs/user-manual/13-reports.md` — 报表中心
-- `docs/user-manual/14-settings.md` — 系统设置
-- `docs/user-manual/15-print-guide.md` — 打印配置指南
-- `docs/user-manual/appendix.md` — 附录与术语表
-- `docs/user-manual/images/` — 12张核心界面高清截图备份
+- `src-tauri/src/commands/sales.rs` — 出库/退货金额计算与参数结构
+- `app/[locale]/sales-orders/_components/sales-order-edit-page.tsx` — 销售单编辑
+- `app/[locale]/sales-orders/_components/sales-material-picker-dialog.tsx` — 选料弹窗
+- `app/[locale]/sales-deliveries/_components/outbound-execute-page.tsx` — 出库执行
+- `app/[locale]/sales-returns/_components/return-execute-page.tsx` — 退货执行
+- `lib/tauri/sales.ts` — 销售 IPC 类型声明
 
 ## 已做出的决策
 
-- **操作手册拆分组织**：为防止单文件过大导致读取和渲染速度慢，将手册合理拆分为 1 个索引和 15 个独立子 Markdown。
-- **突出实际业务与计算规则**：不仅讲解按钮如何点，还写入了系统后台的业务算法（如移动平均成本计算、双轨制毛利、多批次运费折后金额分摊倒挤、以及 FIFO 批次占扣等），提升了手册对业务人员的使用指导价值。
+- **命名统一方向**：前端向后端 `discountRate` 靠拢（后端命名与数据库列 `discount_rate` 一致，改前端不动协议）。
+- **出库折扣取自客户端参数**：与 `save_sales_order` 信任客户端 `discount_rate` 的既有模式一致，不做折后单价（避免按单位取整误差）。
+- **退货金额比例倒算 + 最后一笔倒挤**：不给 `outbound_order_items` 加折扣列，折扣隐含在折后 `amount` 中；贴合项目费用分摊的既有倒挤模式。
 
 ## 下一步
 
-- 等待用户审阅最新生成的详尽版操作手册。
-- 确认是否需要对操作手册进行多语言（如越南语、英语）翻译或做其他细节补充。
-- TODOS.md 已全部清空，无遗留待办。
+- 实测验证一：带行折扣的销售单 → 保存 → 出库 → 退货全链路金额核对（cargo check / tsc 已通过，未跑运行时验证）。
+- 实测验证二：路径 A 全链路——定制单（确认）→ 定制 BOM → 开工单 → 领料出库 → 开始生产 → 完工入库 → 转销售单 → 审核 → 销售出库 → 应收 → 财务收款登记。
+- 确认后补 CHANGELOG 并提交（改动尚未 commit）。
+- 操作手册同步：第八章出库/退货金额口径、第十章定制单与工单"暂未开放"警告块需移除、第十二章财务管理开放说明。
 
 ## 阻塞
 
@@ -70,4 +56,3 @@
 ---
 
 > **使用说明**：每次会话结束前，更新此文件中的「活跃文件」「已做出的决策」「下一步」「阻塞」部分。新会话开始时，AI 读取此文件即可快速同步上下文。
-
