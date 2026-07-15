@@ -1042,6 +1042,8 @@ pub struct SaveOutboundItemParams {
     pub conversion_rate_snapshot: f64,
     pub quantity: f64,
     pub unit_price: i64,
+    /// 行折扣率 %（0~100，快照自销售单明细）
+    pub discount_rate: f64,
     /// 批次 ID（批次物料必填）
     pub lot_id: Option<i64>,
     pub remark: Option<String>,
@@ -1061,6 +1063,16 @@ pub struct SaveOutboundOrderParams {
     pub outbound_type: String,
     pub remark: Option<String>,
     pub items: Vec<SaveOutboundItemParams>,
+}
+
+/// 计算出库行金额：数量 × 单价 后按行折扣率抹减（与销售单行金额口径一致）
+fn calc_outbound_line_amount(quantity: f64, unit_price: i64, discount_rate: f64) -> i64 {
+    let gross = (quantity * unit_price as f64).round() as i64;
+    if discount_rate > 0.0 {
+        gross - (gross as f64 * discount_rate / 100.0).round() as i64
+    } else {
+        gross
+    }
 }
 
 /// 销售单待出库明细
@@ -1346,6 +1358,12 @@ pub async fn save_and_confirm_outbound(
                 i + 1
             )));
         }
+        if item.discount_rate < 0.0 || item.discount_rate > 100.0 {
+            return Err(AppError::Business(format!(
+                "第 {} 行折扣率必须在 0~100 之间",
+                i + 1
+            )));
+        }
     }
 
     let mut tx = db
@@ -1407,11 +1425,11 @@ pub async fn save_and_confirm_outbound(
         .unwrap_or(1);
     let outbound_no = format!("{}{:03}", outbound_prefix, outbound_seq);
 
-    // 计算本次出库货款小计（使用销售单行折后单价）
+    // 计算本次出库货款小计（行金额按行折扣率抹减，与销售单口径一致）
     let outbound_total: i64 = params
         .items
         .iter()
-        .map(|item| (item.quantity * item.unit_price as f64).round() as i64)
+        .map(|item| calc_outbound_line_amount(item.quantity, item.unit_price, item.discount_rate))
         .sum();
 
     // 费用分摊（仅关联销售单时）
@@ -1513,7 +1531,7 @@ pub async fn save_and_confirm_outbound(
 
     // 逐行处理明细
     for (i, item) in params.items.iter().enumerate() {
-        let amount = (item.quantity * item.unit_price as f64).round() as i64;
+        let amount = calc_outbound_line_amount(item.quantity, item.unit_price, item.discount_rate);
         let base_quantity = item.quantity * item.conversion_rate_snapshot;
 
         // 出库数量校验（不超过销售单剩余可出库数量）
@@ -1882,6 +1900,8 @@ pub struct ReturnableOutboundItem {
     pub already_returned_qty: f64,
     pub returnable_qty: f64,
     pub unit_price: i64,
+    /// 原出库行折后金额（退货金额按比例倒算的基数）
+    pub outbound_amount: i64,
     pub lot_id: Option<i64>,
     pub lot_no: Option<String>,
     /// 原出库时的实际成本单价（用于退货成本回调）
@@ -1947,6 +1967,7 @@ pub async fn get_returnable_outbound_items(
                 0
             ) AS returnable_qty,
             ooi.unit_price,
+            ooi.amount AS outbound_amount,
             ooi.lot_id,
             COALESCE(il.lot_no, '') AS lot_no,
             ooi.cost_unit_price
@@ -2091,11 +2112,46 @@ pub async fn save_and_confirm_sales_return(
         .unwrap_or(1);
     let return_no = format!("{}{:03}", prefix, next_seq);
 
-    let total_amount: i64 = params
-        .items
-        .iter()
-        .map(|item| (item.quantity * item.unit_price as f64).round() as i64)
-        .sum();
+    // 退货行金额按原出库行折后金额比例倒算（含行折扣与出库口径一致），
+    // 退完剩余数量的最后一笔用倒挤法（出库行金额 - 已退金额）消除多次部分退货的尾差
+    let mut line_amounts: Vec<i64> = Vec::with_capacity(params.items.len());
+    for (i, item) in params.items.iter().enumerate() {
+        let source: Option<(f64, i64)> =
+            sqlx::query_as("SELECT quantity, amount FROM outbound_order_items WHERE id = $1")
+                .bind(item.source_outbound_item_id)
+                .fetch_optional(&mut *tx)
+                .await
+                .map_err(|e| AppError::Database(format!("查询原出库明细失败: {}", e)))?;
+        let (outbound_qty, outbound_amount) = source
+            .ok_or_else(|| AppError::Business(format!("第 {} 行原出库明细不存在", i + 1)))?;
+
+        let (returned_qty, returned_amount): (f64, i64) = sqlx::query_as(
+            r#"
+            SELECT COALESCE(SUM(sri.quantity), 0)::DOUBLE PRECISION,
+                   COALESCE(SUM(sri.amount), 0)::BIGINT
+            FROM sales_return_items sri
+            JOIN sales_returns sr ON sr.id = sri.return_id
+            WHERE sri.source_outbound_item_id = $1 AND sr.status = 'confirmed'
+            "#,
+        )
+        .bind(item.source_outbound_item_id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("查询已退货金额失败: {}", e)))?;
+
+        // 剩余可退金额兜底不为负（历史退货单可能按修复前的原价口径入账）
+        let remaining_amount = (outbound_amount - returned_amount).max(0);
+        let amount = if outbound_qty <= 0.0 {
+            0
+        } else if item.quantity >= outbound_qty - returned_qty - 0.001 {
+            remaining_amount
+        } else {
+            ((outbound_amount as f64 * item.quantity / outbound_qty).round() as i64)
+                .min(remaining_amount)
+        };
+        line_amounts.push(amount);
+    }
+    let total_amount: i64 = line_amounts.iter().sum();
 
     let total_amount_base =
         inventory_ops::convert_to_usd_cents(total_amount, &currency, exchange_rate);
@@ -2142,7 +2198,7 @@ pub async fn save_and_confirm_sales_return(
 
     // 逐行处理明细
     for (i, item) in params.items.iter().enumerate() {
-        let amount = (item.quantity * item.unit_price as f64).round() as i64;
+        let amount = line_amounts[i];
         let base_quantity = item.quantity * item.conversion_rate_snapshot;
 
         // 退货数量校验

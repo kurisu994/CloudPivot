@@ -34,7 +34,7 @@ interface ItemRow {
   conversionRate: number
   quantity: string
   unitPrice: string
-  lineDiscount: string
+  discountRate: string
   amount: number
   remark: string
 }
@@ -81,7 +81,7 @@ interface SalesOrderItemData {
   conversionRateSnapshot: number
   quantity: number
   unitPrice: number
-  lineDiscount: number
+  discountRate: number
   amount: number
   shippedQty?: number | null
   remark?: string | null
@@ -207,7 +207,7 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
           conversionRate: item.conversionRateSnapshot,
           quantity: String(item.quantity),
           unitPrice: String(item.unitPrice),
-          lineDiscount: String(item.lineDiscount),
+          discountRate: String(item.discountRate),
           amount: item.amount,
           remark: item.remark ?? '',
         })),
@@ -263,16 +263,16 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
   }
 
   /** 更新明细行字段 */
-  const updateItem = (key: string, field: 'quantity' | 'unitPrice' | 'lineDiscount' | 'remark', value: string) => {
+  const updateItem = (key: string, field: 'quantity' | 'unitPrice' | 'discountRate' | 'remark', value: string) => {
     setItems(prev =>
       prev.map(item => {
         if (item.key !== key) return item
         const updated = { ...item, [field]: value }
         // 重算金额：行金额 = 数量 × 单价 × (1 - 行折扣率/100)
-        if (field === 'quantity' || field === 'unitPrice' || field === 'lineDiscount') {
+        if (field === 'quantity' || field === 'unitPrice' || field === 'discountRate') {
           const qty = parseFloat(updated.quantity) || 0
           const price = parseInt(updated.unitPrice) || 0
-          const discount = parseFloat(updated.lineDiscount) || 0
+          const discount = parseFloat(updated.discountRate) || 0
           updated.amount = Math.round(qty * price * (1 - discount / 100))
         }
         return updated
@@ -331,7 +331,7 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
           conversionRateSnapshot: item.conversionRate,
           quantity: parseFloat(item.quantity) || 0,
           unitPrice: parseInt(item.unitPrice) || 0,
-          lineDiscount: parseFloat(item.lineDiscount) || 0,
+          discountRate: parseFloat(item.discountRate) || 0,
           remark: item.remark || null,
           sortOrder: idx,
         })),
@@ -573,8 +573,8 @@ export function SalesOrderEditPage({ orderId, onBack }: SalesOrderEditPageProps)
                     <TableCell>
                       <Input
                         type="number"
-                        value={item.lineDiscount}
-                        onChange={e => updateItem(item.key, 'lineDiscount', e.target.value)}
+                        value={item.discountRate}
+                        onChange={e => updateItem(item.key, 'discountRate', e.target.value)}
                         className="h-8 w-full text-right font-mono"
                         min={0}
                         max={100}

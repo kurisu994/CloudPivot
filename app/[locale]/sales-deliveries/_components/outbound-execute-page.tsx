@@ -52,7 +52,7 @@ interface OutboundItemRow {
   shippedQty: number
   remainingQty: number
   unitPrice: number
-  lineDiscount: number
+  discountRate: number
   /** 批次追踪模式 */
   lotTrackingMode: string
   /** 可用库存 */
@@ -128,7 +128,7 @@ export function OutboundExecutePage({ salesId, onBack }: OutboundExecutePageProp
           shippedQty: item.shippedQty,
           remainingQty: item.remainingQty,
           unitPrice: item.unitPrice,
-          lineDiscount: item.lineDiscount,
+          discountRate: item.discountRate,
           lotTrackingMode: item.lotTrackingMode,
           availableStock: item.availableStock,
           standardCost: item.standardCost,
@@ -158,7 +158,7 @@ export function OutboundExecutePage({ salesId, onBack }: OutboundExecutePageProp
     () =>
       items.reduce((sum, item) => {
         const qty = parseFloat(item.thisQty) || 0
-        const lineAmount = Math.round(qty * item.unitPrice * (1 - item.lineDiscount / 100))
+        const lineAmount = Math.round(qty * item.unitPrice * (1 - item.discountRate / 100))
         return sum + lineAmount
       }, 0),
     [items],
@@ -234,7 +234,7 @@ export function OutboundExecutePage({ salesId, onBack }: OutboundExecutePageProp
           conversionRateSnapshot: item.conversionRate,
           quantity: parseFloat(item.thisQty) || 0,
           unitPrice: item.unitPrice,
-          lineDiscount: item.lineDiscount,
+          discountRate: item.discountRate,
           remark: item.remark.trim() || null,
         })),
       }
@@ -346,7 +346,7 @@ export function OutboundExecutePage({ salesId, onBack }: OutboundExecutePageProp
               ) : (
                 items.map((item, idx) => {
                   const thisQty = parseFloat(item.thisQty) || 0
-                  const amount = Math.round(thisQty * item.unitPrice * (1 - item.lineDiscount / 100))
+                  const amount = Math.round(thisQty * item.unitPrice * (1 - item.discountRate / 100))
                   const isLotTracked = item.lotTrackingMode !== 'none'
                   const isStockInsufficient = thisQty > item.availableStock
 

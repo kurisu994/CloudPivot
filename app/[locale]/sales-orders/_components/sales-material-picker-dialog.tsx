@@ -23,7 +23,7 @@ export interface SalesMaterialPickerDraft {
   conversionRate: number
   quantity: string
   unitPrice: string
-  lineDiscount: string
+  discountRate: string
   amount: number
   remark: string
 }
@@ -41,10 +41,10 @@ interface SalesMaterialPickerDialogProps {
   onConfirm: (items: SalesMaterialPickerDraft[]) => void
 }
 
-function calculateLineAmount(quantity: string, unitPrice: string, lineDiscount: string) {
+function calculateLineAmount(quantity: string, unitPrice: string, discountRate: string) {
   const qty = parseFloat(quantity) || 0
   const price = parseInt(unitPrice) || 0
-  const discount = parseFloat(lineDiscount) || 0
+  const discount = parseFloat(discountRate) || 0
   return Math.round(qty * price * (1 - discount / 100))
 }
 
@@ -61,7 +61,7 @@ function createDraft(material: SalesMaterialOption): DraftLine {
     conversionRate: material.conversionRate || 1,
     quantity: '1',
     unitPrice,
-    lineDiscount: '0',
+    discountRate: '0',
     amount: calculateLineAmount('1', unitPrice, '0'),
     remark: '',
   }
@@ -117,13 +117,13 @@ export function SalesMaterialPickerDialog({
     setDrafts(prev => [...prev, createDraft(material)])
   }
 
-  const updateDraft = (key: string, field: 'quantity' | 'unitPrice' | 'lineDiscount' | 'remark', value: string) => {
+  const updateDraft = (key: string, field: 'quantity' | 'unitPrice' | 'discountRate' | 'remark', value: string) => {
     setDrafts(prev =>
       prev.map(item => {
         if (item.key !== key) return item
         const updated = { ...item, [field]: value }
-        if (field === 'quantity' || field === 'unitPrice' || field === 'lineDiscount') {
-          updated.amount = calculateLineAmount(updated.quantity, updated.unitPrice, updated.lineDiscount)
+        if (field === 'quantity' || field === 'unitPrice' || field === 'discountRate') {
+          updated.amount = calculateLineAmount(updated.quantity, updated.unitPrice, updated.discountRate)
         }
         return updated
       }),
@@ -256,8 +256,8 @@ export function SalesMaterialPickerDialog({
                             min={0}
                             max={100}
                             step="0.1"
-                            value={item.lineDiscount}
-                            onChange={event => updateDraft(item.key, 'lineDiscount', event.target.value)}
+                            value={item.discountRate}
+                            onChange={event => updateDraft(item.key, 'discountRate', event.target.value)}
                           />
                         </div>
                       </div>

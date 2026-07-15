@@ -78,7 +78,7 @@ export interface PendingOutboundItem {
   shippedQty: number
   remainingQty: number
   unitPrice: number
-  lineDiscount: number
+  discountRate: number
   lotTrackingMode: string
   availableStock: number
   standardCost: number
@@ -105,7 +105,7 @@ export interface SaveOutboundItemParams {
   conversionRateSnapshot: number
   quantity: number
   unitPrice: number
-  lineDiscount: number
+  discountRate: number
   lotAllocations?: OutboundLotAllocation[] | null
   remark?: string | null
 }
@@ -192,6 +192,8 @@ export interface ReturnableOutboundItem {
   alreadyReturnedQty: number
   returnableQty: number
   unitPrice: number
+  /** 原出库行折后金额（退货金额按比例倒算的基数） */
+  outboundAmount: number
   lotId: number | null
   lotNo: string | null
 }

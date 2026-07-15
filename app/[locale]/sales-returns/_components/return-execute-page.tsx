@@ -33,6 +33,7 @@ interface ReturnItemRow {
   alreadyReturned: number
   returnableQty: number
   unitPrice: number
+  outboundAmount: number
   lotId: number | null
   lotNo: string | null
   /** 本次退货数量 */
@@ -90,6 +91,7 @@ export function ReturnExecutePage({ outboundId, onBack }: ReturnExecutePageProps
           alreadyReturned: item.alreadyReturnedQty,
           returnableQty: item.returnableQty,
           unitPrice: item.unitPrice,
+          outboundAmount: item.outboundAmount,
           lotId: item.lotId,
           lotNo: item.lotNo,
           thisQty: '',
@@ -112,7 +114,9 @@ export function ReturnExecutePage({ outboundId, onBack }: ReturnExecutePageProps
     () =>
       items.reduce((sum, item) => {
         const qty = parseFloat(item.thisQty) || 0
-        return sum + Math.round(qty * item.unitPrice)
+        // 按原出库行折后金额比例预览，与后端计算口径一致
+        const lineAmount = item.outboundQuantity > 0 ? Math.round((item.outboundAmount * qty) / item.outboundQuantity) : 0
+        return sum + lineAmount
       }, 0),
     [items],
   )
@@ -287,7 +291,7 @@ export function ReturnExecutePage({ outboundId, onBack }: ReturnExecutePageProps
               ) : (
                 items.map((item, idx) => {
                   const thisQty = parseFloat(item.thisQty) || 0
-                  const amount = Math.round(thisQty * item.unitPrice)
+                  const amount = item.outboundQuantity > 0 ? Math.round((item.outboundAmount * thisQty) / item.outboundQuantity) : 0
 
                   return (
                     <TableRow key={item.key} className="group">
