@@ -112,16 +112,56 @@ fn get_migrations() -> Vec<Migration> {
             name: "bom_cutting_details",
             sql: include_str!("../../migrations/postgres/016_bom_cutting_details.sql"),
         },
+        Migration {
+            version: 17,
+            name: "user_roles_and_department_roles",
+            sql: include_str!(
+                "../../migrations/postgres/017_user_roles_and_department_roles.sql"
+            ),
+        },
     ]
 }
 
-/// 执行数据库迁移
+/// 迁移互斥锁的固定 key（任意稳定值，全库唯一即可）
+const MIGRATION_LOCK_KEY: i64 = 0x434C_5056_4D49;
+
+/// 执行数据库迁移（带咨询锁互斥）
+///
+/// 数据库为多终端共享，被动自动更新会让多台客户端在同一时段并发启动并
+/// 尝试执行迁移。用 PostgreSQL 咨询锁保证同一时间只有一个客户端执行，
+/// 后到者阻塞等待，拿到锁后重新检查版本（已被前者执行的迁移自然跳过）。
+pub async fn run_migrations(pool: &PgPool) -> Result<(), AppError> {
+    // 咨询锁是会话级的，加锁和解锁必须在同一条连接上；
+    // 连接归还池后会话仍存活，因此必须显式解锁，不能依赖 Drop
+    let mut lock_conn = pool
+        .acquire()
+        .await
+        .map_err(|e| AppError::Database(format!("获取迁移锁连接失败: {}", e)))?;
+
+    sqlx::query("SELECT pg_advisory_lock($1)")
+        .bind(MIGRATION_LOCK_KEY)
+        .execute(&mut *lock_conn)
+        .await
+        .map_err(|e| AppError::Database(format!("获取迁移锁失败: {}", e)))?;
+
+    let result = run_migrations_inner(pool).await;
+
+    // 无论迁移成败都释放锁
+    let _ = sqlx::query("SELECT pg_advisory_unlock($1)")
+        .bind(MIGRATION_LOCK_KEY)
+        .execute(&mut *lock_conn)
+        .await;
+
+    result
+}
+
+/// 迁移主体逻辑
 ///
 /// 流程：
 /// 1. 创建 `schema_migrations` 版本跟踪表（如不存在）
 /// 2. 查询当前最大版本号
 /// 3. 依次执行未应用的迁移脚本
-pub async fn run_migrations(pool: &PgPool) -> Result<(), AppError> {
+async fn run_migrations_inner(pool: &PgPool) -> Result<(), AppError> {
     // 创建版本跟踪表
     sqlx::raw_sql(
         "CREATE TABLE IF NOT EXISTS schema_migrations (

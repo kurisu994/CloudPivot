@@ -28,12 +28,22 @@ pub struct UserInfo {
     pub session_version: i32,
 }
 
+/// 角色引用（id + code，多角色改造后账号可持有多个）
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RoleRef {
+    pub id: i64,
+    pub code: String,
+}
+
 /// 登录响应
 #[derive(Debug, Serialize)]
 pub struct LoginResponse {
     pub user: UserInfo,
     pub must_change_password: bool,
     pub permissions: Vec<PermissionItem>,
+    /// 账号持有的全部角色（多角色并集的来源）
+    pub roles: Vec<RoleRef>,
 }
 
 /// 默认密码（初始管理员 / 新建用户 / 重置密码统一使用）
@@ -57,14 +67,25 @@ pub async fn ensure_admin_exists(pool: &PgPool) -> Result<(), AppError> {
         let password_hash = bcrypt::hash(DEFAULT_PASSWORD, bcrypt::DEFAULT_COST)
             .map_err(|e| AppError::Auth(format!("密码哈希失败: {}", e)))?;
 
-        sqlx::query(
+        let admin_id: i64 = sqlx::query_scalar(
             "INSERT INTO users (username, display_name, password_hash, role, role_id, must_change_password, session_version)
-             VALUES ('admin', '管理员', $1, 'admin', (SELECT id FROM roles WHERE code = 'admin'), TRUE, 1)",
+             VALUES ('admin', '管理员', $1, 'admin', (SELECT id FROM roles WHERE code = 'admin'), TRUE, 1)
+             RETURNING id",
         )
         .bind(&password_hash)
-        .execute(pool)
+        .fetch_one(pool)
         .await
         .map_err(|e| AppError::Database(format!("创建管理员账号失败: {}", e)))?;
+
+        sqlx::query(
+            "INSERT INTO user_roles (user_id, role_id)
+             SELECT $1, id FROM roles WHERE code = 'admin'
+             ON CONFLICT (user_id, role_id) DO NOTHING",
+        )
+        .bind(admin_id)
+        .execute(pool)
+        .await
+        .map_err(|e| AppError::Database(format!("初始化管理员角色关联失败: {}", e)))?;
 
         log::info!("已创建默认管理员账号 (admin / abc12345)");
     }
@@ -84,6 +105,7 @@ pub async fn login(
     pool: &PgPool,
     username: &str,
     password: &str,
+    client_version: &str,
 ) -> Result<LoginResponse, AppError> {
     // 查询用户
     let row = sqlx::query_as::<
@@ -289,10 +311,14 @@ pub async fn login(
         session_version,
     };
 
-    // 加载用户权限集合
-    let permissions = load_user_permissions(pool, user.role_id).await?;
+    // 混合版本过渡期：校验 user_roles 与 legacy role_id 的一致性并按规则修复
+    reconcile_user_roles(pool, user.id, user.role_id).await?;
 
-    // 记录登录成功日志
+    // 加载账号全部角色与多角色并集权限
+    let roles = load_user_roles(pool, user.id).await?;
+    let permissions = load_permissions_by_user(pool, user.id).await?;
+
+    // 记录登录成功日志（含客户端版本，作为里程碑 2 删除 legacy 列前的车队收敛依据）
     operation_log::write_log(
         pool,
         operation_log::OperationLogEntry {
@@ -301,7 +327,7 @@ pub async fn login(
             target_type: Some("user".to_string()),
             target_id: Some(user.id),
             target_no: None,
-            detail: format!("用户 {} 登录成功", user.username),
+            detail: format!("用户 {} 登录成功 (客户端 v{})", user.username, client_version),
             operator_user_id: Some(user.id),
             operator_name: Some(user.display_name.clone()),
         },
@@ -312,6 +338,7 @@ pub async fn login(
         must_change_password: user.must_change_password,
         user,
         permissions,
+        roles,
     })
 }
 
@@ -447,19 +474,21 @@ pub async fn get_user_info(pool: &PgPool, user_id: i64) -> Result<UserInfo, AppE
     })
 }
 
-/// 加载角色权限集合
-pub async fn load_user_permissions(
+/// 加载账号权限集合（名下全部角色的并集，去重）
+pub async fn load_permissions_by_user(
     pool: &PgPool,
-    role_id: i64,
+    user_id: i64,
 ) -> Result<Vec<PermissionItem>, AppError> {
     let rows = sqlx::query_as::<_, (String, String)>(
         "SELECT p.module, p.action
-         FROM role_permissions rp
+         FROM user_roles ur
+         JOIN role_permissions rp ON rp.role_id = ur.role_id
          JOIN permissions p ON p.id = rp.permission_id
-         WHERE rp.role_id = $1
+         WHERE ur.user_id = $1
+         GROUP BY p.module, p.action, p.sort_order
          ORDER BY p.sort_order",
     )
-    .bind(role_id)
+    .bind(user_id)
     .fetch_all(pool)
     .await
     .map_err(|e| AppError::Database(format!("加载权限失败: {}", e)))?;
@@ -468,4 +497,201 @@ pub async fn load_user_permissions(
         .into_iter()
         .map(|(module, action)| PermissionItem { module, action })
         .collect())
+}
+
+/// 加载账号名下全部角色
+pub async fn load_user_roles(pool: &PgPool, user_id: i64) -> Result<Vec<RoleRef>, AppError> {
+    let rows = sqlx::query_as::<_, (i64, String)>(
+        "SELECT r.id, r.code
+         FROM user_roles ur
+         JOIN roles r ON r.id = ur.role_id
+         WHERE ur.user_id = $1
+         ORDER BY r.id",
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| AppError::Database(format!("加载用户角色失败: {}", e)))?;
+
+    Ok(rows
+        .into_iter()
+        .map(|(id, code)| RoleRef { id, code })
+        .collect())
+}
+
+/// user_roles 与 legacy role_id 的一致性修复动作
+#[derive(Debug, PartialEq, Eq)]
+pub enum ReconcileAction {
+    /// 一致，无需处理
+    NoChange,
+    /// user_roles 无行（旧客户端新建的账号）→ 按 legacy 补写
+    Backfill,
+    /// legacy 角色不在集合内（旧客户端编辑过角色，含撤权方向）→ 以 legacy 为准重置
+    ResetToLegacy,
+}
+
+/// 一致性决策（纯函数，供单元测试）
+pub fn decide_reconcile(user_role_ids: &[i64], legacy_role_id: i64) -> ReconcileAction {
+    if user_role_ids.is_empty() {
+        ReconcileAction::Backfill
+    } else if !user_role_ids.contains(&legacy_role_id) {
+        ReconcileAction::ResetToLegacy
+    } else {
+        ReconcileAction::NoChange
+    }
+}
+
+/// 混合版本过渡期的账号角色一致性修复
+///
+/// 窗口期旧客户端只读写 users.role/role_id，不感知 user_roles：
+/// - 旧客户端新建的账号：user_roles 无行 → 按 legacy 补写（登录自愈）
+/// - 旧客户端编辑过角色：legacy 不在集合内 → 以 legacy 为准重置整个集合，
+///   保证撤权/改角色不丢失（代价：多角色账号被旧客户端编辑后降回单角色，可恢复）
+///
+/// 过渡逻辑，里程碑 2 车队收敛后随 dual-write 一并拆除。
+pub async fn reconcile_user_roles(
+    pool: &PgPool,
+    user_id: i64,
+    legacy_role_id: i64,
+) -> Result<(), AppError> {
+    let current_ids: Vec<i64> =
+        sqlx::query_scalar("SELECT role_id FROM user_roles WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| AppError::Database(format!("查询用户角色关联失败: {}", e)))?;
+
+    match decide_reconcile(&current_ids, legacy_role_id) {
+        ReconcileAction::NoChange => Ok(()),
+        ReconcileAction::Backfill => {
+            // JOIN roles 防悬空 legacy role_id
+            sqlx::query(
+                "INSERT INTO user_roles (user_id, role_id)
+                 SELECT $1, r.id FROM roles r WHERE r.id = $2
+                 ON CONFLICT (user_id, role_id) DO NOTHING",
+            )
+            .bind(user_id)
+            .bind(legacy_role_id)
+            .execute(pool)
+            .await
+            .map_err(|e| AppError::Database(format!("回填用户角色失败: {}", e)))?;
+            log::info!("用户 {} 的角色关联已按 legacy 回填 (role_id={})", user_id, legacy_role_id);
+            Ok(())
+        }
+        ReconcileAction::ResetToLegacy => {
+            let mut tx = pool
+                .begin()
+                .await
+                .map_err(|e| AppError::Database(format!("开启角色重置事务失败: {}", e)))?;
+            sqlx::query("DELETE FROM user_roles WHERE user_id = $1")
+                .bind(user_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| AppError::Database(format!("清除用户角色关联失败: {}", e)))?;
+            sqlx::query(
+                "INSERT INTO user_roles (user_id, role_id)
+                 SELECT $1, r.id FROM roles r WHERE r.id = $2",
+            )
+            .bind(user_id)
+            .bind(legacy_role_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("重置用户角色失败: {}", e)))?;
+            tx.commit()
+                .await
+                .map_err(|e| AppError::Database(format!("角色重置提交失败: {}", e)))?;
+            log::warn!(
+                "用户 {} 的角色集合与 legacy 不一致（疑似旧客户端编辑），已按 legacy 重置 (role_id={})",
+                user_id,
+                legacy_role_id
+            );
+            Ok(())
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 一致性规则：user_roles 无行 → 按 legacy 补写
+    #[test]
+    fn reconcile_empty_set_backfills() {
+        assert_eq!(decide_reconcile(&[], 3), ReconcileAction::Backfill);
+    }
+
+    /// 一致性规则：legacy 不在集合内（旧客户端改过角色/撤权）→ 以 legacy 为准重置
+    #[test]
+    fn reconcile_legacy_missing_resets() {
+        assert_eq!(decide_reconcile(&[1, 2], 3), ReconcileAction::ResetToLegacy);
+    }
+
+    /// 一致性规则：legacy 在集合内 → 不动（多角色叠加状态被保留）
+    #[test]
+    fn reconcile_legacy_present_no_change() {
+        assert_eq!(decide_reconcile(&[1, 2, 3], 3), ReconcileAction::NoChange);
+    }
+
+    /// 回归：单角色等价性（迁移回填后，按 user_id 并集 = 迁移前按 role_id 查询）
+    ///
+    /// 需要真实 PostgreSQL 环境，显式运行：cargo test -- --ignored
+    #[tokio::test]
+    #[ignore]
+    async fn single_role_permission_equivalence() {
+        let url = match std::env::var("DATABASE_URL") {
+            Ok(u) => u,
+            Err(_) => return, // 无数据库环境时跳过
+        };
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .max_connections(2)
+            .connect(&url)
+            .await
+            .expect("连接数据库失败");
+
+        let users: Vec<(i64, i64)> = sqlx::query_as("SELECT id, role_id FROM users")
+            .fetch_all(&pool)
+            .await
+            .expect("查询用户失败");
+
+        for (user_id, role_id) in users {
+            // 仅校验单角色账号（多角色账号本来就应是并集，不存在等价基准）
+            let role_count: i64 =
+                sqlx::query_scalar("SELECT COUNT(*) FROM user_roles WHERE user_id = $1")
+                    .bind(user_id)
+                    .fetch_one(&pool)
+                    .await
+                    .expect("查询角色数失败");
+            if role_count != 1 {
+                continue;
+            }
+
+            let old_style: Vec<(String, String)> = sqlx::query_as(
+                "SELECT p.module, p.action FROM role_permissions rp
+                 JOIN permissions p ON p.id = rp.permission_id
+                 WHERE rp.role_id = $1 ORDER BY p.module, p.action",
+            )
+            .bind(role_id)
+            .fetch_all(&pool)
+            .await
+            .expect("旧口径查询失败");
+
+            let new_style: Vec<(String, String)> = sqlx::query_as(
+                "SELECT p.module, p.action FROM user_roles ur
+                 JOIN role_permissions rp ON rp.role_id = ur.role_id
+                 JOIN permissions p ON p.id = rp.permission_id
+                 WHERE ur.user_id = $1
+                 GROUP BY p.module, p.action ORDER BY p.module, p.action",
+            )
+            .bind(user_id)
+            .fetch_all(&pool)
+            .await
+            .expect("新口径查询失败");
+
+            assert_eq!(
+                old_style, new_style,
+                "用户 {} 的权限集合在新旧口径下不一致",
+                user_id
+            );
+        }
+    }
 }
