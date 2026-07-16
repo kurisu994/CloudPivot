@@ -51,7 +51,10 @@ pub struct CurrentUser {
 pub struct CurrentUserInner {
     pub user_id: i64,
     pub display_name: String,
+    /// 主角色代码（legacy 展示用途；权限判断走 roles 集合）
     pub role: String,
+    /// 账号名下全部角色代码（多角色并集权限的来源，admin 判断依据）
+    pub roles: Vec<String>,
     pub is_authenticated: bool,
     /// 权限缓存：登录时一次性加载，格式 (module, action)
     pub permissions: HashSet<(String, String)>,
@@ -65,6 +68,7 @@ impl Default for CurrentUser {
                 user_id: 0,
                 display_name: "未认证".to_string(),
                 role: String::new(),
+                roles: Vec::new(),
                 is_authenticated: false,
                 permissions: HashSet::new(),
             }),
@@ -101,8 +105,8 @@ impl CurrentUser {
     pub fn require_permission(&self, module: &str, action: &str) -> Result<(), AppError> {
         self.require_auth()?;
         let inner = self.inner.read().unwrap();
-        // admin 角色默认拥有全部权限
-        if inner.role == "admin" {
+        // 名下任一角色为 admin 即拥有全部权限
+        if inner.roles.iter().any(|r| r == "admin") {
             return Ok(());
         }
         if inner
@@ -121,6 +125,7 @@ impl CurrentUser {
         user_id: i64,
         display_name: String,
         role: String,
+        roles: Vec<String>,
         permissions: Vec<PermissionItem>,
     ) {
         let perm_set: HashSet<(String, String)> = permissions
@@ -131,6 +136,7 @@ impl CurrentUser {
         inner.user_id = user_id;
         inner.display_name = display_name;
         inner.role = role;
+        inner.roles = roles;
         inner.is_authenticated = true;
         inner.permissions = perm_set;
     }
@@ -141,8 +147,76 @@ impl CurrentUser {
         inner.user_id = 0;
         inner.display_name = "未认证".to_string();
         inner.role = String::new();
+        inner.roles.clear();
         inner.is_authenticated = false;
         inner.permissions.clear();
+    }
+}
+
+#[cfg(test)]
+mod current_user_tests {
+    use super::*;
+
+    fn perms(items: &[(&str, &str)]) -> Vec<PermissionItem> {
+        items
+            .iter()
+            .map(|(m, a)| PermissionItem {
+                module: m.to_string(),
+                action: a.to_string(),
+            })
+            .collect()
+    }
+
+    /// 回归：未登录状态任何权限校验都被拒绝
+    #[test]
+    fn unauthenticated_is_rejected() {
+        let cu = CurrentUser::default();
+        assert!(cu.require_permission("materials", "view").is_err());
+        assert!(cu.require_auth().is_err());
+    }
+
+    /// 回归：名下任一角色为 admin 即直通（多角色语义）
+    #[test]
+    fn any_admin_role_bypasses() {
+        let cu = CurrentUser::default();
+        cu.set(
+            1,
+            "测试".into(),
+            "warehouse_staff".into(),
+            vec!["warehouse_staff".into(), "admin".into()],
+            perms(&[]),
+        );
+        assert!(cu.require_permission("finance", "record_payment").is_ok());
+    }
+
+    /// 回归：非 admin 有权限点 → 放行
+    #[test]
+    fn granted_permission_passes() {
+        let cu = CurrentUser::default();
+        cu.set(
+            2,
+            "测试".into(),
+            "sales".into(),
+            vec!["sales".into()],
+            perms(&[("sales_orders", "view"), ("sales_orders", "create")]),
+        );
+        assert!(cu.require_permission("sales_orders", "create").is_ok());
+    }
+
+    /// 回归：非 admin 无权限点 → 拒绝；主角色字符串为 admin 但 roles 集合不含 admin
+    /// 时不得直通（权限判断唯一依据是 roles 集合，防 legacy 字段污染）
+    #[test]
+    fn missing_permission_rejected_and_legacy_role_string_ignored() {
+        let cu = CurrentUser::default();
+        cu.set(
+            3,
+            "测试".into(),
+            "admin".into(), // legacy 主角色字符串被污染的场景
+            vec!["viewer".into()],
+            perms(&[("reports", "view")]),
+        );
+        assert!(cu.require_permission("materials", "edit").is_err());
+        assert!(cu.require_permission("reports", "view").is_ok());
     }
 }
 
@@ -206,17 +280,27 @@ pub struct LoginRequest {
 /// 用户登录
 #[tauri::command]
 pub async fn login(
+    app: tauri::AppHandle,
     db: State<'_, DbState>,
     current_user: State<'_, CurrentUser>,
     request: LoginRequest,
 ) -> Result<LoginResponse, AppError> {
-    let response = auth::login(&db.pool, &request.username, &request.password).await?;
+    // 客户端版本随登录日志入库，作为里程碑 2 车队收敛的观测依据
+    let client_version = app.package_info().version.to_string();
+    let response = auth::login(
+        &db.pool,
+        &request.username,
+        &request.password,
+        &client_version,
+    )
+    .await?;
 
-    // 登录成功后更新当前用户状态（含角色和权限缓存）
+    // 登录成功后更新当前用户状态（含多角色和并集权限缓存）
     current_user.set(
         response.user.id,
         response.user.display_name.clone(),
         response.user.role.clone(),
+        response.roles.iter().map(|r| r.code.clone()).collect(),
         response.permissions.clone(),
     );
 
@@ -288,12 +372,15 @@ pub async fn restore_session(
     if user.session_version != session_version {
         return Err(AppError::Auth("会话已失效，请重新登录".into()));
     }
-    // 加载权限并更新后端状态
-    let permissions = auth::load_user_permissions(&db.pool, user.role_id).await?;
+    // 会话恢复同样走一致性修复 + 多角色并集权限
+    auth::reconcile_user_roles(&db.pool, user.id, user.role_id).await?;
+    let roles = auth::load_user_roles(&db.pool, user.id).await?;
+    let permissions = auth::load_permissions_by_user(&db.pool, user.id).await?;
     current_user.set(
         user.id,
         user.display_name.clone(),
         user.role.clone(),
+        roles.into_iter().map(|r| r.code).collect(),
         permissions,
     );
     Ok(user)
