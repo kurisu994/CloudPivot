@@ -45,9 +45,10 @@
 | 技术 | 说明 |
 |------|------|
 | PostgreSQL | 远程共享数据库 |
-| 表数量 | 57 张业务表 |
-| 迁移文件 | 16 个（001_init ~ 016_bom_cutting_details） |
+| 表数量 | 58 张业务表（017 新增 user_roles） |
+| 迁移文件 | 17 个（001_init ~ 017_user_roles_and_department_roles） |
 | 连接方式 | `DATABASE_URL` 编译时注入 |
+| 迁移互斥 | `run_migrations` 持 pg_advisory_lock，多客户端并发启动安全 |
 
 ## IPC 命令概览（182 个）
 

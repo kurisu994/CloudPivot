@@ -62,7 +62,7 @@ src-tauri/src/
 1. **统一错误类型**：`AppError` 枚举（Database / Sqlx / Auth / Business / Io）+ `Serialize` 返回前端
 2. **参数化查询**：全部使用 `sqlx::query!` / `QueryBuilder` 参数化，禁止字符串拼接
 3. **行锁并发保护**：库存操作使用 `FOR UPDATE`，批次预留增加数量约束
-4. **IPC 鉴权**：写命令统一 `require_auth` 守卫，用户管理命令需 admin 角色
+4. **IPC 鉴权**：目标是全部命令 `require_permission(module, action)` 校验（多角色并集，任一角色为 admin 直通）；现状仅 user_management/print_template/manual_stock_movement/mod 4 文件有守卫，其余 16 文件在权限重构批次 4 补齐
 5. **自管理迁移**：每条迁移在独立事务内执行，保证原子性
 6. **采购/销售共享抽象**：`order_shared.rs` 统一编号生成、列表查询、审核/作废/删除逻辑
 7. **库存操作原子性**：`inventory_ops.rs` 内部 10 个函数统一处理增减库存/批次/流水/成本折算
