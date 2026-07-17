@@ -11,15 +11,38 @@ import type { AppErrorResponse } from '../error'
 // 类型定义
 // ================================================================
 
+/** 角色引用（对应 Rust RoleRef，多角色改造后账号可持有多个角色） */
+export interface RoleRef {
+  id: number
+  code: string
+}
+
 /** 用户信息（对应 Rust UserInfo） */
 export interface UserInfo {
   id: number
   username: string
   display_name: string
-  role: 'admin' | 'operator' | 'viewer'
+  /** legacy 主角色代码（过渡期保留，角色判断请用 roles + userHasRole） */
+  role: string
   role_id: number
+  /** 账号持有的全部角色 */
+  roles: RoleRef[]
+  /** 岗位（纯展示属性，不参与权限） */
+  position: string | null
   must_change_password: boolean
   session_version: number
+}
+
+/**
+ * 判断用户是否持有指定角色
+ *
+ * roles 为空时回退 legacy role 字段：兼容混合版本窗口期旧客户端创建、
+ * 尚未回填 user_roles 的账号。
+ */
+export function userHasRole(user: UserInfo | null, code: string): boolean {
+  if (!user) return false
+  if (user.roles.length > 0) return user.roles.some(r => r.code === code)
+  return user.role === code
 }
 
 /** 权限项 */

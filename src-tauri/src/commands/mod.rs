@@ -300,7 +300,7 @@ pub async fn login(
         response.user.id,
         response.user.display_name.clone(),
         response.user.role.clone(),
-        response.roles.iter().map(|r| r.code.clone()).collect(),
+        response.user.roles.iter().map(|r| r.code.clone()).collect(),
         response.permissions.clone(),
     );
 
@@ -368,19 +368,19 @@ pub async fn restore_session(
     user_id: i64,
     session_version: i32,
 ) -> Result<UserInfo, AppError> {
-    let user = auth::get_user_info(&db.pool, user_id).await?;
+    let mut user = auth::get_user_info(&db.pool, user_id).await?;
     if user.session_version != session_version {
         return Err(AppError::Auth("会话已失效，请重新登录".into()));
     }
-    // 会话恢复同样走一致性修复 + 多角色并集权限
+    // 会话恢复同样走一致性修复 + 多角色并集权限；修复可能改写 user_roles，重新加载保证返回修复后集合
     auth::reconcile_user_roles(&db.pool, user.id, user.role_id).await?;
-    let roles = auth::load_user_roles(&db.pool, user.id).await?;
+    user.roles = auth::load_user_roles(&db.pool, user.id).await?;
     let permissions = auth::load_permissions_by_user(&db.pool, user.id).await?;
     current_user.set(
         user.id,
         user.display_name.clone(),
         user.role.clone(),
-        roles.into_iter().map(|r| r.code).collect(),
+        user.roles.iter().map(|r| r.code.clone()).collect(),
         permissions,
     );
     Ok(user)

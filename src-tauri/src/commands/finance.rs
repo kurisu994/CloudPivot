@@ -191,8 +191,11 @@ pub struct RecordReceiptParams {
 #[tauri::command]
 pub async fn get_payables(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: PayablesFilter,
 ) -> Result<PayablesResponse, AppError> {
+    current_user.require_permission("payables", "view")?;
+
     log::info!(
         "财务查询: get_payables, 页码={}, 每页={}",
         filter.page,
@@ -358,8 +361,11 @@ pub async fn get_payables(
 #[tauri::command]
 pub async fn get_payment_records(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     payable_id: i64,
 ) -> Result<Vec<PaymentRecordItem>, AppError> {
+    current_user.require_permission("payables", "view")?;
+
     let records = sqlx::query_as::<_, PaymentRecordItem>(
         r#"
         SELECT id, payable_id, payment_date, payment_amount,
@@ -389,7 +395,7 @@ pub async fn record_payment(
     current_user: State<'_, CurrentUser>,
     params: RecordPaymentParams,
 ) -> Result<i64, AppError> {
-    current_user.require_auth()?;
+    current_user.require_permission("payables", "record_payment")?;
 
     if params.payment_amount <= 0 {
         return Err(AppError::Business("付款金额必须大于 0".to_string()));
@@ -501,8 +507,11 @@ pub async fn record_payment(
 #[tauri::command]
 pub async fn get_receivables(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: ReceivablesFilter,
 ) -> Result<ReceivablesResponse, AppError> {
+    current_user.require_permission("receivables", "view")?;
+
     log::info!(
         "财务查询: get_receivables, 页码={}, 每页={}",
         filter.page,
@@ -668,8 +677,11 @@ pub async fn get_receivables(
 #[tauri::command]
 pub async fn get_receipt_records(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     receivable_id: i64,
 ) -> Result<Vec<ReceiptRecordItem>, AppError> {
+    current_user.require_permission("receivables", "view")?;
+
     let records = sqlx::query_as::<_, ReceiptRecordItem>(
         r#"
         SELECT id, receivable_id, receipt_date, receipt_amount,
@@ -699,7 +711,7 @@ pub async fn record_receipt(
     current_user: State<'_, CurrentUser>,
     params: RecordReceiptParams,
 ) -> Result<i64, AppError> {
-    current_user.require_auth()?;
+    current_user.require_permission("receivables", "record_receipt")?;
 
     if params.receipt_amount <= 0 {
         return Err(AppError::Business("收款金额必须大于 0".to_string()));

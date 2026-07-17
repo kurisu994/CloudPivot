@@ -24,6 +24,10 @@ pub struct UserInfo {
     pub display_name: String,
     pub role: String,
     pub role_id: i64,
+    /// 账号持有的全部角色（多角色改造后前端以此判断角色，legacy role 仅存主角色）
+    pub roles: Vec<RoleRef>,
+    /// 岗位（纯展示属性，不参与权限）
+    pub position: Option<String>,
     pub must_change_password: bool,
     pub session_version: i32,
 }
@@ -36,14 +40,12 @@ pub struct RoleRef {
     pub code: String,
 }
 
-/// 登录响应
+/// 登录响应（账号全部角色随 `user.roles` 返回）
 #[derive(Debug, Serialize)]
 pub struct LoginResponse {
     pub user: UserInfo,
     pub must_change_password: bool,
     pub permissions: Vec<PermissionItem>,
-    /// 账号持有的全部角色（多角色并集的来源）
-    pub roles: Vec<RoleRef>,
 }
 
 /// 默认密码（初始管理员 / 新建用户 / 重置密码统一使用）
@@ -121,10 +123,11 @@ pub async fn login(
             bool,
             i32,
             Option<String>,
+            Option<String>,
         ),
     >(
         "SELECT id, username, display_name, password_hash, role, role_id,
-                is_enabled, must_change_password, failed_login_count, locked_until
+                is_enabled, must_change_password, failed_login_count, locked_until, position
          FROM users WHERE username = $1",
     )
     .bind(username)
@@ -143,6 +146,7 @@ pub async fn login(
         must_change_password,
         failed_count,
         locked_until,
+        position,
     ) = match row {
         Some(r) => r,
         None => {
@@ -301,12 +305,14 @@ pub async fn login(
             .await
             .map_err(|e| AppError::Database(format!("查询会话版本失败: {}", e)))?;
 
-    let user = UserInfo {
+    let mut user = UserInfo {
         id,
         username: uname,
         display_name,
         role,
         role_id,
+        roles: Vec::new(),
+        position,
         must_change_password,
         session_version,
     };
@@ -314,8 +320,8 @@ pub async fn login(
     // 混合版本过渡期：校验 user_roles 与 legacy role_id 的一致性并按规则修复
     reconcile_user_roles(pool, user.id, user.role_id).await?;
 
-    // 加载账号全部角色与多角色并集权限
-    let roles = load_user_roles(pool, user.id).await?;
+    // 加载账号全部角色与多角色并集权限（一致性修复后再读，保证是修复后的集合）
+    user.roles = load_user_roles(pool, user.id).await?;
     let permissions = load_permissions_by_user(pool, user.id).await?;
 
     // 记录登录成功日志（含客户端版本，作为里程碑 2 删除 legacy 列前的车队收敛依据）
@@ -338,7 +344,6 @@ pub async fn login(
         must_change_password: user.must_change_password,
         user,
         permissions,
-        roles,
     })
 }
 
@@ -451,8 +456,9 @@ pub async fn change_password(
 
 /// 获取用户信息（通过 ID）
 pub async fn get_user_info(pool: &PgPool, user_id: i64) -> Result<UserInfo, AppError> {
-    let row = sqlx::query_as::<_, (i64, String, String, String, i64, bool, i32)>(
-        "SELECT id, username, display_name, role, role_id, must_change_password, session_version
+    let row = sqlx::query_as::<_, (i64, String, String, String, i64, Option<String>, bool, i32)>(
+        "SELECT id, username, display_name, role, role_id, position,
+                must_change_password, session_version
          FROM users WHERE id = $1 AND is_enabled = TRUE",
     )
     .bind(user_id)
@@ -460,8 +466,10 @@ pub async fn get_user_info(pool: &PgPool, user_id: i64) -> Result<UserInfo, AppE
     .await
     .map_err(|e| AppError::Database(format!("查询用户失败: {}", e)))?;
 
-    let (id, username, display_name, role, role_id, must_change_password, session_version) =
+    let (id, username, display_name, role, role_id, position, must_change_password, session_version) =
         row.ok_or_else(|| AppError::Auth("用户不存在或已禁用".into()))?;
+
+    let roles = load_user_roles(pool, id).await?;
 
     Ok(UserInfo {
         id,
@@ -469,6 +477,8 @@ pub async fn get_user_info(pool: &PgPool, user_id: i64) -> Result<UserInfo, AppE
         display_name,
         role,
         role_id,
+        roles,
+        position,
         must_change_password,
         session_version,
     })

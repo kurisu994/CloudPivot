@@ -2,7 +2,17 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.1**（2026-07-15 发布）。本轮（2026-07-16）完成了 **权限管理重构设计文档**（已批准，纯设计无代码改动），下一步进入工程实施。
+项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.1**（2026-07-15 发布）。权限重构批次 1（后端多角色核心）已提交（`e2515bb`）；本轮（2026-07-17）完成 **批次 2（前端多角色 UI）+ 批次 3（finance.rs 守卫升级）**，代码未提交，静态校验全绿。
+
+## 批次 2 + 批次 3 已完成（2026-07-17，未提交）
+
+- **批次 3 finance.rs**：`record_payment`/`record_receipt` 升级 `require_permission`；4 个 view 命令（get_payables/get_payment_records/get_receivables/get_receipt_records，原本零校验、连 current_user 参数都没有）补齐守卫。
+- **协议调整**：后端 `UserInfo` 新增 `roles: Vec<RoleRef>` + `position`，login/restore_session/get_user_info 三路径统一返回；`LoginResponse.roles` 顶层字段移除（并入 `user.roles`，前端无消费方，Tauri 前后端同包无错配）；restore_session 在 reconcile 后重新加载 roles 保证返回修复后集合。
+- **get_users**：`LEFT JOIN user_roles/roles + array_agg(code)` 单查询返回 `roles`（GROUP BY 主键），`position` 一并返回；角色筛选改 `user_roles` EXISTS 子查询（多角色下 legacy u.role 只存主角色，不再作筛选依据）。
+- **前端多角色**：`core.ts` 新增 `RoleRef` + `userHasRole()`（roles 空数组回退 legacy role——兼容混合版本窗口期旧客户端建的账号未回填 user_roles）；`auth-provider.tsx` 3 处 + `use-permission.ts` 裸 `role === 'admin'` 全部替换；`isViewer` 无调用方删除；header 用户菜单角色标签改多角色拼接。
+- **用户管理页**：角色单选 Select 改 Checkbox 多选组（提交 `roleIds`，`roleId` 取首选兜底）；新增岗位输入与列表岗位列；角色列表多徽章展示（roles 空回退 legacy）；编辑弹窗改为拉 `getUserDetail` 预填（顺带修复编辑时 remark 恒被清空的存量 bug）；5 个新角色徽章配色与 i18n 标签。
+- **三语文案**：`messages/{zh,en,vi}/settings.json` 增 5 角色名（与迁移 017 种子中文名一致）+ position + rolesMultiHint。
+- **验证**：`cargo check`/clippy 零警告、54 项单测全绿（1 项 DB 等价性测试 `#[ignore]` 待真实库）、`pnpm typecheck`、`just i18n-check` 通过。运行时实测（多角色用户登录看菜单并集、finance 权限拒绝）归入上线验证。
 
 ## 最近完成的工作
 
@@ -40,14 +50,17 @@
 
 ## 活跃文件
 
-- `src-tauri/src/commands/sales.rs` — 出库/退货金额计算与参数结构
-- `app/[locale]/sales-orders/_components/sales-order-edit-page.tsx` — 销售单编辑
-- `app/[locale]/sales-orders/_components/sales-material-picker-dialog.tsx` — 选料弹窗
-- `app/[locale]/sales-deliveries/_components/outbound-execute-page.tsx` — 出库执行
-- `app/[locale]/sales-returns/_components/return-execute-page.tsx` — 退货执行
-- `lib/tauri/sales.ts` — 销售 IPC 类型声明
-- `docs/user-manual/08-sales.md` — 用户手册销售模块说明
-- `docs/user-manual/all_in_one_manual.md` — 合并版用户手册说明
+- `src-tauri/src/commands/finance.rs` — 6 命令权限守卫
+- `src-tauri/src/commands/user_management.rs` — get_users 多角色 array_agg + EXISTS 筛选
+- `src-tauri/src/auth.rs` — UserInfo 带 roles/position，LoginResponse 精简
+- `src-tauri/src/commands/mod.rs` — login/restore_session 取 user.roles
+- `lib/tauri/core.ts` — RoleRef / userHasRole / UserInfo 类型
+- `lib/tauri/user-management.ts` — UserListItem/UserDetail/SaveUserRequest 多角色字段
+- `components/providers/auth-provider.tsx` — admin 判断切 userHasRole
+- `hooks/use-permission.ts` — isAdmin 多角色化，isViewer 删除
+- `components/layout/header.tsx` — 多角色标签展示
+- `app/[locale]/settings/_components/user-management-content.tsx` — 角色多选 + 岗位
+- `messages/{zh,en,vi}/settings.json` — 新角色与岗位文案
 
 ## 已做出的决策
 
@@ -68,15 +81,10 @@
 
 ## 下一步
 
-- **实测迁移 017**：在真实库上运行（先备份），跑 `cargo test -- --ignored` 验证单角色等价性；全员登录无感。
-- **批次 2**：前端多角色 UI（用户管理页角色多选 + 岗位输入；auth-provider/use-permission 4 处裸 admin 判断 + `core.ts` 角色类型改造；`isOperator`/`isViewer` 语义处理；三语文案）。get_users 列表 array_agg（T9）同批。
-- **批次 3**：finance.rs 两处 require_auth 升级 require_permission。
-- **批次 4**：其余 15 文件 ~138 条命令补守卫（perm 常量模块 + 源码扫描测试 T6/T7 同批）。
-- 给生产主管、财务人员开真实账号走各自业务流程；挑 1-2 个 operator 账号试点叠加部门角色。
-- 实测验证（此前遗留）：带行折扣销售单全链路金额核对；路径 A 定制单全链路。
-- 实测验证一：带行折扣 of 销售单 → 保存 → 出库 → 退货全链路金额核对（cargo check / tsc 已通过，未跑运行时验证）。
-- 实测验证二：路径 A 全链路——定制单（确认）→ 定制 BOM → 开工单 → 领料出库 → 开始生产 → 完工入库 → 转销售单 → 审核 → 销售出库 → 应收 → 财务收款登记。
-- 确认后补 CHANGELOG 并提交（改动尚未 commit）。
+- **提交批次 2+3 改动**（当前工作区未 commit）：确认后补 CHANGELOG 一并提交。
+- **实测迁移 017 + 上线验证**（TODOS「上线验证」区）：备份后真实库跑迁移、`cargo test -- --ignored` 等价性校验、全员登录冒烟、生产主管/财务真实账号走流程、operator 试点叠加部门角色、创建多角色用户看菜单并集、finance 权限拒绝抽查。
+- **批次 4**：其余 15 文件 ~138 条命令补守卫（perm 常量模块 + 源码扫描守卫测试同批，防复发）。
+- 实测验证（此前遗留）：带行折扣销售单全链路金额核对；路径 A 定制单全链路（定制单确认 → 定制 BOM → 开工单 → 领料 → 完工入库 → 转销售 → 出库 → 应收 → 收款登记）。
 
 ## 阻塞
 

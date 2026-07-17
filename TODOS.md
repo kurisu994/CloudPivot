@@ -16,19 +16,20 @@
 - [ ] **给财务开账号并走真实流程**：登录 → 一笔付款登记 + 一笔收款登记；确认能查看关联采购单/销售单、看不到库存等无关模块。
 - [ ] **operator 试点迁移 1-2 个账号**：给真实 operator 账号叠加部门角色（不摘除 operator），确认权限无退化、下次启动被强制重登后权限并集正确。
 
-### 批次 2 — 前端多角色 UI
+### 批次 2 — 前端多角色 UI（代码完成于 2026-07-17，运行时实测待做）
 
-- [ ] **用户管理页角色多选**：角色单选下拉改多选（提交 `roleIds` 数组，后端已兼容）；编辑表单用 `getUserDetail` 返回的 `roleIds` 预填。
-- [ ] **岗位输入框**：用户创建/编辑表单新增岗位（position）自由文本输入，列表/详情展示。
-- [ ] **get_users 列表多角色展示（防 N+1）**：后端改 `LEFT JOIN user_roles/roles + array_agg` 单查询返回角色集合；角色筛选从 legacy `u.role` 列改为 `user_roles` EXISTS 子查询（`user_management.rs:44-48、114-118`）。
-- [ ] **前端 admin 判断切多角色**：登录响应已含 `roles` 数组，切换 4 处裸 `role === 'admin'`——`auth-provider.tsx:116/211/368`、`use-permission.ts:15`；`use-permission.ts:16-17` 的 `isOperator`/`isViewer` 多角色下语义失效，一并处理或废弃。
-- [ ] **core.ts 角色类型改造**：`lib/tauri/core.ts:19` 的 `role: 'admin'|'operator'|'viewer'` 字面量联合扩展为字符串或补全新角色码；User 类型补 `roles`/`position` 字段。
-- [ ] **三语文案**：5 个新角色名、岗位字段等进 `messages/{zh,en,vi}/`，跑 `just i18n-check`。
-- [ ] 验证：`pnpm typecheck` + 手动走一遍创建多角色用户 → 该用户登录看菜单并集。
+- [x] **用户管理页角色多选**：角色单选下拉改 Checkbox 多选（提交 `roleIds` 数组）；编辑弹窗改为拉 `getUserDetail` 预填 `roleIds`/`position`/`remark`（顺带修复编辑时备注被清空的存量问题）。
+- [x] **岗位输入框**：创建/编辑表单新增 position 输入，列表新增岗位列。
+- [x] **get_users 列表多角色展示（防 N+1）**：`LEFT JOIN user_roles/roles + array_agg` 单查询返回 `roles` 代码集合；角色筛选改 `user_roles` EXISTS 子查询。
+- [x] **前端 admin 判断切多角色**：后端 `UserInfo` 直接带 `roles: Vec<RoleRef>` + `position`（login/restore_session/get_user_info 三路径统一，`LoginResponse.roles` 顶层字段并入 `user.roles`）；前端新增 `userHasRole()`（roles 空时回退 legacy role，兼容旧客户端建的未回填账号），替换 `auth-provider.tsx` 3 处 + `use-permission.ts` 的裸判断；`isViewer` 无调用方已删除；header 角色标签改多角色拼接。
+- [x] **core.ts 角色类型改造**：`role` 字面量联合放宽为 `string`，`UserInfo` 补 `roles`/`position`。
+- [x] **三语文案**：5 个新角色名 + 岗位 + 多选提示进 `messages/{zh,en,vi}/settings.json`，`just i18n-check` 通过。
+- [x] 静态验证：`pnpm typecheck` / `cargo check` / clippy / 54 项单测全绿。
+- [ ] 运行时实测：创建多角色用户 → 该用户登录看菜单并集（归入上线验证一起做）。
 
-### 批次 3 — finance.rs 守卫升级（小，可与批次 2 并行）
+### 批次 3 — finance.rs 守卫升级（代码完成于 2026-07-17）
 
-- [ ] **两处 `require_auth()` 升级 `require_permission()`**（`finance.rs` 392、702 行附近）：付款登记 → `("payables", "record_payment")`，收款登记 → `("receivables", "record_receipt")`；其余 view 类命令补 `("payables"/"receivables", "view")`。
+- [x] **两处 `require_auth()` 升级 `require_permission()`**：付款登记 → `("payables", "record_payment")`，收款登记 → `("receivables", "record_receipt")`；4 个 view 类命令（get_payables/get_payment_records/get_receivables/get_receipt_records，原本零校验）补 `current_user` 参数 + view 校验。
 - [ ] 实测：viewer / 采购 / 销售角色调用付款/收款登记应被拒绝，finance_staff 放行。
 
 ### 批次 4 — 其余 15 文件补守卫（可穿插并行）

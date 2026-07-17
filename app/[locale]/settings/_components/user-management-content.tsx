@@ -8,6 +8,7 @@ import { PaginationControls } from '@/components/common/pagination'
 import { useAuth } from '@/components/providers/auth-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +20,7 @@ import {
   createUser,
   deleteUser,
   getRoles,
+  getUserDetail,
   getUsers,
   type RoleInfo,
   resetUserPassword,
@@ -64,7 +66,8 @@ export function UserManagementContent() {
   // 表单状态
   const [formUsername, setFormUsername] = useState('')
   const [formDisplayName, setFormDisplayName] = useState('')
-  const [formRoleId, setFormRoleId] = useState<number | null>(null)
+  const [formRoleIds, setFormRoleIds] = useState<number[]>([])
+  const [formPosition, setFormPosition] = useState('')
   const [formEmail, setFormEmail] = useState('')
   const [formPhone, setFormPhone] = useState('')
   const [formRemark, setFormRemark] = useState('')
@@ -119,7 +122,9 @@ export function UserManagementContent() {
     setEditingUser(null)
     setFormUsername('')
     setFormDisplayName('')
-    setFormRoleId(roles.find(r => r.code === 'viewer')?.id ?? roles[0]?.id ?? null)
+    const defaultRole = roles.find(r => r.code === 'viewer') ?? roles.find(r => r.code !== 'admin')
+    setFormRoleIds(defaultRole ? [defaultRole.id] : [])
+    setFormPosition('')
     setFormEmail('')
     setFormPhone('')
     setFormRemark('')
@@ -127,17 +132,23 @@ export function UserManagementContent() {
     setDialogOpen(true)
   }
 
-  /** 打开编辑弹窗 */
-  const openEditDialog = (user: UserListItem) => {
-    setEditingUser(user)
-    setFormUsername(user.username)
-    setFormDisplayName(user.displayName)
-    setFormRoleId(user.roleId)
-    setFormEmail(user.email ?? '')
-    setFormPhone(user.phone ?? '')
-    setFormRemark('')
-    setFormErrors({})
-    setDialogOpen(true)
+  /** 打开编辑弹窗：拉详情预填多角色、岗位与备注 */
+  const openEditDialog = async (user: UserListItem) => {
+    try {
+      const detail = await getUserDetail(user.id)
+      setEditingUser(user)
+      setFormUsername(detail.username)
+      setFormDisplayName(detail.displayName)
+      setFormRoleIds(detail.roleIds.length > 0 ? detail.roleIds : [detail.roleId])
+      setFormPosition(detail.position ?? '')
+      setFormEmail(detail.email ?? '')
+      setFormPhone(detail.phone ?? '')
+      setFormRemark(detail.remark ?? '')
+      setFormErrors({})
+      setDialogOpen(true)
+    } catch (e) {
+      toast.error(getErrorMessage(e))
+    }
   }
 
   /** 保存用户 */
@@ -145,7 +156,7 @@ export function UserManagementContent() {
     const errors: typeof formErrors = {}
     if (!formUsername.trim()) errors.username = t('fieldRequired', { field: t('username') })
     if (!formDisplayName.trim()) errors.displayName = t('fieldRequired', { field: t('displayName') })
-    if (!formRoleId) errors.role = t('fieldRequired', { field: t('role') })
+    if (formRoleIds.length === 0) errors.role = t('fieldRequired', { field: t('role') })
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors)
       return
@@ -158,7 +169,10 @@ export function UserManagementContent() {
         id: editingUser?.id,
         username: formUsername.trim(),
         displayName: formDisplayName.trim(),
-        roleId: formRoleId!,
+        // roleIds 为准；roleId 仅为后端 legacy 字段兜底
+        roleId: formRoleIds[0],
+        roleIds: formRoleIds,
+        position: formPosition.trim() || null,
         email: formEmail.trim() || null,
         phone: formPhone.trim() || null,
         remark: formRemark.trim() || null,
@@ -272,6 +286,7 @@ export function UserManagementContent() {
                 <TableHead className="px-6 py-3.5 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('username')}</TableHead>
                 <TableHead className="px-6 py-3.5 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('displayName')}</TableHead>
                 <TableHead className="px-6 py-3.5 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('role')}</TableHead>
+                <TableHead className="px-6 py-3.5 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('position')}</TableHead>
                 <TableHead className="px-6 py-3.5 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('status')}</TableHead>
                 <TableHead className="px-6 py-3.5 text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">{t('lastLoginAt')}</TableHead>
                 <TableHead className="px-6 py-3.5 text-right text-[0.6875rem] font-bold tracking-wider text-slate-500 uppercase">
@@ -282,13 +297,13 @@ export function UserManagementContent() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="px-6 py-12 text-center text-sm text-slate-400">
+                  <TableCell colSpan={7} className="px-6 py-12 text-center text-sm text-slate-400">
                     {tc('loading')}
                   </TableCell>
                 </TableRow>
               ) : users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="px-6 py-12 text-center text-sm text-slate-400">
+                  <TableCell colSpan={7} className="px-6 py-12 text-center text-sm text-slate-400">
                     {tc('noData')}
                   </TableCell>
                 </TableRow>
@@ -309,10 +324,16 @@ export function UserManagementContent() {
                     </TableCell>
                     {/* 显示名 */}
                     <TableCell className="px-6 py-3.5 text-sm text-slate-700 dark:text-slate-300">{u.displayName}</TableCell>
-                    {/* 角色 */}
+                    {/* 角色（多角色全部展示；roles 未回填时回退 legacy 主角色） */}
                     <TableCell className="px-6 py-3.5">
-                      <RoleBadge role={u.role} t={t} />
+                      <div className="flex flex-wrap gap-1">
+                        {(u.roles.length > 0 ? u.roles : [u.role]).map(code => (
+                          <RoleBadge key={code} role={code} t={t} />
+                        ))}
+                      </div>
                     </TableCell>
+                    {/* 岗位 */}
+                    <TableCell className="px-6 py-3.5 text-sm text-slate-500">{u.position || '--'}</TableCell>
                     {/* 状态 */}
                     <TableCell className="px-6 py-3.5">
                       <StatusBadge isEnabled={u.isEnabled} isLocked={u.isLocked} t={t} />
@@ -328,7 +349,7 @@ export function UserManagementContent() {
                             variant="ghost"
                             size="sm"
                             className="size-8 p-0 text-slate-500 hover:text-primary"
-                            onClick={() => openEditDialog(u)}
+                            onClick={() => void openEditDialog(u)}
                             title={t('editUser')}
                           >
                             <Pencil className="size-3.5" />
@@ -477,32 +498,36 @@ export function UserManagementContent() {
               />
               {formErrors.displayName && <p className="text-destructive text-xs font-medium">{formErrors.displayName}</p>}
             </div>
-            {/* 角色 */}
+            {/* 角色（多选，权限取所选角色并集） */}
             <div className="grid gap-2">
               <Label className="flex items-center gap-1">
                 {t('role')}
                 <span className="text-red-500">*</span>
               </Label>
-              <Select
-                value={formRoleId ? String(formRoleId) : ''}
-                onValueChange={v => {
-                  setFormRoleId(v ? Number(v) : null)
-                  if (formErrors.role) setFormErrors(prev => ({ ...prev, role: undefined }))
-                }}
-                items={roleFormOptions}
-              >
-                <SelectTrigger aria-invalid={!!formErrors.role}>
-                  <SelectValue placeholder={t('selectRole')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {roleFormOptions.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+                {roleFormOptions.map(opt => {
+                  const roleId = Number(opt.value)
+                  return (
+                    <label key={opt.value} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                      <Checkbox
+                        checked={formRoleIds.includes(roleId)}
+                        onCheckedChange={() => {
+                          setFormRoleIds(prev => (prev.includes(roleId) ? prev.filter(id => id !== roleId) : [...prev, roleId]))
+                          if (formErrors.role) setFormErrors(prev => ({ ...prev, role: undefined }))
+                        }}
+                      />
                       {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </label>
+                  )
+                })}
+              </div>
+              <p className="text-xs text-slate-400">{t('rolesMultiHint')}</p>
               {formErrors.role && <p className="text-destructive text-xs font-medium">{formErrors.role}</p>}
+            </div>
+            {/* 岗位 */}
+            <div className="grid gap-2">
+              <Label>{t('position')}</Label>
+              <Input value={formPosition} onChange={e => setFormPosition(e.target.value)} placeholder={t('positionPlaceholder')} />
             </div>
             {/* 邮箱 */}
             <div className="grid gap-2">
@@ -578,6 +603,11 @@ function getRoleLabel(role: string, t: ReturnType<typeof useTranslations>): stri
     admin: t('admin'),
     operator: t('operator'),
     viewer: t('viewer'),
+    purchasing: t('purchasing'),
+    sales: t('sales'),
+    warehouse_staff: t('warehouseStaff'),
+    production_supervisor: t('productionSupervisor'),
+    finance_staff: t('financeStaff'),
   }
   return map[role] ?? role
 }
@@ -588,6 +618,11 @@ function RoleBadge({ role, t }: { role: string; t: ReturnType<typeof useTranslat
     admin: 'bg-primary/10 text-primary border-primary/20',
     operator: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800',
     viewer: 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700',
+    purchasing: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800',
+    sales: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-800',
+    warehouse_staff: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/30 dark:text-teal-400 dark:border-teal-800',
+    production_supervisor: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800',
+    finance_staff: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800',
   }
   return (
     <Badge variant="outline" className={cn('text-[0.6875rem] font-bold', styles[role] ?? styles.viewer)}>

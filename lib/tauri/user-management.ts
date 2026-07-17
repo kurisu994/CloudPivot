@@ -15,8 +15,13 @@ export interface UserListItem {
   id: number
   username: string
   displayName: string
+  /** legacy 主角色代码（roles 为空时的展示回退） */
   role: string
   roleId: number
+  /** 账号持有的全部角色代码 */
+  roles: string[]
+  /** 岗位（纯展示） */
+  position: string | null
   email: string | null
   phone: string | null
   isEnabled: boolean
@@ -32,6 +37,10 @@ export interface UserDetail {
   displayName: string
   role: string
   roleId: number
+  /** 账号持有的全部角色 id（编辑表单预填） */
+  roleIds: number[]
+  /** 岗位（纯展示） */
+  position: string | null
   email: string | null
   phone: string | null
   remark: string | null
@@ -67,7 +76,12 @@ export interface SaveUserRequest {
   id?: number
   username: string
   displayName: string
+  /** legacy 单角色字段（roleIds 非空时后端以 roleIds 为准） */
   roleId: number
+  /** 账号持有的全部角色 id（多选） */
+  roleIds?: number[]
+  /** 岗位（纯展示） */
+  position?: string | null
   email?: string | null
   phone?: string | null
   remark?: string | null

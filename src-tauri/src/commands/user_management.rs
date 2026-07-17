@@ -27,6 +27,10 @@ pub struct UserListItem {
     pub display_name: String,
     pub role: String,
     pub role_id: i64,
+    /// 账号持有的全部角色代码（多角色展示；空数组时前端回退 legacy role）
+    pub roles: Vec<String>,
+    /// 岗位（纯展示属性，不参与权限）
+    pub position: Option<String>,
     pub email: Option<String>,
     pub phone: Option<String>,
     pub is_enabled: bool,
@@ -127,13 +131,18 @@ pub async fn get_users(
     let page_size = filter.page_size.clamp(1, 100);
     let offset = (page - 1) * page_size;
 
-    let mut count_qb = sqlx::QueryBuilder::new("SELECT COUNT(*) FROM users WHERE 1=1");
+    let mut count_qb = sqlx::QueryBuilder::new("SELECT COUNT(*) FROM users u WHERE 1=1");
+    // 多角色集合用 LEFT JOIN + array_agg 单查询取回，避免逐行 N+1
     let mut list_qb = sqlx::QueryBuilder::new(
-        "SELECT u.id, u.username, u.display_name, u.role, u.role_id,
+        "SELECT u.id, u.username, u.display_name, u.role, u.role_id, u.position,
+                array_remove(array_agg(r.code ORDER BY r.id), NULL) AS roles,
                 u.email, u.phone, u.is_enabled,
                 (u.locked_until IS NOT NULL AND u.locked_until > NOW()::TEXT) AS is_locked,
                 u.last_login_at::TEXT, u.created_at::TEXT
-         FROM users u WHERE 1=1",
+         FROM users u
+         LEFT JOIN user_roles ur ON ur.user_id = u.id
+         LEFT JOIN roles r ON r.id = ur.role_id
+         WHERE 1=1",
     );
 
     // 关键词搜索（用户名或显示名）
@@ -158,13 +167,18 @@ pub async fn get_users(
         }
     }
 
-    // 角色筛选
+    // 角色筛选：按 user_roles 关联匹配（多角色下 legacy u.role 列只存主角色，不再作为筛选依据）
     if let Some(ref r) = filter.role {
         if !r.is_empty() {
-            count_qb.push(" AND role = ");
+            let exists_sql = " AND EXISTS (SELECT 1 FROM user_roles urf
+                 JOIN roles rf ON rf.id = urf.role_id
+                 WHERE urf.user_id = u.id AND rf.code = ";
+            count_qb.push(exists_sql);
             count_qb.push_bind(r);
-            list_qb.push(" AND u.role = ");
+            count_qb.push(")");
+            list_qb.push(exists_sql);
             list_qb.push_bind(r);
+            list_qb.push(")");
         }
     }
 
@@ -189,7 +203,8 @@ pub async fn get_users(
         .await
         .map_err(|e| AppError::Database(format!("查询用户总数失败: {}", e)))?;
 
-    list_qb.push(" ORDER BY u.id ASC LIMIT ");
+    // u.id 为主键，GROUP BY 主键后其余 u.* 列由函数依赖覆盖
+    list_qb.push(" GROUP BY u.id ORDER BY u.id ASC LIMIT ");
     list_qb.push_bind(page_size as i64);
     list_qb.push(" OFFSET ");
     list_qb.push_bind(offset as i64);
@@ -201,6 +216,8 @@ pub async fn get_users(
             String,
             String,
             i64,
+            Option<String>,
+            Vec<String>,
             Option<String>,
             Option<String>,
             bool,
@@ -221,6 +238,8 @@ pub async fn get_users(
                 display_name,
                 role,
                 role_id,
+                position,
+                roles,
                 email,
                 phone,
                 is_enabled,
@@ -234,6 +253,8 @@ pub async fn get_users(
                     display_name,
                     role,
                     role_id,
+                    roles,
+                    position,
                     email,
                     phone,
                     is_enabled,

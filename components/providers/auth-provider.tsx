@@ -7,7 +7,7 @@ import { usePathname, useRouter } from '@/i18n/navigation'
 import { getErrorMessage } from '@/lib/error'
 import { initLogger } from '@/lib/logger'
 import * as tauriApi from '@/lib/tauri'
-import { isTauriEnv, type UserInfo } from '@/lib/tauri'
+import { isTauriEnv, type UserInfo, userHasRole } from '@/lib/tauri'
 import { SystemConfigKeys } from '@/lib/types/system-config'
 
 /** 认证状态 */
@@ -112,8 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hasPermission = useCallback(
     (module: string, action: string): boolean => {
       if (!user) return false
-      // admin 角色拥有全部权限
-      if (user.role === 'admin') return true
+      // 持有 admin 角色即拥有全部权限（多角色下看 roles 数组，不再信 legacy role）
+      if (userHasRole(user, 'admin')) return true
       return permissions.has(`${module}:${action}`)
     },
     [user, permissions],
@@ -173,6 +173,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           display_name: '管理员',
           role: 'admin',
           role_id: 1,
+          roles: [{ id: 1, code: 'admin' }],
+          position: null,
           must_change_password: false,
           session_version: 1,
         }
@@ -208,7 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // 不需要改密时检查向导状态（仅 admin 角色走向导）
         if (!response.must_change_password) {
-          if (response.user.role === 'admin') {
+          if (userHasRole(response.user, 'admin')) {
             await checkSetupCompleted()
           }
         }
@@ -353,6 +355,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             display_name: '管理员',
             role: 'admin',
             role_id: 1,
+            roles: [{ id: 1, code: 'admin' }],
+            position: null,
             must_change_password: false,
             session_version: data.sessionVersion,
           }
@@ -365,7 +369,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await saveAuth(restoredUser, true)
           }
           // 已登录且不需要改密 → 检查是否需要向导（仅 admin）
-          if (!restoredUser.must_change_password && restoredUser.role === 'admin') {
+          if (!restoredUser.must_change_password && userHasRole(restoredUser, 'admin')) {
             await checkSetupCompleted()
           }
 
