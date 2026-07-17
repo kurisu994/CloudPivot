@@ -9,7 +9,7 @@
 
 ### 上线验证（批次 1 实测，优先做）
 
-- [ ] **备份数据库后上线迁移 017**：第一个新版客户端启动时自动执行；上线前先备份。
+- [ ] **备份数据库后上线迁移 017 + 018**：第一个新版客户端启动时自动执行（018 为补货规则权限点，随批次 4 新增）；上线前先备份。
 - [ ] **跑单角色等价性校验**：真实库上 `cargo test -- --ignored`（需 `DATABASE_URL` 环境变量），确认回填后所有单角色账号权限与迁移前逐一相等。
 - [ ] **全员登录冒烟**：迁移当天确认现有 admin/operator/viewer 账号都能正常登录、权限无变化。
 - [ ] **给生产主管开账号并走真实流程**：登录 → 生产工单 → 领料出库 → 完工入库；确认操作日志记录的是本人 user_id、菜单可见性不多不少（首轮预设权限点：工单 view/create/edit + 领料/退料/完工 + BOM/物料/库存/定制单 view，实测校准）。
@@ -32,16 +32,19 @@
 - [x] **两处 `require_auth()` 升级 `require_permission()`**：付款登记 → `("payables", "record_payment")`，收款登记 → `("receivables", "record_receipt")`；4 个 view 类命令（get_payables/get_payment_records/get_receivables/get_receipt_records，原本零校验）补 `current_user` 参数 + view 校验。
 - [ ] 实测：viewer / 采购 / 销售角色调用付款/收款登记应被拒绝，finance_staff 放行。
 
-### 批次 4 — 其余 15 文件补守卫（可穿插并行）
+### 批次 4 — 其余 15 文件补守卫（代码完成于 2026-07-17，运行时实测待做）
 
-- [ ] **perm 常量模块**：新建 ~30 个模块名常量（`perm::MATERIALS` 等），调用处 `require_permission(perm::X, "action")`；配集成测试校验全部 (module, action) 字面量存在于 `permissions` 种子数据（防拼写错）。
-- [ ] **源码扫描守卫测试**：Rust 测试扫描 `commands/`——每个 `#[tauri::command]` 函数体必须含 `require_permission`，或列入显式白名单（login/ping/restore_session/get_db_version 等）；新命令漏守卫直接测试挂掉（防复发机制）。
-- [ ] **第一批：单据类**（业务风险最高）：`purchase.rs`(14) / `sales.rs`(13) / `inventory.rs`(13)——现有 `require_auth` 全部升级 `require_permission`，零校验命令补齐。
-- [ ] **第二批**：`custom_order.rs`(10) / `production_order.rs`(10，领料/退料/完工用新权限点) / `data_management.rs`(7)。
-- [ ] **第三批：基础数据**：`material.rs`(7) / `category.rs`(5) / `supplier.rs`(11) / `customer.rs`(7) / `warehouse.rs`(8) / `unit.rs`(5) / `bom.rs`(10)。
-- [ ] **第四批：只读越权**：`reports.rs`(10) / `replenishment.rs`(8)——防越权读取成本/排名等敏感数据。
-- [ ] **资金路径 viewer-拒绝集成测试**：对 finance/purchase/sales/inventory 四文件写 DB 集成测试（viewer 调用写命令应被拒）。
-- [ ] 每批交付后用 viewer 账号实测抽查被拒绝。
+- [x] **perm 常量模块**：`commands/perm.rs` 33 个模块名常量，全部调用处 `require_permission(perm::X, "action")`；`tests/permission_guards.rs` 解析源码 + 迁移 SQL 校验全部 (module, action) 存在于种子（无需 DB，已注错自检验证能抓拼写错）。
+- [x] **源码扫描守卫测试**：每个 `#[tauri::command]` 必须含 `require_permission`，或列入显式白名单（7 条凭证/启动类无守卫 + 13 条字典类 require_auth）；漏守卫测试挂掉（已注错自检验证）。
+- [x] **第一批：单据类**：purchase/sales/inventory 全部升级补齐。
+- [x] **第二批**：custom_order / production_order（领料/退料/完工用新权限点，开工映射 edit）/ data_management；顺带补齐 manual_stock_movement 剩余命令与 mod.rs 配置/日志命令。
+- [x] **第三批：基础数据**：material/category/supplier/customer/warehouse/unit/bom。分类树、单位、仓库下拉等字典读取白名单化（operator 等角色无对应模块权限但业务必需）。
+- [x] **第四批：只读越权**：reports 全部 view 守卫；replenishment 补齐（首页补货 KPI 按 dashboard 校验防 viewer 断流；规则修改用迁移 018 新增的独立权限点，授 admin/库管）。
+- [x] **PERMISSION 错误码**：权限不足从 AUTH 拆出独立错误码——否则前端会把"权限不足"当"登录失效"清会话踢回登录页（批次 4 引入的行为回归，已修复）。
+- [x] **资金路径 viewer-拒绝集成测试**：`#[ignore]` DB 测试校验 viewer 在 12 个资金相关模块无任何写权限点（`cargo test -- --ignored` 与等价性测试一起跑）。
+- [x] 静态验证：cargo check / clippy 零警告，54+2 项测试全绿，tsc 通过。
+- [ ] 每批交付后用 viewer 账号实测抽查被拒绝（归入上线验证）。
+- [ ] 实测校准：新角色走真实页面流程，若字典白名单或权限矩阵有缺口（如库管开自由出入库需选供应商/客户），调 role_permissions 而非改代码映射。
 
 ## 权限重构 — 里程碑 2（有门控条件，勿提前）
 

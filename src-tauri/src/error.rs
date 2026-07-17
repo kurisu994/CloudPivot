@@ -14,8 +14,10 @@ pub enum ErrorCode {
     Database,
     /// SQL 执行错误
     Sql,
-    /// 认证失败（密码错误、账号锁定等）
+    /// 认证失败（密码错误、账号锁定、会话失效等，前端会跳转登录页）
     Auth,
+    /// 权限不足（已登录但角色无对应权限点，前端仅提示不跳转）
+    Permission,
     /// 业务逻辑校验失败（库存不足、金额超限等）
     Business,
     /// IO 操作错误
@@ -37,6 +39,10 @@ pub enum AppError {
     #[error("认证错误: {0}")]
     Auth(String),
 
+    /// 权限不足
+    #[error("权限不足: {0}")]
+    Permission(String),
+
     /// 业务逻辑错误
     #[error("业务错误: {0}")]
     Business(String),
@@ -53,6 +59,7 @@ impl AppError {
             AppError::Database(_) => ErrorCode::Database,
             AppError::Sqlx(_) => ErrorCode::Sql,
             AppError::Auth(_) => ErrorCode::Auth,
+            AppError::Permission(_) => ErrorCode::Permission,
             AppError::Business(_) => ErrorCode::Business,
             AppError::Io(_) => ErrorCode::Io,
         }
@@ -64,6 +71,7 @@ impl AppError {
             AppError::Database(msg) => msg.clone(),
             AppError::Sqlx(e) => e.to_string(),
             AppError::Auth(msg) => msg.clone(),
+            AppError::Permission(msg) => msg.clone(),
             AppError::Business(msg) => msg.clone(),
             AppError::Io(e) => e.to_string(),
         }

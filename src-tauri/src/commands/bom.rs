@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool, Postgres, QueryBuilder};
 use tauri::State;
 
-use super::PaginatedResponse;
+use super::{CurrentUser, PaginatedResponse, perm};
 use crate::db::DbState;
 use crate::error::AppError;
 
@@ -207,8 +207,11 @@ pub struct DemandCalcItem {
 #[tauri::command]
 pub async fn get_bom_list(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: BomFilter,
 ) -> Result<PaginatedResponse<BomListItem>, AppError> {
+    current_user.require_permission(perm::BOM, "view")?;
+
     let base_from = r#"
         FROM bom b
         LEFT JOIN materials m ON b.material_id = m.id
@@ -299,7 +302,13 @@ pub async fn get_bom_list(
 
 /// 获取 BOM 详情（头 + 明细）
 #[tauri::command]
-pub async fn get_bom_detail(db: State<'_, DbState>, id: i64) -> Result<BomDetail, AppError> {
+pub async fn get_bom_detail(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<BomDetail, AppError> {
+    current_user.require_permission(perm::BOM, "view")?;
+
     // 查询头信息
     let header = sqlx::query_as::<_, BomHeaderRow>(
         r#"SELECT b.id, b.bom_code, b.material_id,
@@ -377,7 +386,17 @@ pub async fn get_bom_detail(db: State<'_, DbState>, id: i64) -> Result<BomDetail
 
 /// 保存 BOM（新建或更新，含明细）
 #[tauri::command]
-pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i64, AppError> {
+pub async fn save_bom(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    params: SaveBomParams,
+) -> Result<i64, AppError> {
+    // 新建走 create、修改走 edit
+    current_user.require_permission(
+        perm::BOM,
+        if params.id.is_some() { "edit" } else { "create" },
+    )?;
+
     let status = params.status.clone().unwrap_or_else(|| "draft".to_string());
     let effective_date = normalize_bom_effective_date(params.effective_date.as_deref());
 
@@ -520,7 +539,13 @@ pub async fn save_bom(db: State<'_, DbState>, params: SaveBomParams) -> Result<i
 
 /// 删除 BOM（仅草稿/停用状态可删除）
 #[tauri::command]
-pub async fn delete_bom(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn delete_bom(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
+    current_user.require_permission(perm::BOM, "delete")?;
+
     // 检查状态
     let status: Option<String> = sqlx::query_scalar("SELECT status FROM bom WHERE id = $1")
         .bind(id)
@@ -580,9 +605,12 @@ pub async fn delete_bom(db: State<'_, DbState>, id: i64) -> Result<(), AppError>
 #[tauri::command]
 pub async fn toggle_bom_status(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
     new_status: String,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::BOM, "edit")?;
+
     if new_status != "active" && new_status != "inactive" && new_status != "draft" {
         return Err(AppError::Business("无效的状态值".to_string()));
     }
@@ -629,9 +657,13 @@ pub async fn toggle_bom_status(
 #[tauri::command]
 pub async fn copy_bom(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     source_id: i64,
     new_version: String,
 ) -> Result<i64, AppError> {
+    // 复制新版本本质是创建 BOM
+    current_user.require_permission(perm::BOM, "create")?;
+
     let mut tx = db
         .pool
         .begin()
@@ -724,8 +756,11 @@ pub async fn copy_bom(
 #[tauri::command]
 pub async fn reverse_lookup_material(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     material_id: i64,
 ) -> Result<Vec<MaterialReverseLookupItem>, AppError> {
+    current_user.require_permission(perm::BOM, "view")?;
+
     sqlx::query_as::<_, MaterialReverseLookupItem>(
         r#"SELECT b.id as bom_id, b.bom_code,
                   b.material_id, pm.name as material_name, pm.code as material_code,
@@ -750,9 +785,12 @@ pub async fn reverse_lookup_material(
 #[tauri::command]
 pub async fn calculate_bom_demand(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     bom_id: i64,
     quantity: f64,
 ) -> Result<Vec<DemandCalcItem>, AppError> {
+    current_user.require_permission(perm::BOM, "view")?;
+
     // 获取 BOM 明细 + 物料信息 + 当前库存
     let rows = sqlx::query_as::<_, (i64, Option<String>, Option<String>, Option<String>, Option<String>, f64, f64, Option<f64>)>(
         r#"SELECT bi.child_material_id,
@@ -805,7 +843,10 @@ pub async fn calculate_bom_demand(
 #[tauri::command]
 pub async fn get_bom_parent_materials(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
 ) -> Result<Vec<BomParentMaterialOption>, AppError> {
+    current_user.require_permission(perm::BOM, "view")?;
+
     sqlx::query_as::<_, BomParentMaterialOption>(
         r#"SELECT id, code, name, spec, material_type
            FROM materials
@@ -832,8 +873,11 @@ pub struct BomParentMaterialOption {
 #[tauri::command]
 pub async fn get_bom_child_materials(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     keyword: Option<String>,
 ) -> Result<Vec<BomChildMaterialOption>, AppError> {
+    current_user.require_permission(perm::BOM, "view")?;
+
     if let Some(kw) = &keyword {
         if !kw.is_empty() {
             let like = format!("%{}%", kw);

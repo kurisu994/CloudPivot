@@ -14,7 +14,7 @@ use crate::error::AppError;
 use crate::operation_log;
 
 use super::inventory_ops;
-use super::{CurrentUser, PaginatedResponse};
+use super::{CurrentUser, PaginatedResponse, perm};
 
 // ================================================================
 // 销售单数据结构
@@ -303,8 +303,11 @@ fn compute_amounts(params: &SaveSalesOrderParams) -> (i64, i64, i64, i64) {
 #[tauri::command]
 pub async fn get_sales_orders(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: SalesOrderFilter,
 ) -> Result<PaginatedResponse<SalesOrderListItem>, AppError> {
+    current_user.require_permission(perm::SALES_ORDERS, "view")?;
+
     use super::order_shared::{self, ListFilterParams, ListQueryConfig};
 
     let mut count_query = QueryBuilder::<'_, Postgres>::new(
@@ -361,8 +364,11 @@ pub async fn get_sales_orders(
 #[tauri::command]
 pub async fn get_sales_material_options(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     warehouse_id: Option<i64>,
 ) -> Result<Vec<SalesMaterialOption>, AppError> {
+    current_user.require_permission(perm::SALES_ORDERS, "view")?;
+
     if matches!(warehouse_id, Some(id) if id <= 0) {
         return Err(AppError::Business("出库仓库无效".to_string()));
     }
@@ -464,8 +470,11 @@ struct SalesOrderItemRow {
 #[tauri::command]
 pub async fn get_sales_order_detail(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<SalesOrderDetail, AppError> {
+    current_user.require_permission(perm::SALES_ORDERS, "view")?;
+
     let head = sqlx::query_as::<_, SalesOrderHeadRow>(
         r#"
         SELECT so.id, so.order_no, so.customer_id, c.name AS customer_name,
@@ -572,7 +581,11 @@ pub async fn save_sales_order(
     current_user: State<'_, CurrentUser>,
     params: SaveSalesOrderParams,
 ) -> Result<i64, AppError> {
-    current_user.require_auth()?;
+    // 新建走 create、修改走 edit
+    current_user.require_permission(
+        perm::SALES_ORDERS,
+        if params.id.is_some() { "edit" } else { "create" },
+    )?;
 
     validate_save_params(&params)?;
 
@@ -803,6 +816,8 @@ pub async fn approve_sales_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<Option<String>, AppError> {
+    current_user.require_permission(perm::SALES_ORDERS, "approve")?;
+
     // 查询销售单信息用于信用额度检查
     let order_info: Option<(i64, i64, String)> = sqlx::query_as(
         "SELECT customer_id, receivable_amount, status FROM sales_orders WHERE id = $1",
@@ -918,6 +933,8 @@ pub async fn cancel_sales_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::SALES_ORDERS, "cancel")?;
+
     use super::order_shared;
 
     // 检查是否有关联出库单
@@ -968,6 +985,8 @@ pub async fn delete_sales_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::SALES_ORDERS, "delete")?;
+
     use super::order_shared;
 
     let order_no = order_shared::get_order_no(&db.pool, "sales_orders", "order_no", id).await;
@@ -1105,8 +1124,11 @@ pub struct PendingOutboundItem {
 #[tauri::command]
 pub async fn get_pending_outbound_items(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     sales_id: i64,
 ) -> Result<Vec<PendingOutboundItem>, AppError> {
+    current_user.require_permission(perm::SALES_DELIVERIES, "view")?;
+
     let mut items: Vec<PendingOutboundItem> = sqlx::query_as::<_, PendingOutboundItem>(
         r#"
         SELECT
@@ -1164,8 +1186,11 @@ pub async fn get_pending_outbound_items(
 #[tauri::command]
 pub async fn get_outbound_orders(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: OutboundOrderFilter,
 ) -> Result<PaginatedResponse<OutboundOrderListItem>, AppError> {
+    current_user.require_permission(perm::SALES_DELIVERIES, "view")?;
+
     log::info!(
         "销售查询: get_outbound_orders, 状态={:?}, 页码={}",
         filter.status,
@@ -1334,7 +1359,8 @@ pub async fn save_and_confirm_outbound(
     current_user: State<'_, CurrentUser>,
     params: SaveOutboundOrderParams,
 ) -> Result<i64, AppError> {
-    current_user.require_auth()?;
+    // 一步创建并确认出库，按最高风险动作 confirm 校验
+    current_user.require_permission(perm::SALES_DELIVERIES, "confirm")?;
 
     use super::inventory_ops;
 
@@ -1944,8 +1970,11 @@ pub struct SaveSalesReturnParams {
 #[tauri::command]
 pub async fn get_returnable_outbound_items(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     outbound_id: i64,
 ) -> Result<Vec<ReturnableOutboundItem>, AppError> {
+    current_user.require_permission(perm::SALES_RETURNS, "view")?;
+
     let items = sqlx::query_as::<_, ReturnableOutboundItem>(
         r#"
         SELECT
@@ -1991,8 +2020,11 @@ pub async fn get_returnable_outbound_items(
 #[tauri::command]
 pub async fn get_sales_returns(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: SalesReturnFilter,
 ) -> Result<PaginatedResponse<SalesReturnListItem>, AppError> {
+    current_user.require_permission(perm::SALES_RETURNS, "view")?;
+
     use super::order_shared::{self, ListFilterParams, ListQueryConfig};
 
     let mut count_query = QueryBuilder::<'_, Postgres>::new(
@@ -2058,6 +2090,9 @@ pub async fn save_and_confirm_sales_return(
     current_user: State<'_, CurrentUser>,
     params: SaveSalesReturnParams,
 ) -> Result<i64, AppError> {
+    // 一步创建并确认退货，按最高风险动作 confirm 校验
+    current_user.require_permission(perm::SALES_RETURNS, "confirm")?;
+
     use super::inventory_ops;
 
     if params.outbound_id <= 0 {

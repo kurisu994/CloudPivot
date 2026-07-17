@@ -119,6 +119,13 @@ fn get_migrations() -> Vec<Migration> {
                 "../../migrations/postgres/017_user_roles_and_department_roles.sql"
             ),
         },
+        Migration {
+            version: 18,
+            name: "replenishment_edit_rules_permission",
+            sql: include_str!(
+                "../../migrations/postgres/018_replenishment_edit_rules_permission.sql"
+            ),
+        },
     ]
 }
 

@@ -14,6 +14,7 @@ pub mod inventory_ops;
 pub mod manual_stock_movement;
 pub mod material;
 pub mod order_shared;
+pub mod perm;
 pub mod print_template;
 pub mod production_order;
 pub mod purchase;
@@ -115,7 +116,11 @@ impl CurrentUser {
         {
             Ok(())
         } else {
-            Err(AppError::Auth(format!("权限不足：{}.{}", module, action)))
+            // 用 Permission 而非 Auth：前端 AUTH 码会清会话跳登录页，权限不足只应就地提示
+            Err(AppError::Permission(format!(
+                "权限不足：{}.{}",
+                module, action
+            )))
         }
     }
 
@@ -405,8 +410,12 @@ pub struct SystemConfigRecord {
 #[tauri::command]
 pub async fn get_system_configs(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     keys: Vec<String>,
 ) -> Result<Vec<SystemConfigRecord>, AppError> {
+    // 配置读取被显示偏好、打印公司信息等全局场景使用，登录即可读
+    current_user.require_auth()?;
+
     if keys.is_empty() {
         return Ok(vec![]);
     }
@@ -444,9 +453,12 @@ pub async fn get_system_configs(
 #[tauri::command]
 pub async fn set_system_config(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     key: String,
     value: String,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::SETTINGS_GENERAL, "edit")?;
+
     sqlx::query(
         "INSERT INTO system_config (key, value, updated_at)
          VALUES ($1, $2, NOW())
@@ -474,8 +486,11 @@ pub struct ConfigSetItem {
 #[tauri::command]
 pub async fn set_system_configs(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     configs: Vec<ConfigSetItem>,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::SETTINGS_GENERAL, "edit")?;
+
     if configs.is_empty() {
         return Ok(());
     }
@@ -531,8 +546,12 @@ pub struct WarehouseSetupItem {
 #[tauri::command]
 pub async fn setup_create_warehouses(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     warehouses: Vec<WarehouseSetupItem>,
 ) -> Result<(), AppError> {
+    // 向导仅 admin 首登可达，按仓库创建权限校验
+    current_user.require_permission(perm::WAREHOUSES, "create")?;
+
     if warehouses.is_empty() {
         return Ok(());
     }
@@ -623,8 +642,11 @@ pub struct OperationLogItem {
 #[tauri::command]
 pub async fn get_operation_logs(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: OperationLogFilter,
 ) -> Result<PaginatedResponse<OperationLogItem>, AppError> {
+    current_user.require_permission(perm::OPERATION_LOGS, "view")?;
+
     let page = filter.page.max(1);
     let page_size = filter.page_size.clamp(1, 500);
     let offset = (page - 1) * page_size;

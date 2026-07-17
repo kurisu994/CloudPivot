@@ -13,7 +13,7 @@ use crate::error::AppError;
 use crate::operation_log;
 
 use super::inventory_ops;
-use super::{CurrentUser, PaginatedResponse};
+use super::{CurrentUser, PaginatedResponse, perm};
 
 // ================================================================
 // 数据结构 — 库存查询
@@ -364,8 +364,11 @@ pub struct SaveTransferItemParams {
 #[tauri::command]
 pub async fn get_inventory_list(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: InventoryFilter,
 ) -> Result<PaginatedResponse<InventoryListItem>, AppError> {
+    current_user.require_permission(perm::INVENTORY, "view")?;
+
     log::info!(
         "库存查询: get_inventory_list, 页码={}, 每页={}, 仓库={:?}, 分类={:?}, 预警={:?}",
         filter.page,
@@ -521,8 +524,11 @@ pub async fn get_inventory_list(
 #[tauri::command]
 pub async fn get_inventory_detail(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     material_id: i64,
 ) -> Result<InventoryDetail, AppError> {
+    current_user.require_permission(perm::INVENTORY, "view")?;
+
     // 物料基本信息
     let mat = sqlx::query_as::<_, (String, String, Option<String>)>(
         "SELECT code, name, spec FROM materials WHERE id = $1",
@@ -614,8 +620,11 @@ pub async fn get_inventory_detail(
 #[tauri::command]
 pub async fn get_inventory_transactions(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: TransactionFilter,
 ) -> Result<PaginatedResponse<TransactionListItem>, AppError> {
+    current_user.require_permission(perm::INVENTORY, "view")?;
+
     // 关联手工批量出入库单，带出业务类型用于流水页显示自然名称与来源区分（设计 §10.4）
     let base_from = r#"
         FROM inventory_transactions it
@@ -834,8 +843,11 @@ async fn generate_check_no(
 #[tauri::command]
 pub async fn get_stock_checks(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: StockCheckFilter,
 ) -> Result<PaginatedResponse<StockCheckListItem>, AppError> {
+    current_user.require_permission(perm::STOCK_CHECKS, "view")?;
+
     let base_from = r#"
         FROM stock_checks sc
         JOIN warehouses w ON w.id = sc.warehouse_id
@@ -965,8 +977,11 @@ struct StockCheckHeadRow {
 #[tauri::command]
 pub async fn get_stock_check_detail(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<StockCheckDetail, AppError> {
+    current_user.require_permission(perm::STOCK_CHECKS, "view")?;
+
     let head = sqlx::query_as::<_, StockCheckHeadRow>(
         r#"
         SELECT sc.id, sc.check_no, sc.warehouse_id, w.name AS warehouse_name,
@@ -1070,7 +1085,7 @@ pub async fn create_stock_check(
     current_user: State<'_, CurrentUser>,
     params: CreateStockCheckParams,
 ) -> Result<i64, AppError> {
-    current_user.require_auth()?;
+    current_user.require_permission(perm::STOCK_CHECKS, "create")?;
 
     if params.warehouse_id <= 0 {
         return Err(AppError::Business("请选择盘点仓库".to_string()));
@@ -1144,9 +1159,12 @@ pub async fn create_stock_check(
 #[tauri::command]
 pub async fn update_stock_check_items(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     check_id: i64,
     items: Vec<UpdateStockCheckItemParams>,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::STOCK_CHECKS, "edit")?;
+
     // 校验状态
     let status: Option<(String,)> = sqlx::query_as("SELECT status FROM stock_checks WHERE id = $1")
         .bind(check_id)
@@ -1202,7 +1220,7 @@ pub async fn confirm_stock_check(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
-    current_user.require_auth()?;
+    current_user.require_permission(perm::STOCK_CHECKS, "confirm")?;
 
     let mut tx = db
         .pool
@@ -1388,8 +1406,11 @@ async fn generate_transfer_no(
 #[tauri::command]
 pub async fn get_transfers(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: TransferFilter,
 ) -> Result<PaginatedResponse<TransferListItem>, AppError> {
+    current_user.require_permission(perm::STOCK_TRANSFERS, "view")?;
+
     let base_from = r#"
         FROM transfers t
         JOIN warehouses fw ON fw.id = t.from_warehouse_id
@@ -1525,8 +1546,11 @@ struct TransferItemRow {
 #[tauri::command]
 pub async fn get_transfer_detail(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<TransferDetail, AppError> {
+    current_user.require_permission(perm::STOCK_TRANSFERS, "view")?;
+
     let head = sqlx::query_as::<
         _,
         (
@@ -1622,6 +1646,12 @@ pub async fn save_transfer(
     current_user: State<'_, CurrentUser>,
     params: SaveTransferParams,
 ) -> Result<i64, AppError> {
+    // 新建走 create、修改走 edit
+    current_user.require_permission(
+        perm::STOCK_TRANSFERS,
+        if params.id.is_some() { "edit" } else { "create" },
+    )?;
+
     if params.from_warehouse_id <= 0 || params.to_warehouse_id <= 0 {
         return Err(AppError::Business("请选择调出和调入仓库".to_string()));
     }
@@ -1715,6 +1745,8 @@ pub async fn confirm_transfer(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::STOCK_TRANSFERS, "confirm")?;
+
     let mut tx = db
         .pool
         .begin()
@@ -1891,6 +1923,9 @@ pub async fn delete_transfer(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    // 种子无 stock_transfers.delete 权限点，删除草稿调拨单归入编辑范畴
+    current_user.require_permission(perm::STOCK_TRANSFERS, "edit")?;
+
     let mut tx = db
         .pool
         .begin()

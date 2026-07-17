@@ -12,7 +12,7 @@ use tauri::State;
 use crate::db::DbState;
 use crate::error::AppError;
 
-use super::PaginatedResponse;
+use super::{CurrentUser, PaginatedResponse, perm};
 
 // ================================================================
 // 数据结构
@@ -239,7 +239,13 @@ fn determine_urgency(
 /// 为所有启用中且尚无策略的物料创建默认规则。
 /// 在首次访问补货页面时调用。
 #[tauri::command]
-pub async fn ensure_replenishment_rules(db: State<'_, DbState>) -> Result<i64, AppError> {
+pub async fn ensure_replenishment_rules(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+) -> Result<i64, AppError> {
+    // 补货页加载时的幂等初始化（为缺规则物料补默认规则），伴随查看动作
+    current_user.require_permission(perm::REPLENISHMENT, "view")?;
+
     log::info!("补货: ensure_replenishment_rules 开始");
     let (analysis_days, lead_days, safety_days) = get_default_params(&db.pool).await;
 
@@ -269,7 +275,11 @@ pub async fn ensure_replenishment_rules(db: State<'_, DbState>) -> Result<i64, A
 #[tauri::command]
 pub async fn get_replenishment_dashboard_summary(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
 ) -> Result<ReplenishmentDashboardSummary, AppError> {
+    // 首页看板 KPI，按看板权限校验（viewer 无 replenishment 权限但可看首页）
+    current_user.require_permission(perm::DASHBOARD, "view")?;
+
     log::info!("补货查询: get_replenishment_dashboard_summary");
     let (default_analysis, default_lead, default_safety) = get_default_params(&db.pool).await;
     let today = chrono::Local::now().format("%Y-%m-%d").to_string();
@@ -424,8 +434,11 @@ pub async fn get_replenishment_dashboard_summary(
 #[tauri::command]
 pub async fn get_replenishment_suggestions(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: SuggestionFilter,
 ) -> Result<Vec<ReplenishmentSuggestion>, AppError> {
+    current_user.require_permission(perm::REPLENISHMENT, "view")?;
+
     log::info!(
         "补货查询: get_replenishment_suggestions, 分类={:?}, 紧急度={:?}",
         filter.category_id,
@@ -766,8 +779,11 @@ pub async fn get_replenishment_suggestions(
 #[tauri::command]
 pub async fn get_replenishment_rules(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: RuleFilter,
 ) -> Result<PaginatedResponse<ReplenishmentRule>, AppError> {
+    current_user.require_permission(perm::REPLENISHMENT, "view")?;
+
     let mut count_query = QueryBuilder::<'_, Postgres>::new(
         "SELECT COUNT(*) FROM replenishment_rules rr JOIN materials m ON m.id = rr.material_id AND m.is_enabled = TRUE",
     );
@@ -833,9 +849,13 @@ pub async fn get_replenishment_rules(
 #[tauri::command]
 pub async fn update_replenishment_rule(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
     params: UpdateRuleParams,
 ) -> Result<(), AppError> {
+    // 规则配置（安全库存/补货量）使用独立权限点（迁移 018 新增，授予 admin/库管）
+    current_user.require_permission(perm::REPLENISHMENT, "edit_rules")?;
+
     // 参数校验
     if params.analysis_days <= 0 {
         return Err(AppError::Business("历史分析天数必须大于 0".to_string()));
@@ -881,9 +901,12 @@ pub async fn update_replenishment_rule(
 #[tauri::command]
 pub async fn get_consumption_trend(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     material_id: i64,
     days: i64,
 ) -> Result<Vec<ConsumptionTrendPoint>, AppError> {
+    current_user.require_permission(perm::REPLENISHMENT, "view")?;
+
     let days = days.clamp(7, 365);
 
     let rows: Vec<(String, f64)> = sqlx::query_as(
@@ -918,10 +941,13 @@ pub async fn get_consumption_trend(
 #[tauri::command]
 pub async fn create_purchase_orders_from_suggestions(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     material_ids: Vec<i64>,
     user_id: Option<i64>,
     user_name: Option<String>,
 ) -> Result<BulkCreatePoResult, AppError> {
+    current_user.require_permission(perm::REPLENISHMENT, "create_po")?;
+
     let uid = user_id.unwrap_or(1);
     let uname = user_name.unwrap_or_else(|| "admin".to_string());
     if material_ids.is_empty() {
@@ -1293,7 +1319,14 @@ pub async fn create_purchase_orders_from_suggestions(
 
 /// 忽略补货建议
 #[tauri::command]
-pub async fn ignore_suggestion(db: State<'_, DbState>, log_id: i64) -> Result<(), AppError> {
+pub async fn ignore_suggestion(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    log_id: i64,
+) -> Result<(), AppError> {
+    // 忽略建议是可逆的轻量操作，随查看权限放行（operator/采购/库管均可在页面上处理建议）
+    current_user.require_permission(perm::REPLENISHMENT, "view")?;
+
     let result = sqlx::query(
         "UPDATE replenishment_logs SET status = 'ignored' WHERE id = $1 AND status = 'pending'",
     )

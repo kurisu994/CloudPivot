@@ -15,7 +15,7 @@ use crate::db::DbState;
 use crate::error::AppError;
 use crate::operation_log::{OperationLogEntry, write_log};
 
-use super::{CurrentUser, inventory_ops, material};
+use super::{CurrentUser, inventory_ops, material, perm};
 
 /// 备份文件信息
 #[derive(Debug, Serialize)]
@@ -292,7 +292,11 @@ async fn resolve_unit_id(pool: &PgPool, unit_name: &str) -> Result<i64, AppError
 pub async fn get_data_management_status(
     app: AppHandle,
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
 ) -> Result<DataManagementStatus, AppError> {
+    // 备份状态与文件列表对持有备份权限者可见
+    current_user.require_permission(perm::DATA_MANAGEMENT, "backup")?;
+
     let backup_dir = get_backup_dir(&app)?;
     fs::create_dir_all(&backup_dir)?;
 
@@ -321,6 +325,8 @@ pub async fn create_database_backup(
     db: State<'_, DbState>,
     current_user: State<'_, CurrentUser>,
 ) -> Result<BackupFileInfo, AppError> {
+    current_user.require_permission(perm::DATA_MANAGEMENT, "backup")?;
+
     let backup_dir = get_backup_dir(&app)?;
     fs::create_dir_all(&backup_dir)?;
 
@@ -446,7 +452,7 @@ pub async fn restore_database_backup(
     current_user: State<'_, CurrentUser>,
     file_name: String,
 ) -> Result<(), AppError> {
-    current_user.require_auth()?;
+    current_user.require_permission(perm::DATA_MANAGEMENT, "restore")?;
     let backup_dir = get_backup_dir(&app)?;
     let source = resolve_backup_file(&backup_dir, &file_name)?;
 
@@ -517,7 +523,14 @@ pub async fn restore_database_backup(
 
 /// 删除数据库备份
 #[tauri::command]
-pub async fn delete_database_backup(app: AppHandle, file_name: String) -> Result<(), AppError> {
+pub async fn delete_database_backup(
+    app: AppHandle,
+    current_user: State<'_, CurrentUser>,
+    file_name: String,
+) -> Result<(), AppError> {
+    // 备份文件管理与创建备份同权限
+    current_user.require_permission(perm::DATA_MANAGEMENT, "backup")?;
+
     let backup_dir = get_backup_dir(&app)?;
     let backup_file = resolve_backup_file(&backup_dir, &file_name)?;
     fs::remove_file(backup_file)?;
@@ -526,7 +539,12 @@ pub async fn delete_database_backup(app: AppHandle, file_name: String) -> Result
 
 /// 导出物料主数据
 #[tauri::command]
-pub async fn export_materials(db: State<'_, DbState>) -> Result<Vec<MaterialExportRow>, AppError> {
+pub async fn export_materials(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+) -> Result<Vec<MaterialExportRow>, AppError> {
+    current_user.require_permission(perm::MATERIALS, "export")?;
+
     sqlx::query_as::<_, MaterialExportRow>(
         r#"
         SELECT m.code, m.name, m.material_type, c.code AS category_code, c.name AS category_name,
@@ -553,6 +571,8 @@ pub async fn import_materials(
     current_user: State<'_, CurrentUser>,
     rows: Vec<MaterialImportRow>,
 ) -> Result<ImportResult, AppError> {
+    current_user.require_permission(perm::MATERIALS, "import")?;
+
     if rows.is_empty() {
         return Ok(ImportResult {
             created: 0,
@@ -772,7 +792,7 @@ pub async fn import_initial_inventory(
     current_user: State<'_, CurrentUser>,
     rows: Vec<InitialInventoryImportRow>,
 ) -> Result<ImportResult, AppError> {
-    current_user.require_auth()?;
+    current_user.require_permission(perm::INITIAL_INVENTORY, "import")?;
 
     if rows.is_empty() {
         return Ok(ImportResult {

@@ -9,6 +9,8 @@ use tauri::State;
 use crate::db::DbState;
 use crate::error::AppError;
 
+use super::{CurrentUser, perm};
+
 /// 分类树节点（扁平返回，前端组装层级）
 #[derive(Debug, Serialize, FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -31,7 +33,13 @@ pub struct CategoryNode {
 /// 返回所有分类节点，按 sort_order + id 排序。
 /// 前端根据 parent_id 自行组装树形结构。
 #[tauri::command]
-pub async fn get_category_tree(db: State<'_, DbState>) -> Result<Vec<CategoryNode>, AppError> {
+pub async fn get_category_tree(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+) -> Result<Vec<CategoryNode>, AppError> {
+    // 分类树供物料筛选等场景使用，登录即可读（部分角色无 categories 权限但业务上需要）
+    current_user.require_auth()?;
+
     sqlx::query_as::<_, CategoryNode>(
         "SELECT id, parent_id, name, code, sort_order, level, path, remark,
                 is_enabled, created_at::TEXT, updated_at::TEXT
@@ -59,8 +67,11 @@ pub struct CreateCategoryParams {
 #[tauri::command]
 pub async fn create_category(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: CreateCategoryParams,
 ) -> Result<i64, AppError> {
+    current_user.require_permission(perm::CATEGORIES, "create")?;
+
     // 生成短 UUID 编码（取前 8 位）
     let short_uuid = &uuid::Uuid::new_v4().to_string()[..8];
     let code = format!("CAT-{}", short_uuid.to_uppercase());
@@ -134,8 +145,11 @@ pub struct UpdateCategoryParams {
 #[tauri::command]
 pub async fn update_category(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: UpdateCategoryParams,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::CATEGORIES, "edit")?;
+
     // 不允许自身成为自己的父级
     if params.parent_id == Some(params.id) {
         return Err(AppError::Business("分类不能设置自身为父级".to_string()));
@@ -216,7 +230,13 @@ pub async fn update_category(
 /// 1. 分类下是否存在关联物料 → 禁止删除
 /// 2. 分类下是否存在子分类 → 禁止删除
 #[tauri::command]
-pub async fn delete_category(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn delete_category(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
+    current_user.require_permission(perm::CATEGORIES, "delete")?;
+
     // 检查是否有关联物料
     let material_count: (i64,) =
         sqlx::query_as("SELECT COUNT(*) FROM materials WHERE category_id = $1")
@@ -272,8 +292,11 @@ pub struct CategorySortItem {
 #[tauri::command]
 pub async fn update_category_order(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     items: Vec<CategorySortItem>,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::CATEGORIES, "edit")?;
+
     if items.is_empty() {
         return Ok(());
     }

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Postgres, QueryBuilder};
 use tauri::State;
 
-use super::PaginatedResponse;
+use super::{CurrentUser, PaginatedResponse, perm};
 use crate::db::DbState;
 use crate::error::AppError;
 
@@ -344,7 +344,13 @@ async fn ensure_customer_exists(db: &DbState, id: i64) -> Result<(), AppError> {
 
 /// 生成下一个客户编码（格式：CUS-YYYY-NNN）
 #[tauri::command]
-pub async fn generate_customer_code(db: State<'_, DbState>) -> Result<String, AppError> {
+pub async fn generate_customer_code(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+) -> Result<String, AppError> {
+    // 生成编码是新建表单的前置动作
+    current_user.require_permission(perm::CUSTOMERS, "create")?;
+
     let year = chrono::Local::now().format("%Y").to_string();
     let pattern = format!("CUS-{}-%", year);
 
@@ -373,8 +379,11 @@ pub async fn generate_customer_code(db: State<'_, DbState>) -> Result<String, Ap
 #[tauri::command]
 pub async fn get_customers(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: CustomerFilter,
 ) -> Result<PaginatedResponse<CustomerListItem>, AppError> {
+    current_user.require_permission(perm::CUSTOMERS, "view")?;
+
     let mut count_query = QueryBuilder::<'_, Postgres>::new("SELECT COUNT(*) FROM customers c");
     let mut data_query = QueryBuilder::<'_, Postgres>::new(
         r#"
@@ -505,8 +514,11 @@ pub async fn get_customers(
 #[tauri::command]
 pub async fn get_customer_by_id(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<SaveCustomerParams, AppError> {
+    current_user.require_permission(perm::CUSTOMERS, "view")?;
+
     load_customer_base(&db, id).await
 }
 
@@ -514,8 +526,11 @@ pub async fn get_customer_by_id(
 #[tauri::command]
 pub async fn get_customer_detail(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<CustomerDetailResponse, AppError> {
+    current_user.require_permission(perm::CUSTOMERS, "view")?;
+
     let customer = load_customer_base(&db, id).await?;
     let recent_sales_orders = load_recent_sales(&db, id).await?;
     let receivables_summary = load_receivables_summary(&db, id).await?;
@@ -531,8 +546,15 @@ pub async fn get_customer_detail(
 #[tauri::command]
 pub async fn save_customer(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: SaveCustomerParams,
 ) -> Result<i64, AppError> {
+    // 新建走 create、修改走 edit
+    current_user.require_permission(
+        perm::CUSTOMERS,
+        if params.id.is_some() { "edit" } else { "create" },
+    )?;
+
     let params = normalize_customer_params(params);
     validate_save_customer_params(&params)?;
 
@@ -628,7 +650,13 @@ pub async fn save_customer(
 
 /// 删除客户（检查五张关联表）
 #[tauri::command]
-pub async fn delete_customer(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn delete_customer(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
+    current_user.require_permission(perm::CUSTOMERS, "delete")?;
+
     ensure_customer_exists(&db, id).await?;
 
     // 检查 sales_orders / outbound_orders / sales_returns / receivables / custom_orders 五张表
@@ -670,9 +698,12 @@ pub async fn delete_customer(db: State<'_, DbState>, id: i64) -> Result<(), AppE
 #[tauri::command]
 pub async fn toggle_customer_status(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
     is_enabled: bool,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::CUSTOMERS, "edit")?;
+
     ensure_customer_exists(&db, id).await?;
 
     let val = if is_enabled { 1 } else { 0 };

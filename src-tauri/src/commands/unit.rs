@@ -9,6 +9,8 @@ use tauri::State;
 use crate::db::DbState;
 use crate::error::AppError;
 
+use super::{CurrentUser, perm};
+
 // ================================================================
 // 数据结构
 // ================================================================
@@ -65,8 +67,12 @@ async fn ensure_unit_exists(db: &State<'_, DbState>, id: i64) -> Result<(), AppE
 #[tauri::command]
 pub async fn get_all_units(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     include_disabled: bool,
 ) -> Result<Vec<Unit>, AppError> {
+    // 单位字典供 BOM/物料等表单下拉使用，登录即可读（部分角色无 units 权限但业务上需要）
+    current_user.require_auth()?;
+
     let sql = if include_disabled {
         "SELECT id, name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at::TEXT, updated_at::TEXT FROM units ORDER BY sort_order ASC, id ASC"
     } else {
@@ -81,7 +87,13 @@ pub async fn get_all_units(
 
 /// 获取单个单位详情
 #[tauri::command]
-pub async fn get_unit_by_id(db: State<'_, DbState>, id: i64) -> Result<Unit, AppError> {
+pub async fn get_unit_by_id(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<Unit, AppError> {
+    current_user.require_permission(perm::UNITS, "view")?;
+
     sqlx::query_as::<_, Unit>(
         "SELECT id, name, name_en, name_vi, symbol, decimal_places, sort_order, is_enabled, created_at::TEXT, updated_at::TEXT FROM units WHERE id = $1",
     )
@@ -93,7 +105,17 @@ pub async fn get_unit_by_id(db: State<'_, DbState>, id: i64) -> Result<Unit, App
 
 /// 保存单位（新增或更新）
 #[tauri::command]
-pub async fn save_unit(db: State<'_, DbState>, params: SaveUnitParams) -> Result<i64, AppError> {
+pub async fn save_unit(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    params: SaveUnitParams,
+) -> Result<i64, AppError> {
+    // 新建走 create、修改走 edit
+    current_user.require_permission(
+        perm::UNITS,
+        if params.id.is_some() { "edit" } else { "create" },
+    )?;
+
     // 检查名称唯一性
     let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM units WHERE name = $1")
         .bind(&params.name)
@@ -156,7 +178,13 @@ pub async fn save_unit(db: State<'_, DbState>, params: SaveUnitParams) -> Result
 
 /// 删除单位（含物料引用检查）
 #[tauri::command]
-pub async fn delete_unit(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn delete_unit(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
+    current_user.require_permission(perm::UNITS, "delete")?;
+
     ensure_unit_exists(&db, id).await?;
 
     // 检查 materials 表的 base_unit_id 和 aux_unit_id 引用
@@ -190,7 +218,13 @@ pub async fn delete_unit(db: State<'_, DbState>, id: i64) -> Result<(), AppError
 
 /// 启用/禁用单位
 #[tauri::command]
-pub async fn toggle_unit_status(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn toggle_unit_status(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
+    current_user.require_permission(perm::UNITS, "edit")?;
+
     ensure_unit_exists(&db, id).await?;
 
     let current_enabled: bool = sqlx::query_scalar("SELECT is_enabled FROM units WHERE id = $1")

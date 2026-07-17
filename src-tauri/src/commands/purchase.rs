@@ -13,7 +13,7 @@ use crate::db::DbState;
 use crate::error::AppError;
 use crate::operation_log;
 
-use super::{CurrentUser, PaginatedResponse};
+use super::{CurrentUser, PaginatedResponse, perm};
 
 // ================================================================
 // 数据结构
@@ -257,8 +257,11 @@ fn compute_amounts(params: &SavePurchaseOrderParams) -> (i64, i64, i64) {
 #[tauri::command]
 pub async fn get_purchase_orders(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: PurchaseOrderFilter,
 ) -> Result<PaginatedResponse<PurchaseOrderListItem>, AppError> {
+    current_user.require_permission(perm::PURCHASE_ORDERS, "view")?;
+
     log::info!(
         "采购查询: get_purchase_orders, 状态={:?}, 页码={}",
         filter.status,
@@ -372,8 +375,11 @@ struct PurchaseOrderItemRow {
 #[tauri::command]
 pub async fn get_purchase_order_detail(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<PurchaseOrderDetail, AppError> {
+    current_user.require_permission(perm::PURCHASE_ORDERS, "view")?;
+
     // 查询单头
     let head = sqlx::query_as::<_, PurchaseOrderHeadRow>(
         r#"
@@ -481,7 +487,11 @@ pub async fn save_purchase_order(
     current_user: State<'_, CurrentUser>,
     params: SavePurchaseOrderParams,
 ) -> Result<i64, AppError> {
-    current_user.require_auth()?;
+    // 新建走 create、修改走 edit
+    current_user.require_permission(
+        perm::PURCHASE_ORDERS,
+        if params.id.is_some() { "edit" } else { "create" },
+    )?;
 
     validate_save_params(&params)?;
 
@@ -699,7 +709,7 @@ pub async fn approve_purchase_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
-    current_user.require_auth()?;
+    current_user.require_permission(perm::PURCHASE_ORDERS, "approve")?;
 
     use super::order_shared;
 
@@ -737,6 +747,8 @@ pub async fn cancel_purchase_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::PURCHASE_ORDERS, "cancel")?;
+
     use super::order_shared;
 
     // 先检查是否有关联入库单
@@ -787,6 +799,8 @@ pub async fn delete_purchase_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::PURCHASE_ORDERS, "delete")?;
+
     use super::order_shared;
 
     // 提前获取单号用于日志
@@ -820,8 +834,11 @@ pub async fn delete_purchase_order(
 #[tauri::command]
 pub async fn get_supplier_materials_for_purchase(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     supplier_id: i64,
 ) -> Result<Vec<SupplierMaterialForPurchase>, AppError> {
+    current_user.require_permission(perm::PURCHASE_ORDERS, "view")?;
+
     let items = sqlx::query_as::<_, SupplierMaterialForPurchase>(
         r#"
         SELECT sm.material_id, m.code AS material_code, m.name AS material_name,
@@ -966,8 +983,11 @@ pub struct PendingInboundItem {
 #[tauri::command]
 pub async fn get_pending_inbound_items(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     purchase_id: i64,
 ) -> Result<Vec<PendingInboundItem>, AppError> {
+    current_user.require_permission(perm::PURCHASE_RECEIPTS, "view")?;
+
     let items = sqlx::query_as::<_, PendingInboundItem>(
         r#"
         SELECT
@@ -996,8 +1016,11 @@ pub async fn get_pending_inbound_items(
 #[tauri::command]
 pub async fn get_inbound_orders(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: InboundOrderFilter,
 ) -> Result<PaginatedResponse<InboundOrderListItem>, AppError> {
+    current_user.require_permission(perm::PURCHASE_RECEIPTS, "view")?;
+
     let mut count_query = QueryBuilder::<'_, Postgres>::new(
         "SELECT COUNT(*) FROM inbound_orders io LEFT JOIN suppliers s ON s.id = io.supplier_id JOIN warehouses w ON w.id = io.warehouse_id",
     );
@@ -1165,6 +1188,9 @@ pub async fn save_and_confirm_inbound(
     current_user: State<'_, CurrentUser>,
     params: SaveInboundOrderParams,
 ) -> Result<i64, AppError> {
+    // 一步创建并确认入库，按最高风险动作 confirm 校验
+    current_user.require_permission(perm::PURCHASE_RECEIPTS, "confirm")?;
+
     use super::inventory_ops;
 
     // 基本校验
@@ -1801,8 +1827,11 @@ pub struct SavePurchaseReturnParams {
 #[tauri::command]
 pub async fn get_returnable_inbound_items(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     inbound_id: i64,
 ) -> Result<Vec<ReturnableInboundItem>, AppError> {
+    current_user.require_permission(perm::PURCHASE_RETURNS, "view")?;
+
     let items = sqlx::query_as::<_, ReturnableInboundItem>(
         r#"
         SELECT *
@@ -1849,8 +1878,11 @@ pub async fn get_returnable_inbound_items(
 #[tauri::command]
 pub async fn get_purchase_returns(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: PurchaseReturnFilter,
 ) -> Result<PaginatedResponse<PurchaseReturnListItem>, AppError> {
+    current_user.require_permission(perm::PURCHASE_RETURNS, "view")?;
+
     use super::order_shared::{self, ListFilterParams, ListQueryConfig};
 
     let mut count_query = QueryBuilder::<'_, Postgres>::new(
@@ -1908,8 +1940,11 @@ pub async fn get_purchase_returns(
 #[tauri::command]
 pub async fn get_purchase_return_detail(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<PurchaseReturnDetail, AppError> {
+    current_user.require_permission(perm::PURCHASE_RETURNS, "view")?;
+
     let head = sqlx::query_as::<_, PurchaseReturnHeadRow>(
         r#"
         SELECT pr.id, pr.return_no, pr.inbound_id,
@@ -1998,6 +2033,9 @@ pub async fn save_and_confirm_purchase_return(
     current_user: State<'_, CurrentUser>,
     params: SavePurchaseReturnParams,
 ) -> Result<i64, AppError> {
+    // 一步创建并确认退货，按最高风险动作 confirm 校验
+    current_user.require_permission(perm::PURCHASE_RETURNS, "confirm")?;
+
     use super::inventory_ops;
 
     // 基本校验

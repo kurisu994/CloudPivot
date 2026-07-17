@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::QueryBuilder;
 use tauri::State;
 
-use super::CurrentUser;
+use super::{CurrentUser, perm};
 use super::inventory_ops;
 use crate::db::DbState;
 use crate::error::AppError;
@@ -190,8 +190,11 @@ pub struct PaginatedResponse<T> {
 #[tauri::command]
 pub async fn get_manual_stock_movements(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: ManualMovementFilter,
 ) -> Result<PaginatedResponse<ManualMovementListItem>, AppError> {
+    current_user.require_permission(perm::MANUAL_STOCK, "view")?;
+
     let mut count_qb = QueryBuilder::new("SELECT COUNT(*) FROM manual_stock_movements m WHERE 1=1");
     let mut list_qb = QueryBuilder::new(
         r#"
@@ -326,8 +329,11 @@ pub async fn get_manual_stock_movements(
 #[tauri::command]
 pub async fn get_manual_stock_movement_detail(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<ManualMovementDetail, AppError> {
+    current_user.require_permission(perm::MANUAL_STOCK, "view")?;
+
     // 1. 查询单头
     let header_row = sqlx::query_as::<
         _,
@@ -435,6 +441,12 @@ pub async fn save_manual_stock_movement(
     current_user: State<'_, CurrentUser>,
     params: SaveManualMovementParams,
 ) -> Result<i64, AppError> {
+    // 新建走 create、修改走 edit
+    current_user.require_permission(
+        perm::MANUAL_STOCK,
+        if params.id.is_some() { "edit" } else { "create" },
+    )?;
+
     // 基础校验
     if params.items.is_empty() {
         return Err(AppError::Business("明细不能为空".to_string()));
@@ -1198,11 +1210,9 @@ pub async fn delete_manual_stock_movement(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
-    // 强制检验登录
-    let (operator_id, operator_name) = {
-        current_user.require_auth()?;
-        (current_user.user_id(), current_user.display_name())
-    };
+    current_user.require_permission(perm::MANUAL_STOCK, "delete")?;
+
+    let (operator_id, operator_name) = (current_user.user_id(), current_user.display_name());
 
     let mut tx = db
         .pool

@@ -12,7 +12,7 @@ use crate::db::DbState;
 use crate::error::AppError;
 use crate::operation_log;
 
-use super::{CurrentUser, PaginatedResponse};
+use super::{CurrentUser, PaginatedResponse, perm};
 
 // ================================================================
 // 数据结构
@@ -180,8 +180,11 @@ pub struct CompleteProductionInput {
 #[tauri::command]
 pub async fn get_production_orders(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: ProductionOrderFilter,
 ) -> Result<PaginatedResponse<ProductionOrderListItem>, AppError> {
+    current_user.require_permission(perm::PRODUCTION_ORDERS, "view")?;
+
     let mut count_builder: QueryBuilder<Postgres> = QueryBuilder::new(
         "SELECT COUNT(*) FROM production_orders po
          LEFT JOIN materials m ON po.output_material_id = m.id",
@@ -303,8 +306,11 @@ pub async fn get_production_orders(
 #[tauri::command]
 pub async fn get_production_order_detail(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<ProductionOrderDetail, AppError> {
+    current_user.require_permission(perm::PRODUCTION_ORDERS, "view")?;
+
     // 查询头信息
     #[derive(sqlx::FromRow)]
     struct HeaderRow {
@@ -433,7 +439,11 @@ pub async fn save_production_order(
     current_user: State<'_, CurrentUser>,
     input: SaveProductionOrderInput,
 ) -> Result<i64, AppError> {
-    current_user.require_auth()?;
+    // 新建走 create、修改走 edit
+    current_user.require_permission(
+        perm::PRODUCTION_ORDERS,
+        if input.id.is_some() { "edit" } else { "create" },
+    )?;
 
     // 校验 BOM 存在且已启用
     #[derive(sqlx::FromRow)]
@@ -661,6 +671,9 @@ pub async fn delete_production_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    // 种子无 production_orders.delete 权限点，删除草稿工单归入编辑范畴
+    current_user.require_permission(perm::PRODUCTION_ORDERS, "edit")?;
+
     let affected = sqlx::query("DELETE FROM production_orders WHERE id = $1 AND status = 'draft'")
         .bind(id)
         .execute(&db.pool)
@@ -731,7 +744,7 @@ pub async fn pick_materials(
     current_user: State<'_, CurrentUser>,
     input: PickMaterialInput,
 ) -> Result<(), AppError> {
-    current_user.require_auth()?;
+    current_user.require_permission(perm::PRODUCTION_ORDERS, "issue_materials")?;
 
     if input.items.is_empty() {
         return Err(AppError::Business("领料明细不能为空".to_string()));
@@ -985,6 +998,8 @@ pub async fn return_materials(
     current_user: State<'_, CurrentUser>,
     input: ReturnMaterialInput,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::PRODUCTION_ORDERS, "return_materials")?;
+
     if input.items.is_empty() {
         return Err(AppError::Business("退料明细不能为空".to_string()));
     }
@@ -1228,6 +1243,9 @@ pub async fn start_production(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    // 开工是工单状态推进，归入编辑范畴（operator/生产主管均持有 edit）
+    current_user.require_permission(perm::PRODUCTION_ORDERS, "edit")?;
+
     // 校验状态
     let status: Option<String> =
         sqlx::query_scalar("SELECT status FROM production_orders WHERE id = $1")
@@ -1310,6 +1328,8 @@ pub async fn complete_production(
     current_user: State<'_, CurrentUser>,
     input: CompleteProductionInput,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::PRODUCTION_ORDERS, "complete")?;
+
     if input.quantity <= 0.0 {
         return Err(AppError::Business("完工数量必须大于0".to_string()));
     }
@@ -1479,6 +1499,9 @@ pub async fn finish_production_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    // 结束工单是完工流程的收尾动作，与完工入库同权限
+    current_user.require_permission(perm::PRODUCTION_ORDERS, "complete")?;
+
     #[derive(sqlx::FromRow)]
     struct Info {
         status: String,
@@ -1551,6 +1574,8 @@ pub async fn cancel_production_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::PRODUCTION_ORDERS, "cancel")?;
+
     let status: Option<String> =
         sqlx::query_scalar("SELECT status FROM production_orders WHERE id = $1")
             .bind(id)

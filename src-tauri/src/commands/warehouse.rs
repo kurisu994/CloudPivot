@@ -9,6 +9,8 @@ use tauri::State;
 use crate::db::DbState;
 use crate::error::AppError;
 
+use super::{CurrentUser, perm};
+
 // ================================================================
 // 数据结构
 // ================================================================
@@ -128,8 +130,12 @@ async fn ensure_warehouse_exists(db: &State<'_, DbState>, id: i64) -> Result<(),
 #[tauri::command]
 pub async fn generate_warehouse_code(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     warehouse_type: String,
 ) -> Result<String, AppError> {
+    // 生成编码是新建表单的前置动作
+    current_user.require_permission(perm::WAREHOUSES, "create")?;
+
     generate_warehouse_code_internal(&db.pool, &warehouse_type).await
 }
 
@@ -137,8 +143,12 @@ pub async fn generate_warehouse_code(
 #[tauri::command]
 pub async fn get_warehouses(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     include_disabled: bool,
 ) -> Result<Vec<Warehouse>, AppError> {
+    // 仓库列表供出入库/盘点/调拨等页面下拉使用，登录即可读（部分角色无 warehouses 权限但业务上需要）
+    current_user.require_auth()?;
+
     let sql = if include_disabled {
         "SELECT id, code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at::TEXT, updated_at::TEXT FROM warehouses ORDER BY warehouse_type ASC, code ASC"
     } else {
@@ -153,7 +163,13 @@ pub async fn get_warehouses(
 
 /// 获取单个仓库详情
 #[tauri::command]
-pub async fn get_warehouse_by_id(db: State<'_, DbState>, id: i64) -> Result<Warehouse, AppError> {
+pub async fn get_warehouse_by_id(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<Warehouse, AppError> {
+    current_user.require_permission(perm::WAREHOUSES, "view")?;
+
     sqlx::query_as::<_, Warehouse>(
         "SELECT id, code, name, warehouse_type, manager, phone, address, remark, is_enabled, created_at::TEXT, updated_at::TEXT FROM warehouses WHERE id = $1",
     )
@@ -167,8 +183,15 @@ pub async fn get_warehouse_by_id(db: State<'_, DbState>, id: i64) -> Result<Ware
 #[tauri::command]
 pub async fn save_warehouse(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: SaveWarehouseParams,
 ) -> Result<i64, AppError> {
+    // 新建走 create、修改走 edit
+    current_user.require_permission(
+        perm::WAREHOUSES,
+        if params.id.is_some() { "edit" } else { "create" },
+    )?;
+
     // 检查编码唯一性
     let existing: Option<(i64,)> = sqlx::query_as("SELECT id FROM warehouses WHERE code = $1")
         .bind(&params.code)
@@ -231,7 +254,13 @@ pub async fn save_warehouse(
 
 /// 删除仓库（含 8 张表引用检查）
 #[tauri::command]
-pub async fn delete_warehouse(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn delete_warehouse(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
+    current_user.require_permission(perm::WAREHOUSES, "delete")?;
+
     ensure_warehouse_exists(&db, id).await?;
 
     // 检查 8 张表的引用
@@ -278,7 +307,13 @@ pub async fn delete_warehouse(db: State<'_, DbState>, id: i64) -> Result<(), App
 ///
 /// 禁用时，若该仓库是某类型的默认仓，在同一事务中清除映射。
 #[tauri::command]
-pub async fn toggle_warehouse_status(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn toggle_warehouse_status(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
+    current_user.require_permission(perm::WAREHOUSES, "edit")?;
+
     ensure_warehouse_exists(&db, id).await?;
 
     // 获取当前状态
@@ -331,7 +366,11 @@ pub async fn toggle_warehouse_status(db: State<'_, DbState>, id: i64) -> Result<
 #[tauri::command]
 pub async fn get_default_warehouses(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
 ) -> Result<Vec<DefaultWarehouse>, AppError> {
+    // 默认仓库映射供单据页面自动带入仓库，登录即可读
+    current_user.require_auth()?;
+
     sqlx::query_as::<_, DefaultWarehouse>(
         "SELECT dw.id, dw.material_type, dw.warehouse_id, w.name as warehouse_name
          FROM default_warehouses dw
@@ -347,8 +386,12 @@ pub async fn get_default_warehouses(
 #[tauri::command]
 pub async fn save_default_warehouses(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     mappings: Vec<DefaultWarehouseMapping>,
 ) -> Result<(), AppError> {
+    // 默认仓库映射属于仓库配置
+    current_user.require_permission(perm::WAREHOUSES, "edit")?;
+
     if mappings.is_empty() {
         return Ok(());
     }

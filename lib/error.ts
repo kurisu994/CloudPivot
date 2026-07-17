@@ -6,7 +6,7 @@
  */
 
 /** 后端错误码枚举 — 与 Rust ErrorCode 对应 */
-export type ErrorCode = 'DATABASE' | 'SQL' | 'AUTH' | 'BUSINESS' | 'IO'
+export type ErrorCode = 'DATABASE' | 'SQL' | 'AUTH' | 'PERMISSION' | 'BUSINESS' | 'IO'
 
 /** 后端结构化错误响应 */
 export interface AppErrorResponse {

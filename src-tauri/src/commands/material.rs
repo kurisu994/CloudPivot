@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool, Postgres, QueryBuilder};
 use tauri::State;
 
-use super::PaginatedResponse;
+use super::{CurrentUser, PaginatedResponse, perm};
 use crate::db::DbState;
 use crate::error::AppError;
 
@@ -188,7 +188,13 @@ pub(crate) async fn ensure_material_core_fields_editable(
 }
 
 #[tauri::command]
-pub async fn get_categories(db: State<'_, DbState>) -> Result<Vec<CategoryOption>, AppError> {
+pub async fn get_categories(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+) -> Result<Vec<CategoryOption>, AppError> {
+    // 分类字典供各业务页下拉/筛选使用，登录即可读（部分角色无 categories 权限但业务上需要）
+    current_user.require_auth()?;
+
     sqlx::query_as::<_, CategoryOption>(
         "SELECT id, name, code, parent_id, level FROM categories WHERE is_enabled = TRUE ORDER BY sort_order ASC, id ASC"
     )
@@ -198,7 +204,13 @@ pub async fn get_categories(db: State<'_, DbState>) -> Result<Vec<CategoryOption
 }
 
 #[tauri::command]
-pub async fn get_units(db: State<'_, DbState>) -> Result<Vec<UnitOption>, AppError> {
+pub async fn get_units(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+) -> Result<Vec<UnitOption>, AppError> {
+    // 单位字典供各业务页下拉使用，登录即可读
+    current_user.require_auth()?;
+
     sqlx::query_as::<_, UnitOption>(
         "SELECT id, name, name_en, name_vi, symbol, decimal_places FROM units WHERE is_enabled = TRUE ORDER BY sort_order ASC, id ASC"
     )
@@ -243,8 +255,11 @@ pub struct MaterialListItem {
 #[tauri::command]
 pub async fn get_materials(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: MaterialFilter,
 ) -> Result<PaginatedResponse<MaterialListItem>, AppError> {
+    current_user.require_permission(perm::MATERIALS, "view")?;
+
     let mut count_query = QueryBuilder::<'_, Postgres>::new("SELECT COUNT(*) FROM materials m");
     let mut data_query = QueryBuilder::<'_, Postgres>::new(
         "SELECT m.id, m.code, m.name, m.material_type, m.category_id, 
@@ -359,8 +374,11 @@ pub async fn get_materials(
 #[tauri::command]
 pub async fn get_material_by_id(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<SaveMaterialParams, AppError> {
+    current_user.require_permission(perm::MATERIALS, "view")?;
+
     sqlx::query_as::<_, SaveMaterialParams>(
         r#"
         SELECT
@@ -420,15 +438,28 @@ pub struct SaveMaterialParams {
 
 /// 生成下一个物料编码（格式由系统配置决定，默认 `M-0001`）
 #[tauri::command]
-pub async fn generate_material_code(db: State<'_, DbState>) -> Result<String, AppError> {
+pub async fn generate_material_code(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+) -> Result<String, AppError> {
+    // 生成编码是新建表单的前置动作
+    current_user.require_permission(perm::MATERIALS, "create")?;
+
     generate_material_code_internal(&db.pool).await
 }
 
 #[tauri::command]
 pub async fn save_material(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: SaveMaterialParams,
 ) -> Result<i64, AppError> {
+    // 新建走 create、修改走 edit
+    current_user.require_permission(
+        perm::MATERIALS,
+        if params.id.is_some() { "edit" } else { "create" },
+    )?;
+
     let code = match params.code.trim() {
         "" if params.id.is_none() => generate_material_code_internal(&db.pool).await?,
         "" => return Err(AppError::Business("物料编码不能为空".to_string())),
@@ -577,9 +608,12 @@ pub async fn save_material(
 #[tauri::command]
 pub async fn toggle_material_status(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
     is_enabled: bool,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::MATERIALS, "edit")?;
+
     // 禁用前校验：仍有库存的物料不允许禁用
     if !is_enabled {
         let stock: Option<f64> =

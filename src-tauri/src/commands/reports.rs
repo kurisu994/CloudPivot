@@ -12,7 +12,7 @@ use tauri::State;
 use crate::db::DbState;
 use crate::error::AppError;
 
-use super::PaginatedResponse;
+use super::{CurrentUser, PaginatedResponse, perm};
 
 // ================================================================
 // 数据结构 — 库存报表
@@ -337,8 +337,11 @@ mod tests {
 #[tauri::command]
 pub async fn get_inventory_report_summary(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: InventoryReportFilter,
 ) -> Result<InventoryReportResponse, AppError> {
+    current_user.require_permission(perm::REPORTS, "view")?;
+
     log::info!(
         "报表查询: get_inventory_report_summary, 日期={:?}~{:?}, 仓库={:?}, 分类={:?}",
         filter.start_date,
@@ -522,8 +525,11 @@ pub async fn get_inventory_report_summary(
 #[tauri::command]
 pub async fn get_inventory_aging_analysis(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: AgingFilter,
 ) -> Result<PaginatedResponse<InventoryAgingItem>, AppError> {
+    current_user.require_permission(perm::REPORTS, "view")?;
+
     log::info!(
         "报表查询: get_inventory_aging_analysis, 仓库={:?}, 天数={:?}~{:?}",
         filter.warehouse_id,
@@ -618,8 +624,11 @@ pub async fn get_inventory_aging_analysis(
 #[tauri::command]
 pub async fn get_inventory_slow_moving(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: SlowMovingFilter,
 ) -> Result<PaginatedResponse<InventorySlowMovingItem>, AppError> {
+    current_user.require_permission(perm::REPORTS, "view")?;
+
     log::info!(
         "报表查询: get_inventory_slow_moving, 阈值={}天, 仓库={:?}",
         filter.days_threshold,
@@ -731,8 +740,11 @@ pub async fn get_inventory_slow_moving(
 #[tauri::command]
 pub async fn get_inventory_trend(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: TrendFilter,
 ) -> Result<InventoryTrendResponse, AppError> {
+    current_user.require_permission(perm::REPORTS, "view")?;
+
     let days = filter.days.unwrap_or(30).clamp(1, 365);
 
     log::info!(
@@ -943,8 +955,11 @@ async fn sales_stats(
 #[tauri::command]
 pub async fn get_purchase_report_summary(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: PurchaseReportFilter,
 ) -> Result<BusinessReportResponse<BusinessTrendPoint>, AppError> {
+    current_user.require_permission(perm::REPORTS, "view")?;
+
     log::info!(
         "报表查询: get_purchase_report_summary, 日期={:?}~{:?}, 供应商={:?}, 仓库={:?}",
         filter.start_date,
@@ -1005,8 +1020,11 @@ pub async fn get_purchase_report_summary(
 #[tauri::command]
 pub async fn get_sales_report_summary(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: SalesReportFilter,
 ) -> Result<BusinessReportResponse<BusinessTrendPoint>, AppError> {
+    current_user.require_permission(perm::REPORTS, "view")?;
+
     log::info!(
         "报表查询: get_sales_report_summary, 日期={:?}~{:?}, 客户={:?}, 仓库={:?}",
         filter.start_date,
@@ -1067,8 +1085,11 @@ pub async fn get_sales_report_summary(
 #[tauri::command]
 pub async fn get_purchase_supplier_ranking(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: PurchaseReportFilter,
 ) -> Result<BusinessReportResponse<PartnerRankItem>, AppError> {
+    current_user.require_permission(perm::REPORTS, "view")?;
+
     let (start_date, end_date) =
         default_report_dates(filter.start_date.as_deref(), filter.end_date.as_deref());
     let (page, page_size, offset) = page_offset(filter.page, filter.page_size);
@@ -1153,8 +1174,11 @@ pub async fn get_purchase_supplier_ranking(
 #[tauri::command]
 pub async fn get_sales_customer_ranking(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: SalesReportFilter,
 ) -> Result<BusinessReportResponse<PartnerRankItem>, AppError> {
+    current_user.require_permission(perm::REPORTS, "view")?;
+
     let (start_date, end_date) =
         default_report_dates(filter.start_date.as_deref(), filter.end_date.as_deref());
     let (page, page_size, offset) = page_offset(filter.page, filter.page_size);
@@ -1239,8 +1263,11 @@ pub async fn get_sales_customer_ranking(
 #[tauri::command]
 pub async fn get_purchase_material_detail(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: PurchaseReportFilter,
 ) -> Result<BusinessReportResponse<MaterialReportItem>, AppError> {
+    current_user.require_permission(perm::REPORTS, "view")?;
+
     let (start_date, end_date) =
         default_report_dates(filter.start_date.as_deref(), filter.end_date.as_deref());
     let (page, page_size, offset) = page_offset(filter.page, filter.page_size);
@@ -1310,8 +1337,11 @@ pub async fn get_purchase_material_detail(
 #[tauri::command]
 pub async fn get_sales_material_detail(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: SalesReportFilter,
 ) -> Result<BusinessReportResponse<MaterialReportItem>, AppError> {
+    current_user.require_permission(perm::REPORTS, "view")?;
+
     log::info!(
         "报表查询: get_sales_material_detail, 日期={:?}~{:?}",
         filter.start_date,

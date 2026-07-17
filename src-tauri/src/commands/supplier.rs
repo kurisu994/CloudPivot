@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Postgres, QueryBuilder};
 use tauri::State;
 
-use super::PaginatedResponse;
+use super::{CurrentUser, PaginatedResponse, perm};
 use crate::db::DbState;
 use crate::error::AppError;
 
@@ -540,8 +540,11 @@ async fn ensure_material_exists(db: &DbState, material_id: i64) -> Result<(), Ap
 #[tauri::command]
 pub async fn get_suppliers(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: SupplierFilter,
 ) -> Result<PaginatedResponse<SupplierListItem>, AppError> {
+    current_user.require_permission(perm::SUPPLIERS, "view")?;
+
     let mut count_query = QueryBuilder::<'_, Postgres>::new("SELECT COUNT(*) FROM suppliers s");
     let mut data_query = QueryBuilder::<'_, Postgres>::new(
         r#"
@@ -664,8 +667,11 @@ pub async fn get_suppliers(
 #[tauri::command]
 pub async fn get_supplier_by_id(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<SaveSupplierParams, AppError> {
+    current_user.require_permission(perm::SUPPLIERS, "view")?;
+
     load_supplier_base(&db, id).await
 }
 
@@ -673,8 +679,11 @@ pub async fn get_supplier_by_id(
 #[tauri::command]
 pub async fn get_supplier_detail(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<SupplierDetailResponse, AppError> {
+    current_user.require_permission(perm::SUPPLIERS, "view")?;
+
     let supplier = load_supplier_base(&db, id).await?;
     let supply_materials = load_supplier_materials(&db, id).await?;
     let recent_purchases = load_recent_purchases(&db, id).await?;
@@ -692,8 +701,15 @@ pub async fn get_supplier_detail(
 #[tauri::command]
 pub async fn save_supplier(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: SaveSupplierParams,
 ) -> Result<i64, AppError> {
+    // 新建走 create、修改走 edit
+    current_user.require_permission(
+        perm::SUPPLIERS,
+        if params.id.is_some() { "edit" } else { "create" },
+    )?;
+
     let params = normalize_supplier_params(params);
     validate_save_supplier_params(&params)?;
 
@@ -794,7 +810,13 @@ pub async fn save_supplier(
 
 /// 删除供应商
 #[tauri::command]
-pub async fn delete_supplier(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn delete_supplier(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
+    current_user.require_permission(perm::SUPPLIERS, "delete")?;
+
     ensure_supplier_exists(&db, id).await?;
 
     let related_count: i64 = sqlx::query_scalar(
@@ -849,9 +871,12 @@ pub async fn delete_supplier(db: State<'_, DbState>, id: i64) -> Result<(), AppE
 #[tauri::command]
 pub async fn toggle_supplier_status(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
     is_enabled: bool,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::SUPPLIERS, "edit")?;
+
     ensure_supplier_exists(&db, id).await?;
 
     let val = if is_enabled { 1 } else { 0 };
@@ -867,7 +892,13 @@ pub async fn toggle_supplier_status(
 
 /// 生成下一个供应商编码（格式：SUP-YYYY-NNN）
 #[tauri::command]
-pub async fn generate_supplier_code(db: State<'_, DbState>) -> Result<String, AppError> {
+pub async fn generate_supplier_code(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+) -> Result<String, AppError> {
+    // 生成编码是新建表单的前置动作
+    current_user.require_permission(perm::SUPPLIERS, "create")?;
+
     let year = chrono::Local::now().format("%Y").to_string();
     let pattern = format!("SUP-{}-%", year);
 
@@ -894,7 +925,12 @@ pub async fn generate_supplier_code(db: State<'_, DbState>) -> Result<String, Ap
 
 /// 获取经营类别去重列表（用于筛选下拉框）
 #[tauri::command]
-pub async fn get_supplier_categories(db: State<'_, DbState>) -> Result<Vec<String>, AppError> {
+pub async fn get_supplier_categories(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+) -> Result<Vec<String>, AppError> {
+    current_user.require_permission(perm::SUPPLIERS, "view")?;
+
     let rows: Vec<(String,)> = sqlx::query_as(
         r#"
         SELECT DISTINCT business_category
@@ -914,8 +950,12 @@ pub async fn get_supplier_categories(db: State<'_, DbState>) -> Result<Vec<Strin
 #[tauri::command]
 pub async fn get_material_reference_options(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     material_type: Option<String>,
 ) -> Result<Vec<MaterialReferenceOption>, AppError> {
+    // 返回物料选项列表，按物料查看权限校验
+    current_user.require_permission(perm::MATERIALS, "view")?;
+
     let material_type = material_type
         .as_deref()
         .map(str::trim)
@@ -947,8 +987,12 @@ pub async fn get_material_reference_options(
 #[tauri::command]
 pub async fn save_supplier_material(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     params: SaveSupplierMaterialParams,
 ) -> Result<i64, AppError> {
+    // 供货物料维护属于供应商档案编辑
+    current_user.require_permission(perm::SUPPLIERS, "edit")?;
+
     let params = normalize_supplier_material_params(params);
     validate_save_supplier_material_params(&params)?;
     ensure_supplier_exists(&db, params.supplier_id).await?;
@@ -1049,7 +1093,14 @@ pub async fn save_supplier_material(
 
 /// 删除供应物料报价
 #[tauri::command]
-pub async fn delete_supplier_material(db: State<'_, DbState>, id: i64) -> Result<(), AppError> {
+pub async fn delete_supplier_material(
+    db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
+    id: i64,
+) -> Result<(), AppError> {
+    // 供货物料维护属于供应商档案编辑
+    current_user.require_permission(perm::SUPPLIERS, "edit")?;
+
     sqlx::query("DELETE FROM supplier_materials WHERE id = $1")
         .bind(id)
         .execute(&db.pool)

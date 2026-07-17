@@ -12,7 +12,7 @@ use crate::db::DbState;
 use crate::error::AppError;
 use crate::operation_log;
 
-use super::{CurrentUser, PaginatedResponse};
+use super::{CurrentUser, PaginatedResponse, perm};
 
 // ================================================================
 // 数据结构
@@ -286,8 +286,11 @@ fn compute_quote_base(quote_amount: i64, currency: &str, exchange_rate: f64) -> 
 #[tauri::command]
 pub async fn get_custom_orders(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     filter: CustomOrderFilter,
 ) -> Result<PaginatedResponse<CustomOrderListItem>, AppError> {
+    current_user.require_permission(perm::CUSTOM_ORDERS, "view")?;
+
     let base_from = r#"
         FROM custom_orders co
         JOIN customers c ON c.id = co.customer_id
@@ -439,8 +442,11 @@ pub async fn get_custom_orders(
 #[tauri::command]
 pub async fn get_custom_order_detail(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<CustomOrderDetail, AppError> {
+    current_user.require_permission(perm::CUSTOM_ORDERS, "view")?;
+
     // 查询头信息
     let head = sqlx::query_as::<_, CustomOrderHeadRow>(
         r#"
@@ -583,6 +589,12 @@ pub async fn save_custom_order(
     current_user: State<'_, CurrentUser>,
     params: SaveCustomOrderParams,
 ) -> Result<i64, AppError> {
+    // 新建走 create、修改走 edit
+    current_user.require_permission(
+        perm::CUSTOM_ORDERS,
+        if params.id.is_some() { "edit" } else { "create" },
+    )?;
+
     validate_save_params(&params)?;
 
     // 校验客户存在
@@ -781,6 +793,9 @@ pub async fn delete_custom_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    // 种子无 custom_orders.delete 权限点，删除草稿定制单归入编辑范畴
+    current_user.require_permission(perm::CUSTOM_ORDERS, "edit")?;
+
     let status: Option<String> =
         sqlx::query_scalar("SELECT status FROM custom_orders WHERE id = $1")
             .bind(id)
@@ -876,7 +891,7 @@ pub async fn confirm_custom_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
-    current_user.require_auth()?;
+    current_user.require_permission(perm::CUSTOM_ORDERS, "confirm")?;
 
     let order_info: Option<(String, i64)> =
         sqlx::query_as("SELECT status, quote_amount FROM custom_orders WHERE id = $1")
@@ -1087,6 +1102,8 @@ pub async fn cancel_custom_order(
     current_user: State<'_, CurrentUser>,
     id: i64,
 ) -> Result<(), AppError> {
+    current_user.require_permission(perm::CUSTOM_ORDERS, "cancel")?;
+
     let status: Option<String> =
         sqlx::query_scalar("SELECT status FROM custom_orders WHERE id = $1")
             .bind(id)
@@ -1201,9 +1218,13 @@ pub async fn cancel_custom_order(
 #[tauri::command]
 pub async fn create_custom_bom(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     custom_order_id: i64,
     source_bom_id: i64,
 ) -> Result<i64, AppError> {
+    // 定制 BOM 从属于定制单流程，按定制单编辑权限校验
+    current_user.require_permission(perm::CUSTOM_ORDERS, "edit")?;
+
     // 校验定制单状态
     let status: Option<String> =
         sqlx::query_scalar("SELECT status FROM custom_orders WHERE id = $1")
@@ -1326,8 +1347,12 @@ pub async fn create_custom_bom(
 #[tauri::command]
 pub async fn calculate_custom_cost(
     db: State<'_, DbState>,
+    current_user: State<'_, CurrentUser>,
     custom_order_id: i64,
 ) -> Result<i64, AppError> {
+    // 成本重算会回写定制单与定制 BOM，按编辑权限校验
+    current_user.require_permission(perm::CUSTOM_ORDERS, "edit")?;
+
     // 查询定制 BOM 总成本
     let cost: Option<i64> = sqlx::query_scalar(
         r#"
@@ -1374,6 +1399,9 @@ pub async fn convert_to_sales_order(
     current_user: State<'_, CurrentUser>,
     custom_order_id: i64,
 ) -> Result<i64, AppError> {
+    // 本质是创建销售单，按销售单 create 校验（销售角色可转、库管不可）
+    current_user.require_permission(perm::SALES_ORDERS, "create")?;
+
     // 查询定制单信息
     #[derive(sqlx::FromRow)]
     struct ConvertInfo {
@@ -1524,6 +1552,9 @@ pub async fn start_production_from_custom_order(
     current_user: State<'_, CurrentUser>,
     custom_order_id: i64,
 ) -> Result<i64, AppError> {
+    // 本质是创建生产工单，按工单 create 校验
+    current_user.require_permission(perm::PRODUCTION_ORDERS, "create")?;
+
     // 查询定制单状态
     #[derive(sqlx::FromRow)]
     struct CustomOrderInfo {

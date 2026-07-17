@@ -2,7 +2,16 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.1**（2026-07-15 发布）。权限重构批次 1（后端多角色核心）已提交（`e2515bb`）；本轮（2026-07-17）完成 **批次 2（前端多角色 UI）+ 批次 3（finance.rs 守卫升级）**，代码未提交，静态校验全绿。
+项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.1**（2026-07-15 发布）。权限重构代码侧全部完成：批次 1（`e2515bb`）、批次 2+3（`54bb90a`）已提交；本轮（2026-07-17）完成 **批次 4（全部 17 个命令文件补守卫 + 防复发测试）**，静态校验全绿。剩余工作全部是运行时实测（TODOS「上线验证」区）与里程碑 2（有门控）。
+
+## 批次 4 已完成（2026-07-17）
+
+- **守卫全覆盖**：158 条命令 `require_permission`（perm 常量 + action 字面量）、13 条字典类 `require_auth` 白名单（分类树/单位/仓库下拉/系统配置读取/打印模板读取等——operator 等角色无对应模块权限但业务必需）、7 条凭证/启动类无守卫（login/ping/restore_session 等）。
+- **映射规则**：查询→view；`save_xxx` 按 id 有无分支 create/edit；一步创建并确认的（入库/出库/退货）按 confirm；种子无 delete 点的模块（调拨/定制单/工单）delete→edit；跨模块动作按目标模块（定制单转销售→sales_orders.create、开工单→production_orders.create）；报表全 reports.view；首页补货 KPI→dashboard.view（防 viewer 断流）。
+- **迁移 018**：新增 `replenishment.edit_rules` 权限点（规则修改收紧 admin/库管；operator 对齐 010"配置上收"不授予）。
+- **PERMISSION 错误码**（重要行为修复）：`require_permission` 拒绝原本抛 AUTH，前端会清会话踢回登录页；已拆出 `AppError::Permission`/`ErrorCode::Permission`，前端 `error.ts` 补 `'PERMISSION'`，权限不足只就地提示。
+- **防复发测试**（`tests/permission_guards.rs`，纯源码/SQL 解析无需 DB）：① 源码扫描——命令缺守卫且不在白名单则测试挂掉；② 种子校验——代码中 (module, action) 组合必须存在于迁移种子（防拼写错致非 admin 全拒）；③ `#[ignore]` viewer-拒绝 DB 测试（12 个资金相关模块无写权限点）。①② 已注错自检验证有效。
+- 验证：cargo check / clippy（--all-targets）零警告，54+2 测试全绿，tsc 通过。
 
 ## 批次 2 + 批次 3 已完成（2026-07-17，未提交）
 
@@ -50,17 +59,14 @@
 
 ## 活跃文件
 
-- `src-tauri/src/commands/finance.rs` — 6 命令权限守卫
-- `src-tauri/src/commands/user_management.rs` — get_users 多角色 array_agg + EXISTS 筛选
-- `src-tauri/src/auth.rs` — UserInfo 带 roles/position，LoginResponse 精简
-- `src-tauri/src/commands/mod.rs` — login/restore_session 取 user.roles
-- `lib/tauri/core.ts` — RoleRef / userHasRole / UserInfo 类型
-- `lib/tauri/user-management.ts` — UserListItem/UserDetail/SaveUserRequest 多角色字段
-- `components/providers/auth-provider.tsx` — admin 判断切 userHasRole
-- `hooks/use-permission.ts` — isAdmin 多角色化，isViewer 删除
-- `components/layout/header.tsx` — 多角色标签展示
-- `app/[locale]/settings/_components/user-management-content.tsx` — 角色多选 + 岗位
-- `messages/{zh,en,vi}/settings.json` — 新角色与岗位文案
+- `src-tauri/src/commands/perm.rs` — 权限模块名常量表（33 个）
+- `src-tauri/src/commands/*.rs` — 17 个命令文件全量守卫（批次 4）
+- `src-tauri/tests/permission_guards.rs` — 守卫扫描 + 种子校验 + viewer-拒绝三测试
+- `src-tauri/src/error.rs` + `lib/error.ts` — PERMISSION 错误码
+- `src-tauri/migrations/postgres/018_replenishment_edit_rules_permission.sql` + `db/migration.rs` — 迁移 018
+- `src-tauri/src/commands/mod.rs` — require_permission 拒绝改抛 Permission
+- `components/providers/auth-provider.tsx` / `hooks/use-permission.ts` / `lib/tauri/core.ts` — 前端多角色（批次 2）
+- `app/[locale]/settings/_components/user-management-content.tsx` — 角色多选 + 岗位（批次 2）
 
 ## 已做出的决策
 
@@ -81,9 +87,9 @@
 
 ## 下一步
 
-- **提交批次 2+3 改动**（当前工作区未 commit）：确认后补 CHANGELOG 一并提交。
-- **实测迁移 017 + 上线验证**（TODOS「上线验证」区）：备份后真实库跑迁移、`cargo test -- --ignored` 等价性校验、全员登录冒烟、生产主管/财务真实账号走流程、operator 试点叠加部门角色、创建多角色用户看菜单并集、finance 权限拒绝抽查。
-- **批次 4**：其余 15 文件 ~138 条命令补守卫（perm 常量模块 + 源码扫描守卫测试同批，防复发）。
+- **实测迁移 017+018 与上线验证**（TODOS「上线验证」区）：备份后真实库跑迁移、`cargo test -- --ignored`（等价性 + viewer-拒绝）、全员登录冒烟、生产主管/财务真实账号走流程、operator 试点叠加部门角色、viewer 写操作抽查被拒。
+- **实测校准**：新角色走真实页面若遇权限缺口（字典白名单不足 / 矩阵漏授），调 role_permissions 数据而非改代码映射。
+- **里程碑 2（有门控勿提前）**：等 login_success 日志确认车队无旧版后，迁移删除 legacy `users.role`/`role_id` 并拆过渡代码。
 - 实测验证（此前遗留）：带行折扣销售单全链路金额核对；路径 A 定制单全链路（定制单确认 → 定制 BOM → 开工单 → 领料 → 完工入库 → 转销售 → 出库 → 应收 → 收款登记）。
 
 ## 阻塞
