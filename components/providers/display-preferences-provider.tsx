@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react'
+import { useAuth } from '@/components/providers/auth-provider'
 import { getSystemConfigs, setSystemConfig } from '@/lib/tauri'
 import { SystemConfigKeys } from '@/lib/types/system-config'
 
@@ -53,13 +54,21 @@ const VALID_FONT_SIZES = [12, 14, 16, 18, 20] as const
  * 3. 通过 Context 向下分发状态和更新方法
  */
 export function DisplayPreferencesProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [compactView, setCompactView] = useState(false)
   const [fontSize, setFontSize] = useState(DEFAULT_FONT_SIZE)
   const [sidebarAutoCollapse, setSidebarAutoCollapse] = useState(false)
 
   // ---- 从数据库加载配置 ----
+  // 必须等登录完成再读：get_system_configs 走 require_auth，未登录时返回 AUTH 错误，
+  // 会触发 invoke 的全局认证失效处理，把刚建立的登录态清掉并踢回登录页。
   useEffect(() => {
+    if (!isAuthenticated) {
+      setIsLoading(false)
+      return
+    }
+
     const load = async () => {
       try {
         const records = await getSystemConfigs([...PREFERENCE_KEYS])
@@ -87,7 +96,7 @@ export function DisplayPreferencesProvider({ children }: { children: ReactNode }
     }
 
     load()
-  }, [])
+  }, [isAuthenticated])
 
   // ---- 同步 data-attribute 到 <html> ----
   useEffect(() => {
