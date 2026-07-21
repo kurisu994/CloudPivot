@@ -875,13 +875,12 @@ async fn resolve_role_selection(
     }
 
     // 校验全部角色存在且启用
-    let found: Vec<(i64, String)> = sqlx::query_as(
-        "SELECT id, code FROM roles WHERE id = ANY($1) AND is_enabled = TRUE",
-    )
-    .bind(&all_ids)
-    .fetch_all(pool)
-    .await
-    .map_err(|e| AppError::Database(format!("查询角色失败: {}", e)))?;
+    let found: Vec<(i64, String)> =
+        sqlx::query_as("SELECT id, code FROM roles WHERE id = ANY($1) AND is_enabled = TRUE")
+            .bind(&all_ids)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| AppError::Database(format!("查询角色失败: {}", e)))?;
 
     if found.len() != all_ids.len() {
         return Err(AppError::Business("存在无效或已停用的角色".into()));

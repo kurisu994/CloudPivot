@@ -707,7 +707,11 @@ pub async fn save_supplier(
     // 新建走 create、修改走 edit
     current_user.require_permission(
         perm::SUPPLIERS,
-        if params.id.is_some() { "edit" } else { "create" },
+        if params.id.is_some() {
+            "edit"
+        } else {
+            "create"
+        },
     )?;
 
     let params = normalize_supplier_params(params);

@@ -584,7 +584,11 @@ pub async fn save_sales_order(
     // 新建走 create、修改走 edit
     current_user.require_permission(
         perm::SALES_ORDERS,
-        if params.id.is_some() { "edit" } else { "create" },
+        if params.id.is_some() {
+            "edit"
+        } else {
+            "create"
+        },
     )?;
 
     validate_save_params(&params)?;
@@ -2157,8 +2161,8 @@ pub async fn save_and_confirm_sales_return(
                 .fetch_optional(&mut *tx)
                 .await
                 .map_err(|e| AppError::Database(format!("查询原出库明细失败: {}", e)))?;
-        let (outbound_qty, outbound_amount) = source
-            .ok_or_else(|| AppError::Business(format!("第 {} 行原出库明细不存在", i + 1)))?;
+        let (outbound_qty, outbound_amount) =
+            source.ok_or_else(|| AppError::Business(format!("第 {} 行原出库明细不存在", i + 1)))?;
 
         let (returned_qty, returned_amount): (f64, i64) = sqlx::query_as(
             r#"

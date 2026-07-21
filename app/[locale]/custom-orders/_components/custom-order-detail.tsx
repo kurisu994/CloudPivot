@@ -246,11 +246,7 @@ export function CustomOrderDetailPage({ orderId, onBack }: CustomOrderDetailPage
       const result = await invoke<{ items: { id: number; bomCode: string; materialId: number; materialName: string | null }[] }>('get_bom_list', {
         filter: { keyword: null, status: 'active', page: 1, pageSize: 200 },
       })
-      setBomOptions(
-        result.items
-          .filter(b => b.materialId === materialId)
-          .map(b => ({ id: b.id, bomCode: b.bomCode, materialName: b.materialName })),
-      )
+      setBomOptions(result.items.filter(b => b.materialId === materialId).map(b => ({ id: b.id, bomCode: b.bomCode, materialName: b.materialName })))
     } catch {
       setBomOptions([])
     }

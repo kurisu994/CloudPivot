@@ -394,7 +394,11 @@ pub async fn save_bom(
     // 新建走 create、修改走 edit
     current_user.require_permission(
         perm::BOM,
-        if params.id.is_some() { "edit" } else { "create" },
+        if params.id.is_some() {
+            "edit"
+        } else {
+            "create"
+        },
     )?;
 
     let status = params.status.clone().unwrap_or_else(|| "draft".to_string());

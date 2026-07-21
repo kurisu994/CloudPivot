@@ -189,7 +189,11 @@ pub async fn save_warehouse(
     // 新建走 create、修改走 edit
     current_user.require_permission(
         perm::WAREHOUSES,
-        if params.id.is_some() { "edit" } else { "create" },
+        if params.id.is_some() {
+            "edit"
+        } else {
+            "create"
+        },
     )?;
 
     // 检查编码唯一性

@@ -458,7 +458,11 @@ pub async fn save_material(
     // 新建走 create、修改走 edit
     current_user.require_permission(
         perm::MATERIALS,
-        if params.id.is_some() { "edit" } else { "create" },
+        if params.id.is_some() {
+            "edit"
+        } else {
+            "create"
+        },
     )?;
 
     // 编码创建后不可修改：编辑时一律沿用库中原值，忽略前端传入，防止绕过 UI 直接改编码

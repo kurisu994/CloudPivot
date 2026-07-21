@@ -193,9 +193,7 @@ export function CustomOrderTable({
                   <TableCell className="text-sm">{order.refMaterialName || '—'}</TableCell>
 
                   {/* 报价金额 */}
-                  <TableCell className="text-right font-medium">
-                    {formatAmount(order.quoteAmount, order.currency as 'VND' | 'CNY' | 'USD')}
-                  </TableCell>
+                  <TableCell className="text-right font-medium">{formatAmount(order.quoteAmount, order.currency as 'VND' | 'CNY' | 'USD')}</TableCell>
 
                   {/* 优先级 */}
                   <TableCell>

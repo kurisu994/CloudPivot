@@ -113,7 +113,11 @@ pub async fn save_unit(
     // 新建走 create、修改走 edit
     current_user.require_permission(
         perm::UNITS,
-        if params.id.is_some() { "edit" } else { "create" },
+        if params.id.is_some() {
+            "edit"
+        } else {
+            "create"
+        },
     )?;
 
     // 检查名称唯一性

@@ -490,7 +490,11 @@ pub async fn save_purchase_order(
     // 新建走 create、修改走 edit
     current_user.require_permission(
         perm::PURCHASE_ORDERS,
-        if params.id.is_some() { "edit" } else { "create" },
+        if params.id.is_some() {
+            "edit"
+        } else {
+            "create"
+        },
     )?;
 
     validate_save_params(&params)?;

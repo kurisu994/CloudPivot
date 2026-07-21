@@ -159,9 +159,7 @@ function UserMenu() {
 
   const displayName = user?.display_name || user?.username || ''
   // 多角色全部展示；roles 未回填时回退 legacy 主角色
-  const role = (user ? (user.roles.length > 0 ? user.roles.map(r => r.code) : [user.role]) : [])
-    .join(' / ')
-    .toUpperCase()
+  const role = (user ? (user.roles.length > 0 ? user.roles.map(r => r.code) : [user.role]) : []).join(' / ').toUpperCase()
 
   return (
     <div className="relative" ref={ref}>

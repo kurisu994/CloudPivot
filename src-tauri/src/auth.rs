@@ -333,7 +333,10 @@ pub async fn login(
             target_type: Some("user".to_string()),
             target_id: Some(user.id),
             target_no: None,
-            detail: format!("用户 {} 登录成功 (客户端 v{})", user.username, client_version),
+            detail: format!(
+                "用户 {} 登录成功 (客户端 v{})",
+                user.username, client_version
+            ),
             operator_user_id: Some(user.id),
             operator_name: Some(user.display_name.clone()),
         },
@@ -466,8 +469,16 @@ pub async fn get_user_info(pool: &PgPool, user_id: i64) -> Result<UserInfo, AppE
     .await
     .map_err(|e| AppError::Database(format!("查询用户失败: {}", e)))?;
 
-    let (id, username, display_name, role, role_id, position, must_change_password, session_version) =
-        row.ok_or_else(|| AppError::Auth("用户不存在或已禁用".into()))?;
+    let (
+        id,
+        username,
+        display_name,
+        role,
+        role_id,
+        position,
+        must_change_password,
+        session_version,
+    ) = row.ok_or_else(|| AppError::Auth("用户不存在或已禁用".into()))?;
 
     let roles = load_user_roles(pool, id).await?;
 
@@ -585,7 +596,11 @@ pub async fn reconcile_user_roles(
             .execute(pool)
             .await
             .map_err(|e| AppError::Database(format!("回填用户角色失败: {}", e)))?;
-            log::info!("用户 {} 的角色关联已按 legacy 回填 (role_id={})", user_id, legacy_role_id);
+            log::info!(
+                "用户 {} 的角色关联已按 legacy 回填 (role_id={})",
+                user_id,
+                legacy_role_id
+            );
             Ok(())
         }
         ReconcileAction::ResetToLegacy => {

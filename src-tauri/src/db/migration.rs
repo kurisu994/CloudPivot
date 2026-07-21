@@ -115,9 +115,7 @@ fn get_migrations() -> Vec<Migration> {
         Migration {
             version: 17,
             name: "user_roles_and_department_roles",
-            sql: include_str!(
-                "../../migrations/postgres/017_user_roles_and_department_roles.sql"
-            ),
+            sql: include_str!("../../migrations/postgres/017_user_roles_and_department_roles.sql"),
         },
         Migration {
             version: 18,

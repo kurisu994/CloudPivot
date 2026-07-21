@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::QueryBuilder;
 use tauri::State;
 
-use super::{CurrentUser, perm};
 use super::inventory_ops;
+use super::{CurrentUser, perm};
 use crate::db::DbState;
 use crate::error::AppError;
 
@@ -444,7 +444,11 @@ pub async fn save_manual_stock_movement(
     // 新建走 create、修改走 edit
     current_user.require_permission(
         perm::MANUAL_STOCK,
-        if params.id.is_some() { "edit" } else { "create" },
+        if params.id.is_some() {
+            "edit"
+        } else {
+            "create"
+        },
     )?;
 
     // 基础校验

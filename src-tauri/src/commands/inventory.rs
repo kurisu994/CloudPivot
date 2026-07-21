@@ -1649,7 +1649,11 @@ pub async fn save_transfer(
     // 新建走 create、修改走 edit
     current_user.require_permission(
         perm::STOCK_TRANSFERS,
-        if params.id.is_some() { "edit" } else { "create" },
+        if params.id.is_some() {
+            "edit"
+        } else {
+            "create"
+        },
     )?;
 
     if params.from_warehouse_id <= 0 || params.to_warehouse_id <= 0 {
