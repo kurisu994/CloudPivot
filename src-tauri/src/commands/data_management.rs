@@ -616,13 +616,11 @@ pub async fn import_materials(
         let line_no = index + 2;
         let material_type = normalize_material_type(&row.material_type)?;
         let lot_tracking_mode = normalize_lot_tracking_mode(row.lot_tracking_mode.as_deref())?;
-        let base_unit_id = match resolve_unit_id(&db.pool, &row.base_unit_name).await {
-            Ok(id) => id,
-            Err(e) => {
-                errors.push(format!("第 {} 行：{}", line_no, e));
-                continue;
-            }
-        };
+        // 仅校验单位名称是否存在；基础单位可调整，不参与核心字段不可变校验
+        if let Err(e) = resolve_unit_id(&db.pool, &row.base_unit_name).await {
+            errors.push(format!("第 {} 行：{}", line_no, e));
+            continue;
+        }
 
         let existing_id = sqlx::query_scalar::<_, i64>("SELECT id FROM materials WHERE code = $1")
             .bind(row.code.trim())
@@ -635,7 +633,6 @@ pub async fn import_materials(
                 &db.pool,
                 id,
                 &material_type,
-                base_unit_id,
                 Some(&lot_tracking_mode),
             )
             .await

@@ -77,6 +77,7 @@
       "type": "Loại vật tư",
       "category": "Danh mục",
       "categoryPlaceholder": "Chọn danh mục",
+      "categoryNoMatches": "Không có danh mục phù hợp",
       "spec": "Quy cách",
       "specPlaceholder": "VD: 1220*2440",
       "baseUnit": "Đơn vị cơ bản",

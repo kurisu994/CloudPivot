@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Combobox } from '@/components/ui/combobox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -280,7 +281,14 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                   {/* 物料编码 */}
                   <Field>
                     <FieldLabel htmlFor="code">{t('form.code')}</FieldLabel>
-                    <Input id="code" placeholder={t('form.codePlaceholder')} value={form.code} onChange={e => setField('code', e.target.value)} />
+                    {/* 编码创建后不可修改，编辑时置灰只读 */}
+                    <Input
+                      id="code"
+                      placeholder={t('form.codePlaceholder')}
+                      value={form.code}
+                      onChange={e => setField('code', e.target.value)}
+                      disabled={isEdit}
+                    />
                   </Field>
 
                   {/* 物料名称 * */}
@@ -337,22 +345,14 @@ export function MaterialFormDialog({ open, onOpenChange, materialId, categories,
                     <FieldLabel>
                       {t('form.category')} <span className="text-destructive">*</span>
                     </FieldLabel>
-                    <Select
-                      value={form.categoryId?.toString() ?? ''}
+                    {/* 分类层级多，改用可输入过滤的 Combobox 便于检索 */}
+                    <Combobox
+                      value={form.categoryId?.toString() ?? null}
                       onValueChange={v => setField('categoryId', v ? parseInt(v) : null)}
                       items={categoryItems}
-                    >
-                      <SelectTrigger aria-invalid={!!errors.categoryId || undefined}>
-                        <SelectValue placeholder={t('form.categoryPlaceholder')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categoryItems.map(c => (
-                          <SelectItem key={c.value} value={c.value}>
-                            {c.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder={t('form.categoryPlaceholder')}
+                      emptyText={t('form.categoryNoMatches')}
+                    />
                     {errors.categoryId && <FieldError>{errors.categoryId}</FieldError>}
                   </Field>
 

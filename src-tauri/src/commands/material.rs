@@ -30,10 +30,11 @@ pub struct UnitOption {
 }
 
 /// 物料核心字段快照
+///
+/// 基础单位不在其中：即使物料已被引用也允许调整单位，故不参与不可变校验。
 #[derive(Debug, FromRow)]
 struct MaterialCoreFields {
     material_type: String,
-    base_unit_id: i64,
     lot_tracking_mode: String,
 }
 
@@ -153,15 +154,16 @@ async fn has_material_core_references(pool: &PgPool, material_id: i64) -> Result
 }
 
 /// 校验被引用物料的核心字段不可变
+///
+/// 基础单位属于可调整字段，即便物料已被库存或单据引用也放行，因此不在此校验范围内。
 pub(crate) async fn ensure_material_core_fields_editable(
     pool: &PgPool,
     material_id: i64,
     next_material_type: &str,
-    next_base_unit_id: i64,
     next_lot_tracking_mode: Option<&str>,
 ) -> Result<(), AppError> {
     let current = sqlx::query_as::<_, MaterialCoreFields>(
-        "SELECT material_type, base_unit_id, lot_tracking_mode FROM materials WHERE id = $1",
+        "SELECT material_type, lot_tracking_mode FROM materials WHERE id = $1",
     )
     .bind(material_id)
     .fetch_optional(pool)
@@ -171,7 +173,6 @@ pub(crate) async fn ensure_material_core_fields_editable(
 
     let next_lot_tracking_mode = normalize_lot_tracking_for_compare(next_lot_tracking_mode);
     let core_fields_unchanged = current.material_type == next_material_type
-        && current.base_unit_id == next_base_unit_id
         && current.lot_tracking_mode == next_lot_tracking_mode;
 
     if core_fields_unchanged {
@@ -180,7 +181,7 @@ pub(crate) async fn ensure_material_core_fields_editable(
 
     if has_material_core_references(pool, material_id).await? {
         return Err(AppError::Business(
-            "物料已有库存或业务单据引用，不能修改物料类型、基础单位或批次追踪模式".to_string(),
+            "物料已有库存或业务单据引用，不能修改物料类型或批次追踪模式".to_string(),
         ));
     }
 
@@ -460,10 +461,18 @@ pub async fn save_material(
         if params.id.is_some() { "edit" } else { "create" },
     )?;
 
-    let code = match params.code.trim() {
-        "" if params.id.is_none() => generate_material_code_internal(&db.pool).await?,
-        "" => return Err(AppError::Business("物料编码不能为空".to_string())),
-        value => value.to_string(),
+    // 编码创建后不可修改：编辑时一律沿用库中原值，忽略前端传入，防止绕过 UI 直接改编码
+    let code = match params.id {
+        Some(id) => sqlx::query_scalar::<_, String>("SELECT code FROM materials WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&db.pool)
+            .await
+            .map_err(|e| AppError::Database(format!("查询物料编码失败: {}", e)))?
+            .ok_or_else(|| AppError::Business("物料不存在".to_string()))?,
+        None => match params.code.trim() {
+            "" => generate_material_code_internal(&db.pool).await?,
+            value => value.to_string(),
+        },
     };
 
     // 越南文名空白输入归一为 NULL，避免存入空串
@@ -492,7 +501,6 @@ pub async fn save_material(
             &db.pool,
             id,
             &params.material_type,
-            params.base_unit_id,
             params.lot_tracking_mode.as_deref(),
         )
         .await?;
@@ -708,7 +716,7 @@ mod tests {
             .await
             .expect("插入库存引用测试数据失败");
 
-        let result = ensure_material_core_fields_editable(&pool, 1, "semi", 1, Some("none")).await;
+        let result = ensure_material_core_fields_editable(&pool, 1, "semi", Some("none")).await;
 
         assert!(result.is_err());
     }
@@ -722,7 +730,7 @@ mod tests {
             .await
             .expect("插入销售引用测试数据失败");
 
-        let result = ensure_material_core_fields_editable(&pool, 1, "raw", 1, Some("none")).await;
+        let result = ensure_material_core_fields_editable(&pool, 1, "raw", Some("none")).await;
 
         assert!(result.is_ok());
     }
@@ -732,8 +740,7 @@ mod tests {
         let pool = setup_material_core_pool().await;
         insert_material(&pool, 1).await;
 
-        let result =
-            ensure_material_core_fields_editable(&pool, 1, "semi", 2, Some("required")).await;
+        let result = ensure_material_core_fields_editable(&pool, 1, "semi", Some("required")).await;
 
         assert!(result.is_ok());
     }

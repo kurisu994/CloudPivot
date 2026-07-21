@@ -77,6 +77,7 @@
       "type": "Material Type",
       "category": "Category",
       "categoryPlaceholder": "Select category",
+      "categoryNoMatches": "No matching category",
       "spec": "Specification",
       "specPlaceholder": "e.g. 1220*2440",
       "baseUnit": "Base Unit",

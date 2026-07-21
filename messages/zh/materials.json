@@ -77,6 +77,7 @@
       "type": "物料类型",
       "category": "所属分类",
       "categoryPlaceholder": "请选择分类",
+      "categoryNoMatches": "没有匹配的分类",
       "spec": "规格型号",
       "specPlaceholder": "如: 1220*2440",
       "baseUnit": "计量单位",
