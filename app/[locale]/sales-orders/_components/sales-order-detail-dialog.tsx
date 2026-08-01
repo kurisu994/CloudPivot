@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { usePermission } from '@/hooks/use-permission'
 import type { Currency } from '@/lib/currency'
 import { formatAmount } from '@/lib/currency'
 import type { SalesOrderDetail } from '@/lib/tauri'
@@ -42,6 +43,8 @@ export function SalesOrderDetailDialog({ orderId, onClose }: SalesOrderDetailDia
   const [detail, setDetail] = useState<SalesOrderDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [pushOpen, setPushOpen] = useState(false)
+  const { can } = usePermission()
+  const canPushProduction = can('production_orders', 'create')
 
   useEffect(() => {
     if (orderId == null) {
@@ -204,7 +207,7 @@ export function SalesOrderDetailDialog({ orderId, onClose }: SalesOrderDetailDia
           </div>
 
           <DialogFooter>
-            {(detail?.status === 'approved' || detail?.status === 'partial_out') && (
+            {canPushProduction && (detail?.status === 'approved' || detail?.status === 'partial_out') && (
               <Button onClick={() => setPushOpen(true)}>{t('pushProduction.title')}</Button>
             )}
             <Button variant="outline" onClick={onClose}>

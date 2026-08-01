@@ -61,7 +61,9 @@
       "allSkipped": "所选行均被跳过，未生成工单",
       "pushError": "下推生产失败",
       "createdTitle": "已生成 {count} 张工单",
-      "skippedTitle": "跳过 {count} 行"
+      "skippedTitle": "跳过 {count} 行",
+      "skipFullyPushed": "无需再生产（已出库/已下推）",
+      "skipNoActiveBom": "无启用的BOM"
     },
 
     "outboundProgress": "出库进度",

@@ -61,7 +61,9 @@
       "allSkipped": "All selected lines were skipped, no order created",
       "pushError": "Failed to push to production",
       "createdTitle": "{count} order(s) created",
-      "skippedTitle": "{count} line(s) skipped"
+      "skippedTitle": "{count} line(s) skipped",
+      "skipFullyPushed": "Nothing left to produce (shipped/pushed)",
+      "skipNoActiveBom": "No active BOM"
     },
 
     "outboundProgress": "Delivery Progress",

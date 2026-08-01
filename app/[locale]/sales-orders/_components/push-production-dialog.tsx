@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -22,16 +22,19 @@ export function PushProductionDialog({ detail, onClose }: PushProductionDialogPr
   const t = useTranslations('sales.pushProduction')
   const tc = useTranslations('common')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
-  const [initialized, setInitialized] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<PushProductionResult | null>(null)
 
-  // 首次打开时默认全选
-  if (detail && !initialized) {
-    setSelectedIds(new Set(detail.items.map(item => item.id).filter((id): id is number => id != null)))
-    setInitialized(true)
-    setResult(null)
-  }
+  // 打开时默认全选、清空上次结果；关闭后重置
+  useEffect(() => {
+    if (detail) {
+      setSelectedIds(new Set(detail.items.map(item => item.id).filter((id): id is number => id != null)))
+      setResult(null)
+    } else {
+      setSelectedIds(new Set())
+      setResult(null)
+    }
+  }, [detail])
 
   /** 勾选切换 */
   const toggleItem = (id: number, checked: boolean) => {
@@ -77,10 +80,16 @@ export function PushProductionDialog({ detail, onClose }: PushProductionDialogPr
   }
 
   const handleClose = () => {
-    setInitialized(false)
     setSelectedIds(new Set())
     setResult(null)
     onClose()
+  }
+
+  /** 跳过原因码 → 本地化文案 */
+  const skipReasonText = (reason: string) => {
+    if (reason === 'fully_pushed') return t('skipFullyPushed')
+    if (reason === 'no_active_bom') return t('skipNoActiveBom')
+    return reason
   }
 
   const allChecked = detail != null && detail.items.length > 0 && selectedIds.size === detail.items.length
@@ -159,7 +168,7 @@ export function PushProductionDialog({ detail, onClose }: PushProductionDialogPr
                         {result.skipped.map(item => (
                           <li key={item.salesOrderItemId}>
                             <span className="font-medium">{item.materialName}</span>
-                            <span className="text-muted-foreground"> — {item.reason}</span>
+                            <span className="text-muted-foreground"> — {skipReasonText(item.reason)}</span>
                           </li>
                         ))}
                       </ul>

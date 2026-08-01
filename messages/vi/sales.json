@@ -61,7 +61,9 @@
       "allSkipped": "Tất cả các dòng đã chọn đều bị bỏ qua, không tạo lệnh nào",
       "pushError": "Đẩy xuống sản xuất thất bại",
       "createdTitle": "Đã tạo {count} lệnh",
-      "skippedTitle": "Bỏ qua {count} dòng"
+      "skippedTitle": "Bỏ qua {count} dòng",
+      "skipFullyPushed": "Không cần sản xuất thêm (đã xuất/đã đẩy)",
+      "skipNoActiveBom": "Không có BOM đang kích hoạt"
     },
 
     "outboundProgress": "Tiến độ xuất kho",
