@@ -3,7 +3,6 @@
 import { Ban, Check, Eye, PackageCheck, Pencil, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import { toast } from 'sonner'
 import {
   BUSINESS_LIST_STICKY_CELL_CLASS,
   BUSINESS_LIST_STICKY_HEAD_CLASS,
@@ -70,6 +69,7 @@ interface SalesOrderTableProps {
   onPageChange: (page: number) => void
   onPageSizeChange: (size: number) => void
   onEdit: (order: SalesOrderListItem) => void
+  onOutbound: (order: SalesOrderListItem) => void
   onApprove: (order: SalesOrderListItem) => void
   onCancel: (order: SalesOrderListItem) => void
   onDelete: (order: SalesOrderListItem) => void
@@ -85,6 +85,7 @@ export function SalesOrderTable({
   onPageChange,
   onPageSizeChange,
   onEdit,
+  onOutbound,
   onApprove,
   onCancel,
   onDelete,
@@ -116,7 +117,7 @@ export function SalesOrderTable({
         <Button key="detail" variant="ghost" size="icon-sm" onClick={() => setDetailOrderId(order.id)} title={t('details')}>
           <Eye className="size-3.5" />
         </Button>,
-        <Button key="outbound" variant="ghost" size="icon-sm" onClick={() => toast.info(tc('developing'))} title={t('outbound')}>
+        <Button key="outbound" variant="ghost" size="icon-sm" onClick={() => onOutbound(order)} title={t('outbound')}>
           <PackageCheck className="size-3.5" />
         </Button>,
         <Button key="cancel" variant="ghost" size="icon-sm" onClick={() => onCancel(order)} title={t('cancelOrder')}>
@@ -129,7 +130,7 @@ export function SalesOrderTable({
         <Button key="detail" variant="ghost" size="icon-sm" onClick={() => setDetailOrderId(order.id)} title={t('details')}>
           <Eye className="size-3.5" />
         </Button>,
-        <Button key="continue" variant="ghost" size="icon-sm" onClick={() => toast.info(tc('developing'))} title={t('continueOutbound')}>
+        <Button key="continue" variant="ghost" size="icon-sm" onClick={() => onOutbound(order)} title={t('continueOutbound')}>
           <PackageCheck className="size-3.5" />
         </Button>,
       )

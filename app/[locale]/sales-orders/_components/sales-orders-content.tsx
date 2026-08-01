@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useRouter } from '@/i18n/navigation'
 import { SalesOrderEditPage } from './sales-order-edit-page'
 import { SalesOrderListPage } from './sales-order-list-page'
 
@@ -13,6 +14,7 @@ export function SalesOrdersContent() {
   const [view, setView] = useState<'list' | 'edit'>('list')
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null)
   const searchParams = useSearchParams()
+  const router = useRouter()
 
   // 处理 URL 参数 ?action=new（从 Dashboard 快捷操作跳转）
   useEffect(() => {
@@ -34,6 +36,11 @@ export function SalesOrdersContent() {
     setView('edit')
   }
 
+  /** 从销售单进入销售出库 */
+  const handleOutbound = (id: number) => {
+    router.push(`/sales-deliveries?salesId=${id}`)
+  }
+
   /** 返回列表 */
   const handleBackToList = () => {
     setView('list')
@@ -44,5 +51,5 @@ export function SalesOrdersContent() {
     return <SalesOrderEditPage orderId={editingOrderId} onBack={handleBackToList} />
   }
 
-  return <SalesOrderListPage onEdit={handleEdit} onNew={handleNew} />
+  return <SalesOrderListPage onEdit={handleEdit} onNew={handleNew} onOutbound={handleOutbound} />
 }

@@ -40,9 +40,10 @@ const DEFAULT_PAGE_SIZE = 50
 interface SalesOrderListPageProps {
   onEdit: (id: number) => void
   onNew: () => void
+  onOutbound: (id: number) => void
 }
 
-export function SalesOrderListPage({ onEdit, onNew }: SalesOrderListPageProps) {
+export function SalesOrderListPage({ onEdit, onNew, onOutbound }: SalesOrderListPageProps) {
   const t = useTranslations('sales')
   const tc = useTranslations('common')
 
@@ -302,6 +303,7 @@ export function SalesOrderListPage({ onEdit, onNew }: SalesOrderListPageProps) {
             setCurrentPage(1)
           }}
           onEdit={order => onEdit(order.id)}
+          onOutbound={order => onOutbound(order.id)}
           onApprove={handleApprove}
           onCancel={handleCancel}
           onDelete={handleDelete}
