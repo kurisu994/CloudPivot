@@ -4,7 +4,13 @@
 
 项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.2**。本轮（2026-08-02）完成 **销售单下推生产工单** 功能（打通销售→生产链路），主体已提交（`4566f7d`）；审查后修复项（差额口径/并发锁/权限门控等）已改完待提交。
 
-## 销售单列表出库跳转已对接（2026-08-02，未提交）
+## 待出库明细字段补齐修复（2026-08-02，未提交）
+
+- **根因**：`get_pending_outbound_items` 的 Rust 结构体从未返回 `availableStock`/`standardCost`/`actualCost`，前端拿到 undefined → 出库执行页 `max` 属性 NaN 警告、初始数量 "NaN"、超库存校验失效。
+- **修复**（sales.rs）：仓库查询提前；主查询 `LEFT JOIN inventory` 带 `available_stock`（可用量=库存−预留）与 `actual_cost`（avg_cost）；`standard_cost` 用子查询取启用 BOM `total_standard_cost`，**COALESCE 必须包在子查询外**（无 BOM 行时标量子查询整体为 NULL，写在 SELECT 内无效——已踩坑修复）。
+- 验证：clippy 通过，浏览器 NaN 警告与解码报错消除。
+
+## 销售单列表出库跳转已对接（2026-08-02，已提交 b3daa38）
 
 - 销售单列表「出库/继续出库」按钮（原为 toast 占位）→ `router.push('/sales-deliveries?salesId=<id>')`；回调链 content → list-page → table 新增 `onOutbound` prop，表格移除无用 toast import。
 - `sales-deliveries-content.tsx` 支持 `?salesId=` 参数直接进出库执行页，返回列表时清理参数（完全复用采购单 → 采购入库 `?purchaseId=` 同款模式）。

@@ -1116,6 +1116,12 @@ pub struct PendingOutboundItem {
     pub unit_price: i64,
     pub discount_rate: f64,
     pub lot_tracking_mode: String,
+    /// 销售单仓库的可用库存（quantity - reserved_qty）
+    pub available_stock: f64,
+    /// 启用 BOM 的标准成本（无 BOM 为 0）
+    pub standard_cost: i64,
+    /// 仓库移动平均成本
+    pub actual_cost: i64,
     pub suggested_lot_id: Option<i64>,
     pub suggested_lot_no: Option<String>,
 }
@@ -1133,6 +1139,14 @@ pub async fn get_pending_outbound_items(
 ) -> Result<Vec<PendingOutboundItem>, AppError> {
     current_user.require_permission(perm::SALES_DELIVERIES, "view")?;
 
+    // 先取销售单仓库，供可用库存/平均成本联查
+    let warehouse_id: i64 =
+        sqlx::query_scalar("SELECT warehouse_id FROM sales_orders WHERE id = $1")
+            .bind(sales_id)
+            .fetch_one(&db.pool)
+            .await
+            .unwrap_or(1);
+
     let mut items: Vec<PendingOutboundItem> = sqlx::query_as::<_, PendingOutboundItem>(
         r#"
         SELECT
@@ -1143,26 +1157,25 @@ pub async fn get_pending_outbound_items(
             (soi.quantity - soi.shipped_qty) AS remaining_qty,
             soi.unit_price, soi.discount_rate,
             COALESCE(m.lot_tracking_mode, 'none') AS lot_tracking_mode,
+            COALESCE(inv.available_qty, 0) AS available_stock,
+            COALESCE((SELECT b.total_standard_cost FROM bom b
+              WHERE b.material_id = soi.material_id AND b.status = 'active'
+              ORDER BY b.id DESC LIMIT 1), 0) AS standard_cost,
+            COALESCE(inv.avg_cost, 0) AS actual_cost,
             NULL AS suggested_lot_id,
             NULL AS suggested_lot_no
         FROM sales_order_items soi
         JOIN materials m ON m.id = soi.material_id
+        LEFT JOIN inventory inv ON inv.material_id = soi.material_id AND inv.warehouse_id = $2
         WHERE soi.order_id = $1 AND soi.quantity > soi.shipped_qty
         ORDER BY soi.sort_order, soi.id
         "#,
     )
     .bind(sales_id)
+    .bind(warehouse_id)
     .fetch_all(&db.pool)
     .await
     .map_err(|e| AppError::Database(format!("查询待出库明细失败: {}", e)))?;
-
-    // 获取销售单仓库 ID
-    let warehouse_id: i64 =
-        sqlx::query_scalar("SELECT warehouse_id FROM sales_orders WHERE id = $1")
-            .bind(sales_id)
-            .fetch_one(&db.pool)
-            .await
-            .unwrap_or(1);
 
     // 为批次追踪物料查询最早可用批次（FIFO 建议）
     for item in &mut items {
