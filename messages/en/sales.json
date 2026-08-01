@@ -49,6 +49,21 @@
     "statusCompleted": "Delivered",
     "statusCancelled": "Cancelled",
 
+    "pushProduction": {
+      "title": "Push to Production",
+      "description": "Select the lines to generate production orders. Material requirements are expanded from the active BOM.",
+      "materialName": "Material",
+      "spec": "Spec",
+      "orderQuantity": "Order Qty",
+      "unit": "Unit",
+      "confirmPush": "Confirm Push",
+      "pushSuccess": "{count} production order(s) created",
+      "allSkipped": "All selected lines were skipped, no order created",
+      "pushError": "Failed to push to production",
+      "createdTitle": "{count} order(s) created",
+      "skippedTitle": "{count} line(s) skipped"
+    },
+
     "outboundProgress": "Delivery Progress",
     "progressFormat": "{shipped}/{total} lines",
 

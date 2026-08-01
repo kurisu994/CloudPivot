@@ -318,3 +318,35 @@ export async function startProductionFromCustomOrder(customOrderId: number): Pro
   }
   return Date.now()
 }
+
+/** 下推生成的生产工单 */
+export interface PushedProductionOrder {
+  productionOrderId: number
+  orderNo: string
+  salesOrderItemId: number
+  materialName: string
+  plannedQty: number
+}
+
+/** 下推被跳过的明细行 */
+export interface SkippedPushItem {
+  salesOrderItemId: number
+  materialName: string
+  reason: string
+}
+
+/** 销售单下推生产结果 */
+export interface PushProductionResult {
+  created: PushedProductionOrder[]
+  skipped: SkippedPushItem[]
+}
+
+/** 销售单下推生成生产工单（itemIds 为空表示全部明细行） */
+export async function pushSalesOrderToProduction(salesOrderId: number, itemIds?: number[]): Promise<PushProductionResult> {
+  if (isTauriEnv()) {
+    return invoke<PushProductionResult>('push_sales_order_to_production', {
+      input: { salesOrderId, itemIds: itemIds ?? null },
+    })
+  }
+  throw new Error('非 Tauri 环境暂不支持')
+}

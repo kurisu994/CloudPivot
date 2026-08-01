@@ -10,6 +10,7 @@
     "status": "Trạng thái",
     "relatedBom": "BOM liên quan",
     "relatedCustomOrder": "Đơn đặt hàng liên quan",
+    "relatedSalesOrder": "Đơn bán hàng liên quan",
     "plannedStartDate": "Ngày bắt đầu KH",
     "plannedEndDate": "Ngày hoàn thành KH",
     "actualStartDate": "Ngày bắt đầu thực tế",

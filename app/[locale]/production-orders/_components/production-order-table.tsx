@@ -11,6 +11,7 @@ interface ProductionOrderListItem {
   id: number
   orderNo: string
   customOrderNo: string | null
+  salesOrderNo: string | null
   outputMaterialName: string
   plannedQty: number
   completedQty: number
@@ -40,8 +41,8 @@ function getStatusBadge(status: string, t: (key: string) => string) {
   return <Badge variant={info.variant}>{info.label}</Badge>
 }
 
-const COLUMNS = 8
-const TABLE_MIN_W = 'min-w-[47.5rem]'
+const COLUMNS = 9
+const TABLE_MIN_W = 'min-w-[53.5rem]'
 
 /**
  * 生产工单表格组件
@@ -59,6 +60,7 @@ export function ProductionOrderTable({ items, loading, onEdit, onDelete }: Props
           <th className="w-[5rem] px-3 py-2.5 text-right text-sm font-medium">{t('completedQty')}</th>
           <th className="w-[5rem] px-3 py-2.5 text-center text-sm font-medium">{t('status')}</th>
           <th className="w-[6rem] px-3 py-2.5 text-left text-sm font-medium">{t('relatedCustomOrder')}</th>
+          <th className="w-[6rem] px-3 py-2.5 text-left text-sm font-medium">{t('relatedSalesOrder')}</th>
           <th className="w-[5.5rem] px-3 py-2.5 text-left text-sm font-medium">{t('actualStartDate')}</th>
           <th className="w-[5rem] px-3 py-2.5 text-right text-sm font-medium">{t('actions')}</th>
         </tr>
@@ -79,6 +81,7 @@ export function ProductionOrderTable({ items, loading, onEdit, onDelete }: Props
               </td>
               <td className="px-3 py-2.5 text-center text-sm">{getStatusBadge(item.status, t)}</td>
               <td className="px-3 py-2.5 text-sm">{item.customOrderNo ?? '—'}</td>
+              <td className="px-3 py-2.5 text-sm">{item.salesOrderNo ?? '—'}</td>
               <td className="px-3 py-2.5 text-sm">{item.actualStartDate ?? '—'}</td>
               <td className="px-3 py-2.5 text-right">
                 <div className="flex items-center justify-end gap-1">

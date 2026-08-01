@@ -20,6 +20,8 @@ interface ProductionOrderListItem {
   bomId: number
   customOrderId: number | null
   customOrderNo: string | null
+  salesOrderId: number | null
+  salesOrderNo: string | null
   outputMaterialId: number
   outputMaterialName: string
   plannedQty: number

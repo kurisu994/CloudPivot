@@ -10,6 +10,7 @@
     "status": "状态",
     "relatedBom": "关联BOM",
     "relatedCustomOrder": "关联定制单",
+    "relatedSalesOrder": "关联销售单",
     "plannedStartDate": "计划开始日期",
     "plannedEndDate": "计划完成日期",
     "actualStartDate": "实际开始日期",

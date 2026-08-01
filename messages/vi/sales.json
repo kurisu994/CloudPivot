@@ -49,6 +49,21 @@
     "statusCompleted": "Đã xuất",
     "statusCancelled": "Đã hủy",
 
+    "pushProduction": {
+      "title": "Đẩy xuống sản xuất",
+      "description": "Chọn các dòng cần tạo lệnh sản xuất. Nhu cầu vật tư được tính theo BOM đang kích hoạt.",
+      "materialName": "Vật tư",
+      "spec": "Quy cách",
+      "orderQuantity": "Số lượng đặt",
+      "unit": "Đơn vị",
+      "confirmPush": "Xác nhận đẩy",
+      "pushSuccess": "Đã tạo {count} lệnh sản xuất",
+      "allSkipped": "Tất cả các dòng đã chọn đều bị bỏ qua, không tạo lệnh nào",
+      "pushError": "Đẩy xuống sản xuất thất bại",
+      "createdTitle": "Đã tạo {count} lệnh",
+      "skippedTitle": "Bỏ qua {count} dòng"
+    },
+
     "outboundProgress": "Tiến độ xuất kho",
     "progressFormat": "{shipped}/{total} dòng",
 

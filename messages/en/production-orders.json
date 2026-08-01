@@ -10,6 +10,7 @@
     "status": "Status",
     "relatedBom": "Related BOM",
     "relatedCustomOrder": "Related Custom Order",
+    "relatedSalesOrder": "Related Sales Order",
     "plannedStartDate": "Planned Start",
     "plannedEndDate": "Planned End",
     "actualStartDate": "Actual Start",

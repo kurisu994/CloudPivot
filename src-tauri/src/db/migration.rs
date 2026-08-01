@@ -124,6 +124,11 @@ fn get_migrations() -> Vec<Migration> {
                 "../../migrations/postgres/018_replenishment_edit_rules_permission.sql"
             ),
         },
+        Migration {
+            version: 19,
+            name: "production_order_sales_link",
+            sql: include_str!("../../migrations/postgres/019_production_order_sales_link.sql"),
+        },
     ]
 }
 

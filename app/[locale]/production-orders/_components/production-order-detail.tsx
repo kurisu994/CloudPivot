@@ -53,6 +53,8 @@ interface ProductionOrderDetail {
   bomName: string
   customOrderId: number | null
   customOrderNo: string | null
+  salesOrderId: number | null
+  salesOrderNo: string | null
   outputMaterialId: number
   outputMaterialName: string
   plannedQty: number
@@ -491,6 +493,10 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
             <div>
               <span className="text-muted-foreground">{t('relatedCustomOrder')}:</span>{' '}
               <span className="font-medium">{detail.customOrderNo ?? '—'}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">{t('relatedSalesOrder')}:</span>{' '}
+              <span className="font-medium">{detail.salesOrderNo ?? '—'}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('plannedStartDate')}:</span> <span>{detail.plannedStartDate ?? '—'}</span>

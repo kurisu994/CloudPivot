@@ -49,6 +49,21 @@
     "statusCompleted": "已出库",
     "statusCancelled": "已作废",
 
+    "pushProduction": {
+      "title": "下推生产",
+      "description": "勾选需要生成生产工单的明细行，系统将按启用 BOM 展算物料需求",
+      "materialName": "物料名称",
+      "spec": "规格",
+      "orderQuantity": "订单数量",
+      "unit": "单位",
+      "confirmPush": "确认下推",
+      "pushSuccess": "已生成 {count} 张生产工单",
+      "allSkipped": "所选行均被跳过，未生成工单",
+      "pushError": "下推生产失败",
+      "createdTitle": "已生成 {count} 张工单",
+      "skippedTitle": "跳过 {count} 行"
+    },
+
     "outboundProgress": "出库进度",
     "progressFormat": "{shipped}/{total} 行",
 
