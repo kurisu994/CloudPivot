@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { usePermission } from '@/hooks/use-permission'
 import { formatAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
 import type { StockCheckDetail, UpdateStockCheckItemParams } from '@/lib/tauri'
@@ -52,6 +53,10 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
   const [confirming, setConfirming] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 审核确认权限：无权时仅可录入/保存实盘数，不显示「确认盘点」按钮
+  const { can } = usePermission()
+  const canConfirm = can('stock_checks', 'confirm')
 
   // 实盘数量编辑
   const [editValues, setEditValues] = useState<Record<number, string>>({})
@@ -322,10 +327,12 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
                   <Save data-icon="inline-start" />
                   {saving ? tc('loading') : t('saveActualQty')}
                 </Button>
-                <Button onClick={handleConfirm} disabled={confirming}>
-                  <CheckCircle data-icon="inline-start" />
-                  {confirming ? tc('loading') : t('confirmCheck')}
-                </Button>
+                {canConfirm && (
+                  <Button onClick={handleConfirm} disabled={confirming}>
+                    <CheckCircle data-icon="inline-start" />
+                    {confirming ? tc('loading') : t('confirmCheck')}
+                  </Button>
+                )}
               </>
             )}
           </div>

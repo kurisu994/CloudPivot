@@ -4,6 +4,14 @@
 
 项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.2**。本轮（2026-08-02）完成 **销售单下推生产工单** 功能（打通销售→生产链路），主体已提交（`4566f7d`）；审查后修复项（差额口径/并发锁/权限门控等）已改完待提交。
 
+## 库管收回过账/审核权限（2026-08-02，未提交）
+
+- **需求**：库管角色不能有过账操作。已收回 `manual_stock.confirm`（迁移 020）与 `stock_checks.confirm`（迁移 021）；调拨确认（stock_transfers.confirm）经确认属库管日常职责予以保留。
+- **迁移 020**（`020_warehouse_staff_revoke_manual_stock_confirm.sql`）：DELETE warehouse_staff 的 manual_stock.confirm，模式对齐 013（operator 同款收紧）。
+- **迁移 021**（`021_warehouse_staff_revoke_stock_checks_confirm.sql`）：DELETE warehouse_staff 的 stock_checks.confirm；盘点确认会按账实差异自动生成盘盈/盘亏单改写库存，属过账类。
+- 前端：自由出入库列表/编辑页本就按 `can('manual_stock','confirm')` 隐藏过账按钮；盘点编辑页「确认盘点」按钮本次补加 `can('stock_checks','confirm')` 门控（录入/保存实盘仍可用）。后端 `confirm_manual_stock_movement`、`confirm_stock_check`（inventory.rs:1223）均有 `require_permission` 守卫兜底。
+- 验证：`cargo check` / `pnpm typecheck` / `pnpm lint` 通过。真实库迁移实测待做。
+
 ## 待出库明细字段补齐修复（2026-08-02，未提交）
 
 - **根因**：`get_pending_outbound_items` 的 Rust 结构体从未返回 `availableStock`/`standardCost`/`actualCost`，前端拿到 undefined → 出库执行页 `max` 属性 NaN 警告、初始数量 "NaN"、超库存校验失效。

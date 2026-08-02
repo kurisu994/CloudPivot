@@ -129,6 +129,20 @@ fn get_migrations() -> Vec<Migration> {
             name: "production_order_sales_link",
             sql: include_str!("../../migrations/postgres/019_production_order_sales_link.sql"),
         },
+        Migration {
+            version: 20,
+            name: "warehouse_staff_revoke_manual_stock_confirm",
+            sql: include_str!(
+                "../../migrations/postgres/020_warehouse_staff_revoke_manual_stock_confirm.sql"
+            ),
+        },
+        Migration {
+            version: 21,
+            name: "warehouse_staff_revoke_stock_checks_confirm",
+            sql: include_str!(
+                "../../migrations/postgres/021_warehouse_staff_revoke_stock_checks_confirm.sql"
+            ),
+        },
     ]
 }
 
