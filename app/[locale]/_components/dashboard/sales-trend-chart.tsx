@@ -6,6 +6,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { useDisplayPreferences } from '@/components/providers/display-preferences-provider'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { usePermission } from '@/hooks/use-permission'
 import { getSalesReportSummary } from '@/lib/tauri'
 import { addDays, formatDashboardUsdCompact, formatLocalDate } from './format'
 
@@ -19,10 +20,14 @@ export function SalesTrendChart({ className }: { className?: string }) {
   const t = useTranslations('dashboard')
   const tc = useTranslations('common')
   const { fontSize } = useDisplayPreferences()
+  // 报表权限：无 reports.view 的岗位角色不取数、不渲染本组件
+  const { can } = usePermission()
+  const canViewReports = can('reports', 'view')
   const [data, setData] = useState<TrendPoint[]>([])
   const [error, setError] = useState(false)
 
   useEffect(() => {
+    if (!canViewReports) return
     void (async () => {
       try {
         const currentDate = new Date()
@@ -39,11 +44,13 @@ export function SalesTrendChart({ className }: { className?: string }) {
         setError(true)
       }
     })()
-  }, [])
+  }, [canViewReports])
 
   const salesConfig = {
     current: { label: t('currentPeriod'), color: '#294985' },
   } satisfies ChartConfig
+
+  if (!canViewReports) return null
 
   return (
     <Card className={`rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 ${className || ''}`}>

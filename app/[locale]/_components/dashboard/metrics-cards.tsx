@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { usePermission } from '@/hooks/use-permission'
 import {
   getInventoryList,
   getPayables,
@@ -96,7 +97,19 @@ export function MetricsCards() {
   const [monthSalesDelta, setMonthSalesDelta] = useState<KpiDelta>({ percent: 0, trend: 'flat' })
   const [todayPurchaseDelta, setTodayPurchaseDelta] = useState<KpiDelta>({ percent: 0, trend: 'flat' })
 
+  // 各数据域权限：无权限的指标不取数、对应卡片不渲染（岗位角色无 reports.view 等权限时会 403）
+  const { can } = usePermission()
+  const canViewReports = can('reports', 'view')
+  const canViewInventory = can('inventory', 'view')
+  const canViewReceivables = can('receivables', 'view')
+  const canViewPayables = can('payables', 'view')
+  const canViewReplenishment = can('replenishment', 'view')
+  const showPrimaryCards = canViewReports || canViewInventory
+  const showSecondaryCards = canViewReceivables || canViewPayables || canViewReplenishment
+
+  // 待补货建议
   useEffect(() => {
+    if (!canViewReplenishment) return
     void (async () => {
       try {
         const summary = await getReplenishmentDashboardSummary()
@@ -107,9 +120,11 @@ export function MetricsCards() {
         setError(true)
       }
     })()
-  }, [])
+  }, [canViewReplenishment])
 
+  // 销售/采购金额 KPI（均属报表权限）
   useEffect(() => {
+    if (!canViewReports) return
     void (async () => {
       try {
         const currentDate = new Date()
@@ -118,17 +133,7 @@ export function MetricsCards() {
         const monthStart = formatLocalDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1))
         const previousMonthToDate = getPreviousMonthToDateRange(currentDate)
 
-        const [
-          salesTodayRes,
-          salesYesterdayRes,
-          salesMonthRes,
-          salesPreviousMonthRes,
-          purchaseTodayRes,
-          purchaseYesterdayRes,
-          inventoryLowRes,
-          receivablesRes,
-          payablesRes,
-        ] = await Promise.all([
+        const [salesTodayRes, salesYesterdayRes, salesMonthRes, salesPreviousMonthRes, purchaseTodayRes, purchaseYesterdayRes] = await Promise.all([
           getSalesReportSummary({ startDate: today, endDate: today, page: 1, pageSize: 1 }),
           getSalesReportSummary({ startDate: yesterday, endDate: yesterday, page: 1, pageSize: 1 }),
           getSalesReportSummary({ startDate: monthStart, endDate: today, page: 1, pageSize: 1 }),
@@ -140,9 +145,6 @@ export function MetricsCards() {
           }),
           getPurchaseReportSummary({ startDate: today, endDate: today, page: 1, pageSize: 1 }),
           getPurchaseReportSummary({ startDate: yesterday, endDate: yesterday, page: 1, pageSize: 1 }),
-          getInventoryList({ page: 1, pageSize: 1, alertStatus: 'low' }),
-          getReceivables({ page: 1, pageSize: 1 }),
-          getPayables({ page: 1, pageSize: 1 }),
         ])
 
         setTodaySales(salesTodayRes.stats.totalAmount)
@@ -154,15 +156,56 @@ export function MetricsCards() {
         setTodaySalesDelta(calculateDelta(salesTodayRes.stats.totalAmount, salesYesterdayRes.stats.totalAmount))
         setMonthSalesDelta(calculateDelta(salesMonthRes.stats.totalAmount, salesPreviousMonthRes.stats.totalAmount))
         setTodayPurchaseDelta(calculateDelta(purchaseTodayRes.stats.totalAmount, purchaseYesterdayRes.stats.totalAmount))
-        setLowStockCount(inventoryLowRes.total)
-        setReceivables(receivablesRes.summary.totalOverdue)
-        setPayables(payablesRes.summary.totalOverdue)
       } catch (e) {
-        console.error('[Dashboard] KPI 指标查询失败:', e)
+        console.error('[Dashboard] 销售/采购 KPI 查询失败:', e)
         setError(true)
       }
     })()
-  }, [])
+  }, [canViewReports])
+
+  // 低库存预警
+  useEffect(() => {
+    if (!canViewInventory) return
+    void (async () => {
+      try {
+        const res = await getInventoryList({ page: 1, pageSize: 1, alertStatus: 'low' })
+        setLowStockCount(res.total)
+      } catch (e) {
+        console.error('[Dashboard] 低库存查询失败:', e)
+        setError(true)
+      }
+    })()
+  }, [canViewInventory])
+
+  // 逾期应收
+  useEffect(() => {
+    if (!canViewReceivables) return
+    void (async () => {
+      try {
+        const res = await getReceivables({ page: 1, pageSize: 1 })
+        setReceivables(res.summary.totalOverdue)
+      } catch (e) {
+        console.error('[Dashboard] 应收查询失败:', e)
+        setError(true)
+      }
+    })()
+  }, [canViewReceivables])
+
+  // 逾期应付
+  useEffect(() => {
+    if (!canViewPayables) return
+    void (async () => {
+      try {
+        const res = await getPayables({ page: 1, pageSize: 1 })
+        setPayables(res.summary.totalOverdue)
+      } catch (e) {
+        console.error('[Dashboard] 应付查询失败:', e)
+        setError(true)
+      }
+    })()
+  }, [canViewPayables])
+
+  if (!showPrimaryCards && !showSecondaryCards) return null
 
   return (
     <>
@@ -173,97 +216,115 @@ export function MetricsCards() {
         </div>
       )}
       {/* 主要 KPI */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 p-5 pb-3">
-            <span className="text-xs font-semibold tracking-wider text-slate-500">{t('todaySales')}</span>
-            <KpiDeltaBadge delta={todaySalesDelta} />
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
-            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatDashboardUsd(todaySales)}</h3>
-            <p className="mt-2 text-[0.625rem] text-slate-400">
-              {t('comparisonAmount', { label: t('vsYesterday'), amount: formatDashboardUsd(yesterdaySales) })}
-            </p>
-          </CardContent>
-        </Card>
+      {showPrimaryCards && (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {canViewReports && (
+            <Card className="rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 p-5 pb-3">
+                <span className="text-xs font-semibold tracking-wider text-slate-500">{t('todaySales')}</span>
+                <KpiDeltaBadge delta={todaySalesDelta} />
+              </CardHeader>
+              <CardContent className="p-5 pt-0">
+                <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatDashboardUsd(todaySales)}</h3>
+                <p className="mt-2 text-[0.625rem] text-slate-400">
+                  {t('comparisonAmount', { label: t('vsYesterday'), amount: formatDashboardUsd(yesterdaySales) })}
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
-        <Card className="rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 p-5 pb-3">
-            <span className="text-xs font-semibold tracking-wider text-slate-500">{t('monthSales')}</span>
-            <KpiDeltaBadge delta={monthSalesDelta} />
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
-            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatDashboardUsd(monthSales)}</h3>
-            <p className="mt-2 text-[0.625rem] text-slate-400">
-              {t('comparisonAmount', { label: t('vsPreviousMonthPeriod'), amount: formatDashboardUsd(previousMonthSales) })}
-            </p>
-          </CardContent>
-        </Card>
+          {canViewReports && (
+            <Card className="rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 p-5 pb-3">
+                <span className="text-xs font-semibold tracking-wider text-slate-500">{t('monthSales')}</span>
+                <KpiDeltaBadge delta={monthSalesDelta} />
+              </CardHeader>
+              <CardContent className="p-5 pt-0">
+                <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatDashboardUsd(monthSales)}</h3>
+                <p className="mt-2 text-[0.625rem] text-slate-400">
+                  {t('comparisonAmount', { label: t('vsPreviousMonthPeriod'), amount: formatDashboardUsd(previousMonthSales) })}
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
-        <Card className="rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 p-5 pb-3">
-            <span className="text-xs font-semibold tracking-wider text-slate-500">{t('todayPurchase')}</span>
-            <KpiDeltaBadge delta={todayPurchaseDelta} />
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
-            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatDashboardUsd(todayPurchase)}</h3>
-            <p className="mt-2 text-[0.625rem] text-slate-400">
-              {t('comparisonAmount', { label: t('vsYesterday'), amount: formatDashboardUsd(yesterdayPurchase) })}
-            </p>
-          </CardContent>
-        </Card>
+          {canViewReports && (
+            <Card className="rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 p-5 pb-3">
+                <span className="text-xs font-semibold tracking-wider text-slate-500">{t('todayPurchase')}</span>
+                <KpiDeltaBadge delta={todayPurchaseDelta} />
+              </CardHeader>
+              <CardContent className="p-5 pt-0">
+                <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatDashboardUsd(todayPurchase)}</h3>
+                <p className="mt-2 text-[0.625rem] text-slate-400">
+                  {t('comparisonAmount', { label: t('vsYesterday'), amount: formatDashboardUsd(yesterdayPurchase) })}
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
-        <Card className="rounded-xl border-l-4 border-slate-200 border-l-[#944a00] shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 p-5 pb-3">
-            <span className="text-xs font-semibold tracking-wider text-slate-500">{t('lowStock')}</span>
-            <Badge className="border-none bg-orange-50 px-2 py-0.5 font-bold text-orange-600 shadow-none hover:bg-orange-50 dark:bg-orange-500/10 dark:text-orange-400">
-              {lowStockCount} <AlertTriangle className="ml-0.5 h-3.5 w-3.5" />
-            </Badge>
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
-            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{t('lowStockCount', { count: lowStockCount })}</h3>
-            <p className="mt-2 text-[0.625rem] text-slate-400">{t('belowSafetyLevel')}</p>
-          </CardContent>
-        </Card>
-      </div>
+          {canViewInventory && (
+            <Card className="rounded-xl border-l-4 border-slate-200 border-l-[#944a00] shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 p-5 pb-3">
+                <span className="text-xs font-semibold tracking-wider text-slate-500">{t('lowStock')}</span>
+                <Badge className="border-none bg-orange-50 px-2 py-0.5 font-bold text-orange-600 shadow-none hover:bg-orange-50 dark:bg-orange-500/10 dark:text-orange-400">
+                  {lowStockCount} <AlertTriangle className="ml-0.5 h-3.5 w-3.5" />
+                </Badge>
+              </CardHeader>
+              <CardContent className="p-5 pt-0">
+                <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{t('lowStockCount', { count: lowStockCount })}</h3>
+                <p className="mt-2 text-[0.625rem] text-slate-400">{t('belowSafetyLevel')}</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* 次要 KPI */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <div className="flex items-center gap-4 rounded-xl bg-slate-50 p-4 dark:bg-slate-900/50">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-            <Wallet className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[0.6875rem] font-bold tracking-tight text-slate-500 uppercase">{t('receivables')}</p>
-            <p className="text-lg font-bold text-slate-800 dark:text-slate-200">{formatDashboardUsd(receivables)}</p>
-          </div>
-        </div>
+      {showSecondaryCards && (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {canViewReceivables && (
+            <div className="flex items-center gap-4 rounded-xl bg-slate-50 p-4 dark:bg-slate-900/50">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                <Wallet className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[0.6875rem] font-bold tracking-tight text-slate-500 uppercase">{t('receivables')}</p>
+                <p className="text-lg font-bold text-slate-800 dark:text-slate-200">{formatDashboardUsd(receivables)}</p>
+              </div>
+            </div>
+          )}
 
-        <div className="flex items-center gap-4 rounded-xl bg-slate-50 p-4 dark:bg-slate-900/50">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-            <CreditCard className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[0.6875rem] font-bold tracking-tight text-slate-500 uppercase">{t('payables')}</p>
-            <p className="text-lg font-bold text-slate-800 dark:text-slate-200">{formatDashboardUsd(payables)}</p>
-          </div>
-        </div>
+          {canViewPayables && (
+            <div className="flex items-center gap-4 rounded-xl bg-slate-50 p-4 dark:bg-slate-900/50">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                <CreditCard className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[0.6875rem] font-bold tracking-tight text-slate-500 uppercase">{t('payables')}</p>
+                <p className="text-lg font-bold text-slate-800 dark:text-slate-200">{formatDashboardUsd(payables)}</p>
+              </div>
+            </div>
+          )}
 
-        <div className="flex items-center gap-4 rounded-xl bg-slate-50 p-4 dark:bg-slate-900/50">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-            <RefreshCw className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[0.6875rem] font-bold tracking-tight text-slate-500 uppercase">{t('replenishmentPending')}</p>
-            <p className="text-lg font-bold text-slate-800 dark:text-slate-200">
-              {t('itemCount', { count: replenishmentCount })}
-              {urgentDelta > 0 && (
-                <span className="ml-2 text-sm font-normal text-red-600 dark:text-red-400">{t('urgentCount', { count: urgentDelta })}</span>
-              )}
-            </p>
-          </div>
+          {canViewReplenishment && (
+            <div className="flex items-center gap-4 rounded-xl bg-slate-50 p-4 dark:bg-slate-900/50">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                <RefreshCw className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[0.6875rem] font-bold tracking-tight text-slate-500 uppercase">{t('replenishmentPending')}</p>
+                <p className="text-lg font-bold text-slate-800 dark:text-slate-200">
+                  {t('itemCount', { count: replenishmentCount })}
+                  {urgentDelta > 0 && (
+                    <span className="ml-2 text-sm font-normal text-red-600 dark:text-red-400">{t('urgentCount', { count: urgentDelta })}</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </>
   )
 }

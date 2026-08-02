@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { Label, Pie, PieChart } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { usePermission } from '@/hooks/use-permission'
 import { getInventoryList } from '@/lib/tauri'
 import { formatDashboardUsd, formatDashboardUsdCompact } from './format'
 
@@ -23,8 +24,12 @@ export function InventoryDonut({ className }: { className?: string }) {
   const [data, setData] = useState<DonutItem[]>([])
   const [totalValue, setTotalValue] = useState(0)
   const [error, setError] = useState(false)
+  // 库存权限：无 inventory.view 的岗位角色不取数、不渲染本组件
+  const { can } = usePermission()
+  const canViewInventory = can('inventory', 'view')
 
   useEffect(() => {
+    if (!canViewInventory) return
     void (async () => {
       try {
         const res = await getInventoryList({ page: 1, pageSize: 1000 })
@@ -49,11 +54,13 @@ export function InventoryDonut({ className }: { className?: string }) {
         setError(true)
       }
     })()
-  }, [t])
+  }, [t, canViewInventory])
 
   const inventoryConfig = {
     value: { label: t('assetEstimate') },
   } satisfies ChartConfig
+
+  if (!canViewInventory) return null
 
   return (
     <Card className={`rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 ${className || ''}`}>

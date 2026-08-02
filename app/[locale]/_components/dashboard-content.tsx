@@ -3,6 +3,7 @@
 import { RefreshCcw } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
+import { usePermission } from '@/hooks/use-permission'
 import { BestSellers } from './dashboard/best-sellers'
 import { InventoryDonut } from './dashboard/inventory-donut'
 import { MetricsCards } from './dashboard/metrics-cards'
@@ -14,6 +15,11 @@ import { SalesTrendChart } from './dashboard/sales-trend-chart'
 
 export function DashboardContent() {
   const t = useTranslations()
+  const { can } = usePermission()
+  // 各部件可见性与内部取数门控一致，用于行布局自适应（部件无权时整行收起，余下部件拉通）
+  const canViewReports = can('reports', 'view')
+  const canViewInventory = can('inventory', 'view')
+  const showPendingTasks = canViewInventory || can('purchase_orders', 'view') || can('sales_deliveries', 'view') || can('receivables', 'view')
 
   return (
     <div className="space-y-6 pb-8">
@@ -36,19 +42,23 @@ export function DashboardContent() {
       {/* <QuickActions /> */}
 
       {/* Row 3: Sales Trend & Inventory Distribution */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
-        <SalesTrendChart className="md:col-span-8" />
-        <InventoryDonut className="md:col-span-4" />
-      </div>
+      {(canViewReports || canViewInventory) && (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+          {canViewReports && <SalesTrendChart className={canViewInventory ? 'md:col-span-8' : 'md:col-span-12'} />}
+          {canViewInventory && <InventoryDonut className={canViewReports ? 'md:col-span-4' : 'md:col-span-12'} />}
+        </div>
+      )}
 
       {/* Row 4: Top 10 Best Sellers & Pending Tasks */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
-        <BestSellers className="md:col-span-8" />
-        <PendingTasks className="md:col-span-4" />
-      </div>
+      {(canViewReports || showPendingTasks) && (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+          {canViewReports && <BestSellers className={showPendingTasks ? 'md:col-span-8' : 'md:col-span-12'} />}
+          {showPendingTasks && <PendingTasks className={canViewReports ? 'md:col-span-4' : 'md:col-span-12'} />}
+        </div>
+      )}
 
       {/* Row 5: Purchase Trend Area Chart */}
-      <PurchaseTrendChart />
+      {canViewReports && <PurchaseTrendChart />}
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { usePermission } from '@/hooks/use-permission'
 import { getSalesMaterialDetail } from '@/lib/tauri'
 import { addDays, formatLocalDate } from './format'
 
@@ -17,9 +18,13 @@ interface BestSellerItem {
 export function BestSellers({ className }: { className?: string }) {
   const t = useTranslations('dashboard')
   const tc = useTranslations('common')
+  // 报表权限：无 reports.view 的岗位角色不取数、不渲染本组件
+  const { can } = usePermission()
+  const canViewReports = can('reports', 'view')
   const [products, setProducts] = useState<BestSellerItem[]>([])
   const [error, setError] = useState(false)
   useEffect(() => {
+    if (!canViewReports) return
     void (async () => {
       try {
         const currentDate = new Date()
@@ -44,7 +49,9 @@ export function BestSellers({ className }: { className?: string }) {
         setError(true)
       }
     })()
-  }, [])
+  }, [canViewReports])
+
+  if (!canViewReports) return null
 
   return (
     <Card className={`rounded-xl border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 ${className || ''}`}>

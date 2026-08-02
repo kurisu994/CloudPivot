@@ -4,7 +4,16 @@
 
 项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.2**。本轮（2026-08-02）完成 **销售单下推生产工单** 功能（打通销售→生产链路），主体已提交（`4566f7d`）；审查后修复项（差额口径/并发锁/权限门控等）已改完待提交。
 
-## 库管收回过账/审核权限（2026-08-02，未提交）
+## 看板按权限门控修复（2026-08-02，未提交）
+
+- **问题**：岗位角色（无 reports.view 等权限）登录后看板刷 PERMISSION 报错（如 `get_sales_report_summary` 403），KPI 区整片「加载失败」——各看板组件无条件调用跨模块接口，`Promise.all` 任一 403 即全部失败。
+- **修复**：7 个看板组件全部改为 `usePermission()` 门控，无权限的部件/卡片/待办条目不取数、不渲染。
+  - `metrics-cards.tsx`：原 9 合 1 `Promise.all` 拆为 5 个按域独立 effect（报表/库存/应收/应付/补货），7 张卡片逐张按权限渲染；全无权限时返回 null。
+  - 销售/采购趋势图、热销榜门控 `reports.view`；库存环形图门控 `inventory.view`；待办事项四数据源逐项门控（inventory/purchase_orders/sales_deliveries/receivables）。
+  - `dashboard-content.tsx` 行布局按权限自适应：无权部件整行收起，余下部件 8/4 分栏拉通为 12。
+- 验证：`pnpm typecheck`、`pnpm lint` 通过。多角色登录冒烟待实测。
+
+## 库管收回过账/审核权限（2026-08-02，已提交 cf726b7）
 
 - **需求**：库管角色不能有过账操作。已收回 `manual_stock.confirm`（迁移 020）与 `stock_checks.confirm`（迁移 021）；调拨确认（stock_transfers.confirm）经确认属库管日常职责予以保留。
 - **迁移 020**（`020_warehouse_staff_revoke_manual_stock_confirm.sql`）：DELETE warehouse_staff 的 manual_stock.confirm，模式对齐 013（operator 同款收紧）。
