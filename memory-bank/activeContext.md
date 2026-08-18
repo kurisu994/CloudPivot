@@ -2,7 +2,36 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.2**。本轮（2026-08-02）完成 **销售单下推生产工单** 功能（打通销售→生产链路），主体已提交（`4566f7d`）；审查后修复项（差额口径/并发锁/权限门控等）已改完待提交。
+项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.2**。本轮（2026-08-02）完成依赖版本全量升级（Next.js、React、Tauri、Biome、TailwindCSS、Cargo 依赖等），并通过前后端全套 Lint、Typecheck、测试与构建验证。
+
+## 依赖版本升级（2026-08-02，未提交）
+
+- **前端依赖**：
+  - `next`: `16.2.2` → `16.3.1`
+  - `react` / `react-dom`: `19.2.4` → `19.2.8`
+  - `@types/react`: `^19.2.17` → `^19.2.18`
+  - `@types/react-dom`: `^19.2.3` → `^19.2.4`
+  - `@base-ui/react`: `^1.6.0` → `^1.7.0`
+  - `@radix-ui/react-tooltip`: `^1.2.10` → `^1.2.16`
+  - `@tauri-apps/api`: `2.10.1` → `2.11.1`
+  - `@tauri-apps/cli`: `2.10.1` → `2.11.4`
+  - `@tauri-apps/plugin-log`: `2.8.0` → `2.9.0`
+  - `lucide-react`: `^1.21.0` → `^1.31.0`
+  - `next-intl`: `^4.13.0` → `^4.13.6`
+  - `react-arborist`: `^3.10.5` → `^3.16.0`
+  - `recharts`: `3.8.0` → `3.10.1`
+  - `sonner`: `^2.0.7` → `^2.0.8`
+  - `@biomejs/biome`: `2.4.11` → `2.5.8`（同步更新 `biome.json` schema 到 2.5.8）
+  - `tailwindcss` / `@tailwindcss/postcss`: `^4.3.1` → `^4.3.3`
+- **后端依赖**：
+  - `tauri`: `2.10.3` → `2.11.5`
+  - `tauri-build`: `2.5.6` → `2.6.3`
+  - `Cargo.lock` 全量依赖更新（tokio, uuid, chrono, thiserror, wry 等更新至最新兼容版本）
+- **验证**：
+  - `just lint`（Biome + tsc + clippy -D warnings）全绿通过
+  - `just test`（Rust 56 单元测试）全部通过
+  - `node --test tests/*.test.mjs`（22 自动化测试）全绿通过
+  - `just build-web` 前端全静态页面导出成功通过
 
 ## 看板按权限门控修复（2026-08-02，未提交）
 

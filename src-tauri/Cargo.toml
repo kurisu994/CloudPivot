@@ -15,14 +15,14 @@ name = "app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.5.6", features = [] }
+tauri-build = { version = "2.6.3", features = [] }
 dotenvy = "0.15"
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2.10.3", features = [] }
+tauri = { version = "2.11.5", features = [] }
 tauri-plugin-log = "2"
 # 日志分发 — 按天按级别双文件写入（tauri-plugin-log 内部使用的同版本）
 fern = "0.7"
