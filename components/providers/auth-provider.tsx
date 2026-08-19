@@ -187,6 +187,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true, mustChangePassword: false }
       }
 
+      // 未勾选「记住我」时，先清除残留的持久化会话（必须在 login 之前）：
+      // 后端 clear_auth_keychain 会同时重置 CurrentUser，若在登录成功后调用，
+      // 会把刚建立的登录态一并清掉，导致后续 IPC 全部报 AUTH 错误并被踢回登录页。
+      if (!rememberMe) {
+        try {
+          await tauriApi.clearAuthSession()
+        } catch {
+          // 持久化存储不可用时忽略
+        }
+      }
+
       try {
         const response = await tauriApi.login(username, password)
         updateUser(response.user)
@@ -198,14 +209,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (rememberMe) {
           // 勾选"记住我"：持久化会话，7天有效
           await saveAuth(response.user, true)
-        } else {
-          // 未勾选：仅清除之前可能残留的持久化数据，内存中保持登录态
-          // 注意：不能调用 clearAuth()，它会同时清空 user 导致路由守卫误判为未登录
-          try {
-            await tauriApi.clearAuthSession()
-          } catch {
-            // 持久化存储不可用时忽略
-          }
         }
 
         // 不需要改密时检查向导状态（仅 admin 角色走向导）

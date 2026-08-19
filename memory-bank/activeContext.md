@@ -2,7 +2,13 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.2**。本轮（2026-08-02）完成依赖版本全量升级（Next.js、React、Tauri、Biome、TailwindCSS、Cargo 依赖等），并通过前后端全套 Lint、Typecheck、测试与构建验证。
+项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.2**。本轮（2026-08-19）修复「不勾选记住我登录即被踢回登录页」问题（auth-provider 登录前清理残留会话）。此前（2026-08-02）完成依赖版本全量升级（Next.js、React、Tauri、Biome、TailwindCSS、Cargo 依赖等），并通过前后端全套 Lint、Typecheck、测试与构建验证。
+
+## 不勾选「记住我」登录报 AUTH 错误修复（2026-08-19，未提交）
+
+- **根因**：`login()` 在 `tauriApi.login()` 成功后才调 `clearAuthSession()` 清理残留持久化数据；后端 `clear_auth_keychain`（keychain.rs:134）会同时 `current_user.clear()`，把刚建立的登录态清掉。随后 `checkSetupCompleted()` → `get_system_configs` 被 `require_auth` 拒绝（AUTH「请先登录」），且该命令不在 `AUTH_REDIRECT_EXCLUDED` 白名单 → 触发全局认证失效处理，清前端会话并踢回 `/login`。
+- **修复**（`components/providers/auth-provider.tsx`）：未勾选「记住我」时改为在 `tauriApi.login()` **之前**清除残留持久化会话（此时后端本未登录，清理无副作用），登录成功后不再调用。
+- 验证：`pnpm typecheck`、`pnpm biome check` 通过。真实登录冒烟待实测。
 
 ## 依赖版本升级（2026-08-02，未提交）
 
