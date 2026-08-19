@@ -2,7 +2,15 @@
 
 ## 当前状态
 
-项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.2**。本轮（2026-08-19）修复「不勾选记住我登录即被踢回登录页」问题（auth-provider 登录前清理残留会话）。此前（2026-08-02）完成依赖版本全量升级（Next.js、React、Tauri、Biome、TailwindCSS、Cargo 依赖等），并通过前后端全套 Lint、Typecheck、测试与构建验证。
+项目处于 **功能完备、持续打磨** 阶段。当前版本 **v0.3.2**。本轮（2026-08-19）修复 Tauri 版本不匹配报错（tauri 2.11.5 vs @tauri-apps/api 2.10.1）：根因是 `pnpm-workspace.yaml` 的 overrides 在 08-02 依赖升级时漏更新，仍钉在 2.10.1；已改为 2.11.1 并重跑 `pnpm install` 同步 lockfile。同轮此前还修复了「不勾选记住我登录即被踢回登录页」问题（auth-provider 登录前清理残留会话）。
+
+## Tauri 版本不匹配修复（2026-08-19，未提交）
+
+- **现象**：启动报 `Found version mismatched Tauri packages: tauri (v2.11.5) : @tauri-apps/api (v2.10.1)`。
+- **根因**：`ec2725d` 曾在 `pnpm-workspace.yaml` 添加 `overrides: {"@tauri-apps/api": 2.10.1}` 用于对齐版本；08-02 升级把 package.json 提到 2.11.1、Rust 侧 tauri 提到 2.11.5，但漏改该 override，pnpm 强制解析回 2.10.1，`pnpm install` 也不会报错。
+- **修复**：`pnpm-workspace.yaml` override 改为 `2.11.1`，重跑 `pnpm install`，lockfile 与 node_modules 均同步为 2.11.1（major.minor 与 tauri 2.11.5 对齐）。
+- **教训**：Tauri 相关依赖升级时必须同步检查 `pnpm-workspace.yaml` 的 overrides。
+- 附带的 `use-sync-external-store` peer react 警告为既有问题（要 ^16-^18，项目用 19.2.8），与本次无关。
 
 ## 不勾选「记住我」登录报 AUTH 错误修复（2026-08-19，未提交）
 

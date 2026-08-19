@@ -5,4 +5,4 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
 overrides:
-  "@tauri-apps/api": 2.10.1
+  "@tauri-apps/api": 2.11.1
