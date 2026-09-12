@@ -26,7 +26,7 @@ TypeScript 遵循 `biome.json`：2 空格缩进、单引号、尽量使用 `useC
 
 最终回复前检查：
 - 本轮代码变更、重要决策、阻塞、下一步计划。
-- **重要：** 把本轮结果写进 `memory-bank/` 对应层：任务进展更新 `active/<branch>.md`，里程碑与长期约定沉淀到共识层或 `archive/`，会话流水追加到 `journal/<dev>.md`。
+- 按 `memory-bank/README.md` 的写入门槛判断是否需要更新记忆；有有效增量时，仅写入对应层，不要求每轮追加流水。
 - 判断是否需要更新 `CHANGELOG.md`（用户视角，不写文件路径/工具链细节）。
 
 ## Commit 与 Pull Request 指南
