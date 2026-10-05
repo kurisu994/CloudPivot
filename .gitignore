@@ -58,3 +58,6 @@ next-env.d.ts
 /src-tauri/gen/
 gen/
 ./kiro/specs/**
+
+# QA 测试产物（提示词、用例、报告、证据截图，仅本地留存）
+/qa/
