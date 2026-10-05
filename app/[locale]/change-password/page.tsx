@@ -43,7 +43,7 @@ export default function ChangePasswordPage() {
       setError(t('tooShort'))
       return false
     }
-    if (newPassword === 'admin123') {
+    if (newPassword === 'abc12345') {
       setError(t('sameAsDefault'))
       return false
     }
