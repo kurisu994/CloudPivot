@@ -137,7 +137,7 @@ pub async fn get_users(
         "SELECT u.id, u.username, u.display_name, u.role, u.role_id, u.position,
                 array_remove(array_agg(r.code ORDER BY r.id), NULL) AS roles,
                 u.email, u.phone, u.is_enabled,
-                (u.locked_until IS NOT NULL AND u.locked_until > NOW()::TEXT) AS is_locked,
+                (u.locked_until IS NOT NULL AND u.locked_until > TO_CHAR(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')) AS is_locked,
                 u.last_login_at::TEXT, u.created_at::TEXT
          FROM users u
          LEFT JOIN user_roles ur ON ur.user_id = u.id
@@ -326,7 +326,7 @@ pub async fn get_user_detail(
 
     // 检查锁定状态
     let is_locked: bool = sqlx::query_scalar(
-        "SELECT locked_until IS NOT NULL AND locked_until > NOW()::TEXT FROM users WHERE id = $1",
+        "SELECT (locked_until IS NOT NULL AND locked_until > TO_CHAR(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')) FROM users WHERE id = $1",
     )
     .bind(user_id)
     .fetch_one(&db.pool)
