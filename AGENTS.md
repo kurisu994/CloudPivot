@@ -32,3 +32,13 @@ TypeScript 遵循 `biome.json`：2 空格缩进、单引号、尽量使用 `useC
 ## Commit 与 Pull Request 指南
 
 Git 历史以中文类型提交为主，常见格式为 `✨ feat(模块): 描述`、`🐛 fix(模块): 描述`、`💄 style(模块): 描述`、`🔖 release: vX.Y.Z`；主题应动词开头、简短明确，避免自动生成署名。PR 需说明变更目的、影响模块、验证命令与结果；涉及 UI 的变更附截图或录屏；关联 issue 或需求文档；涉及数据库迁移、权限、安全、发布流程时明确风险与回滚方式。
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
