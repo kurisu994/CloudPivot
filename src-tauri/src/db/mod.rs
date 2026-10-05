@@ -24,9 +24,12 @@ const SET_TIME_ZONE_SQL: &str = "SET TIME ZONE 'Asia/Ho_Chi_Minh'";
 ///
 /// 通过 `after_connect` 钩子在每条连接建立时执行一次 `SET TIME ZONE`，
 /// 确保整个连接池写入的时间戳时区一致且与宿主机无关。
+/// 同时配置健康检查与空闲超时，防止远程网络 NAT 静默切断导致连接挂死。
 fn pool_options(max_connections: u32) -> PgPoolOptions {
     PgPoolOptions::new()
         .max_connections(max_connections)
+        .idle_timeout(Some(std::time::Duration::from_secs(60)))
+        .test_before_acquire(true)
         .after_connect(|conn, _meta| {
             Box::pin(async move {
                 sqlx::query(SET_TIME_ZONE_SQL).execute(conn).await?;
@@ -74,8 +77,8 @@ pub async fn create_fallback_pool() -> PgPool {
 pub async fn init_db() -> Result<PgPool, AppError> {
     log::info!("正在连接数据库...");
 
-    // 创建连接池
-    let pool = pool_options(5)
+    // 创建连接池（最大 10 连接，避免多并发请求时耗尽）
+    let pool = pool_options(10)
         .acquire_timeout(std::time::Duration::from_secs(10))
         .connect(DATABASE_URL)
         .await
