@@ -371,28 +371,34 @@ pub async fn logout(pool: &PgPool, user_id: i64, display_name: &str) {
     .await;
 }
 
-/// 修改密码
-///
-/// 校验流程：
-/// 1. 校验旧密码（身份验证）
-/// 2. 密码强度校验（长度 ≥ 8）
-/// 3. 不能使用默认密码
-/// 校验新密码复杂度（至少 8 位，且必须同时包含数字、大写英文字母、小写英文字母）
+/// 校验新密码复杂度：超过 6 位，且必须同时包含字母和数字。不区分大小写。
 pub fn validate_password_complexity(password: &str) -> Result<(), AppError> {
-    if password.len() < 8 {
-        return Err(AppError::Auth("密码长度至少 8 位".into()));
+    if password.chars().count() <= 6 {
+        return Err(AppError::Auth("密码长度须超过 6 位".into()));
     }
     let has_digit = password.chars().any(|c| c.is_ascii_digit());
-    let has_upper = password.chars().any(|c| c.is_ascii_uppercase());
-    let has_lower = password.chars().any(|c| c.is_ascii_lowercase());
-    if !has_digit || !has_upper || !has_lower {
-        return Err(AppError::Auth(
-            "密码必须同时包含数字、大写字母和小写字母".into(),
-        ));
+    let has_letter = password.chars().any(|c| c.is_ascii_alphabetic());
+    if !has_digit || !has_letter {
+        return Err(AppError::Auth("密码必须同时包含字母和数字".into()));
     }
     Ok(())
 }
 
+/// 新密码规则：先拒绝初始密码，再检查复杂度。
+/// 初始密码 `abc12345` 已满足「字母+数字」，仍必须单独拒绝。
+pub fn validate_new_password(new_password: &str) -> Result<(), AppError> {
+    if new_password == DEFAULT_PASSWORD {
+        return Err(AppError::Auth("新密码不能与初始密码相同".into()));
+    }
+    validate_password_complexity(new_password)
+}
+
+/// 修改密码
+///
+/// 校验流程：
+/// 1. 校验旧密码（身份验证）
+/// 2. 不能使用默认初始密码
+/// 3. 密码复杂度（超过 6 位，且同时包含字母和数字）
 /// 4. 新密码不能与旧密码相同
 /// 5. 更新密码哈希、清除 must_change_password 标记、递增 session_version
 /// 6. 写入操作日志
@@ -414,13 +420,8 @@ pub async fn change_password(
         return Err(AppError::Auth("旧密码不正确".into()));
     }
 
-    // 密码强度与复杂度校验
-    validate_password_complexity(new_password)?;
-
-    // 不能使用默认密码作为新密码
-    if new_password == DEFAULT_PASSWORD {
-        return Err(AppError::Auth("新密码不能与初始密码相同".into()));
-    }
+    // 先拒绝初始密码，再检查复杂度，保证提示语不会被复杂度错误盖掉
+    validate_new_password(new_password)?;
 
     let same_as_old = bcrypt::verify(new_password, &current_hash).unwrap_or(false);
     if same_as_old {
@@ -656,23 +657,27 @@ mod tests {
     /// 密码复杂度规则校验测试
     #[test]
     fn test_password_complexity_rules() {
-        // 长度不足 8 位
+        // 刚好 6 位，不够
+        assert!(validate_password_complexity("abc123").is_err());
         assert!(validate_password_complexity("Ab1").is_err());
         // 纯数字
-        assert!(validate_password_complexity("12345678").is_err());
-        // 纯小写
-        assert!(validate_password_complexity("abcdefgh").is_err());
-        // 纯大写
-        assert!(validate_password_complexity("ABCDEFGH").is_err());
-        // 小写+数字（缺少大写）
-        assert!(validate_password_complexity("abc12345").is_err());
-        // 大写+小写（缺少数字）
-        assert!(validate_password_complexity("Abcdefgh").is_err());
-        // 大写+数字（缺少小写）
-        assert!(validate_password_complexity("ABC12345").is_err());
-        // 满足复杂度（包含数字、大写、小写）
+        assert!(validate_password_complexity("1234567").is_err());
+        // 纯字母
+        assert!(validate_password_complexity("abcdefg").is_err());
+        assert!(validate_password_complexity("ABCDEFG").is_err());
+        // 有字母有数字即可，不要求大小写同时存在
+        assert!(validate_password_complexity("abc1234").is_ok());
+        assert!(validate_password_complexity("ABC1234").is_ok());
         assert!(validate_password_complexity("Abc12345").is_ok());
         assert!(validate_password_complexity("Qa123456!").is_ok());
+
+        // 初始密码满足复杂度，仍必须先报「不能与初始密码相同」
+        assert!(validate_password_complexity(DEFAULT_PASSWORD).is_ok());
+        let rejected = validate_new_password(DEFAULT_PASSWORD).unwrap_err();
+        assert!(
+            rejected.to_string().contains("初始密码"),
+            "实际错误: {rejected}"
+        );
     }
 
     /// 一致性规则：user_roles 无行 → 按 legacy 补写

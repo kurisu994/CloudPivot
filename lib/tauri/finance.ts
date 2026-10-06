@@ -11,6 +11,7 @@ export interface PayablesSummary {
   totalPaid: number
   totalPartial: number
   totalOverdue: number
+  /** 待付净额，已折算为 USD 分 */
   totalUnpaid: number
 }
 
@@ -79,6 +80,7 @@ export interface ReceivablesSummary {
   totalReceived: number
   totalPartial: number
   totalOverdue: number
+  /** 待收净额，已折算为 USD 分 */
   totalUnreceived: number
 }
 

@@ -27,7 +27,7 @@ pub struct PayablesSummary {
     pub total_partial: i64,
     /// 超期未付金额
     pub total_overdue: i64,
-    /// 待付总额（未付净额）
+    /// 待付净额，已按单据汇率折成 USD 分（含退货冲减）
     pub total_unpaid: i64,
 }
 
@@ -115,7 +115,7 @@ pub struct ReceivablesSummary {
     pub total_partial: i64,
     /// 超期未收金额
     pub total_overdue: i64,
-    /// 待收总额（未收净额）
+    /// 待收净额，已按单据汇率折成 USD 分（含退货冲减）
     pub total_unreceived: i64,
 }
 
@@ -205,7 +205,8 @@ pub async fn get_payables(
         filter.page,
         filter.page_size
     );
-    // 计算 KPI 概览（只针对 adjustment_type='normal' 的正向记录统计）
+    // 前四项只统计正向单据；待付净额要把退货冲减算进去，并折成 USD 分。
+    // VND 按整数存储，折美元时乘 100；USD/CNY 已是分。汇率缺失或非正数记 0。
     let summary = sqlx::query_as::<_, (i64, i64, i64, i64, i64)>(
         r#"
         SELECT
@@ -215,7 +216,13 @@ pub async fn get_payables(
             COALESCE(SUM(CASE WHEN status != 'paid' AND adjustment_type = 'normal'
                 AND due_date IS NOT NULL AND due_date::DATE < CURRENT_DATE
                 THEN (payable_amount - paid_amount) ELSE 0 END), 0)::BIGINT,
-            COALESCE(SUM(unpaid_amount), 0)::BIGINT
+            COALESCE(SUM(
+                CASE
+                    WHEN exchange_rate IS NULL OR exchange_rate <= 0 THEN 0
+                    WHEN currency = 'VND' THEN CAST(ROUND((unpaid_amount * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                    ELSE CAST(ROUND((unpaid_amount * 1.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                END
+            ), 0)::BIGINT
         FROM payables
         "#,
     )
@@ -523,7 +530,7 @@ pub async fn get_receivables(
         filter.page,
         filter.page_size
     );
-    // 计算 KPI 概览
+    // 前四项只统计正向单据；待收净额要把退货冲减算进去，并折成 USD 分。
     let summary = sqlx::query_as::<_, (i64, i64, i64, i64, i64)>(
         r#"
         SELECT
@@ -533,7 +540,13 @@ pub async fn get_receivables(
             COALESCE(SUM(CASE WHEN status != 'paid' AND adjustment_type = 'normal'
                 AND due_date IS NOT NULL AND due_date::DATE < CURRENT_DATE
                 THEN (receivable_amount - received_amount) ELSE 0 END), 0)::BIGINT,
-            COALESCE(SUM(unreceived_amount), 0)::BIGINT
+            COALESCE(SUM(
+                CASE
+                    WHEN exchange_rate IS NULL OR exchange_rate <= 0 THEN 0
+                    WHEN currency = 'VND' THEN CAST(ROUND((unreceived_amount * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                    ELSE CAST(ROUND((unreceived_amount * 1.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                END
+            ), 0)::BIGINT
         FROM receivables
         "#,
     )

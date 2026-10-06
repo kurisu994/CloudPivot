@@ -7,6 +7,7 @@ import { usePathname, useRouter } from '@/i18n/navigation'
 import { resolveAuthRedirect } from '@/lib/auth-guard'
 import { getErrorMessage } from '@/lib/error'
 import { initLogger } from '@/lib/logger'
+import { rememberMeDurationMs } from '@/lib/remember-session'
 import * as tauriApi from '@/lib/tauri'
 import { isTauriEnv, type UserInfo, userHasRole } from '@/lib/tauri'
 import { SystemConfigKeys } from '@/lib/types/system-config'
@@ -27,7 +28,7 @@ interface AuthState {
 
 /** 认证上下文接口 */
 interface AuthContextValue extends AuthState {
-  /** 登录（rememberMe=true 时持久化会话，7天未使用过期） */
+  /** 登录（rememberMe=true 时按系统配置的天数持久化会话，默认 7 天） */
   login: (username: string, password: string, rememberMe?: boolean) => Promise<LoginResult>
   /** 修改密码 */
   changePassword: (oldPassword: string, newPassword: string) => Promise<void>
@@ -55,9 +56,6 @@ interface AuthStorage {
   /** 是否为"记住我"会话 */
   rememberMe: boolean
 }
-
-/** "记住我"会话有效期：7天（毫秒） */
-const REMEMBER_ME_DURATION_MS = 7 * 24 * 60 * 60 * 1000
 
 /**
  * 模块级认证状态缓存
@@ -116,20 +114,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user, permissions],
   )
 
-  /** 保存认证会话（Tauri 应用数据目录文件，Web 调试模式 localStorage） */
-  const saveAuth = useCallback(async (userInfo: UserInfo, rememberMe: boolean) => {
-    const data: AuthStorage = {
-      userId: userInfo.id,
-      sessionVersion: userInfo.session_version,
-      expiresAt: Date.now() + REMEMBER_ME_DURATION_MS,
-      rememberMe,
-    }
+  /** 读取记住我天数。登录后才能读配置，失败时回退 7 天。 */
+  const resolveRememberMeDurationMs = useCallback(async () => {
     try {
-      await tauriApi.saveAuthSession(JSON.stringify(data))
+      const configs = await tauriApi.getSystemConfigs([SystemConfigKeys.REMEMBER_SESSION_DAYS])
+      const raw = configs.find(item => item.key === SystemConfigKeys.REMEMBER_SESSION_DAYS)?.value
+      return rememberMeDurationMs(raw)
     } catch {
-      // 认证会话文件或 localStorage 不可用（如隐私模式）
+      return rememberMeDurationMs(null)
     }
   }, [])
+
+  /** 保存认证会话（Tauri 应用数据目录文件，Web 调试模式 localStorage） */
+  const saveAuth = useCallback(
+    async (userInfo: UserInfo, rememberMe: boolean) => {
+      const durationMs = await resolveRememberMeDurationMs()
+      const data: AuthStorage = {
+        userId: userInfo.id,
+        sessionVersion: userInfo.session_version,
+        expiresAt: Date.now() + durationMs,
+        rememberMe,
+      }
+      try {
+        await tauriApi.saveAuthSession(JSON.stringify(data))
+      } catch {
+        // 认证会话文件或 localStorage 不可用（如隐私模式）
+      }
+    },
+    [resolveRememberMeDurationMs],
+  )
 
   /** 清除认证信息 */
   const clearAuth = useCallback(async () => {
@@ -218,7 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updatePermissions(permSet)
 
         if (rememberMe) {
-          // 勾选"记住我"：持久化会话，7天有效
+          // 勾选「记住我」：按 remember_session_days 持久化，默认 7 天
           await saveAuth(response.user, true)
         }
 
@@ -341,7 +354,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const data: AuthStorage = JSON.parse(stored)
 
-        // 检查会话是否已过期（7天未使用）
+        // 检查会话是否已过期（过期时间在保存时按配置写入）
         if (data.expiresAt && Date.now() > data.expiresAt) {
           await clearAuth()
           authInitialized = true
@@ -377,7 +390,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (restoredUser) {
           updateUser(restoredUser)
-          // 恢复成功 → 刷新过期时间（用户活跃，重新计时7天）
+          // 恢复成功 → 按当前配置重新计算过期时间
           if (data.rememberMe) {
             await saveAuth(restoredUser, true)
           }

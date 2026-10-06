@@ -39,19 +39,19 @@ export default function ChangePasswordPage() {
       setError(t('oldPasswordRequired'))
       return false
     }
-    if (newPassword.length < 8) {
+    // 初始密码已满足「字母+数字」，仍要单独拦截
+    if (newPassword === 'abc12345') {
+      setError(t('sameAsDefault'))
+      return false
+    }
+    if (newPassword.length <= 6) {
       setError(t('tooShort'))
       return false
     }
     const hasDigit = /\d/.test(newPassword)
-    const hasUpper = /[A-Z]/.test(newPassword)
-    const hasLower = /[a-z]/.test(newPassword)
-    if (!hasDigit || !hasUpper || !hasLower) {
+    const hasLetter = /[A-Za-z]/.test(newPassword)
+    if (!hasDigit || !hasLetter) {
       setError(t('complexityRequirement'))
-      return false
-    }
-    if (newPassword === 'abc12345') {
-      setError(t('sameAsDefault'))
       return false
     }
     if (newPassword !== confirmPassword) {

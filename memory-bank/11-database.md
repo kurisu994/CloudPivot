@@ -30,7 +30,7 @@ paths:
 ## 3. 自管理迁移机制
 
 - **迁移目录**：`src-tauri/migrations/postgres/`。
-- **当前状态**：包含 58 张业务表，21 个迁移版本（`001_init` 至 `021_warehouse_staff_revoke_stock_checks_confirm`）。
+- **当前状态**：包含 58 张业务表，22 个迁移版本（`001_init` 至 `022_remember_session_days`）。
 - **启动并发互斥**：客户端启动时由 `run_migrations` 自动执行未完成迁移；执行前必须持有 PostgreSQL 会话级咨询锁 `pg_advisory_lock`，彻底防止多客户端并发启动时重复执行迁移。
 - **事务隔离**：每一份 `.sql` 迁移脚本在独立的事务块中执行，保证迁移过程的原子性，失败自动回滚。
 

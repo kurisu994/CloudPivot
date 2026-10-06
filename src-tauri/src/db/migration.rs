@@ -143,6 +143,11 @@ fn get_migrations() -> Vec<Migration> {
                 "../../migrations/postgres/021_warehouse_staff_revoke_stock_checks_confirm.sql"
             ),
         },
+        Migration {
+            version: 22,
+            name: "remember_session_days",
+            sql: include_str!("../../migrations/postgres/022_remember_session_days.sql"),
+        },
     ]
 }
 

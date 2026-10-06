@@ -1,11 +1,21 @@
-//! 端到端全业务流程实测 (E2E Business Flow)
+//! 数据库层业务闭环检查（不是 IPC / 命令回归）
 //!
-//! 覆盖：基础数据 → BOM → 采购(下单/审核/入库/批次/费用/退货) →
-//! 销售(下单/审核/出库/FIFO/退货) → 自由出入库/盘点 → 财务收付款核销 → 账实一致审计。
-//! 运行：cargo test --test e2e_business_flow -- --ignored --nocapture
+//! 直接写入单据并核对生成列、库存数量和净未结金额。
+//! 金额一律用 USD 分。不调用采购入库、FIFO、收付款命令，不能代替那些路径的测试。
+//!
+//! 会改写 `DATABASE_URL` 指向的库，因此默认忽略。
+//! 运行：`cargo test --test e2e_business_flow -- --ignored --nocapture`
 
 use sqlx::PgPool;
 use std::env;
+
+const PAYABLE_CENTS: i64 = 28_000;
+const PURCHASE_RETURN_CENTS: i64 = 2_800;
+const RECEIVABLE_CENTS: i64 = 9_000;
+const SALES_RETURN_CENTS: i64 = 2_250;
+const PAYMENT_CENTS: i64 = 20_000;
+const RECEIPT_CENTS: i64 = 5_000;
+const UNIT_COST_CENTS: i64 = 280;
 
 async fn get_test_pool() -> Option<PgPool> {
     dotenvy::dotenv().ok();
@@ -17,103 +27,151 @@ async fn get_test_pool() -> Option<PgPool> {
         .ok()
 }
 
-#[tokio::test]
-#[ignore]
-async fn test_full_e2e_business_lifecycle() {
-    let pool = match get_test_pool().await {
-        Some(p) => p,
-        None => {
-            println!("DATABASE_URL 未设置，跳过 E2E 业务全流程实测");
-            return;
-        }
-    };
+fn near(actual: f64, expected: f64, label: &str) -> Result<(), String> {
+    if (actual - expected).abs() < 1e-4 {
+        Ok(())
+    } else {
+        Err(format!("{label}: 期望 {expected}，实际 {actual}"))
+    }
+}
 
-    println!("========== [E2E] 0. 清理残留测试数据 ==========");
-    sqlx::query("DELETE FROM payment_records WHERE payable_id IN (SELECT id FROM payables WHERE order_no LIKE 'QA_%')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM receipt_records WHERE receivable_id IN (SELECT id FROM receivables WHERE order_no LIKE 'QA_%')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM payables WHERE order_no LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM receivables WHERE order_no LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM stock_check_items WHERE check_id IN (SELECT id FROM stock_checks WHERE check_no LIKE 'QA_%')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM stock_checks WHERE check_no LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM manual_stock_movement_items WHERE movement_id IN (SELECT id FROM manual_stock_movements WHERE movement_no LIKE 'QA_%')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM manual_stock_movements WHERE movement_no LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM sales_return_items WHERE return_id IN (SELECT id FROM sales_returns WHERE return_no LIKE 'QA_%')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM sales_returns WHERE return_no LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM outbound_order_items WHERE outbound_id IN (SELECT id FROM outbound_orders WHERE order_no LIKE 'QA_%')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM outbound_orders WHERE order_no LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM sales_order_items WHERE order_id IN (SELECT id FROM sales_orders WHERE order_no LIKE 'QA_%')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM sales_orders WHERE order_no LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM purchase_return_items WHERE return_id IN (SELECT id FROM purchase_returns WHERE return_no LIKE 'QA_%')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM purchase_returns WHERE return_no LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM inbound_order_items WHERE inbound_id IN (SELECT id FROM inbound_orders WHERE order_no LIKE 'QA_%')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM inbound_orders WHERE order_no LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM purchase_order_items WHERE order_id IN (SELECT id FROM purchase_orders WHERE order_no LIKE 'QA_%')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM purchase_orders WHERE order_no LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM inventory_lots WHERE lot_no LIKE 'LOT-QA-%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM inventory WHERE material_id IN (SELECT id FROM materials WHERE name LIKE 'QA_%')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM bom_items WHERE bom_id IN (SELECT id FROM bom WHERE bom_code LIKE 'QA_%')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM bom WHERE bom_code LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM materials WHERE name LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM customers WHERE name LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM suppliers WHERE name LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM warehouses WHERE name LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM categories WHERE name LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM units WHERE name LIKE 'QA_%'").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'QA_%')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM users WHERE username LIKE 'QA_%'").execute(&pool).await.ok();
+fn eq_i64(actual: i64, expected: i64, label: &str) -> Result<(), String> {
+    if actual == expected {
+        Ok(())
+    } else {
+        Err(format!("{label}: 期望 {expected}，实际 {actual}"))
+    }
+}
 
-    println!("========== [E2E] 1. 基础数据准备 ==========");
-    // 1. 单位
+/// 按依赖顺序删除本测试留下的 QA_ 数据。任何一条失败都返回错误，不吞掉。
+async fn cleanup_qa_data(pool: &PgPool) -> Result<(), sqlx::Error> {
+    let statements = [
+        "DELETE FROM payment_records WHERE payable_id IN (SELECT id FROM payables WHERE order_no LIKE 'QA_%')",
+        "DELETE FROM receipt_records WHERE receivable_id IN (SELECT id FROM receivables WHERE order_no LIKE 'QA_%')",
+        "DELETE FROM payables WHERE order_no LIKE 'QA_%'",
+        "DELETE FROM receivables WHERE order_no LIKE 'QA_%'",
+        "DELETE FROM stock_check_items WHERE check_id IN (SELECT id FROM stock_checks WHERE check_no LIKE 'QA_%')",
+        "DELETE FROM stock_checks WHERE check_no LIKE 'QA_%'",
+        "DELETE FROM manual_stock_movement_items WHERE movement_id IN (SELECT id FROM manual_stock_movements WHERE movement_no LIKE 'QA_%')",
+        "DELETE FROM manual_stock_movements WHERE movement_no LIKE 'QA_%'",
+        "DELETE FROM sales_return_items WHERE return_id IN (SELECT id FROM sales_returns WHERE return_no LIKE 'QA_%')",
+        "DELETE FROM sales_returns WHERE return_no LIKE 'QA_%'",
+        "DELETE FROM outbound_order_items WHERE outbound_id IN (SELECT id FROM outbound_orders WHERE order_no LIKE 'QA_%')",
+        "DELETE FROM outbound_orders WHERE order_no LIKE 'QA_%'",
+        "DELETE FROM sales_order_items WHERE order_id IN (SELECT id FROM sales_orders WHERE order_no LIKE 'QA_%')",
+        "DELETE FROM sales_orders WHERE order_no LIKE 'QA_%'",
+        "DELETE FROM purchase_return_items WHERE return_id IN (SELECT id FROM purchase_returns WHERE return_no LIKE 'QA_%')",
+        "DELETE FROM purchase_returns WHERE return_no LIKE 'QA_%'",
+        "DELETE FROM inbound_order_items WHERE inbound_id IN (SELECT id FROM inbound_orders WHERE order_no LIKE 'QA_%')",
+        "DELETE FROM inbound_orders WHERE order_no LIKE 'QA_%'",
+        "DELETE FROM purchase_order_items WHERE order_id IN (SELECT id FROM purchase_orders WHERE order_no LIKE 'QA_%')",
+        "DELETE FROM purchase_orders WHERE order_no LIKE 'QA_%'",
+        "DELETE FROM inventory_lots WHERE lot_no LIKE 'LOT-QA-%'",
+        "DELETE FROM inventory WHERE material_id IN (SELECT id FROM materials WHERE name LIKE 'QA_%')",
+        "DELETE FROM bom_items WHERE bom_id IN (SELECT id FROM bom WHERE bom_code LIKE 'QA_%')",
+        "DELETE FROM bom WHERE bom_code LIKE 'QA_%'",
+        "DELETE FROM materials WHERE name LIKE 'QA_%'",
+        "DELETE FROM customers WHERE name LIKE 'QA_%'",
+        "DELETE FROM suppliers WHERE name LIKE 'QA_%'",
+        "DELETE FROM warehouses WHERE name LIKE 'QA_%'",
+        "DELETE FROM categories WHERE name LIKE 'QA_%'",
+        "DELETE FROM units WHERE name LIKE 'QA_%'",
+        "DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'QA_%')",
+        "DELETE FROM users WHERE username LIKE 'QA_%'",
+    ];
+    for sql in statements {
+        sqlx::query(sql).execute(pool).await?;
+    }
+    Ok(())
+}
+
+async fn qty_of(pool: &PgPool, material_id: i64, warehouse_id: i64) -> Result<f64, String> {
+    sqlx::query_scalar(
+        "SELECT quantity FROM inventory WHERE material_id = $1 AND warehouse_id = $2",
+    )
+    .bind(material_id)
+    .bind(warehouse_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| format!("查询库存失败: {e}"))
+}
+
+async fn lot_qty_of(pool: &PgPool, lot_id: i64) -> Result<f64, String> {
+    sqlx::query_scalar("SELECT qty_on_hand FROM inventory_lots WHERE id = $1")
+        .bind(lot_id)
+        .fetch_one(pool)
+        .await
+        .map_err(|e| format!("查询批次失败: {e}"))
+}
+
+async fn net_unpaid(pool: &PgPool) -> Result<i64, String> {
+    sqlx::query_scalar(
+        "SELECT COALESCE(SUM(unpaid_amount), 0)::BIGINT FROM payables WHERE order_no LIKE 'QA_%'",
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|e| format!("查询应付净额失败: {e}"))
+}
+
+async fn net_unreceived(pool: &PgPool) -> Result<i64, String> {
+    sqlx::query_scalar(
+        "SELECT COALESCE(SUM(unreceived_amount), 0)::BIGINT FROM receivables WHERE order_no LIKE 'QA_%'",
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|e| format!("查询应收净额失败: {e}"))
+}
+
+async fn run_lifecycle(pool: &PgPool) -> Result<(), String> {
+    cleanup_qa_data(pool)
+        .await
+        .map_err(|e| format!("预清理失败: {e}"))?;
+
     let unit_id: i64 = sqlx::query_scalar(
         "INSERT INTO units (name, name_en, name_vi, symbol, decimal_places, is_enabled)
          VALUES ('QA_件', 'QA_pcs', 'QA_cái', 'QA_pc', 0, true)
          RETURNING id",
     )
-    .fetch_one(&pool)
+    .fetch_one(pool)
     .await
-    .expect("创建测试单位失败");
+    .map_err(|e| format!("创建单位失败: {e}"))?;
 
-    // 2. 分类
     let cat_id: i64 = sqlx::query_scalar(
         "INSERT INTO categories (name, code, sort_order, is_enabled)
          VALUES ('QA_五金配件', 'QA_CAT_01', 99, true)
          RETURNING id",
     )
-    .fetch_one(&pool)
+    .fetch_one(pool)
     .await
-    .expect("创建测试分类失败");
+    .map_err(|e| format!("创建分类失败: {e}"))?;
 
-    // 3. 仓库
     let wh_id: i64 = sqlx::query_scalar(
         "INSERT INTO warehouses (name, code, warehouse_type, is_enabled)
          VALUES ('QA_测试仓', 'QA_WH_01', 'raw', true)
          RETURNING id",
     )
-    .fetch_one(&pool)
+    .fetch_one(pool)
     .await
-    .expect("创建测试仓库失败");
+    .map_err(|e| format!("创建仓库失败: {e}"))?;
 
-    // 4. 供应商
     let sup_id: i64 = sqlx::query_scalar(
         "INSERT INTO suppliers (name, code, currency, credit_days, is_enabled)
          VALUES ('QA_五金实业', 'QA_SUP_01', 'USD', 30, true)
          RETURNING id",
     )
-    .fetch_one(&pool)
+    .fetch_one(pool)
     .await
-    .expect("创建测试供应商失败");
+    .map_err(|e| format!("创建供应商失败: {e}"))?;
 
-    // 5. 客户
     let cust_id: i64 = sqlx::query_scalar(
         "INSERT INTO customers (name, code, customer_type, currency, credit_limit, default_discount, is_enabled)
          VALUES ('QA_家居商行', 'QA_CUST_01', 'dealer', 'USD', 50000, 10, true)
          RETURNING id",
     )
-    .fetch_one(&pool)
+    .fetch_one(pool)
     .await
-    .expect("创建测试客户失败");
+    .map_err(|e| format!("创建客户失败: {e}"))?;
 
-    // 6. 物料 (原材料 - 强制批次)
     let mat_id: i64 = sqlx::query_scalar(
         "INSERT INTO materials (code, name, material_type, category_id, base_unit_id, lot_tracking_mode, is_enabled)
          VALUES ('QA_MAT_001', 'QA_静音滑轨', 'raw', $1, $2, 'required', true)
@@ -121,11 +179,10 @@ async fn test_full_e2e_business_lifecycle() {
     )
     .bind(cat_id)
     .bind(unit_id)
-    .fetch_one(&pool)
+    .fetch_one(pool)
     .await
-    .expect("创建测试原材料物料失败");
+    .map_err(|e| format!("创建原材料失败: {e}"))?;
 
-    // 7. 物料 (成品)
     let product_id: i64 = sqlx::query_scalar(
         "INSERT INTO materials (code, name, material_type, category_id, base_unit_id, lot_tracking_mode, is_enabled)
          VALUES ('QA_PRD_001', 'QA_实木床头柜', 'finished', $1, $2, 'none', true)
@@ -133,463 +190,493 @@ async fn test_full_e2e_business_lifecycle() {
     )
     .bind(cat_id)
     .bind(unit_id)
-    .fetch_one(&pool)
+    .fetch_one(pool)
     .await
-    .expect("创建测试成品物料失败");
+    .map_err(|e| format!("创建成品失败: {e}"))?;
 
-    println!("基础数据创建成功: mat_id={}, product_id={}, wh_id={}", mat_id, product_id, wh_id);
-
-    println!("========== [E2E] 2. BOM 管理 ==========");
     let bom_id: i64 = sqlx::query_scalar(
         "INSERT INTO bom (bom_code, material_id, version, status, total_standard_cost)
          VALUES ('QA_BOM_001', $1, 'V1.0', 'active', 500)
          RETURNING id",
     )
     .bind(product_id)
-    .fetch_one(&pool)
+    .fetch_one(pool)
     .await
-    .expect("创建测试 BOM 失败");
+    .map_err(|e| format!("创建 BOM 失败: {e}"))?;
 
+    // wastage_rate 单位是百分比，5 表示 5%
     sqlx::query(
         "INSERT INTO bom_items (bom_id, child_material_id, standard_qty, wastage_rate, process_step)
-         VALUES ($1, $2, 4.0, 0.05, '抽屉组装')",
+         VALUES ($1, $2, 4.0, 5.0, '抽屉组装')",
     )
     .bind(bom_id)
     .bind(mat_id)
-    .execute(&pool)
+    .execute(pool)
     .await
-    .expect("添加 BOM 子件失败");
+    .map_err(|e| format!("添加 BOM 子件失败: {e}"))?;
 
-    println!("BOM V1.0 创建并生效成功: bom_id={}", bom_id);
+    let actual_qty: f64 = sqlx::query_scalar(
+        "SELECT actual_qty FROM bom_items WHERE bom_id = $1 AND child_material_id = $2",
+    )
+    .bind(bom_id)
+    .bind(mat_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| format!("查询 BOM 实际用量失败: {e}"))?;
+    near(actual_qty, 4.2, "BOM 实际用量应为 4 × (1 + 5%)")?;
 
-    println!("========== [E2E] 3. 采购全流程 (下单→审核→入库→退货) ==========");
-    // 3.1 采购单 PO
     let po_id: i64 = sqlx::query_scalar(
-        "INSERT INTO purchase_orders (order_no, supplier_id, order_date, status, currency, exchange_rate, total_amount, freight_amount, other_charges, payable_amount, warehouse_id)
-         VALUES ('QA_PO_001', $1, CURRENT_DATE::TEXT, 'draft', 'USD', 1.0, 250, 20, 10, 280, $2)
-         RETURNING id",
+        "INSERT INTO purchase_orders (
+            order_no, supplier_id, order_date, status, currency, exchange_rate,
+            total_amount, freight_amount, other_charges, payable_amount, warehouse_id
+         ) VALUES (
+            'QA_PO_001', $1, CURRENT_DATE::TEXT, 'draft', 'USD', 1.0,
+            25000, 2000, 1000, $2, $3
+         ) RETURNING id",
     )
     .bind(sup_id)
+    .bind(PAYABLE_CENTS)
     .bind(wh_id)
-    .fetch_one(&pool)
+    .fetch_one(pool)
     .await
-    .expect("创建采购单失败");
+    .map_err(|e| format!("创建采购单失败: {e}"))?;
 
     sqlx::query(
-        "INSERT INTO purchase_order_items (order_id, material_id, quantity, unit_price, amount, unit_id, unit_name_snapshot, base_quantity, warehouse_id)
-         VALUES ($1, $2, 100.0, 250, 250, $3, 'QA_件', 100.0, $4)",
+        "INSERT INTO purchase_order_items (
+            order_id, material_id, quantity, unit_price, amount,
+            unit_id, unit_name_snapshot, base_quantity, warehouse_id
+         ) VALUES ($1, $2, 100.0, 250, 25000, $3, 'QA_件', 100.0, $4)",
     )
     .bind(po_id)
     .bind(mat_id)
     .bind(unit_id)
     .bind(wh_id)
-    .execute(&pool)
+    .execute(pool)
     .await
-    .expect("添加采购单行失败");
+    .map_err(|e| format!("添加采购明细失败: {e}"))?;
 
-    // 审核采购单
-    sqlx::query("UPDATE purchase_orders SET status = 'approved', approved_at = NOW(), approved_by_name = 'QA_Tester' WHERE id = $1")
-        .bind(po_id)
-        .execute(&pool)
-        .await
-        .expect("审核采购单失败");
+    sqlx::query(
+        "UPDATE purchase_orders
+         SET status = 'approved', approved_at = NOW(), approved_by_name = 'QA_Tester'
+         WHERE id = $1",
+    )
+    .bind(po_id)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("审核采购单失败: {e}"))?;
 
-    // 3.2 采购入库 PI
     let inbound_id: i64 = sqlx::query_scalar(
-        "INSERT INTO inbound_orders (order_no, inbound_type, purchase_id, warehouse_id, inbound_date, status, supplier_id, currency, exchange_rate, payable_amount)
-         VALUES ('QA_PI_001', 'purchase', $1, $2, CURRENT_DATE::TEXT, 'confirmed', $3, 'USD', 1.0, 280)
-         RETURNING id",
+        "INSERT INTO inbound_orders (
+            order_no, inbound_type, purchase_id, warehouse_id, inbound_date, status,
+            supplier_id, currency, exchange_rate, payable_amount
+         ) VALUES (
+            'QA_PI_001', 'purchase', $1, $2, CURRENT_DATE::TEXT, 'confirmed',
+            $3, 'USD', 1.0, $4
+         ) RETURNING id",
     )
     .bind(po_id)
     .bind(wh_id)
     .bind(sup_id)
-    .fetch_one(&pool)
+    .bind(PAYABLE_CENTS)
+    .fetch_one(pool)
     .await
-    .expect("创建采购入库单失败");
+    .map_err(|e| format!("创建入库单失败: {e}"))?;
 
     let inbound_item_id: i64 = sqlx::query_scalar(
-        "INSERT INTO inbound_order_items (inbound_id, material_id, unit_id, unit_name_snapshot, conversion_rate_snapshot, base_quantity, quantity, unit_price, amount, lot_no)
-         VALUES ($1, $2, $3, 'QA_件', 1.0, 100.0, 100.0, 280, 280, 'LOT-QA-202610-001')
+        "INSERT INTO inbound_order_items (
+            inbound_id, material_id, unit_id, unit_name_snapshot, conversion_rate_snapshot,
+            base_quantity, quantity, unit_price, amount, lot_no
+         ) VALUES ($1, $2, $3, 'QA_件', 1.0, 100.0, 100.0, 280, $4, 'LOT-QA-202610-001')
          RETURNING id",
     )
     .bind(inbound_id)
     .bind(mat_id)
     .bind(unit_id)
-    .fetch_one(&pool)
+    .bind(PAYABLE_CENTS)
+    .fetch_one(pool)
     .await
-    .expect("写入入库明细失败");
+    .map_err(|e| format!("写入入库明细失败: {e}"))?;
 
-    // 入库批次管理
     let lot_id: i64 = sqlx::query_scalar(
-        "INSERT INTO inventory_lots (material_id, warehouse_id, source_inbound_item_id, lot_no, qty_on_hand, qty_reserved, receipt_unit_cost, supplier_id, received_date)
-         VALUES ($1, $2, $3, 'LOT-QA-202610-001', 100.0, 0.0, 280, $4, CURRENT_DATE::TEXT)
+        "INSERT INTO inventory_lots (
+            material_id, warehouse_id, source_inbound_item_id, lot_no,
+            qty_on_hand, qty_reserved, receipt_unit_cost, supplier_id, received_date
+         ) VALUES ($1, $2, $3, 'LOT-QA-202610-001', 100.0, 0.0, $4, $5, CURRENT_DATE::TEXT)
          RETURNING id",
     )
     .bind(mat_id)
     .bind(wh_id)
     .bind(inbound_item_id)
+    .bind(UNIT_COST_CENTS)
     .bind(sup_id)
-    .fetch_one(&pool)
+    .fetch_one(pool)
     .await
-    .expect("创建入库批次失败");
+    .map_err(|e| format!("创建批次失败: {e}"))?;
 
-    // 累加库存
     sqlx::query(
         "INSERT INTO inventory (material_id, warehouse_id, quantity, reserved_qty, avg_cost)
-         VALUES ($1, $2, 100.0, 0.0, 280)
+         VALUES ($1, $2, 100.0, 0.0, $3)
          ON CONFLICT (material_id, warehouse_id) DO UPDATE
          SET quantity = inventory.quantity + 100.0",
     )
     .bind(mat_id)
     .bind(wh_id)
-    .execute(&pool)
+    .bind(UNIT_COST_CENTS)
+    .execute(pool)
     .await
-    .expect("更新库存失败");
+    .map_err(|e| format!("更新库存失败: {e}"))?;
 
-    // 生成应付
     let payable_id: i64 = sqlx::query_scalar(
-        "INSERT INTO payables (supplier_id, inbound_id, order_no, payable_date, currency, exchange_rate, payable_amount, paid_amount, due_date, status)
-         VALUES ($1, $2, 'QA_PI_001', CURRENT_DATE::TEXT, 'USD', 1.0, 280, 0, (CURRENT_DATE + INTERVAL '30 days')::TEXT, 'unpaid')
-         RETURNING id",
+        "INSERT INTO payables (
+            supplier_id, inbound_id, order_no, payable_date, currency, exchange_rate,
+            payable_amount, paid_amount, due_date, status
+         ) VALUES (
+            $1, $2, 'QA_PI_001', CURRENT_DATE::TEXT, 'USD', 1.0,
+            $3, 0, (CURRENT_DATE + INTERVAL '30 days')::TEXT, 'unpaid'
+         ) RETURNING id",
     )
     .bind(sup_id)
     .bind(inbound_id)
-    .fetch_one(&pool)
+    .bind(PAYABLE_CENTS)
+    .fetch_one(pool)
     .await
-    .expect("生成应付账款失败");
+    .map_err(|e| format!("生成应付失败: {e}"))?;
 
-    // 验证库存与应付
-    let (curr_qty, avail_qty): (f64, f64) = sqlx::query_as(
-        "SELECT quantity, available_qty FROM inventory WHERE material_id = $1 AND warehouse_id = $2",
-    )
-    .bind(mat_id)
-    .bind(wh_id)
-    .fetch_one(&pool)
-    .await
-    .expect("核对库存失败");
-    assert!((curr_qty - 100.0).abs() < 1e-4, "采购入库后当前库存应为 100");
-    assert!((avail_qty - 100.0).abs() < 1e-4, "采购入库后可用库存应为 100");
-    println!("采购入库验证通过: 库存=100, 应付=$280 (payable_id={})", payable_id);
+    near(qty_of(pool, mat_id, wh_id).await?, 100.0, "入库后库存")?;
+    near(lot_qty_of(pool, lot_id).await?, 100.0, "入库后批次")?;
+    eq_i64(net_unpaid(pool).await?, PAYABLE_CENTS, "入库后应付净额")?;
 
-    // 3.3 采购退货 PR (退 10 件)
     let return_id: i64 = sqlx::query_scalar(
-        "INSERT INTO purchase_returns (return_no, supplier_id, inbound_id, return_date, status, total_amount, currency, exchange_rate)
-         VALUES ('QA_PR_001', $1, $2, CURRENT_DATE::TEXT, 'confirmed', 28, 'USD', 1.0)
+        "INSERT INTO purchase_returns (
+            return_no, supplier_id, inbound_id, return_date, status,
+            total_amount, currency, exchange_rate
+         ) VALUES ('QA_PR_001', $1, $2, CURRENT_DATE::TEXT, 'confirmed', $3, 'USD', 1.0)
          RETURNING id",
     )
     .bind(sup_id)
     .bind(inbound_id)
-    .fetch_one(&pool)
+    .bind(PURCHASE_RETURN_CENTS)
+    .fetch_one(pool)
     .await
-    .expect("创建采购退货单失败");
+    .map_err(|e| format!("创建采购退货失败: {e}"))?;
 
-    // 扣减批次与库存
     sqlx::query("UPDATE inventory_lots SET qty_on_hand = qty_on_hand - 10.0 WHERE id = $1")
         .bind(lot_id)
-        .execute(&pool)
+        .execute(pool)
         .await
-        .expect("扣减批次库存失败");
-
+        .map_err(|e| format!("采购退货扣批次失败: {e}"))?;
     sqlx::query("UPDATE inventory SET quantity = quantity - 10.0 WHERE material_id = $1 AND warehouse_id = $2")
         .bind(mat_id)
         .bind(wh_id)
-        .execute(&pool)
+        .execute(pool)
         .await
-        .expect("扣减库存失败");
+        .map_err(|e| format!("采购退货扣库存失败: {e}"))?;
 
-    // 生成应付冲减 (return_offset)
+    // 与正式退货确认一致：负数冲减，paid_amount 保持 0，未结额由生成列算出
     sqlx::query(
-        "INSERT INTO payables (supplier_id, return_id, adjustment_type, order_no, payable_date, currency, exchange_rate, payable_amount, paid_amount, status)
-         VALUES ($1, $2, 'return_offset', 'QA_PR_001', CURRENT_DATE::TEXT, 'USD', 1.0, -28, 0, 'paid')",
+        "INSERT INTO payables (
+            supplier_id, return_id, adjustment_type, order_no, payable_date,
+            currency, exchange_rate, payable_amount, paid_amount, status
+         ) VALUES ($1, $2, 'return_offset', 'QA_PR_001', CURRENT_DATE::TEXT, 'USD', 1.0, $3, 0, 'unpaid')",
     )
     .bind(sup_id)
     .bind(return_id)
-    .execute(&pool)
+    .bind(-PURCHASE_RETURN_CENTS)
+    .execute(pool)
     .await
-    .expect("写入应付退货冲减失败");
+    .map_err(|e| format!("写入应付冲减失败: {e}"))?;
 
-    let post_ret_qty: f64 = sqlx::query_scalar("SELECT quantity FROM inventory WHERE material_id = $1 AND warehouse_id = $2")
-        .bind(mat_id)
-        .bind(wh_id)
-        .fetch_one(&pool)
-        .await
-        .expect("核对退货后库存失败");
-    assert!((post_ret_qty - 90.0).abs() < 1e-4, "采购退货 10 件后库存应为 90");
-    println!("采购退货验证通过: 退货后库存=90, 应付冲减=-$28");
+    near(qty_of(pool, mat_id, wh_id).await?, 90.0, "采购退货后库存")?;
+    near(lot_qty_of(pool, lot_id).await?, 90.0, "采购退货后批次")?;
+    eq_i64(
+        net_unpaid(pool).await?,
+        PAYABLE_CENTS - PURCHASE_RETURN_CENTS,
+        "采购退货后应付净额",
+    )?;
 
-    println!("========== [E2E] 4. 销售全流程 (下单→审核→出库→退货) ==========");
-    // 4.1 销售单 SO (买 20 件)
     let so_id: i64 = sqlx::query_scalar(
-        "INSERT INTO sales_orders (order_no, customer_id, order_date, status, currency, exchange_rate, total_amount, receivable_amount, warehouse_id)
-         VALUES ('QA_SO_001', $1, CURRENT_DATE::TEXT, 'draft', 'USD', 1.0, 90, 90, $2)
+        "INSERT INTO sales_orders (
+            order_no, customer_id, order_date, status, currency, exchange_rate,
+            total_amount, receivable_amount, warehouse_id
+         ) VALUES ('QA_SO_001', $1, CURRENT_DATE::TEXT, 'draft', 'USD', 1.0, $2, $2, $3)
          RETURNING id",
     )
     .bind(cust_id)
+    .bind(RECEIVABLE_CENTS)
     .bind(wh_id)
-    .fetch_one(&pool)
+    .fetch_one(pool)
     .await
-    .expect("创建销售单失败");
+    .map_err(|e| format!("创建销售单失败: {e}"))?;
 
     sqlx::query(
-        "INSERT INTO sales_order_items (order_id, material_id, quantity, unit_price, discount_rate, amount, unit_id, unit_name_snapshot, base_quantity, warehouse_id)
-         VALUES ($1, $2, 20.0, 500, 10.0, 90, $3, 'QA_件', 20.0, $4)",
+        "INSERT INTO sales_order_items (
+            order_id, material_id, quantity, unit_price, discount_rate, amount,
+            unit_id, unit_name_snapshot, base_quantity, warehouse_id
+         ) VALUES ($1, $2, 20.0, 500, 10.0, $3, $4, 'QA_件', 20.0, $5)",
     )
     .bind(so_id)
     .bind(mat_id)
+    .bind(RECEIVABLE_CENTS)
     .bind(unit_id)
     .bind(wh_id)
-    .execute(&pool)
+    .execute(pool)
     .await
-    .expect("添加销售单明细失败");
+    .map_err(|e| format!("添加销售明细失败: {e}"))?;
 
-    // 审核 SO
-    sqlx::query("UPDATE sales_orders SET status = 'approved', approved_at = NOW(), approved_by_name = 'QA_Tester' WHERE id = $1")
-        .bind(so_id)
-        .execute(&pool)
-        .await
-        .expect("审核销售单失败");
+    sqlx::query(
+        "UPDATE sales_orders
+         SET status = 'approved', approved_at = NOW(), approved_by_name = 'QA_Tester'
+         WHERE id = $1",
+    )
+    .bind(so_id)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("审核销售单失败: {e}"))?;
 
-    // 4.2 销售出库 SD (出库 20 件)
     let outbound_id: i64 = sqlx::query_scalar(
-        "INSERT INTO outbound_orders (order_no, outbound_type, sales_id, warehouse_id, outbound_date, status, customer_id, currency, exchange_rate, receivable_amount)
-         VALUES ('QA_SD_001', 'sales', $1, $2, CURRENT_DATE::TEXT, 'confirmed', $3, 'USD', 1.0, 90)
-         RETURNING id",
+        "INSERT INTO outbound_orders (
+            order_no, outbound_type, sales_id, warehouse_id, outbound_date, status,
+            customer_id, currency, exchange_rate, receivable_amount
+         ) VALUES (
+            'QA_SD_001', 'sales', $1, $2, CURRENT_DATE::TEXT, 'confirmed',
+            $3, 'USD', 1.0, $4
+         ) RETURNING id",
     )
     .bind(so_id)
     .bind(wh_id)
     .bind(cust_id)
-    .fetch_one(&pool)
+    .bind(RECEIVABLE_CENTS)
+    .fetch_one(pool)
     .await
-    .expect("创建销售出库单失败");
+    .map_err(|e| format!("创建出库单失败: {e}"))?;
 
-    // FIFO 扣减批次 (从 LOT-QA-202610-001 扣减 20 件)
     sqlx::query("UPDATE inventory_lots SET qty_on_hand = qty_on_hand - 20.0 WHERE id = $1")
         .bind(lot_id)
-        .execute(&pool)
+        .execute(pool)
         .await
-        .expect("FIFO 批次扣减失败");
-
+        .map_err(|e| format!("销售出库扣批次失败: {e}"))?;
     sqlx::query(
-        "INSERT INTO outbound_order_items (outbound_id, material_id, unit_id, unit_name_snapshot, conversion_rate_snapshot, base_quantity, quantity, unit_price, amount, lot_id)
-         VALUES ($1, $2, $3, 'QA_件', 1.0, 20.0, 20.0, 450, 90, $4)",
+        "INSERT INTO outbound_order_items (
+            outbound_id, material_id, unit_id, unit_name_snapshot, conversion_rate_snapshot,
+            base_quantity, quantity, unit_price, amount, lot_id
+         ) VALUES ($1, $2, $3, 'QA_件', 1.0, 20.0, 20.0, 450, $4, $5)",
     )
     .bind(outbound_id)
     .bind(mat_id)
     .bind(unit_id)
+    .bind(RECEIVABLE_CENTS)
     .bind(lot_id)
-    .execute(&pool)
+    .execute(pool)
     .await
-    .expect("添加出库明细失败");
-
-    // 扣减总库存
+    .map_err(|e| format!("添加出库明细失败: {e}"))?;
     sqlx::query("UPDATE inventory SET quantity = quantity - 20.0 WHERE material_id = $1 AND warehouse_id = $2")
         .bind(mat_id)
         .bind(wh_id)
-        .execute(&pool)
+        .execute(pool)
         .await
-        .expect("更新销售出库库存失败");
+        .map_err(|e| format!("销售出库扣库存失败: {e}"))?;
 
-    // 生成应收
     let recv_id: i64 = sqlx::query_scalar(
-        "INSERT INTO receivables (customer_id, outbound_id, order_no, receivable_date, currency, exchange_rate, receivable_amount, received_amount, due_date, status)
-         VALUES ($1, $2, 'QA_SD_001', CURRENT_DATE::TEXT, 'USD', 1.0, 90, 0, (CURRENT_DATE + INTERVAL '30 days')::TEXT, 'unpaid')
-         RETURNING id",
+        "INSERT INTO receivables (
+            customer_id, outbound_id, order_no, receivable_date, currency, exchange_rate,
+            receivable_amount, received_amount, due_date, status
+         ) VALUES (
+            $1, $2, 'QA_SD_001', CURRENT_DATE::TEXT, 'USD', 1.0,
+            $3, 0, (CURRENT_DATE + INTERVAL '30 days')::TEXT, 'unpaid'
+         ) RETURNING id",
     )
     .bind(cust_id)
     .bind(outbound_id)
-    .fetch_one(&pool)
+    .bind(RECEIVABLE_CENTS)
+    .fetch_one(pool)
     .await
-    .expect("生成应收账款失败");
+    .map_err(|e| format!("生成应收失败: {e}"))?;
 
-    let post_so_qty: f64 = sqlx::query_scalar("SELECT quantity FROM inventory WHERE material_id = $1 AND warehouse_id = $2")
-        .bind(mat_id)
-        .bind(wh_id)
-        .fetch_one(&pool)
-        .await
-        .expect("核对销售出库后库存失败");
-    assert!((post_so_qty - 70.0).abs() < 1e-4, "销售出库 20 件后库存应为 70");
-    println!("销售出库验证通过: 出库后库存=70, 应收=$90 (recv_id={})", recv_id);
+    near(qty_of(pool, mat_id, wh_id).await?, 70.0, "销售出库后库存")?;
+    near(lot_qty_of(pool, lot_id).await?, 70.0, "销售出库后批次")?;
+    eq_i64(
+        net_unreceived(pool).await?,
+        RECEIVABLE_CENTS,
+        "出库后应收净额",
+    )?;
 
-    // 4.3 销售退货 SR (退 5 件)
     let sales_ret_id: i64 = sqlx::query_scalar(
-        "INSERT INTO sales_returns (return_no, customer_id, outbound_id, return_date, status, total_amount, currency, exchange_rate)
-         VALUES ('QA_SR_001', $1, $2, CURRENT_DATE::TEXT, 'confirmed', 23, 'USD', 1.0)
+        "INSERT INTO sales_returns (
+            return_no, customer_id, outbound_id, return_date, status,
+            total_amount, currency, exchange_rate
+         ) VALUES ('QA_SR_001', $1, $2, CURRENT_DATE::TEXT, 'confirmed', $3, 'USD', 1.0)
          RETURNING id",
     )
     .bind(cust_id)
     .bind(outbound_id)
-    .fetch_one(&pool)
+    .bind(SALES_RETURN_CENTS)
+    .fetch_one(pool)
     .await
-    .expect("创建销售退货单失败");
+    .map_err(|e| format!("创建销售退货失败: {e}"))?;
 
-    // 退回原批次
     sqlx::query("UPDATE inventory_lots SET qty_on_hand = qty_on_hand + 5.0 WHERE id = $1")
         .bind(lot_id)
-        .execute(&pool)
+        .execute(pool)
         .await
-        .expect("退回原批次库存失败");
-
+        .map_err(|e| format!("销售退货回批次失败: {e}"))?;
     sqlx::query("UPDATE inventory SET quantity = quantity + 5.0 WHERE material_id = $1 AND warehouse_id = $2")
         .bind(mat_id)
         .bind(wh_id)
-        .execute(&pool)
+        .execute(pool)
         .await
-        .expect("恢复销售退货库存失败");
-
-    // 应收冲减
+        .map_err(|e| format!("销售退货回库存失败: {e}"))?;
     sqlx::query(
-        "INSERT INTO receivables (customer_id, return_id, adjustment_type, order_no, receivable_date, currency, exchange_rate, receivable_amount, received_amount, status)
-         VALUES ($1, $2, 'return_offset', 'QA_SR_001', CURRENT_DATE::TEXT, 'USD', 1.0, -23, 0, 'paid')",
+        "INSERT INTO receivables (
+            customer_id, return_id, adjustment_type, order_no, receivable_date,
+            currency, exchange_rate, receivable_amount, received_amount, status
+         ) VALUES ($1, $2, 'return_offset', 'QA_SR_001', CURRENT_DATE::TEXT, 'USD', 1.0, $3, 0, 'unpaid')",
     )
     .bind(cust_id)
     .bind(sales_ret_id)
-    .execute(&pool)
+    .bind(-SALES_RETURN_CENTS)
+    .execute(pool)
     .await
-    .expect("写入应收退货冲减失败");
+    .map_err(|e| format!("写入应收冲减失败: {e}"))?;
 
-    let post_sr_qty: f64 = sqlx::query_scalar("SELECT quantity FROM inventory WHERE material_id = $1 AND warehouse_id = $2")
-        .bind(mat_id)
-        .bind(wh_id)
-        .fetch_one(&pool)
-        .await
-        .expect("核对销售退货后库存失败");
-    assert!((post_sr_qty - 75.0).abs() < 1e-4, "销售退货 5 件后库存应恢复为 75");
-    println!("销售退货验证通过: 退货后库存=75, 应收冲减=-$23");
+    near(qty_of(pool, mat_id, wh_id).await?, 75.0, "销售退货后库存")?;
+    near(lot_qty_of(pool, lot_id).await?, 75.0, "销售退货后批次")?;
+    eq_i64(
+        net_unreceived(pool).await?,
+        RECEIVABLE_CENTS - SALES_RETURN_CENTS,
+        "销售退货后应收净额",
+    )?;
 
-    println!("========== [E2E] 5. 自由出入库与盘点 ==========");
-    // 5.1 自由出入库 (报废 5 件)
-    let scrap_id: i64 = sqlx::query_scalar(
-        "INSERT INTO manual_stock_movements (movement_no, direction, business_type, warehouse_id, movement_date, status, remark)
-         VALUES ('QA_FM_001', 'out', 'scrap', $1, CURRENT_DATE::TEXT, 'confirmed', '质检破损报废')
-         RETURNING id",
+    sqlx::query(
+        "INSERT INTO manual_stock_movements (
+            movement_no, direction, business_type, warehouse_id, movement_date, status, remark
+         ) VALUES ('QA_FM_001', 'out', 'scrap', $1, CURRENT_DATE::TEXT, 'confirmed', '质检破损报废')",
     )
     .bind(wh_id)
-    .fetch_one(&pool)
+    .execute(pool)
     .await
-    .expect("创建报废出库单失败");
-
+    .map_err(|e| format!("创建报废单失败: {e}"))?;
+    sqlx::query("UPDATE inventory_lots SET qty_on_hand = qty_on_hand - 5.0 WHERE id = $1")
+        .bind(lot_id)
+        .execute(pool)
+        .await
+        .map_err(|e| format!("报废扣批次失败: {e}"))?;
     sqlx::query("UPDATE inventory SET quantity = quantity - 5.0 WHERE material_id = $1 AND warehouse_id = $2")
         .bind(mat_id)
         .bind(wh_id)
-        .execute(&pool)
+        .execute(pool)
         .await
-        .expect("报废扣减库存失败");
+        .map_err(|e| format!("报废扣库存失败: {e}"))?;
+    near(qty_of(pool, mat_id, wh_id).await?, 70.0, "报废后库存")?;
+    near(lot_qty_of(pool, lot_id).await?, 70.0, "报废后批次")?;
 
-    let post_scrap_qty: f64 = sqlx::query_scalar("SELECT quantity FROM inventory WHERE material_id = $1 AND warehouse_id = $2")
-        .bind(mat_id)
-        .bind(wh_id)
-        .fetch_one(&pool)
-        .await
-        .expect("核对报废后库存失败");
-    assert!((post_scrap_qty - 70.0).abs() < 1e-4, "报废出库 5 件后库存应为 70");
-    println!("报废出库验证通过: scrap_id={}, 剩余库存=70", scrap_id);
-
-    // 5.2 库存盘点 (账面 70, 实盘 68, 盘亏 2 件)
     let check_id: i64 = sqlx::query_scalar(
         "INSERT INTO stock_checks (check_no, warehouse_id, check_date, status, scope_type)
          VALUES ('QA_SC_001', $1, CURRENT_DATE::TEXT, 'confirmed', 'warehouse')
          RETURNING id",
     )
     .bind(wh_id)
-    .fetch_one(&pool)
+    .fetch_one(pool)
     .await
-    .expect("创建盘点单失败");
-
+    .map_err(|e| format!("创建盘点单失败: {e}"))?;
     sqlx::query(
         "INSERT INTO stock_check_items (check_id, material_id, system_qty, actual_qty, unit_price)
-         VALUES ($1, $2, 70.0, 68.0, 280)",
+         VALUES ($1, $2, 70.0, 68.0, $3)",
     )
     .bind(check_id)
     .bind(mat_id)
-    .execute(&pool)
+    .bind(UNIT_COST_CENTS)
+    .execute(pool)
     .await
-    .expect("添加盘点明细失败");
+    .map_err(|e| format!("添加盘点明细失败: {e}"))?;
 
-    // 过账修正库存
-    sqlx::query("UPDATE inventory SET quantity = 68.0 WHERE material_id = $1 AND warehouse_id = $2")
-        .bind(mat_id)
-        .bind(wh_id)
-        .execute(&pool)
+    let (diff_qty, diff_amount): (f64, i64) = sqlx::query_as(
+        "SELECT diff_qty, diff_amount FROM stock_check_items WHERE check_id = $1 AND material_id = $2",
+    )
+    .bind(check_id)
+    .bind(mat_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| format!("查询盘点差异失败: {e}"))?;
+    near(diff_qty, -2.0, "盘点差异数量")?;
+    eq_i64(diff_amount, -2 * UNIT_COST_CENTS, "盘点差异金额")?;
+
+    sqlx::query("UPDATE inventory_lots SET qty_on_hand = 68.0 WHERE id = $1")
+        .bind(lot_id)
+        .execute(pool)
         .await
-        .expect("盘点过账修正库存失败");
+        .map_err(|e| format!("盘点修正批次失败: {e}"))?;
+    sqlx::query(
+        "UPDATE inventory SET quantity = 68.0 WHERE material_id = $1 AND warehouse_id = $2",
+    )
+    .bind(mat_id)
+    .bind(wh_id)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("盘点修正库存失败: {e}"))?;
+    near(qty_of(pool, mat_id, wh_id).await?, 68.0, "盘点后库存")?;
+    near(lot_qty_of(pool, lot_id).await?, 68.0, "盘点后批次")?;
 
-    let post_check_qty: f64 = sqlx::query_scalar("SELECT quantity FROM inventory WHERE material_id = $1 AND warehouse_id = $2")
-        .bind(mat_id)
-        .bind(wh_id)
-        .fetch_one(&pool)
-        .await
-        .expect("核对盘点后库存失败");
-    assert!((post_check_qty - 68.0).abs() < 1e-4, "盘点修正后库存应为 68");
-    println!("库存盘点验证通过: 账面=70, 实盘=68, 盘点过账后库存=68");
-
-    println!("========== [E2E] 6. 财务收付款登记 ==========");
-    // 6.1 应付付款
-    let pay_rec_id: i64 = sqlx::query_scalar(
+    sqlx::query(
         "INSERT INTO payment_records (payable_id, payment_date, payment_amount, currency, payment_method)
-         VALUES ($1, CURRENT_DATE::TEXT, 200, 'USD', 'bank_transfer')
-         RETURNING id",
+         VALUES ($1, CURRENT_DATE::TEXT, $2, 'USD', 'bank_transfer')",
     )
     .bind(payable_id)
-    .fetch_one(&pool)
+    .bind(PAYMENT_CENTS)
+    .execute(pool)
     .await
-    .expect("登记付款失败");
+    .map_err(|e| format!("登记付款失败: {e}"))?;
+    sqlx::query(
+        "UPDATE payables SET paid_amount = paid_amount + $2, status = 'partial' WHERE id = $1",
+    )
+    .bind(payable_id)
+    .bind(PAYMENT_CENTS)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("更新应付已付失败: {e}"))?;
+    eq_i64(
+        net_unpaid(pool).await?,
+        PAYABLE_CENTS - PAYMENT_CENTS - PURCHASE_RETURN_CENTS,
+        "部分付款后应付净额",
+    )?;
 
-    sqlx::query("UPDATE payables SET paid_amount = paid_amount + 200, status = 'partial' WHERE id = $1")
-        .bind(payable_id)
-        .execute(&pool)
-        .await
-        .expect("更新应付账款失败");
-
-    // 6.2 应收收款
-    let rcpt_rec_id: i64 = sqlx::query_scalar(
+    sqlx::query(
         "INSERT INTO receipt_records (receivable_id, receipt_date, receipt_amount, currency, receipt_method)
-         VALUES ($1, CURRENT_DATE::TEXT, 50, 'USD', 'bank_transfer')
-         RETURNING id",
+         VALUES ($1, CURRENT_DATE::TEXT, $2, 'USD', 'bank_transfer')",
     )
     .bind(recv_id)
-    .fetch_one(&pool)
+    .bind(RECEIPT_CENTS)
+    .execute(pool)
     .await
-    .expect("登记收款失败");
+    .map_err(|e| format!("登记收款失败: {e}"))?;
+    sqlx::query(
+        "UPDATE receivables SET received_amount = received_amount + $2, status = 'partial' WHERE id = $1",
+    )
+    .bind(recv_id)
+    .bind(RECEIPT_CENTS)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("更新应收已收失败: {e}"))?;
+    eq_i64(
+        net_unreceived(pool).await?,
+        RECEIVABLE_CENTS - RECEIPT_CENTS - SALES_RETURN_CENTS,
+        "部分收款后应收净额",
+    )?;
 
-    sqlx::query("UPDATE receivables SET received_amount = received_amount + 50, status = 'partial' WHERE id = $1")
-        .bind(recv_id)
-        .execute(&pool)
-        .await
-        .expect("更新应收账款失败");
+    Ok(())
+}
 
-    println!("财务收付款验证通过: 付款=$200 (rec={}), 收款=$50 (rec={})", pay_rec_id, rcpt_rec_id);
+#[tokio::test]
+#[ignore = "会改写 DATABASE_URL 指向的共享库，需显式 cargo test --test e2e_business_flow -- --ignored"]
+async fn test_full_e2e_business_lifecycle() {
+    let Some(pool) = get_test_pool().await else {
+        println!("DATABASE_URL 未设置或无法连接，跳过数据库层业务闭环检查");
+        return;
+    };
 
-    println!("========== [E2E] 7. 测试数据清理 ==========");
-    sqlx::query("DELETE FROM payment_records WHERE id = $1").bind(pay_rec_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM receipt_records WHERE id = $1").bind(rcpt_rec_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM payables WHERE order_no IN ('QA_PI_001', 'QA_PR_001')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM receivables WHERE order_no IN ('QA_SD_001', 'QA_SR_001')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM stock_check_items WHERE check_id = $1").bind(check_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM stock_checks WHERE id = $1").bind(check_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM manual_stock_movements WHERE id = $1").bind(scrap_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM sales_returns WHERE id = $1").bind(sales_ret_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM outbound_order_items WHERE outbound_id = $1").bind(outbound_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM outbound_orders WHERE id = $1").bind(outbound_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM sales_order_items WHERE order_id = $1").bind(so_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM sales_orders WHERE id = $1").bind(so_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM purchase_return_items WHERE return_id = $1").bind(return_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM purchase_returns WHERE id = $1").bind(return_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM inbound_order_items WHERE inbound_id = $1").bind(inbound_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM inbound_orders WHERE id = $1").bind(inbound_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM purchase_order_items WHERE order_id = $1").bind(po_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM purchase_orders WHERE id = $1").bind(po_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM inventory_lots WHERE id = $1").bind(lot_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM inventory WHERE material_id IN ($1, $2)").bind(mat_id).bind(product_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM bom_items WHERE bom_id = $1").bind(bom_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM bom WHERE id = $1").bind(bom_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM materials WHERE id IN ($1, $2)").bind(mat_id).bind(product_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM customers WHERE id = $1").bind(cust_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM suppliers WHERE id = $1").bind(sup_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM warehouses WHERE id = $1").bind(wh_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM categories WHERE id = $1").bind(cat_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM units WHERE id = $1").bind(unit_id).execute(&pool).await.ok();
-    sqlx::query("DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'QA_%')").execute(&pool).await.ok();
-    sqlx::query("DELETE FROM users WHERE username LIKE 'QA_%'").execute(&pool).await.ok();
-
-    println!("========== [E2E] 测试数据清理完成，全链路测试圆满通过！ ==========");
+    let outcome = run_lifecycle(&pool).await;
+    let cleanup = cleanup_qa_data(&pool).await;
+    if let Err(err) = cleanup {
+        panic!("清理 QA_ 数据失败: {err:#}；业务流程结果: {outcome:?}");
+    }
+    outcome.expect("数据库层业务闭环检查失败");
 }
