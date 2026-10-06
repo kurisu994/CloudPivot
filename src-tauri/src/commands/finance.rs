@@ -27,6 +27,8 @@ pub struct PayablesSummary {
     pub total_partial: i64,
     /// 超期未付金额
     pub total_overdue: i64,
+    /// 待付总额（未付净额）
+    pub total_unpaid: i64,
 }
 
 /// 应付账款列表项
@@ -113,6 +115,8 @@ pub struct ReceivablesSummary {
     pub total_partial: i64,
     /// 超期未收金额
     pub total_overdue: i64,
+    /// 待收总额（未收净额）
+    pub total_unreceived: i64,
 }
 
 /// 应收账款列表项
@@ -202,7 +206,7 @@ pub async fn get_payables(
         filter.page_size
     );
     // 计算 KPI 概览（只针对 adjustment_type='normal' 的正向记录统计）
-    let summary = sqlx::query_as::<_, (i64, i64, i64, i64)>(
+    let summary = sqlx::query_as::<_, (i64, i64, i64, i64, i64)>(
         r#"
         SELECT
             COALESCE(SUM(CASE WHEN adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0)::BIGINT,
@@ -210,7 +214,8 @@ pub async fn get_payables(
             COALESCE(SUM(CASE WHEN status = 'partial' AND adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0)::BIGINT,
             COALESCE(SUM(CASE WHEN status != 'paid' AND adjustment_type = 'normal'
                 AND due_date IS NOT NULL AND due_date::DATE < CURRENT_DATE
-                THEN (payable_amount - paid_amount) ELSE 0 END), 0)::BIGINT
+                THEN (payable_amount - paid_amount) ELSE 0 END), 0)::BIGINT,
+            COALESCE(SUM(unpaid_amount), 0)::BIGINT
         FROM payables
         "#,
     )
@@ -223,6 +228,7 @@ pub async fn get_payables(
         total_paid: summary.1,
         total_partial: summary.2,
         total_overdue: summary.3,
+        total_unpaid: summary.4,
     };
 
     // 构建列表查询
@@ -518,7 +524,7 @@ pub async fn get_receivables(
         filter.page_size
     );
     // 计算 KPI 概览
-    let summary = sqlx::query_as::<_, (i64, i64, i64, i64)>(
+    let summary = sqlx::query_as::<_, (i64, i64, i64, i64, i64)>(
         r#"
         SELECT
             COALESCE(SUM(CASE WHEN adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0)::BIGINT,
@@ -526,7 +532,8 @@ pub async fn get_receivables(
             COALESCE(SUM(CASE WHEN status = 'partial' AND adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0)::BIGINT,
             COALESCE(SUM(CASE WHEN status != 'paid' AND adjustment_type = 'normal'
                 AND due_date IS NOT NULL AND due_date::DATE < CURRENT_DATE
-                THEN (receivable_amount - received_amount) ELSE 0 END), 0)::BIGINT
+                THEN (receivable_amount - received_amount) ELSE 0 END), 0)::BIGINT,
+            COALESCE(SUM(unreceived_amount), 0)::BIGINT
         FROM receivables
         "#,
     )
@@ -539,6 +546,7 @@ pub async fn get_receivables(
         total_received: summary.1,
         total_partial: summary.2,
         total_overdue: summary.3,
+        total_unreceived: summary.4,
     };
 
     // 构建列表查询

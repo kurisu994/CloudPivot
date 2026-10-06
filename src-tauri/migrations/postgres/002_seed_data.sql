@@ -46,7 +46,7 @@ INSERT INTO system_config (key, value, remark) VALUES
     ('backup_interval', 'daily', '备份周期'),
     ('backup_keep', '7', '最多保留备份数'),
     ('backup_time', '02:00', '自动备份时间'),
-    ('remember_session_days', '30', '记住我会话有效期(天)'),
+    ('remember_session_days', '7', '记住我会话有效期(天)'),
     ('theme', 'light', '主题: light/dark'),
     ('print_language_mode', 'follow_system', '打印语言模式'),
     ('print_bilingual_primary_locale', 'zh', '双语打印主语言'),

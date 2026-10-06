@@ -43,6 +43,13 @@ export default function ChangePasswordPage() {
       setError(t('tooShort'))
       return false
     }
+    const hasDigit = /\d/.test(newPassword)
+    const hasUpper = /[A-Z]/.test(newPassword)
+    const hasLower = /[a-z]/.test(newPassword)
+    if (!hasDigit || !hasUpper || !hasLower) {
+      setError(t('complexityRequirement'))
+      return false
+    }
     if (newPassword === 'abc12345') {
       setError(t('sameAsDefault'))
       return false

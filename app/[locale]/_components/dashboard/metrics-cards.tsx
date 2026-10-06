@@ -177,13 +177,13 @@ export function MetricsCards() {
     })()
   }, [canViewInventory])
 
-  // 逾期应收
+  // 待收金额 (A/R)
   useEffect(() => {
     if (!canViewReceivables) return
     void (async () => {
       try {
         const res = await getReceivables({ page: 1, pageSize: 1 })
-        setReceivables(res.summary.totalOverdue)
+        setReceivables(res.summary.totalUnreceived ?? res.summary.totalOverdue)
       } catch (e) {
         console.error('[Dashboard] 应收查询失败:', e)
         setError(true)
@@ -191,13 +191,13 @@ export function MetricsCards() {
     })()
   }, [canViewReceivables])
 
-  // 逾期应付
+  // 待付金额 (A/P)
   useEffect(() => {
     if (!canViewPayables) return
     void (async () => {
       try {
         const res = await getPayables({ page: 1, pageSize: 1 })
-        setPayables(res.summary.totalOverdue)
+        setPayables(res.summary.totalUnpaid ?? res.summary.totalOverdue)
       } catch (e) {
         console.error('[Dashboard] 应付查询失败:', e)
         setError(true)

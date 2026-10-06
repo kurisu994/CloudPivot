@@ -377,6 +377,22 @@ pub async fn logout(pool: &PgPool, user_id: i64, display_name: &str) {
 /// 1. 校验旧密码（身份验证）
 /// 2. 密码强度校验（长度 ≥ 8）
 /// 3. 不能使用默认密码
+/// 校验新密码复杂度（至少 8 位，且必须同时包含数字、大写英文字母、小写英文字母）
+pub fn validate_password_complexity(password: &str) -> Result<(), AppError> {
+    if password.len() < 8 {
+        return Err(AppError::Auth("密码长度至少 8 位".into()));
+    }
+    let has_digit = password.chars().any(|c| c.is_ascii_digit());
+    let has_upper = password.chars().any(|c| c.is_ascii_uppercase());
+    let has_lower = password.chars().any(|c| c.is_ascii_lowercase());
+    if !has_digit || !has_upper || !has_lower {
+        return Err(AppError::Auth(
+            "密码必须同时包含数字、大写字母和小写字母".into(),
+        ));
+    }
+    Ok(())
+}
+
 /// 4. 新密码不能与旧密码相同
 /// 5. 更新密码哈希、清除 must_change_password 标记、递增 session_version
 /// 6. 写入操作日志
@@ -398,10 +414,8 @@ pub async fn change_password(
         return Err(AppError::Auth("旧密码不正确".into()));
     }
 
-    // 密码强度校验
-    if new_password.len() < 8 {
-        return Err(AppError::Auth("密码长度至少 8 位".into()));
-    }
+    // 密码强度与复杂度校验
+    validate_password_complexity(new_password)?;
 
     // 不能使用默认密码作为新密码
     if new_password == DEFAULT_PASSWORD {
@@ -638,6 +652,28 @@ pub async fn reconcile_user_roles(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 密码复杂度规则校验测试
+    #[test]
+    fn test_password_complexity_rules() {
+        // 长度不足 8 位
+        assert!(validate_password_complexity("Ab1").is_err());
+        // 纯数字
+        assert!(validate_password_complexity("12345678").is_err());
+        // 纯小写
+        assert!(validate_password_complexity("abcdefgh").is_err());
+        // 纯大写
+        assert!(validate_password_complexity("ABCDEFGH").is_err());
+        // 小写+数字（缺少大写）
+        assert!(validate_password_complexity("abc12345").is_err());
+        // 大写+小写（缺少数字）
+        assert!(validate_password_complexity("Abcdefgh").is_err());
+        // 大写+数字（缺少小写）
+        assert!(validate_password_complexity("ABC12345").is_err());
+        // 满足复杂度（包含数字、大写、小写）
+        assert!(validate_password_complexity("Abc12345").is_ok());
+        assert!(validate_password_complexity("Qa123456!").is_ok());
+    }
 
     /// 一致性规则：user_roles 无行 → 按 legacy 补写
     #[test]

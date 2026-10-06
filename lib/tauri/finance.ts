@@ -11,6 +11,7 @@ export interface PayablesSummary {
   totalPaid: number
   totalPartial: number
   totalOverdue: number
+  totalUnpaid: number
 }
 
 /** 应付账款列表项 */
@@ -78,6 +79,7 @@ export interface ReceivablesSummary {
   totalReceived: number
   totalPartial: number
   totalOverdue: number
+  totalUnreceived: number
 }
 
 /** 应收账款列表项 */
@@ -145,7 +147,7 @@ export interface RecordReceiptParams {
 export async function getPayables(filter: PayablesFilter): Promise<PayablesResponse> {
   if (!isTauriEnv()) {
     return {
-      summary: { totalPayable: 0, totalPaid: 0, totalPartial: 0, totalOverdue: 0 },
+      summary: { totalPayable: 0, totalPaid: 0, totalPartial: 0, totalOverdue: 0, totalUnpaid: 0 },
       list: { total: 0, items: [], page: filter.page, pageSize: filter.pageSize },
     }
   }
@@ -169,7 +171,7 @@ export async function recordPayment(params: RecordPaymentParams): Promise<number
 export async function getReceivables(filter: ReceivablesFilter): Promise<ReceivablesResponse> {
   if (!isTauriEnv()) {
     return {
-      summary: { totalReceivable: 0, totalReceived: 0, totalPartial: 0, totalOverdue: 0 },
+      summary: { totalReceivable: 0, totalReceived: 0, totalPartial: 0, totalOverdue: 0, totalUnreceived: 0 },
       list: { total: 0, items: [], page: filter.page, pageSize: filter.pageSize },
     }
   }
