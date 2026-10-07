@@ -1623,8 +1623,8 @@ pub async fn save_and_confirm_outbound(
             )));
         }
 
-        // 自动 FIFO 批次分配
-        let mut lot_id = item.lot_id;
+        // 批次分配计划：(批次 id, 本批次扣减的基本数量)
+        // 未指定批次时按 FIFO 从最早入库的批次开始逐批扣减，可跨批次拆分（需求 3.5.2）
         let lot_mode: Option<String> = sqlx::query_scalar(
             "SELECT COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = $1",
         )
@@ -1633,35 +1633,42 @@ pub async fn save_and_confirm_outbound(
         .await
         .map_err(|e| AppError::Database(format!("查询物料批次追踪模式失败: {}", e)))?;
 
-        if (lot_mode.as_deref() == Some("required") || lot_mode.as_deref() == Some("optional"))
-            && lot_id.is_none()
+        let mut lot_plan: Vec<(Option<i64>, f64)> = Vec::new();
+        if let Some(lid) = item.lot_id {
+            // 人工指定批次：整行扣该批次
+            lot_plan.push((Some(lid), base_quantity));
+        } else if lot_mode.as_deref() == Some("required") || lot_mode.as_deref() == Some("optional")
         {
             let lots =
                 inventory_ops::get_available_lots(&mut *tx, item.material_id, params.warehouse_id)
                     .await?;
-            if let Some((lid, _, avail)) = lots.first() {
-                if *avail < base_quantity {
-                    let mat_name: String =
-                        sqlx::query_scalar("SELECT name FROM materials WHERE id = $1")
-                            .bind(item.material_id)
-                            .fetch_one(&mut *tx)
-                            .await
-                            .unwrap_or_else(|_| format!("物料#{}", item.material_id));
-                    return Err(AppError::Business(format!(
-                        "{} 批次库存不足：最早批次可用 {:.2}，需出库 {:.2}",
-                        mat_name, avail, base_quantity
-                    )));
-                }
-                lot_id = Some(*lid);
-            } else {
+            let total_available: f64 = lots.iter().map(|(_, _, avail)| *avail).sum();
+            if total_available + 0.001 < base_quantity {
                 let mat_name: String =
                     sqlx::query_scalar("SELECT name FROM materials WHERE id = $1")
                         .bind(item.material_id)
                         .fetch_one(&mut *tx)
                         .await
                         .unwrap_or_else(|_| format!("物料#{}", item.material_id));
-                return Err(AppError::Business(format!("{} 无可用批次库存", mat_name)));
+                return Err(AppError::Business(format!(
+                    "{} 批次库存不足：可用批次合计 {:.2}，需出库 {:.2}",
+                    mat_name, total_available, base_quantity
+                )));
             }
+            let mut remaining_to_alloc = base_quantity;
+            for (lid, _, avail) in lots {
+                if remaining_to_alloc <= 0.0 {
+                    break;
+                }
+                let deduct = remaining_to_alloc.min(avail);
+                if deduct > 0.0 {
+                    lot_plan.push((Some(lid), deduct));
+                    remaining_to_alloc -= deduct;
+                }
+            }
+        } else {
+            // 未追踪批次：只扣主库存
+            lot_plan.push((None, base_quantity));
         }
 
         // 获取实际成本快照（移动加权平均成本）
@@ -1702,9 +1709,57 @@ pub async fn save_and_confirm_outbound(
         // 实际成本金额 = 平均成本 × 基本数量
         let cost_amount = (avg_cost as f64 * base_quantity).round() as i64;
 
-        // 插入出库明细
-        sqlx::query(
-            r#"
+        // 先扣减主库存，拿到本行的主库存前后量，供逐批流水记录
+        let (before_qty, _after_qty, _) = inventory_ops::decrease_inventory(
+            &mut *tx,
+            item.material_id,
+            params.warehouse_id,
+            base_quantity,
+            &params.outbound_date,
+        )
+        .await?;
+
+        // 按批次分配计划逐批落明细、扣批次库存、记流水
+        // 行金额与成本金额按批次基本数量比例分摊，最后一批用倒挤法，保证各批次合计与本行一致
+        let plan_len = lot_plan.len();
+        let mut remaining_base = base_quantity;
+        let mut remaining_unit = item.quantity;
+        let mut remaining_amount = amount;
+        let mut remaining_cost = cost_amount;
+        let mut remaining_standard_cost = standard_cost_amount;
+        let mut consumed_base = 0.0_f64;
+        for (plan_idx, (plan_lot_id, deduct_base)) in lot_plan.into_iter().enumerate() {
+            let is_last = plan_idx + 1 == plan_len;
+            let (row_base_qty, row_qty, row_amount, row_cost, row_standard_cost) = if is_last {
+                (
+                    remaining_base,
+                    remaining_unit,
+                    remaining_amount,
+                    remaining_cost,
+                    remaining_standard_cost,
+                )
+            } else {
+                let ratio = if base_quantity > 0.0 {
+                    deduct_base / base_quantity
+                } else {
+                    0.0
+                };
+                let row_unit_qty = if item.conversion_rate_snapshot > 0.0 {
+                    deduct_base / item.conversion_rate_snapshot
+                } else {
+                    deduct_base
+                };
+                (
+                    deduct_base,
+                    row_unit_qty,
+                    (amount as f64 * ratio).round() as i64,
+                    (cost_amount as f64 * ratio).round() as i64,
+                    (standard_cost_amount as f64 * ratio).round() as i64,
+                )
+            };
+
+            sqlx::query(
+                r#"
             INSERT INTO outbound_order_items (
                 outbound_id, sales_item_id, lot_id,
                 material_id, unit_id, unit_name_snapshot, conversion_rate_snapshot,
@@ -1715,66 +1770,64 @@ pub async fn save_and_confirm_outbound(
                 remark, sort_order
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
             "#,
-        )
-        .bind(outbound_id)
-        .bind(item.sales_order_item_id)
-        .bind(lot_id)
-        .bind(item.material_id)
-        .bind(item.unit_id)
-        .bind(&item.unit_name_snapshot)
-        .bind(item.conversion_rate_snapshot)
-        .bind(base_quantity)
-        .bind(item.quantity)
-        .bind(item.unit_price)
-        .bind(amount)
-        .bind(standard_cost_unit)
-        .bind(standard_cost_amount)
-        .bind(standard_cost_bom_id)
-        .bind(&standard_cost_bom_version)
-        .bind(avg_cost)
-        .bind(cost_amount)
-        .bind(&item.remark)
-        .bind(i as i32)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| AppError::Database(format!("插入出库明细第 {} 行失败: {}", i + 1, e)))?;
+            )
+            .bind(outbound_id)
+            .bind(item.sales_order_item_id)
+            .bind(plan_lot_id)
+            .bind(item.material_id)
+            .bind(item.unit_id)
+            .bind(&item.unit_name_snapshot)
+            .bind(item.conversion_rate_snapshot)
+            .bind(row_base_qty)
+            .bind(row_qty)
+            .bind(item.unit_price)
+            .bind(row_amount)
+            .bind(standard_cost_unit)
+            .bind(row_standard_cost)
+            .bind(standard_cost_bom_id)
+            .bind(&standard_cost_bom_version)
+            .bind(avg_cost)
+            .bind(row_cost)
+            .bind(&item.remark)
+            .bind(i as i32)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("插入出库明细第 {} 行失败: {}", i + 1, e)))?;
 
-        // 扣减库存
-        let (before_qty, after_qty, _) = inventory_ops::decrease_inventory(
-            &mut *tx,
-            item.material_id,
-            params.warehouse_id,
-            base_quantity,
-            &params.outbound_date,
-        )
-        .await?;
+            // 扣减本批次库存
+            if let Some(lid) = plan_lot_id {
+                inventory_ops::decrease_lot_inventory(&mut *tx, lid, row_base_qty).await?;
+            }
 
-        // 扣减批次库存
-        if let Some(lid) = lot_id {
-            inventory_ops::decrease_lot_inventory(&mut *tx, lid, base_quantity).await?;
+            // 记录库存流水：按批次各记一条，before/after 用主库存口径连续递增
+            inventory_ops::record_transaction(
+                &mut *tx,
+                &params.outbound_date,
+                item.material_id,
+                params.warehouse_id,
+                plan_lot_id,
+                "sales_out",
+                -row_base_qty,
+                before_qty - consumed_base,
+                before_qty - consumed_base - row_base_qty,
+                avg_cost,
+                Some("outbound"),
+                Some(outbound_id),
+                None,
+                Some(&outbound_no),
+                None,
+                current_user.user_id(),
+                &current_user.display_name(),
+            )
+            .await?;
+
+            consumed_base += row_base_qty;
+            remaining_base -= row_base_qty;
+            remaining_unit -= row_qty;
+            remaining_amount -= row_amount;
+            remaining_cost -= row_cost;
+            remaining_standard_cost -= row_standard_cost;
         }
-
-        // 记录库存流水
-        inventory_ops::record_transaction(
-            &mut *tx,
-            &params.outbound_date,
-            item.material_id,
-            params.warehouse_id,
-            lot_id,
-            "sales_out",
-            -base_quantity,
-            before_qty,
-            after_qty,
-            avg_cost,
-            Some("outbound"),
-            Some(outbound_id),
-            None,
-            Some(&outbound_no),
-            None,
-            current_user.user_id(),
-            &current_user.display_name(),
-        )
-        .await?;
 
         // 更新销售单明细行已出库数量
         if let Some(soi_id) = item.sales_order_item_id {
