@@ -665,6 +665,14 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                       <Input type="number" min="0.001" step="any" value={addQty} onChange={e => setAddQty(e.target.value)} />
                     </div>
 
+                    {/* 入库专用：单位成本（USD），确认时后端要求每行必须填写 */}
+                    {isInbound && (
+                      <div className="flex flex-col gap-1.5">
+                        <Label>{t('manualStockMovements.unitCostUsd')}</Label>
+                        <Input type="number" min="0" step="any" value={addUnitCost} onChange={e => setAddUnitCost(e.target.value)} />
+                      </div>
+                    )}
+
                     {/* 入库专用：批次号 */}
                     {isInbound && (
                       <div className="flex flex-col gap-1.5">
@@ -714,6 +722,7 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                     <TableHead className="w-[6.25rem]">{t('manualStockMovements.colSpec')}</TableHead>
                     <TableHead className="w-[3.75rem]">{t('manualStockMovements.colUnit')}</TableHead>
                     <TableHead className="w-[6.25rem] text-right">{t('manualStockMovements.colQuantity')}</TableHead>
+                    {isInbound && <TableHead className="w-[7.5rem] text-right">{t('manualStockMovements.unitCostUsd')}</TableHead>}
                     {isInbound && <TableHead className="w-[7.5rem]">{t('manualStockMovements.colLotNo')}</TableHead>}
                     {isInbound && <TableHead className="w-[7.5rem]">{t('manualStockMovements.colSupplierBatch')}</TableHead>}
                     {!isReadOnly && <TableHead className="w-[3.75rem] text-center">{tc('actions')}</TableHead>}
@@ -722,7 +731,7 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                 <TableBody>
                   {items.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={(isInbound ? 8 : 6) + (isReadOnly ? 0 : 1)} className="h-24 text-center text-muted-foreground">
+                      <TableCell colSpan={(isInbound ? 9 : 6) + (isReadOnly ? 0 : 1)} className="h-24 text-center text-muted-foreground">
                         {t('manualStockMovements.noItems')}
                       </TableCell>
                     </TableRow>
@@ -747,6 +756,20 @@ export function ManualStockMovementEdit({ movementId, onBack }: ManualStockMovem
                             />
                           </div>
                         </TableCell>
+                        {/* 入库单位成本（USD，展示口径），可直接改，保存时再折算成最小货币单位 */}
+                        {isInbound && (
+                          <TableCell className="text-right">
+                            <Input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={item.unitCostUsd ?? ''}
+                              onChange={e => handleItemFieldChange(idx, 'unitCostUsd', e.target.value === '' ? null : Number(e.target.value))}
+                              disabled={isReadOnly}
+                              className="h-8 max-w-[7.5rem] py-1 ml-auto text-right font-medium"
+                            />
+                          </TableCell>
+                        )}
                         {isInbound && (
                           <TableCell>
                             <Input
