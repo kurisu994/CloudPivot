@@ -212,6 +212,7 @@
     "selectWarehouse": "选择盘点仓库",
     "selectScope": "盘点范围",
     "selectCategory": "选择分类",
+    "lotNo": "批次号",
     "systemQty": "系统库存",
     "actualQty": "实盘数量",
     "diffQty": "盈亏数量",

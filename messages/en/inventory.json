@@ -212,6 +212,7 @@
     "selectWarehouse": "Select Warehouse",
     "selectScope": "Check Scope",
     "selectCategory": "Select Category",
+    "lotNo": "Lot No.",
     "systemQty": "System Qty",
     "actualQty": "Actual Qty",
     "diffQty": "Difference",

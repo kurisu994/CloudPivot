@@ -212,6 +212,7 @@
     "selectWarehouse": "Chọn kho kiểm kê",
     "selectScope": "Phạm vi kiểm kê",
     "selectCategory": "Chọn danh mục",
+    "lotNo": "Số lô",
     "systemQty": "SL hệ thống",
     "actualQty": "SL thực tế",
     "diffQty": "Chênh lệch",

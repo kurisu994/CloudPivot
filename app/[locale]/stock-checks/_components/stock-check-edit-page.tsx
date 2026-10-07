@@ -357,6 +357,8 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
                   <TableHead className="w-[10rem]">{ti('materialName')}</TableHead>
                   <TableHead className="w-[5rem]">{ti('spec')}</TableHead>
                   <TableHead className="w-[3.75rem]">{ti('unit')}</TableHead>
+                  {/* 批次快照行只用于展示，与物料汇总行区分开 */}
+                  <TableHead className="w-[8rem]">{t('lotNo')}</TableHead>
                   <TableHead className="w-[5.625rem] text-right">{t('systemQty')}</TableHead>
                   <TableHead className="w-[7.5rem] text-right">{t('actualQty')}</TableHead>
                   <TableHead className="w-[5.625rem] text-right">{t('diffQty')}</TableHead>
@@ -366,7 +368,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
               <TableBody>
                 {filteredItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={9} className="text-center text-muted-foreground py-12">
                       {t('noItems')}
                     </TableCell>
                   </TableRow>
@@ -384,6 +386,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
                         <TableCell>{item.materialName}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">{item.spec || '-'}</TableCell>
                         <TableCell>{item.unitName}</TableCell>
+                        <TableCell className="font-mono text-sm text-muted-foreground">{item.lotNoSnapshot || '-'}</TableCell>
                         <TableCell className="text-right font-mono">{item.systemQty}</TableCell>
                         <TableCell className="text-right">
                           {isEditable ? (
