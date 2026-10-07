@@ -2048,35 +2048,39 @@ pub async fn get_returnable_outbound_items(
 
     let items = sqlx::query_as::<_, ReturnableOutboundItem>(
         r#"
-        SELECT
-            ooi.id AS outbound_item_id,
-            ooi.material_id, m.code AS material_code, m.name AS material_name,
-            COALESCE(ooi.remark, '') AS spec,
-            ooi.unit_id, ooi.unit_name_snapshot, ooi.conversion_rate_snapshot,
-            ooi.quantity AS outbound_quantity,
-            COALESCE(
-                (SELECT SUM(sri.quantity) FROM sales_return_items sri
-                 JOIN sales_returns sr ON sr.id = sri.return_id
-                 WHERE sri.source_outbound_item_id = ooi.id AND sr.status = 'confirmed'),
-                0
-            ) AS already_returned_qty,
-            ooi.quantity - COALESCE(
-                (SELECT SUM(sri.quantity) FROM sales_return_items sri
-                 JOIN sales_returns sr ON sr.id = sri.return_id
-                 WHERE sri.source_outbound_item_id = ooi.id AND sr.status = 'confirmed'),
-                0
-            ) AS returnable_qty,
-            ooi.unit_price,
-            ooi.amount AS outbound_amount,
-            ooi.lot_id,
-            COALESCE(il.lot_no, '') AS lot_no,
-            ooi.cost_unit_price
-        FROM outbound_order_items ooi
-        JOIN materials m ON m.id = ooi.material_id
-        LEFT JOIN inventory_lots il ON il.id = ooi.lot_id
-        WHERE ooi.outbound_id = $1
-        HAVING returnable_qty > 0
-        ORDER BY ooi.sort_order, ooi.id
+        SELECT * FROM (
+            SELECT
+                ooi.id AS outbound_item_id,
+                ooi.material_id, m.code AS material_code, m.name AS material_name,
+                COALESCE(ooi.remark, '') AS spec,
+                ooi.unit_id, ooi.unit_name_snapshot, ooi.conversion_rate_snapshot,
+                ooi.quantity AS outbound_quantity,
+                COALESCE(
+                    (SELECT SUM(sri.quantity) FROM sales_return_items sri
+                     JOIN sales_returns sr ON sr.id = sri.return_id
+                     WHERE sri.source_outbound_item_id = ooi.id AND sr.status = 'confirmed'),
+                    0
+                ) AS already_returned_qty,
+                ooi.quantity - COALESCE(
+                    (SELECT SUM(sri.quantity) FROM sales_return_items sri
+                     JOIN sales_returns sr ON sr.id = sri.return_id
+                     WHERE sri.source_outbound_item_id = ooi.id AND sr.status = 'confirmed'),
+                    0
+                ) AS returnable_qty,
+                ooi.unit_price,
+                ooi.amount AS outbound_amount,
+                ooi.lot_id,
+                COALESCE(il.lot_no, '') AS lot_no,
+                ooi.cost_unit_price,
+                ooi.sort_order
+            FROM outbound_order_items ooi
+            JOIN materials m ON m.id = ooi.material_id
+            LEFT JOIN inventory_lots il ON il.id = ooi.lot_id
+            WHERE ooi.outbound_id = $1
+        ) t
+        -- 过滤只能放在外层：无 GROUP BY 时 PostgreSQL 不允许在 HAVING 里引用输出列别名
+        WHERE t.returnable_qty > 0
+        ORDER BY t.sort_order, t.outbound_item_id
         "#,
     )
     .bind(outbound_id)
