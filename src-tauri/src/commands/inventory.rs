@@ -1245,16 +1245,18 @@ pub async fn confirm_stock_check(
     let warehouse_id = head.0;
     let check_date = head.1;
 
-    // 查询有差异的明细行（仅物料级，排除批次级以避免重复调整）
-    let diff_items = sqlx::query_as::<_, (i64, i64, Option<i64>, f64, f64, f64, i64)>(
+    // 查询有差异的明细行（仅物料级：物料级行是汇总数量，批次级行只是快照，
+    // 由下面的批次同步逻辑按 FIFO/新批次自动落到批次，避免两边重复调整）
+    let diff_items = sqlx::query_as::<_, (i64, i64, Option<i64>, f64, f64, f64, i64, String)>(
         r#"
-        SELECT id, material_id, lot_id,
-               system_qty, COALESCE(actual_qty, system_qty) AS actual,
-               COALESCE(actual_qty, system_qty) - system_qty AS diff,
-               unit_price
-        FROM stock_check_items
-        WHERE check_id = $1 AND lot_id IS NULL AND actual_qty IS NOT NULL
-              AND COALESCE(actual_qty, system_qty) != system_qty
+        SELECT sci.id, sci.material_id, sci.lot_id,
+               sci.system_qty, COALESCE(sci.actual_qty, sci.system_qty) AS actual,
+               COALESCE(sci.actual_qty, sci.system_qty) - sci.system_qty AS diff,
+               sci.unit_price, m.lot_tracking_mode
+        FROM stock_check_items sci
+        JOIN materials m ON m.id = sci.material_id
+        WHERE sci.check_id = $1 AND sci.lot_id IS NULL AND sci.actual_qty IS NOT NULL
+              AND COALESCE(sci.actual_qty, sci.system_qty) != sci.system_qty
         "#,
     )
     .bind(id)
@@ -1262,9 +1264,14 @@ pub async fn confirm_stock_check(
     .await
     .map_err(|e| AppError::Database(format!("查询盘点差异失败: {}", e)))?;
 
-    for (_item_id, material_id, _lot_id, _system_qty, _actual, diff, cost) in &diff_items {
+    for (_item_id, material_id, _lot_id, _system_qty, _actual, diff, cost, lot_tracking_mode) in
+        &diff_items
+    {
         let diff = *diff;
         let cost = *cost;
+        // 启用批次追踪的物料，盘亏按 FIFO 拆分批次、盘盈新建批次，
+        // 保证「批次在库合计 = 仓库库存」，否则批次追溯与库龄分析会与库存对不上。
+        let track_lot = lot_tracking_mode != "none";
 
         if diff > 0.0 {
             // 盘盈：增加库存
@@ -1277,12 +1284,34 @@ pub async fn confirm_stock_check(
                 &check_date,
             )
             .await?;
+            // 盘盈没有入库来源，批次号自动生成，来源行留空（与自由出入库保持一致）
+            let lot_id = if track_lot {
+                let lot_no = inventory_ops::generate_lot_no(&mut tx, &check_date).await?;
+                Some(
+                    inventory_ops::create_inventory_lot(
+                        &mut tx,
+                        &lot_no,
+                        *material_id,
+                        warehouse_id,
+                        0,
+                        None,
+                        &check_date,
+                        None,
+                        None,
+                        diff,
+                        cost,
+                    )
+                    .await?,
+                )
+            } else {
+                None
+            };
             inventory_ops::record_transaction(
                 &mut *tx,
                 &check_date,
                 *material_id,
                 warehouse_id,
-                None,
+                lot_id,
                 "check_gain",
                 diff,
                 before,
@@ -1300,7 +1329,7 @@ pub async fn confirm_stock_check(
         } else if diff < 0.0 {
             // 盘亏：减少库存
             let abs_diff = diff.abs();
-            let (before, after, avg) = inventory_ops::decrease_inventory(
+            let (before, _after, avg) = inventory_ops::decrease_inventory(
                 &mut *tx,
                 *material_id,
                 warehouse_id,
@@ -1308,26 +1337,61 @@ pub async fn confirm_stock_check(
                 &check_date,
             )
             .await?;
-            inventory_ops::record_transaction(
-                &mut *tx,
-                &check_date,
-                *material_id,
-                warehouse_id,
-                None,
-                "check_loss",
-                diff,
-                before,
-                after,
-                avg,
-                Some("stock_check"),
-                Some(id),
-                None,
-                None,
-                Some("盘点亏损"),
-                current_user.user_id(),
-                &current_user.display_name(),
-            )
-            .await?;
+            // 盘亏按 FIFO 从最早批次开始扣，逐批记一条流水；批次不足说明
+            // 批次快照本身已与仓库库存不一致，直接报错让盘点单停在可修正状态。
+            let mut lot_plan: Vec<(Option<i64>, f64)> = Vec::new();
+            if track_lot {
+                let available_lots =
+                    inventory_ops::get_available_lots(&mut *tx, *material_id, warehouse_id).await?;
+                let total_available: f64 = available_lots.iter().map(|l| l.2).sum();
+                if total_available + 0.001 < abs_diff {
+                    return Err(AppError::Business(format!(
+                        "批次在库合计 {:.2} 小于盘亏数量 {:.2}，请先核对批次库存",
+                        total_available, abs_diff
+                    )));
+                }
+                let mut remaining = abs_diff;
+                for (lid, _lot_no, avail) in &available_lots {
+                    if remaining <= 0.001 {
+                        break;
+                    }
+                    let deduct = remaining.min(*avail);
+                    if deduct > 0.0 {
+                        lot_plan.push((Some(*lid), deduct));
+                        remaining -= deduct;
+                    }
+                }
+            } else {
+                lot_plan.push((None, abs_diff));
+            }
+
+            let mut consumed = 0.0_f64;
+            for (lid, qty) in &lot_plan {
+                if let Some(lid) = lid {
+                    inventory_ops::decrease_lot_inventory(&mut *tx, *lid, *qty).await?;
+                }
+                inventory_ops::record_transaction(
+                    &mut *tx,
+                    &check_date,
+                    *material_id,
+                    warehouse_id,
+                    *lid,
+                    "check_loss",
+                    -qty,
+                    before - consumed,
+                    before - consumed - qty,
+                    avg,
+                    Some("stock_check"),
+                    Some(id),
+                    None,
+                    None,
+                    Some("盘点亏损"),
+                    current_user.user_id(),
+                    &current_user.display_name(),
+                )
+                .await?;
+                consumed += qty;
+            }
         }
     }
 
