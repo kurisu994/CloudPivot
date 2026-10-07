@@ -1490,13 +1490,14 @@ pub async fn save_and_confirm_outbound(
             if all_items_done {
                 // 最后一笔：倒挤法
                 let prev_discount = sqlx::query_scalar::<_, i64>(
-                    "SELECT COALESCE(SUM(allocated_discount), 0) FROM outbound_orders WHERE sales_id = $1 AND status = 'confirmed'",
+                    // SUM(bigint) 在 PostgreSQL 中返回 numeric，必须显式转回 BIGINT，否则 i64 解码失败被兜底成 0
+                    "SELECT COALESCE(SUM(allocated_discount), 0)::BIGINT FROM outbound_orders WHERE sales_id = $1 AND status = 'confirmed'",
                 ).bind(params.sales_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
                 let prev_freight = sqlx::query_scalar::<_, i64>(
-                    "SELECT COALESCE(SUM(allocated_freight), 0) FROM outbound_orders WHERE sales_id = $1 AND status = 'confirmed'",
+                    "SELECT COALESCE(SUM(allocated_freight), 0)::BIGINT FROM outbound_orders WHERE sales_id = $1 AND status = 'confirmed'",
                 ).bind(params.sales_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
                 let prev_other = sqlx::query_scalar::<_, i64>(
-                    "SELECT COALESCE(SUM(allocated_other), 0) FROM outbound_orders WHERE sales_id = $1 AND status = 'confirmed'",
+                    "SELECT COALESCE(SUM(allocated_other), 0)::BIGINT FROM outbound_orders WHERE sales_id = $1 AND status = 'confirmed'",
                 ).bind(params.sales_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
 
                 (so.5 - prev_discount, so.6 - prev_freight, so.7 - prev_other)

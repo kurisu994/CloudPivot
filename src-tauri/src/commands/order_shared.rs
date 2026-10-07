@@ -106,15 +106,16 @@ pub async fn calculate_allocated_charges(
     if is_last_batch {
         // 最后一笔：倒挤法（总额 - 之前已分摊的 = 本次分摊）
         let sql_discount = format!(
-            "SELECT COALESCE(SUM(allocated_discount), 0) FROM {} WHERE {} = $1 AND status = 'confirmed'",
+            // SUM(bigint) 在 PostgreSQL 中返回 numeric，必须显式转回 BIGINT，否则 i64 解码失败被兜底成 0
+            "SELECT COALESCE(SUM(allocated_discount), 0)::BIGINT FROM {} WHERE {} = $1 AND status = 'confirmed'",
             prev_allocated_table, source_id_column
         );
         let sql_freight = format!(
-            "SELECT COALESCE(SUM(allocated_freight), 0) FROM {} WHERE {} = $1 AND status = 'confirmed'",
+            "SELECT COALESCE(SUM(allocated_freight), 0)::BIGINT FROM {} WHERE {} = $1 AND status = 'confirmed'",
             prev_allocated_table, source_id_column
         );
         let sql_other = format!(
-            "SELECT COALESCE(SUM(allocated_other), 0) FROM {} WHERE {} = $1 AND status = 'confirmed'",
+            "SELECT COALESCE(SUM(allocated_other), 0)::BIGINT FROM {} WHERE {} = $1 AND status = 'confirmed'",
             prev_allocated_table, source_id_column
         );
 
