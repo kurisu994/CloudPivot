@@ -1207,6 +1207,56 @@ pub async fn return_materials(
         .map_err(|e| AppError::Database(format!("查询物料平均成本失败: {}", e)))?
         .unwrap_or(0);
 
+        // 批次追踪物料：把退料量按「后领先退」加回本工单领料时扣过的批次，
+        // 否则批次合计会与仓库库存脱节
+        let lot_mode: Option<String> = sqlx::query_scalar(
+            "SELECT COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = $1",
+        )
+        .bind(line.material_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("查询物料批次追踪模式失败: {}", e)))?;
+
+        // 每个批次的可回补容量 = 该工单在该批次上累计领料量（按后领先退汇总）
+        let mut lot_plan: Vec<(i64, f64)> = Vec::new();
+        if lot_mode.as_deref() == Some("required") || lot_mode.as_deref() == Some("optional") {
+            let picks: Vec<(i64, f64)> = sqlx::query_as(
+                "SELECT lot_id, ABS(quantity) FROM inventory_transactions
+                 WHERE source_type = 'production_order' AND source_id = $1
+                   AND material_id = $2 AND warehouse_id = $3
+                   AND transaction_type = 'production_out' AND lot_id IS NOT NULL
+                 ORDER BY id DESC",
+            )
+            .bind(input.production_order_id)
+            .bind(line.material_id)
+            .bind(line.warehouse_id)
+            .fetch_all(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("查询工单领料流水失败: {}", e)))?;
+
+            let mut caps: Vec<(i64, f64)> = Vec::new();
+            for (lid, qty) in picks {
+                match caps.iter_mut().find(|(id, _)| *id == lid) {
+                    Some((_, cap)) => *cap += qty,
+                    None => caps.push((lid, qty)),
+                }
+            }
+
+            // 分别计算「本次退料前」与「本次退料后」的批次分配，差量即为要加回的批次量
+            let mut old_remaining = returned;
+            let mut new_remaining = returned + line.quantity;
+            for (lid, cap) in caps {
+                let old_take = old_remaining.min(cap);
+                let new_take = new_remaining.min(cap);
+                old_remaining = (old_remaining - old_take).max(0.0);
+                new_remaining = (new_remaining - new_take).max(0.0);
+                let delta = new_take - old_take;
+                if delta > 0.0 {
+                    lot_plan.push((lid, delta));
+                }
+            }
+        }
+
         // 增加库存
         let (before_qty, after_qty) = super::inventory_ops::increase_inventory(
             &mut *tx,
@@ -1218,27 +1268,64 @@ pub async fn return_materials(
         )
         .await?;
 
-        // 生成流水
-        super::inventory_ops::record_transaction(
-            &mut *tx,
-            &today,
-            line.material_id,
-            line.warehouse_id,
-            None,
-            "production_in",
-            line.quantity,
-            before_qty,
-            after_qty,
-            return_unit_cost,
-            Some("production_order"),
-            Some(input.production_order_id),
-            None,
-            None,
-            None,
-            current_user.user_id(),
-            &current_user.display_name(),
-        )
-        .await?;
+        // 生成流水：批次追踪物料按回补批次各记一条，before/after 用主库存口径连续递增
+        let mut restored_qty = 0.0_f64;
+        for (lot_id, add_qty) in &lot_plan {
+            sqlx::query(
+                "UPDATE inventory_lots SET qty_on_hand = qty_on_hand + $1, updated_at = NOW() WHERE id = $2",
+            )
+            .bind(add_qty)
+            .bind(lot_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("回补批次库存失败: {}", e)))?;
+
+            super::inventory_ops::record_transaction(
+                &mut *tx,
+                &today,
+                line.material_id,
+                line.warehouse_id,
+                Some(*lot_id),
+                "production_in",
+                *add_qty,
+                before_qty + restored_qty,
+                before_qty + restored_qty + add_qty,
+                return_unit_cost,
+                Some("production_order"),
+                Some(input.production_order_id),
+                None,
+                None,
+                None,
+                current_user.user_id(),
+                &current_user.display_name(),
+            )
+            .await?;
+            restored_qty += add_qty;
+        }
+
+        // 批次追踪但无历史领料流水时（历史数据），退化为只加主库存
+        if lot_plan.is_empty() {
+            super::inventory_ops::record_transaction(
+                &mut *tx,
+                &today,
+                line.material_id,
+                line.warehouse_id,
+                None,
+                "production_in",
+                line.quantity,
+                before_qty,
+                after_qty,
+                return_unit_cost,
+                Some("production_order"),
+                Some(input.production_order_id),
+                None,
+                None,
+                None,
+                current_user.user_id(),
+                &current_user.display_name(),
+            )
+            .await?;
+        }
 
         // 更新退料量
         sqlx::query(
