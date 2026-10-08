@@ -1665,7 +1665,7 @@ pub async fn complete_production(
         "INSERT INTO production_completions (
             production_order_id, completion_no, quantity,
             warehouse_id, unit_cost, remark, completed_at, created_at
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())",
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7::date, NOW())",
     )
     .bind(input.production_order_id)
     .bind(&completion_no)
