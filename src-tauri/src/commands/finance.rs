@@ -206,7 +206,8 @@ pub async fn get_payables(
         filter.page_size
     );
     // 前四项只统计正向单据；待付净额要把退货冲减算进去，并折成 USD 分。
-    // VND 按整数存储，折美元时乘 100；USD/CNY 已是分。汇率缺失或非正数记 0。
+    // 与 convert_to_usd_cents 口径一致：USD 直接取原值，不受汇率影响；
+    // VND 按整数存储，折美元时乘 100；CNY 已是分。非 USD 单据汇率缺失或非正数记 0。
     let summary = sqlx::query_as::<_, (i64, i64, i64, i64, i64)>(
         r#"
         SELECT
@@ -218,6 +219,7 @@ pub async fn get_payables(
                 THEN (payable_amount - paid_amount) ELSE 0 END), 0)::BIGINT,
             COALESCE(SUM(
                 CASE
+                    WHEN currency = 'USD' THEN unpaid_amount
                     WHEN exchange_rate IS NULL OR exchange_rate <= 0 THEN 0
                     WHEN currency = 'VND' THEN CAST(ROUND((unpaid_amount * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
                     ELSE CAST(ROUND((unpaid_amount * 1.0 / exchange_rate)::numeric, 0) AS BIGINT)
@@ -542,6 +544,7 @@ pub async fn get_receivables(
                 THEN (receivable_amount - received_amount) ELSE 0 END), 0)::BIGINT,
             COALESCE(SUM(
                 CASE
+                    WHEN currency = 'USD' THEN unreceived_amount
                     WHEN exchange_rate IS NULL OR exchange_rate <= 0 THEN 0
                     WHEN currency = 'VND' THEN CAST(ROUND((unreceived_amount * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
                     ELSE CAST(ROUND((unreceived_amount * 1.0 / exchange_rate)::numeric, 0) AS BIGINT)

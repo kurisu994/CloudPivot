@@ -7,12 +7,12 @@ const MAX_REMEMBER_ME_DAYS = 365
 
 /**
  * 把 system_config.remember_session_days 换成毫秒。
- * 非数字、非正数或超过上限时回退到默认 7 天。小数向下取整。
+ * 小数向下取整；非数字、取整后不足 1 天或超过上限时回退到默认 7 天。
  */
 export function rememberMeDurationMs(raw: string | null | undefined): number {
-  const days = Number(raw)
-  if (!Number.isFinite(days) || days <= 0 || days > MAX_REMEMBER_ME_DAYS) {
+  const days = Math.floor(Number(raw))
+  if (!Number.isFinite(days) || days < 1 || days > MAX_REMEMBER_ME_DAYS) {
     return DEFAULT_REMEMBER_ME_DAYS * MS_PER_DAY
   }
-  return Math.floor(days) * MS_PER_DAY
+  return days * MS_PER_DAY
 }
