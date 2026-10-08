@@ -889,7 +889,7 @@ pub async fn pick_materials(
         }
 
         // 扣减库存
-        let (before_qty, after_qty, avg_cost) = super::inventory_ops::decrease_inventory(
+        let (before_qty, _after_qty, avg_cost) = super::inventory_ops::decrease_inventory(
             &mut *tx,
             line.material_id,
             line.warehouse_id,
@@ -898,6 +898,51 @@ pub async fn pick_materials(
         )
         .await?;
 
+        // 批次追踪物料：按 FIFO 把本次领料量分摊到批次上，未指定批次时自动分配
+        let lot_mode: Option<String> = sqlx::query_scalar(
+            "SELECT COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = $1",
+        )
+        .bind(line.material_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("查询物料批次追踪模式失败: {}", e)))?;
+
+        let mut lot_plan: Vec<(Option<i64>, f64)> = Vec::new();
+        if lot_mode.as_deref() == Some("required") || lot_mode.as_deref() == Some("optional") {
+            let lots = super::inventory_ops::get_available_lots(
+                &mut *tx,
+                line.material_id,
+                line.warehouse_id,
+            )
+            .await?;
+            let total_available: f64 = lots.iter().map(|(_, _, avail)| *avail).sum();
+            if total_available + 0.001 < line.quantity {
+                let mat_name: String =
+                    sqlx::query_scalar("SELECT name FROM materials WHERE id = $1")
+                        .bind(line.material_id)
+                        .fetch_one(&mut *tx)
+                        .await
+                        .unwrap_or_else(|_| format!("物料#{}", line.material_id));
+                return Err(AppError::Business(format!(
+                    "{} 批次库存不足：可用批次合计 {:.2}，需领料 {:.2}",
+                    mat_name, total_available, line.quantity
+                )));
+            }
+            let mut remaining_to_alloc = line.quantity;
+            for (lid, _, avail) in lots {
+                if remaining_to_alloc <= 0.0 {
+                    break;
+                }
+                let deduct = remaining_to_alloc.min(avail);
+                if deduct > 0.0 {
+                    lot_plan.push((Some(lid), deduct));
+                    remaining_to_alloc -= deduct;
+                }
+            }
+        } else {
+            // 未追踪批次：只扣主库存
+            lot_plan.push((None, line.quantity));
+        }
         // 若关联定制单，消耗预留
         if let Some(co_id) = order.custom_order_id {
             // 查询该物料的活跃预留
@@ -993,27 +1038,34 @@ pub async fn pick_materials(
             }
         }
 
-        // 生成库存流水
-        super::inventory_ops::record_transaction(
-            &mut *tx,
-            &today,
-            line.material_id,
-            line.warehouse_id,
-            None,
-            "production_out",
-            -line.quantity,
-            before_qty,
-            after_qty,
-            avg_cost,
-            Some("production_order"),
-            Some(input.production_order_id),
-            None,
-            None,
-            None,
-            current_user.user_id(),
-            &current_user.display_name(),
-        )
-        .await?;
+        // 生成库存流水：批次追踪物料按批次各记一条，before/after 用主库存口径连续递减
+        let mut consumed_qty = 0.0_f64;
+        for (lot_id, deduct_qty) in &lot_plan {
+            if let Some(lid) = lot_id {
+                super::inventory_ops::decrease_lot_inventory(&mut *tx, *lid, *deduct_qty).await?;
+            }
+            super::inventory_ops::record_transaction(
+                &mut *tx,
+                &today,
+                line.material_id,
+                line.warehouse_id,
+                *lot_id,
+                "production_out",
+                -deduct_qty,
+                before_qty - consumed_qty,
+                before_qty - consumed_qty - deduct_qty,
+                avg_cost,
+                Some("production_order"),
+                Some(input.production_order_id),
+                None,
+                None,
+                None,
+                current_user.user_id(),
+                &current_user.display_name(),
+            )
+            .await?;
+            consumed_qty += deduct_qty;
+        }
 
         // 更新工单物料已领料量
         sqlx::query(
@@ -1141,13 +1193,24 @@ pub async fn return_materials(
             )));
         }
 
-        // 增加库存（退料成本按 0 处理，不影响加权平均成本）
+        // 退料金额按当前移动加权平均成本计价，保证数量加回后库存金额与平均成本不变
+        let return_unit_cost: i64 = sqlx::query_scalar(
+            "SELECT COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2",
+        )
+        .bind(line.material_id)
+        .bind(line.warehouse_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("查询物料平均成本失败: {}", e)))?
+        .unwrap_or(0);
+
+        // 增加库存
         let (before_qty, after_qty) = super::inventory_ops::increase_inventory(
             &mut *tx,
             line.material_id,
             line.warehouse_id,
             line.quantity,
-            0, // 退料不影响成本
+            return_unit_cost,
             &today,
         )
         .await?;
@@ -1163,7 +1226,7 @@ pub async fn return_materials(
             line.quantity,
             before_qty,
             after_qty,
-            0,
+            return_unit_cost,
             Some("production_order"),
             Some(input.production_order_id),
             None,
