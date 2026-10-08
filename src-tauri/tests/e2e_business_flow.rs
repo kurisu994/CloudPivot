@@ -44,40 +44,41 @@ fn eq_i64(actual: i64, expected: i64, label: &str) -> Result<(), String> {
 }
 
 /// 按依赖顺序删除本测试留下的 QA_ 数据。任何一条失败都返回错误，不吞掉。
+/// `_` 在 LIKE 里是单字符通配符，必须写成 `QA\_%`，否则会误删共享库里 QAdmin 这类真实数据。
 async fn cleanup_qa_data(pool: &PgPool) -> Result<(), sqlx::Error> {
     let statements = [
-        "DELETE FROM payment_records WHERE payable_id IN (SELECT id FROM payables WHERE order_no LIKE 'QA_%')",
-        "DELETE FROM receipt_records WHERE receivable_id IN (SELECT id FROM receivables WHERE order_no LIKE 'QA_%')",
-        "DELETE FROM payables WHERE order_no LIKE 'QA_%'",
-        "DELETE FROM receivables WHERE order_no LIKE 'QA_%'",
-        "DELETE FROM stock_check_items WHERE check_id IN (SELECT id FROM stock_checks WHERE check_no LIKE 'QA_%')",
-        "DELETE FROM stock_checks WHERE check_no LIKE 'QA_%'",
-        "DELETE FROM manual_stock_movement_items WHERE movement_id IN (SELECT id FROM manual_stock_movements WHERE movement_no LIKE 'QA_%')",
-        "DELETE FROM manual_stock_movements WHERE movement_no LIKE 'QA_%'",
-        "DELETE FROM sales_return_items WHERE return_id IN (SELECT id FROM sales_returns WHERE return_no LIKE 'QA_%')",
-        "DELETE FROM sales_returns WHERE return_no LIKE 'QA_%'",
-        "DELETE FROM outbound_order_items WHERE outbound_id IN (SELECT id FROM outbound_orders WHERE order_no LIKE 'QA_%')",
-        "DELETE FROM outbound_orders WHERE order_no LIKE 'QA_%'",
-        "DELETE FROM sales_order_items WHERE order_id IN (SELECT id FROM sales_orders WHERE order_no LIKE 'QA_%')",
-        "DELETE FROM sales_orders WHERE order_no LIKE 'QA_%'",
-        "DELETE FROM purchase_return_items WHERE return_id IN (SELECT id FROM purchase_returns WHERE return_no LIKE 'QA_%')",
-        "DELETE FROM purchase_returns WHERE return_no LIKE 'QA_%'",
-        "DELETE FROM inbound_order_items WHERE inbound_id IN (SELECT id FROM inbound_orders WHERE order_no LIKE 'QA_%')",
-        "DELETE FROM inbound_orders WHERE order_no LIKE 'QA_%'",
-        "DELETE FROM purchase_order_items WHERE order_id IN (SELECT id FROM purchase_orders WHERE order_no LIKE 'QA_%')",
-        "DELETE FROM purchase_orders WHERE order_no LIKE 'QA_%'",
+        "DELETE FROM payment_records WHERE payable_id IN (SELECT id FROM payables WHERE order_no LIKE 'QA\\_%')",
+        "DELETE FROM receipt_records WHERE receivable_id IN (SELECT id FROM receivables WHERE order_no LIKE 'QA\\_%')",
+        "DELETE FROM payables WHERE order_no LIKE 'QA\\_%'",
+        "DELETE FROM receivables WHERE order_no LIKE 'QA\\_%'",
+        "DELETE FROM stock_check_items WHERE check_id IN (SELECT id FROM stock_checks WHERE check_no LIKE 'QA\\_%')",
+        "DELETE FROM stock_checks WHERE check_no LIKE 'QA\\_%'",
+        "DELETE FROM manual_stock_movement_items WHERE movement_id IN (SELECT id FROM manual_stock_movements WHERE movement_no LIKE 'QA\\_%')",
+        "DELETE FROM manual_stock_movements WHERE movement_no LIKE 'QA\\_%'",
+        "DELETE FROM sales_return_items WHERE return_id IN (SELECT id FROM sales_returns WHERE return_no LIKE 'QA\\_%')",
+        "DELETE FROM sales_returns WHERE return_no LIKE 'QA\\_%'",
+        "DELETE FROM outbound_order_items WHERE outbound_id IN (SELECT id FROM outbound_orders WHERE order_no LIKE 'QA\\_%')",
+        "DELETE FROM outbound_orders WHERE order_no LIKE 'QA\\_%'",
+        "DELETE FROM sales_order_items WHERE order_id IN (SELECT id FROM sales_orders WHERE order_no LIKE 'QA\\_%')",
+        "DELETE FROM sales_orders WHERE order_no LIKE 'QA\\_%'",
+        "DELETE FROM purchase_return_items WHERE return_id IN (SELECT id FROM purchase_returns WHERE return_no LIKE 'QA\\_%')",
+        "DELETE FROM purchase_returns WHERE return_no LIKE 'QA\\_%'",
+        "DELETE FROM inbound_order_items WHERE inbound_id IN (SELECT id FROM inbound_orders WHERE order_no LIKE 'QA\\_%')",
+        "DELETE FROM inbound_orders WHERE order_no LIKE 'QA\\_%'",
+        "DELETE FROM purchase_order_items WHERE order_id IN (SELECT id FROM purchase_orders WHERE order_no LIKE 'QA\\_%')",
+        "DELETE FROM purchase_orders WHERE order_no LIKE 'QA\\_%'",
         "DELETE FROM inventory_lots WHERE lot_no LIKE 'LOT-QA-%'",
-        "DELETE FROM inventory WHERE material_id IN (SELECT id FROM materials WHERE name LIKE 'QA_%')",
-        "DELETE FROM bom_items WHERE bom_id IN (SELECT id FROM bom WHERE bom_code LIKE 'QA_%')",
-        "DELETE FROM bom WHERE bom_code LIKE 'QA_%'",
-        "DELETE FROM materials WHERE name LIKE 'QA_%'",
-        "DELETE FROM customers WHERE name LIKE 'QA_%'",
-        "DELETE FROM suppliers WHERE name LIKE 'QA_%'",
-        "DELETE FROM warehouses WHERE name LIKE 'QA_%'",
-        "DELETE FROM categories WHERE name LIKE 'QA_%'",
-        "DELETE FROM units WHERE name LIKE 'QA_%'",
-        "DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'QA_%')",
-        "DELETE FROM users WHERE username LIKE 'QA_%'",
+        "DELETE FROM inventory WHERE material_id IN (SELECT id FROM materials WHERE name LIKE 'QA\\_%')",
+        "DELETE FROM bom_items WHERE bom_id IN (SELECT id FROM bom WHERE bom_code LIKE 'QA\\_%')",
+        "DELETE FROM bom WHERE bom_code LIKE 'QA\\_%'",
+        "DELETE FROM materials WHERE name LIKE 'QA\\_%'",
+        "DELETE FROM customers WHERE name LIKE 'QA\\_%'",
+        "DELETE FROM suppliers WHERE name LIKE 'QA\\_%'",
+        "DELETE FROM warehouses WHERE name LIKE 'QA\\_%'",
+        "DELETE FROM categories WHERE name LIKE 'QA\\_%'",
+        "DELETE FROM units WHERE name LIKE 'QA\\_%'",
+        "DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'QA\\_%')",
+        "DELETE FROM users WHERE username LIKE 'QA\\_%'",
     ];
     for sql in statements {
         sqlx::query(sql).execute(pool).await?;
@@ -106,7 +107,7 @@ async fn lot_qty_of(pool: &PgPool, lot_id: i64) -> Result<f64, String> {
 
 async fn net_unpaid(pool: &PgPool) -> Result<i64, String> {
     sqlx::query_scalar(
-        "SELECT COALESCE(SUM(unpaid_amount), 0)::BIGINT FROM payables WHERE order_no LIKE 'QA_%'",
+        "SELECT COALESCE(SUM(unpaid_amount), 0)::BIGINT FROM payables WHERE order_no LIKE 'QA\\_%'",
     )
     .fetch_one(pool)
     .await
@@ -115,7 +116,7 @@ async fn net_unpaid(pool: &PgPool) -> Result<i64, String> {
 
 async fn net_unreceived(pool: &PgPool) -> Result<i64, String> {
     sqlx::query_scalar(
-        "SELECT COALESCE(SUM(unreceived_amount), 0)::BIGINT FROM receivables WHERE order_no LIKE 'QA_%'",
+        "SELECT COALESCE(SUM(unreceived_amount), 0)::BIGINT FROM receivables WHERE order_no LIKE 'QA\\_%'",
     )
     .fetch_one(pool)
     .await
