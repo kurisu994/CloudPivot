@@ -1627,7 +1627,9 @@ pub async fn complete_production(
 
     // 计算完工成本：领料总成本 ÷ (已完工 + 本次完工)
     // 领料总成本 = 各物料净领料量 × 该物料的库存平均成本
-    let picking_cost: i64 = sqlx::query_scalar(
+    // 领料总成本是小数金额（picked_qty / avg_cost 均为浮点），必须用 f64 接收，
+    // 否则 sqlx 会因为 SQL 返回 FLOAT8 而拒绝按 i64 解码（BUG-115）。
+    let picking_cost: f64 = sqlx::query_scalar(
         "SELECT COALESCE(SUM(
             (pom.picked_qty - pom.returned_qty) *
             COALESCE((SELECT avg_cost FROM inventory WHERE material_id = pom.material_id LIMIT 1), 0)
@@ -1642,7 +1644,7 @@ pub async fn complete_production(
 
     let total_completed = order.completed_qty + input.quantity;
     let unit_cost = if total_completed > 0.0 {
-        (picking_cost as f64 / total_completed).round() as i64
+        (picking_cost / total_completed).round() as i64
     } else {
         0
     };
