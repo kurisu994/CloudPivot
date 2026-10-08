@@ -1291,44 +1291,26 @@ pub async fn save_and_confirm_inbound(
 
     // 费用分摊（仅关联采购单时）
     let (allocated_discount, allocated_freight, allocated_other) = if let Some(ref po) = po_info {
+        let purchase_id = params.purchase_id.unwrap();
         let po_total = po.3; // 采购单货款小计
-        let _prev_total = po.8; // 之前已入库的货款小计
+        // 本次入库后所有明细行都已完全入库，即为最后一笔，走倒挤法
+        let all_items_done = po_total > 0
+            && self::check_all_items_will_be_done(&mut *tx, purchase_id, &params.items).await?;
 
-        if po_total > 0 {
-            // 判断是否为最后一笔入库
-            // 检查本次入库后是否所有明细行都已完全入库
-            let all_items_done = self::check_all_items_will_be_done(
-                &mut *tx,
-                params.purchase_id.unwrap(),
-                &params.items,
-            )
-            .await?;
-
-            if all_items_done {
-                // 最后一笔：倒挤法
-                let prev_discount = sqlx::query_scalar::<_, i64>(
-                    "SELECT COALESCE(SUM(allocated_discount), 0)::BIGINT FROM inbound_orders WHERE purchase_id = $1 AND status = 'confirmed'",
-                ).bind(params.purchase_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
-                let prev_freight = sqlx::query_scalar::<_, i64>(
-                    "SELECT COALESCE(SUM(allocated_freight), 0)::BIGINT FROM inbound_orders WHERE purchase_id = $1 AND status = 'confirmed'",
-                ).bind(params.purchase_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
-                let prev_other = sqlx::query_scalar::<_, i64>(
-                    "SELECT COALESCE(SUM(allocated_other), 0)::BIGINT FROM inbound_orders WHERE purchase_id = $1 AND status = 'confirmed'",
-                ).bind(params.purchase_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
-
-                (po.4 - prev_discount, po.5 - prev_freight, po.6 - prev_other)
-            } else {
-                // 中间批次：按比例分摊，四舍五入
-                let ratio = inbound_total as f64 / po_total as f64;
-                (
-                    (po.4 as f64 * ratio).round() as i64,
-                    (po.5 as f64 * ratio).round() as i64,
-                    (po.6 as f64 * ratio).round() as i64,
-                )
-            }
-        } else {
-            (0, 0, 0)
-        }
+        let charges = super::order_shared::calculate_allocated_charges(
+            &mut *tx,
+            all_items_done,
+            inbound_total,
+            po_total,
+            po.4,
+            po.5,
+            po.6,
+            "inbound_orders",
+            "purchase_id",
+            purchase_id,
+        )
+        .await?;
+        (charges.discount, charges.freight, charges.other)
     } else {
         (0, 0, 0)
     };
