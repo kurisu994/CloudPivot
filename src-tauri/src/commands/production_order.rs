@@ -868,9 +868,10 @@ pub async fn pick_materials(
         struct MatInfo {
             required_qty: f64,
             picked_qty: f64,
+            returned_qty: f64,
         }
         let mat: MatInfo = sqlx::query_as(
-            "SELECT required_qty, picked_qty FROM production_order_materials
+            "SELECT required_qty, picked_qty, returned_qty FROM production_order_materials
              WHERE production_order_id = $1 AND material_id = $2",
         )
         .bind(input.production_order_id)
@@ -880,8 +881,10 @@ pub async fn pick_materials(
         .map_err(|e| AppError::Database(format!("查询物料需求失败: {}", e)))?
         .ok_or_else(|| AppError::Business("物料不在工单需求清单中".to_string()))?;
 
+        // 超领上限按「净领料量」（已领料 − 已退料）计算：退料后应允许重新领出
         let max_pick = mat.required_qty * 1.2; // 120% 超领上限
-        if mat.picked_qty + line.quantity > max_pick {
+        let net_picked = mat.picked_qty - mat.returned_qty;
+        if net_picked + line.quantity > max_pick {
             return Err(AppError::Business(format!(
                 "累计领料量不能超过需求量的120%（上限: {:.2}）",
                 max_pick
