@@ -1242,17 +1242,39 @@ pub async fn return_materials(
                 }
             }
 
-            // 分别计算「本次退料前」与「本次退料后」的批次分配，差量即为要加回的批次量
-            let mut old_remaining = returned;
-            let mut new_remaining = returned + line.quantity;
+            // 各批次的已回补量（来自本工单此前的 production_in 流水）
+            let restored: Vec<(i64, f64)> = sqlx::query_as(
+                "SELECT lot_id, SUM(quantity) FROM inventory_transactions
+                 WHERE source_type = 'production_order' AND source_id = $1
+                   AND material_id = $2 AND warehouse_id = $3
+                   AND transaction_type = 'production_in' AND lot_id IS NOT NULL
+                 GROUP BY lot_id",
+            )
+            .bind(input.production_order_id)
+            .bind(line.material_id)
+            .bind(line.warehouse_id)
+            .fetch_all(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("查询工单退料流水失败: {}", e)))?;
+
+            // 按「后领先退」把本次退料量加回该批次剩余可回补容量（累计领料量 − 已回补量）。
+            // 剩余容量口径可以自然兼容历史上未回补批次的退料，并且总量恰好等于退料量，
+            // 与主库存的增量保持一致。
+            let mut remaining_to_restore = line.quantity;
             for (lid, cap) in caps {
-                let old_take = old_remaining.min(cap);
-                let new_take = new_remaining.min(cap);
-                old_remaining = (old_remaining - old_take).max(0.0);
-                new_remaining = (new_remaining - new_take).max(0.0);
-                let delta = new_take - old_take;
+                if remaining_to_restore <= 0.0 {
+                    break;
+                }
+                let already = restored
+                    .iter()
+                    .find(|(id, _)| *id == lid)
+                    .map(|(_, qty)| *qty)
+                    .unwrap_or(0.0);
+                let remaining_cap = (cap - already).max(0.0);
+                let delta = remaining_to_restore.min(remaining_cap);
                 if delta > 0.0 {
                     lot_plan.push((lid, delta));
+                    remaining_to_restore -= delta;
                 }
             }
         }
@@ -1303,8 +1325,9 @@ pub async fn return_materials(
             restored_qty += add_qty;
         }
 
-        // 批次追踪但无历史领料流水时（历史数据），退化为只加主库存
-        if lot_plan.is_empty() {
+        // 未能分摊到批次的剩余部分（如历史流水缺失）仍记一条无批次流水，保证流水总量等于退料量
+        let unallocated_qty = line.quantity - restored_qty;
+        if unallocated_qty > 0.001 {
             super::inventory_ops::record_transaction(
                 &mut *tx,
                 &today,
@@ -1312,8 +1335,8 @@ pub async fn return_materials(
                 line.warehouse_id,
                 None,
                 "production_in",
-                line.quantity,
-                before_qty,
+                unallocated_qty,
+                before_qty + restored_qty,
                 after_qty,
                 return_unit_cost,
                 Some("production_order"),

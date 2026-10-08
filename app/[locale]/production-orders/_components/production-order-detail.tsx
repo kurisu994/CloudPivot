@@ -122,6 +122,8 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
 
   // 新建/编辑模式的表单状态
   const [isCreateMode] = useState(orderId === null)
+  // 是否处于表头编辑视图。新建时默认进入；已有工单默认进入执行视图，草稿可手动切回编辑
+  const [isEditing, setIsEditing] = useState(orderId === null)
   const [bomList, setBomList] = useState<BomOption[]>([])
   const [warehouseList, setWarehouseList] = useState<WarehouseOption[]>([])
   const [formBomId, setFormBomId] = useState<string>('')
@@ -210,7 +212,13 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
         }),
       )
       toast.success(orderId ? t('toast.updateSuccess') : t('toast.createSuccess'))
-      onBack()
+      if (isCreateMode) {
+        onBack()
+      } else {
+        // 编辑已有工单：回到执行视图并刷新，以便继续领料/完工
+        setIsEditing(false)
+        await loadDetail()
+      }
     } catch (err: unknown) {
       toast.error(getErrorMessage(err))
     } finally {
@@ -359,7 +367,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
   // ================================================================
   // 新建/编辑模式渲染
   // ================================================================
-  if (isCreateMode || (detail && detail.status === 'draft')) {
+  if (isCreateMode || isEditing) {
     const bomItems = bomList.map(b => ({
       value: String(b.id),
       label: `${b.materialName ?? '—'} (${b.version})`,
@@ -420,7 +428,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
         </Card>
 
         <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={onBack}>
+          <Button variant="outline" onClick={() => (isCreateMode ? onBack() : setIsEditing(false))}>
             {t('cancel')}
           </Button>
           <Button onClick={handleSave} disabled={saving}>
@@ -462,6 +470,11 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
           </Button>
           <h1 className="text-xl font-bold">{detail.orderNo}</h1>
           {getStatusBadge(detail.status, t)}
+          {detail.status === 'draft' && (
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              {t('edit')}
+            </Button>
+          )}
         </div>
       </div>
 
