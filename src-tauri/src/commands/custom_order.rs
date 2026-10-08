@@ -1061,12 +1061,14 @@ pub async fn confirm_custom_order(
         r#"
         UPDATE custom_orders SET
             status = 'confirmed',
-            confirmed_by_user_id = 1, confirmed_by_name = 'admin',
+            confirmed_by_user_id = $2, confirmed_by_name = $3,
             confirmed_at = NOW(), updated_at = NOW()
         WHERE id = $1
         "#,
     )
     .bind(id)
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
     .execute(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("更新定制单状态失败: {}", e)))?;
@@ -1180,12 +1182,14 @@ pub async fn cancel_custom_order(
         r#"
         UPDATE custom_orders SET
             status = 'cancelled',
-            cancelled_by_user_id = 1, cancelled_by_name = 'admin',
+            cancelled_by_user_id = $2, cancelled_by_name = $3,
             cancelled_at = NOW(), updated_at = NOW()
         WHERE id = $1
         "#,
     )
     .bind(id)
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
     .execute(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("更新定制单状态失败: {}", e)))?;

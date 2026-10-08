@@ -717,7 +717,15 @@ pub async fn approve_purchase_order(
 
     use super::order_shared;
 
-    let rows = order_shared::approve_order(&db.pool, "purchase_orders", id, "采购单").await?;
+    let rows = order_shared::approve_order(
+        &db.pool,
+        "purchase_orders",
+        id,
+        current_user.user_id(),
+        &current_user.display_name(),
+        "采购单",
+    )
+    .await?;
 
     if rows == 0 {
         if !order_shared::check_order_exists(&db.pool, "purchase_orders", id, "采购单").await? {
@@ -769,7 +777,15 @@ pub async fn cancel_purchase_order(
         ));
     }
 
-    let rows = order_shared::cancel_order(&db.pool, "purchase_orders", id, "采购单").await?;
+    let rows = order_shared::cancel_order(
+        &db.pool,
+        "purchase_orders",
+        id,
+        current_user.user_id(),
+        &current_user.display_name(),
+        "采购单",
+    )
+    .await?;
 
     if rows == 0 {
         if !order_shared::check_order_exists(&db.pool, "purchase_orders", id, "采购单").await? {

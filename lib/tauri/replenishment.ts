@@ -124,14 +124,10 @@ export async function getConsumptionTrend(materialId: number, days: number): Pro
   return invoke<ConsumptionTrendPoint[]>('get_consumption_trend', { materialId, days })
 }
 
-/** 一键生成采购单 */
-export async function createPurchaseOrdersFromSuggestions(materialIds: number[], userId?: number, userName?: string): Promise<BulkCreatePoResult> {
+/** 一键生成采购单（制单人由后端按当前登录用户记录） */
+export async function createPurchaseOrdersFromSuggestions(materialIds: number[]): Promise<BulkCreatePoResult> {
   if (!isTauriEnv()) return { createdOrders: [], errors: ['仅 Tauri 环境可用'] }
-  return invoke<BulkCreatePoResult>('create_purchase_orders_from_suggestions', {
-    materialIds,
-    userId: userId ?? null,
-    userName: userName ?? null,
-  })
+  return invoke<BulkCreatePoResult>('create_purchase_orders_from_suggestions', { materialIds })
 }
 
 /** 忽略补货建议 */

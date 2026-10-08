@@ -451,21 +451,23 @@ where
 // 通用审核/作废/删除
 // ================================================================
 
-/// 审核单据（原子 UPDATE WHERE status = 'draft'）
+/// 审核单据（原子 UPDATE WHERE status = 'draft'），审核人记为 `operator_id` / `operator_name`
 ///
 /// 返回受影响行数（0 表示失败）
 pub async fn approve_order(
     pool: &sqlx::PgPool,
     table: &str,
     id: i64,
+    operator_id: i64,
+    operator_name: &str,
     error_context: &str,
 ) -> Result<u64, AppError> {
     let sql = format!(
         r#"
         UPDATE {} SET
             status = 'approved',
-            approved_by_user_id = 1,
-            approved_by_name = 'admin',
+            approved_by_user_id = $2,
+            approved_by_name = $3,
             approved_at = NOW(),
             updated_at = NOW()
         WHERE id = $1 AND status = 'draft'
@@ -475,6 +477,8 @@ pub async fn approve_order(
 
     let result = sqlx::query(&sql)
         .bind(id)
+        .bind(operator_id)
+        .bind(operator_name)
         .execute(pool)
         .await
         .map_err(|e| AppError::Database(format!("审核{}失败: {}", error_context, e)))?;
@@ -498,21 +502,23 @@ pub async fn check_order_exists(
     Ok(exists.is_some())
 }
 
-/// 作废单据（原子 UPDATE WHERE status IN ('draft', 'approved')）
+/// 作废单据（原子 UPDATE WHERE status IN ('draft', 'approved')），作废人记为 `operator_id` / `operator_name`
 ///
 /// 返回受影响行数
 pub async fn cancel_order(
     pool: &sqlx::PgPool,
     table: &str,
     id: i64,
+    operator_id: i64,
+    operator_name: &str,
     error_context: &str,
 ) -> Result<u64, AppError> {
     let sql = format!(
         r#"
         UPDATE {} SET
             status = 'cancelled',
-            cancelled_by_user_id = 1,
-            cancelled_by_name = 'admin',
+            cancelled_by_user_id = $2,
+            cancelled_by_name = $3,
             cancelled_at = NOW(),
             updated_at = NOW()
         WHERE id = $1 AND status IN ('draft', 'approved')
@@ -522,6 +528,8 @@ pub async fn cancel_order(
 
     let result = sqlx::query(&sql)
         .bind(id)
+        .bind(operator_id)
+        .bind(operator_name)
         .execute(pool)
         .await
         .map_err(|e| AppError::Database(format!("作废{}失败: {}", error_context, e)))?;

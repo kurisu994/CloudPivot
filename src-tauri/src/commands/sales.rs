@@ -888,14 +888,16 @@ pub async fn approve_sales_order(
         r#"
         UPDATE sales_orders SET
             status = 'approved',
-            approved_by_user_id = 1,
-            approved_by_name = 'admin',
+            approved_by_user_id = $2,
+            approved_by_name = $3,
             approved_at = NOW(),
             updated_at = NOW()
         WHERE id = $1 AND status = 'draft'
         "#,
     )
     .bind(id)
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
     .execute(&db.pool)
     .await
     .map_err(|e| AppError::Database(format!("审核销售单失败: {}", e)))?;
@@ -955,7 +957,15 @@ pub async fn cancel_sales_order(
         ));
     }
 
-    let rows = order_shared::cancel_order(&db.pool, "sales_orders", id, "销售单").await?;
+    let rows = order_shared::cancel_order(
+        &db.pool,
+        "sales_orders",
+        id,
+        current_user.user_id(),
+        &current_user.display_name(),
+        "销售单",
+    )
+    .await?;
 
     if rows == 0 {
         if !order_shared::check_order_exists(&db.pool, "sales_orders", id, "销售单").await? {

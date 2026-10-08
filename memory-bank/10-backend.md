@@ -61,6 +61,7 @@ paths:
 - 任何写命令必须具备身份鉴权 `require_auth`。
 - 业务命令逐步补齐 `require_permission(module, action)` 守卫校验（多角色并集，任一角色为 admin 直通）。
 - 权限体系支持 `admin`、`operator`、`viewer` 等角色，用户管理类敏感命令强制仅 admin 角色可执行。
+- 单据上的制单/审核/确认/作废人一律取 `CurrentUser` 的 `user_id()` / `display_name()`，不写死、也不接收前端传入的身份；`tests/operator-identity.test.mjs` 会拦截写死 admin 的 SQL。
 
 ### 认证系统与凭据安全
 - 默认管理员账号：`admin` / `admin123`
