@@ -1133,10 +1133,10 @@ pub async fn cancel_custom_order(
         .await
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
-    // 释放预留：查询并更新
+    // 释放预留：查询并更新，只退回未消耗的部分
     let active_reservations: Vec<(i64, i64, i64, f64)> = sqlx::query_as(
         r#"
-        SELECT id, material_id, warehouse_id, reserved_qty
+        SELECT id, material_id, warehouse_id, reserved_qty - COALESCE(consumed_qty, 0)
         FROM inventory_reservations
         WHERE source_type = 'custom_order' AND source_id = $1 AND status = 'active'
         "#,
@@ -1146,19 +1146,40 @@ pub async fn cancel_custom_order(
     .await
     .map_err(|e| AppError::Database(format!("查询活跃预留失败: {}", e)))?;
 
-    for (res_id, material_id, warehouse_id, reserved_qty) in &active_reservations {
+    for (res_id, material_id, warehouse_id, release_qty) in &active_reservations {
         // 取消预留记录
         sqlx::query(
-            "UPDATE inventory_reservations SET status = 'cancelled', released_qty = reserved_qty, updated_at = NOW() WHERE id = $1",
+            "UPDATE inventory_reservations SET status = 'cancelled', released_qty = reserved_qty - COALESCE(consumed_qty, 0), updated_at = NOW() WHERE id = $1",
         )
         .bind(res_id)
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("取消预留失败: {}", e)))?;
 
-        // 取消预留批次分配
+        // 退回批次上的预留量，否则批次会一直显示「已预留」、可用量偏低，
+        // 后续出库与盘亏都拿不到这部分库存。必须在批次分配标记取消之前执行。
         sqlx::query(
-            "UPDATE inventory_reservation_lots SET status = 'cancelled', released_qty = reserved_qty, updated_at = NOW() WHERE reservation_id = $1",
+            r#"
+            UPDATE inventory_lots il SET
+                qty_reserved = GREATEST(0, il.qty_reserved - rl.release_qty),
+                updated_at = NOW()
+            FROM (
+                SELECT lot_id, SUM(reserved_qty - COALESCE(consumed_qty, 0)) AS release_qty
+                FROM inventory_reservation_lots
+                WHERE reservation_id = $1 AND status = 'allocated' AND lot_id IS NOT NULL
+                GROUP BY lot_id
+            ) rl
+            WHERE il.id = rl.lot_id
+            "#,
+        )
+        .bind(res_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("释放批次预留失败: {}", e)))?;
+
+        // 取消预留批次分配（已消耗完的分配保持 consumed，不改写）
+        sqlx::query(
+            "UPDATE inventory_reservation_lots SET status = 'cancelled', released_qty = reserved_qty - COALESCE(consumed_qty, 0), updated_at = NOW() WHERE reservation_id = $1 AND status = 'allocated'",
         )
         .bind(res_id)
         .execute(&mut *tx)
@@ -1169,7 +1190,7 @@ pub async fn cancel_custom_order(
         sqlx::query(
             "UPDATE inventory SET reserved_qty = GREATEST(0, reserved_qty - $1), updated_at = NOW() WHERE material_id = $2 AND warehouse_id = $3",
         )
-        .bind(reserved_qty)
+        .bind(release_qty)
         .bind(material_id)
         .bind(warehouse_id)
         .execute(&mut *tx)
