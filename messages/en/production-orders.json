@@ -64,7 +64,14 @@
       "returnQuantity": "Return Quantity",
       "selectWarehouse": "Select Warehouse",
       "confirm": "Confirm",
-      "overPickWarning": "Total picked cannot exceed 120% of required"
+      "overPickWarning": "Total picked cannot exceed 120% of required",
+      "lot": "Lot",
+      "lotAuto": "Auto",
+      "lotPickHint": "Auto picks the lots reserved for this order first, then follows FIFO. If you choose a lot, this order's reservation is moved to that lot.",
+      "lotPickOption": "{lotNo} (available {usable})",
+      "lotPickOptionReserved": "{lotNo} (available {usable}, reserved for this order {reserved})",
+      "lotReturnHint": "Auto returns to the lots it was picked from, most recent pick first. A chosen lot only takes back what was picked from it and not yet returned.",
+      "lotReturnOption": "{lotNo} (returnable {qty})"
     },
 
     "production": {

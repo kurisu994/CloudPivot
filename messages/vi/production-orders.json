@@ -64,7 +64,14 @@
       "returnQuantity": "SL trả",
       "selectWarehouse": "Chọn kho",
       "confirm": "Xác nhận",
-      "overPickWarning": "Tổng lấy không vượt quá 120% yêu cầu"
+      "overPickWarning": "Tổng lấy không vượt quá 120% yêu cầu",
+      "lot": "Lô",
+      "lotAuto": "Tự động",
+      "lotPickHint": "Mặc định tự động: ưu tiên các lô đã đặt trước cho lệnh này, sau đó theo FIFO. Khi chọn lô thủ công, phần đặt trước của lệnh sẽ được chuyển sang lô đó.",
+      "lotPickOption": "{lotNo} (có thể lấy {usable})",
+      "lotPickOptionReserved": "{lotNo} (có thể lấy {usable}, đã đặt trước cho lệnh này {reserved})",
+      "lotReturnHint": "Mặc định tự động: trả về các lô đã lấy, lần lấy sau trả trước. Khi chọn lô, chỉ trả phần đã lấy từ lô đó và chưa trả.",
+      "lotReturnOption": "{lotNo} (có thể trả {qty})"
     },
 
     "production": {

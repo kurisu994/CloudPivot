@@ -31,7 +31,8 @@ use super::inventory::{
 use super::manual_stock_movement::{ConfirmManualMovementParams, confirm_manual_stock_movement};
 use super::production_order::{
     CompleteProductionInput, PickMaterialInput, PickMaterialLine, ReturnMaterialInput,
-    ReturnMaterialLine, complete_production, pick_materials, return_materials,
+    ReturnMaterialLine, complete_production, get_production_lot_options, pick_materials,
+    return_materials,
 };
 use super::purchase::{
     SaveInboundItemParams, SaveInboundOrderParams, SavePurchaseReturnParams, SaveReturnItemParams,
@@ -42,6 +43,7 @@ use super::sales::{
     SaveSalesReturnParams, save_and_confirm_outbound, save_and_confirm_sales_return,
 };
 use crate::db::DbState;
+use crate::error::AppError;
 
 // ================================================================
 // 测试环境：模板库 + 每用例独立库
@@ -431,6 +433,7 @@ async fn db_flow_pick_consumes_reserved_lot_of_linked_custom_order() {
                 material_id: rm,
                 quantity: 50.0,
                 warehouse_id: b.wh,
+                lot_id: None,
             }],
         },
     )
@@ -479,6 +482,7 @@ async fn db_flow_pick_takes_reserved_lot_first_then_free_lots() {
                 material_id: rm,
                 quantity: 50.0,
                 warehouse_id: b.wh,
+                lot_id: None,
             }],
         },
     )
@@ -523,6 +527,7 @@ async fn db_flow_pick_does_not_create_ghost_lot_rows() {
                 material_id: rm,
                 quantity: 0.4,
                 warehouse_id: b.wh,
+                lot_id: None,
             }],
         },
     )
@@ -1592,6 +1597,7 @@ async fn db_flow_return_restores_reservation_symmetrically_and_allows_repick() {
             material_id: rm,
             quantity: qty,
             warehouse_id: b.wh,
+            lot_id: None,
         }]
     };
     pick_materials(
@@ -1614,6 +1620,7 @@ async fn db_flow_return_restores_reservation_symmetrically_and_allows_repick() {
                 material_id: rm,
                 quantity: 20.0,
                 warehouse_id: b.wh,
+                lot_id: None,
             }],
         },
     )
@@ -1703,6 +1710,7 @@ async fn db_flow_legacy_pick_return_and_completion_cost_use_pick_snapshot() {
                 material_id: rm,
                 quantity: 4.0,
                 warehouse_id: b.wh,
+                lot_id: None,
             }],
         },
     )
@@ -1763,6 +1771,715 @@ async fn db_flow_legacy_pick_return_and_completion_cost_use_pick_snapshot() {
     assert_eq!(
         unit_cost, 100,
         "净投入 600 / 6 件；旧版退料成本为 0 不能让它虚高到 167"
+    );
+    env.finish().await;
+}
+
+// ================================================================
+// 生产工单：领料 / 退料人工指定批次（BUG-111，需求 3.10a.4）
+// ================================================================
+
+/// 领一行料；`lot_id` 为空走自动分配
+async fn pick_one(
+    env: &TestEnv,
+    production_order: i64,
+    material: i64,
+    wh: i64,
+    quantity: f64,
+    lot_id: Option<i64>,
+) -> Result<(), AppError> {
+    pick_materials(
+        env.db(),
+        env.user(),
+        PickMaterialInput {
+            production_order_id: production_order,
+            items: vec![PickMaterialLine {
+                material_id: material,
+                quantity,
+                warehouse_id: wh,
+                lot_id,
+            }],
+        },
+    )
+    .await
+}
+
+/// 退一行料；`lot_id` 为空走自动分配
+async fn return_one(
+    env: &TestEnv,
+    production_order: i64,
+    material: i64,
+    wh: i64,
+    quantity: f64,
+    lot_id: Option<i64>,
+) -> Result<(), AppError> {
+    return_materials(
+        env.db(),
+        env.user(),
+        ReturnMaterialInput {
+            production_order_id: production_order,
+            items: vec![ReturnMaterialLine {
+                material_id: material,
+                quantity,
+                warehouse_id: wh,
+                lot_id,
+            }],
+        },
+    )
+    .await
+}
+
+/// 预留单头：(预留量, 已消耗量, 状态)
+async fn reservation_of(p: &PgPool, reservation_id: i64) -> (f64, f64, String) {
+    sqlx::query_as(
+        "SELECT reserved_qty, COALESCE(consumed_qty, 0), status FROM inventory_reservations WHERE id = $1",
+    )
+    .bind(reservation_id)
+    .fetch_one(p)
+    .await
+    .expect("查询预留")
+}
+
+/// 预留批次行：(批次 id, 预留量, 已消耗量, 已释放量, 状态)，按行 id 升序
+async fn reservation_rows_of(
+    p: &PgPool,
+    reservation_id: i64,
+) -> Vec<(Option<i64>, f64, f64, f64, String)> {
+    sqlx::query_as(
+        "SELECT lot_id, reserved_qty, COALESCE(consumed_qty, 0), COALESCE(released_qty, 0), status
+         FROM inventory_reservation_lots WHERE reservation_id = $1 ORDER BY id",
+    )
+    .bind(reservation_id)
+    .fetch_all(p)
+    .await
+    .expect("查询预留批次行")
+}
+
+#[tokio::test]
+#[ignore = "需要 CLOUDPIVOT_TEST_DATABASE_URL"]
+async fn db_flow_pick_manual_lot_takes_only_from_chosen_lot() {
+    let env = TestEnv::new().await;
+    let p = &env.pool;
+    let b = seed_base(p).await;
+    let fg = seed_material(p, &b, "T-FG-1", "none", "finished").await;
+    let rm = seed_material(p, &b, "T-RM-1", "required", "raw").await;
+    // L1 入库更早，自动领料会先扣它；人工指定 L2 后必须只动 L2
+    let l1 = seed_lot(p, rm, b.wh, "LOT-T-001", 30.0, 0.0, "2026-01-01").await;
+    let l2 = seed_lot(p, rm, b.wh, "LOT-T-002", 40.0, 0.0, "2026-01-02").await;
+    seed_stock(p, rm, b.wh, 70.0, 0.0, 100).await;
+    let po = seed_production_order(p, "T-PO-1", fg, None, "draft", 10.0).await;
+    seed_po_material(p, po, rm, 20.0, 0.0, 0.0).await;
+
+    pick_one(&env, po, rm, b.wh, 15.0, Some(l2))
+        .await
+        .expect("指定批次领料应当成功");
+
+    assert_eq!(lot_of(p, l1).await, (30.0, 0.0), "没被选中的批次不能动");
+    assert_eq!(lot_of(p, l2).await, (25.0, 0.0));
+    assert_eq!(inventory_of(p, rm, b.wh).await, (55.0, 0.0));
+    assert_eq!(
+        ledger_of(p, rm, "production_out").await,
+        vec![(Some(l2), -15.0)],
+        "流水只记指定批次"
+    );
+    let (picked, status): (f64, String) = sqlx::query_as(
+        "SELECT (SELECT picked_qty FROM production_order_materials WHERE production_order_id = $1),
+                (SELECT status FROM production_orders WHERE id = $1)",
+    )
+    .bind(po)
+    .fetch_one(p)
+    .await
+    .unwrap();
+    approx(picked, 15.0, "累计领料量");
+    assert_eq!(status, "picking");
+    env.finish().await;
+}
+
+#[tokio::test]
+#[ignore = "需要 CLOUDPIVOT_TEST_DATABASE_URL"]
+async fn db_flow_pick_manual_lot_rearranges_reservation_and_return_restores_it() {
+    let env = TestEnv::new().await;
+    let p = &env.pool;
+    let b = seed_base(p).await;
+    let fg = seed_material(p, &b, "T-FG-1", "none", "finished").await;
+    let rm = seed_material(p, &b, "T-RM-1", "required", "raw").await;
+    // 定制单 900 把 L1 整批预留；L2 是空闲库存
+    let l1 = seed_lot(p, rm, b.wh, "LOT-T-001", 50.0, 50.0, "2026-01-01").await;
+    let l2 = seed_lot(p, rm, b.wh, "LOT-T-002", 40.0, 0.0, "2026-01-02").await;
+    seed_stock(p, rm, b.wh, 90.0, 50.0, 100).await;
+    let reservation = seed_reservation(p, 900, rm, b.wh, &[(l1, 50.0)]).await;
+    let po = seed_production_order(p, "T-PO-1", fg, Some(900), "draft", 10.0).await;
+    seed_po_material(p, po, rm, 50.0, 0.0, 0.0).await;
+
+    // 人工指定 L2 领 30：本工单的预留先从 L1 重排到 L2 再被消耗，L1 让出 30 的预留
+    pick_one(&env, po, rm, b.wh, 30.0, Some(l2))
+        .await
+        .expect("指定空闲批次领料，预留随之重排");
+    assert_eq!(
+        lot_of(p, l1).await,
+        (50.0, 20.0),
+        "L1 实物不动，预留让出 30"
+    );
+    assert_eq!(
+        lot_of(p, l2).await,
+        (10.0, 0.0),
+        "L2 实物扣 30，挪进来的预留当场消耗"
+    );
+    assert_eq!(inventory_of(p, rm, b.wh).await, (60.0, 20.0));
+    assert_eq!(
+        reservation_of(p, reservation).await,
+        (50.0, 30.0, "active".to_string())
+    );
+    assert_eq!(
+        reservation_rows_of(p, reservation).await,
+        vec![
+            (Some(l1), 20.0, 0.0, 30.0, "allocated".to_string()),
+            (Some(l2), 30.0, 30.0, 0.0, "consumed".to_string()),
+        ],
+        "预留批次行合计不变（20 + 30），L2 新增一条已消耗的行"
+    );
+    assert_eq!(
+        ledger_of(p, rm, "production_out").await,
+        vec![(Some(l2), -30.0)]
+    );
+
+    // 退回 L2：实物回到 L2，预留也恢复在 L2（和实物所在的批次一致）
+    return_one(&env, po, rm, b.wh, 30.0, Some(l2))
+        .await
+        .expect("退回指定批次");
+    assert_eq!(lot_of(p, l1).await, (50.0, 20.0));
+    assert_eq!(
+        lot_of(p, l2).await,
+        (40.0, 30.0),
+        "预留恢复在实物回到的批次"
+    );
+    assert_eq!(inventory_of(p, rm, b.wh).await, (90.0, 50.0));
+    assert_eq!(
+        reservation_of(p, reservation).await,
+        (50.0, 0.0, "active".to_string())
+    );
+    assert_eq!(
+        reservation_rows_of(p, reservation).await,
+        vec![
+            (Some(l1), 20.0, 0.0, 30.0, "allocated".to_string()),
+            (Some(l2), 30.0, 0.0, 0.0, "allocated".to_string()),
+        ]
+    );
+    assert_eq!(
+        ledger_of(p, rm, "production_in").await,
+        vec![(Some(l2), 30.0)]
+    );
+
+    // 再自动领 50：两条预留行都被消耗，库存与预留一起清零，没有残留
+    pick_one(&env, po, rm, b.wh, 50.0, None)
+        .await
+        .expect("重排恢复后的预留可以被自动领料消耗");
+    assert_eq!(lot_of(p, l1).await, (30.0, 0.0));
+    assert_eq!(lot_of(p, l2).await, (10.0, 0.0));
+    assert_eq!(inventory_of(p, rm, b.wh).await, (40.0, 0.0));
+    assert_eq!(
+        reservation_of(p, reservation).await,
+        (50.0, 50.0, "consumed".to_string())
+    );
+    env.finish().await;
+}
+
+#[tokio::test]
+#[ignore = "需要 CLOUDPIVOT_TEST_DATABASE_URL"]
+async fn db_flow_pick_manual_lot_counts_own_reservation_as_usable() {
+    let env = TestEnv::new().await;
+    let p = &env.pool;
+    let b = seed_base(p).await;
+    let fg = seed_material(p, &b, "T-FG-1", "none", "finished").await;
+    let rm = seed_material(p, &b, "T-RM-1", "required", "raw").await;
+    // L1：本工单的定制单 900 预留 20；
+    // L2：在库 100，其中 900 预留 30、另一张定制单 901 预留 20 —— 本工单最多能从 L2 领 50 + 30 = 80
+    let l1 = seed_lot(p, rm, b.wh, "LOT-T-001", 20.0, 20.0, "2026-01-01").await;
+    let l2 = seed_lot(p, rm, b.wh, "LOT-T-002", 100.0, 50.0, "2026-01-02").await;
+    seed_stock(p, rm, b.wh, 120.0, 70.0, 100).await;
+    let own = seed_reservation(p, 900, rm, b.wh, &[(l1, 20.0), (l2, 30.0)]).await;
+    let other = seed_reservation(p, 901, rm, b.wh, &[(l2, 20.0)]).await;
+    let po = seed_production_order(p, "T-PO-1", fg, Some(900), "draft", 100.0).await;
+    seed_po_material(p, po, rm, 100.0, 0.0, 0.0).await;
+
+    let err = pick_one(&env, po, rm, b.wh, 81.0, Some(l2))
+        .await
+        .expect_err("超过本工单可从该批次领走的 80 必须拒绝")
+        .to_string();
+    assert!(
+        err.contains("指定批次可用量不足") && err.contains("80.00"),
+        "实际错误: {err}"
+    );
+    assert_eq!(lot_of(p, l2).await, (100.0, 50.0), "拒绝后整单回滚");
+    assert_eq!(inventory_of(p, rm, b.wh).await, (120.0, 70.0));
+
+    // 领 40：先用 L2 自己的预留 30，不足的 10 从 L1 的预留挪过来
+    pick_one(&env, po, rm, b.wh, 40.0, Some(l2))
+        .await
+        .expect("在可用量内领料应当成功");
+    assert_eq!(lot_of(p, l1).await, (20.0, 10.0), "L1 让出 10 的预留");
+    assert_eq!(
+        lot_of(p, l2).await,
+        (60.0, 20.0),
+        "L2 在库扣 40；本工单 30 的预留消耗，另一张单据的 20 不受影响"
+    );
+    assert_eq!(inventory_of(p, rm, b.wh).await, (80.0, 30.0));
+    assert_eq!(
+        reservation_of(p, own).await,
+        (50.0, 40.0, "active".to_string())
+    );
+    assert_eq!(
+        reservation_rows_of(p, own).await,
+        vec![
+            (Some(l1), 10.0, 0.0, 10.0, "allocated".to_string()),
+            (Some(l2), 40.0, 40.0, 0.0, "consumed".to_string()),
+        ]
+    );
+    assert_eq!(
+        reservation_of(p, other).await,
+        (20.0, 0.0, "active".to_string()),
+        "别的定制单的预留不能被动"
+    );
+
+    // 退回 40 到 L2：预留恢复在 L2，库存预留量与批次预留量对得上
+    return_one(&env, po, rm, b.wh, 40.0, Some(l2))
+        .await
+        .expect("退回指定批次");
+    assert_eq!(lot_of(p, l1).await, (20.0, 10.0));
+    assert_eq!(lot_of(p, l2).await, (100.0, 60.0));
+    assert_eq!(inventory_of(p, rm, b.wh).await, (120.0, 70.0));
+    env.finish().await;
+}
+
+#[tokio::test]
+#[ignore = "需要 CLOUDPIVOT_TEST_DATABASE_URL"]
+async fn db_flow_pick_manual_lot_rejects_foreign_untracked_and_reserved_lots() {
+    let env = TestEnv::new().await;
+    let p = &env.pool;
+    let b = seed_base(p).await;
+    let fg = seed_material(p, &b, "T-FG-1", "none", "finished").await;
+    let rm = seed_material(p, &b, "T-RM-1", "required", "raw").await;
+    let other_rm = seed_material(p, &b, "T-RM-2", "required", "raw").await;
+    let plain = seed_material(p, &b, "T-RM-3", "none", "raw").await;
+    let own = seed_lot(p, rm, b.wh, "LOT-T-001", 10.0, 8.0, "2026-01-01").await;
+    let foreign = seed_lot(p, other_rm, b.wh, "LOT-T-002", 10.0, 0.0, "2026-01-01").await;
+    let other_wh = seed_lot(p, rm, b.wh2, "LOT-T-003", 10.0, 0.0, "2026-01-01").await;
+    seed_stock(p, rm, b.wh, 10.0, 8.0, 100).await;
+    seed_stock(p, other_rm, b.wh, 10.0, 0.0, 100).await;
+    seed_stock(p, plain, b.wh, 10.0, 0.0, 100).await;
+    // 8 件被别的定制单预留，本工单没有关联定制单，只剩 2 件可领
+    seed_reservation(p, 901, rm, b.wh, &[(own, 8.0)]).await;
+    let po = seed_production_order(p, "T-PO-1", fg, None, "draft", 10.0).await;
+    seed_po_material(p, po, rm, 20.0, 0.0, 0.0).await;
+    seed_po_material(p, po, plain, 20.0, 0.0, 0.0).await;
+
+    let err = pick_one(&env, po, rm, b.wh, 1.0, Some(foreign))
+        .await
+        .expect_err("别的物料的批次必须拒绝")
+        .to_string();
+    assert!(err.contains("不属于该物料和仓库"), "实际错误: {err}");
+
+    let err = pick_one(&env, po, rm, b.wh, 1.0, Some(other_wh))
+        .await
+        .expect_err("别的仓库的批次必须拒绝")
+        .to_string();
+    assert!(err.contains("不属于该物料和仓库"), "实际错误: {err}");
+
+    let err = pick_one(&env, po, rm, b.wh, 5.0, Some(own))
+        .await
+        .expect_err("被别的单据预留的数量不能领")
+        .to_string();
+    assert!(
+        err.contains("指定批次可用量不足") && err.contains("2.00"),
+        "实际错误: {err}"
+    );
+
+    let err = pick_one(&env, po, plain, b.wh, 1.0, Some(own))
+        .await
+        .expect_err("未启用批次追踪的物料不能指定批次")
+        .to_string();
+    assert!(err.contains("未启用批次追踪"), "实际错误: {err}");
+
+    // 所有拒绝都整单回滚
+    assert_eq!(lot_of(p, own).await, (10.0, 8.0));
+    assert_eq!(inventory_of(p, rm, b.wh).await, (10.0, 8.0));
+    assert_eq!(inventory_of(p, plain, b.wh).await, (10.0, 0.0));
+    assert!(ledger_of(p, rm, "production_out").await.is_empty());
+
+    // 在可用的 2 件之内可以领
+    pick_one(&env, po, rm, b.wh, 2.0, Some(own))
+        .await
+        .expect("领空闲的 2 件");
+    assert_eq!(lot_of(p, own).await, (8.0, 8.0));
+    env.finish().await;
+}
+
+#[tokio::test]
+#[ignore = "需要 CLOUDPIVOT_TEST_DATABASE_URL"]
+async fn db_flow_return_to_chosen_lot_only_returns_that_lots_balance() {
+    let env = TestEnv::new().await;
+    let p = &env.pool;
+    let b = seed_base(p).await;
+    let fg = seed_material(p, &b, "T-FG-1", "none", "finished").await;
+    let rm = seed_material(p, &b, "T-RM-1", "required", "raw").await;
+    let plain = seed_material(p, &b, "T-RM-2", "none", "raw").await;
+    let l1 = seed_lot(p, rm, b.wh, "LOT-T-001", 20.0, 0.0, "2026-01-01").await;
+    let l2 = seed_lot(p, rm, b.wh, "LOT-T-002", 40.0, 0.0, "2026-01-02").await;
+    let l3 = seed_lot(p, rm, b.wh, "LOT-T-003", 5.0, 0.0, "2026-01-03").await;
+    seed_stock(p, rm, b.wh, 65.0, 0.0, 100).await;
+    seed_stock(p, plain, b.wh, 10.0, 0.0, 100).await;
+    let po = seed_production_order(p, "T-PO-1", fg, None, "draft", 10.0).await;
+    seed_po_material(p, po, rm, 40.0, 0.0, 0.0).await;
+    seed_po_material(p, po, plain, 10.0, 0.0, 0.0).await;
+
+    // 自动领 30：FIFO 先扣 L1 的 20，再扣 L2 的 10
+    pick_one(&env, po, rm, b.wh, 30.0, None)
+        .await
+        .expect("自动领料");
+    pick_one(&env, po, plain, b.wh, 5.0, None)
+        .await
+        .expect("未追踪批次物料领料");
+    assert_eq!(lot_of(p, l1).await, (0.0, 0.0));
+    assert_eq!(lot_of(p, l2).await, (30.0, 0.0));
+
+    // 指定 L1 退 3：只回补 L1，不按「后领先退」去动 L2
+    return_one(&env, po, rm, b.wh, 3.0, Some(l1))
+        .await
+        .expect("退回 L1");
+    assert_eq!(lot_of(p, l1).await, (3.0, 0.0));
+    assert_eq!(lot_of(p, l2).await, (30.0, 0.0));
+    assert_eq!(
+        ledger_of(p, rm, "production_in").await,
+        vec![(Some(l1), 3.0)]
+    );
+
+    // L1 一共只领出 20、已退 3：再退 18 超过该批次余额，即使 L2 还有 10 也不能串批次
+    let err = return_one(&env, po, rm, b.wh, 18.0, Some(l1))
+        .await
+        .expect_err("超过指定批次的领料余额必须拒绝")
+        .to_string();
+    assert!(err.contains("指定批次的领料余额"), "实际错误: {err}");
+
+    // 没领过料的批次不能退
+    let err = return_one(&env, po, rm, b.wh, 1.0, Some(l3))
+        .await
+        .expect_err("没领过料的批次必须拒绝")
+        .to_string();
+    assert!(err.contains("指定批次的领料余额"), "实际错误: {err}");
+
+    // 未启用批次追踪的物料不能指定批次
+    let err = return_one(&env, po, plain, b.wh, 1.0, Some(l1))
+        .await
+        .expect_err("未追踪批次物料不能指定批次")
+        .to_string();
+    assert!(err.contains("未启用批次追踪"), "实际错误: {err}");
+
+    // 拒绝都整单回滚；L1 余额 17、L2 余额 10 仍然可退
+    assert_eq!(lot_of(p, l1).await, (3.0, 0.0));
+    return_one(&env, po, rm, b.wh, 17.0, Some(l1))
+        .await
+        .expect("退完 L1 的余额");
+    return_one(&env, po, rm, b.wh, 10.0, Some(l2))
+        .await
+        .expect("退完 L2 的余额");
+    assert_eq!(lot_of(p, l1).await, (20.0, 0.0));
+    assert_eq!(lot_of(p, l2).await, (40.0, 0.0));
+    assert_eq!(inventory_of(p, rm, b.wh).await, (65.0, 0.0));
+    env.finish().await;
+}
+
+#[tokio::test]
+#[ignore = "需要 CLOUDPIVOT_TEST_DATABASE_URL"]
+async fn db_flow_lot_options_list_usable_pick_lots_and_returnable_lots() {
+    let env = TestEnv::new().await;
+    let p = &env.pool;
+    let b = seed_base(p).await;
+    let fg = seed_material(p, &b, "T-FG-1", "none", "finished").await;
+    let rm = seed_material(p, &b, "T-RM-1", "required", "raw").await;
+    let plain = seed_material(p, &b, "T-RM-2", "none", "raw").await;
+    // L1：本工单的定制单 900 整批预留；L2：其中 25 被 901 预留，空闲 15；
+    // L3：整批被 901 预留，本工单一件也领不了；L4：已空
+    let l1 = seed_lot(p, rm, b.wh, "LOT-T-001", 30.0, 30.0, "2026-01-01").await;
+    let l2 = seed_lot(p, rm, b.wh, "LOT-T-002", 40.0, 25.0, "2026-01-02").await;
+    let l3 = seed_lot(p, rm, b.wh, "LOT-T-003", 10.0, 10.0, "2026-01-03").await;
+    let _l4 = seed_lot(p, rm, b.wh, "LOT-T-004", 0.0, 0.0, "2026-01-04").await;
+    seed_stock(p, rm, b.wh, 80.0, 65.0, 100).await;
+    seed_reservation(p, 900, rm, b.wh, &[(l1, 30.0)]).await;
+    seed_reservation(p, 901, rm, b.wh, &[(l2, 25.0), (l3, 10.0)]).await;
+    let po = seed_production_order(p, "T-PO-1", fg, Some(900), "draft", 10.0).await;
+    seed_po_material(p, po, rm, 60.0, 0.0, 0.0).await;
+
+    let options = get_production_lot_options(env.db(), env.user(), po, rm, b.wh)
+        .await
+        .expect("查询批次选项");
+    assert!(options.lot_tracked);
+    assert_eq!(
+        options
+            .pick_lots
+            .iter()
+            .map(|lot| (lot.lot_id, lot.usable_qty, lot.own_reserved_qty))
+            .collect::<Vec<_>>(),
+        vec![(l1, 30.0, 30.0), (l2, 15.0, 0.0)],
+        "按入库日期排序；被别的单据占满的批次和空批次不出现"
+    );
+    assert!(options.return_lots.is_empty(), "还没领过料");
+
+    // 指定 L2 领 10 之后：L2 空闲只剩 5；L1 让出 10 的预留，在库 30 = 空闲 10 + 本工单预留 20
+    pick_one(&env, po, rm, b.wh, 10.0, Some(l2))
+        .await
+        .expect("指定批次领料");
+    let options = get_production_lot_options(env.db(), env.user(), po, rm, b.wh)
+        .await
+        .expect("查询批次选项");
+    assert_eq!(
+        options
+            .pick_lots
+            .iter()
+            .map(|lot| (lot.lot_id, lot.usable_qty, lot.own_reserved_qty))
+            .collect::<Vec<_>>(),
+        vec![(l1, 30.0, 20.0), (l2, 5.0, 0.0)]
+    );
+    assert_eq!(
+        options
+            .return_lots
+            .iter()
+            .map(|lot| (lot.lot_id, lot.lot_no.as_str(), lot.returnable_qty))
+            .collect::<Vec<_>>(),
+        vec![(l2, "LOT-T-002", 10.0)]
+    );
+
+    // 退 4 之后可退余额减少；全部退完则不再出现
+    return_one(&env, po, rm, b.wh, 4.0, Some(l2))
+        .await
+        .expect("退料");
+    let options = get_production_lot_options(env.db(), env.user(), po, rm, b.wh)
+        .await
+        .expect("查询批次选项");
+    assert_eq!(options.return_lots.len(), 1);
+    approx(options.return_lots[0].returnable_qty, 6.0, "可退余额");
+    return_one(&env, po, rm, b.wh, 6.0, Some(l2))
+        .await
+        .expect("退完");
+    let options = get_production_lot_options(env.db(), env.user(), po, rm, b.wh)
+        .await
+        .expect("查询批次选项");
+    assert!(options.return_lots.is_empty());
+
+    // 未启用批次追踪的物料：不展示批次选择
+    let options = get_production_lot_options(env.db(), env.user(), po, plain, b.wh)
+        .await
+        .expect("未追踪物料");
+    assert!(!options.lot_tracked);
+    assert!(options.pick_lots.is_empty() && options.return_lots.is_empty());
+
+    // 工单不存在
+    let err = get_production_lot_options(env.db(), env.user(), po + 999, rm, b.wh)
+        .await
+        .expect_err("工单不存在必须报错")
+        .to_string();
+    assert!(err.contains("工单不存在"), "实际错误: {err}");
+    env.finish().await;
+}
+
+#[tokio::test]
+#[ignore = "需要 CLOUDPIVOT_TEST_DATABASE_URL"]
+async fn db_flow_manual_lot_pick_keeps_reservation_counters_until_cancel() {
+    let env = TestEnv::new().await;
+    let p = &env.pool;
+    let b = seed_base(p).await;
+    let fg = seed_material(p, &b, "T-FG-1", "none", "finished").await;
+    let rm = seed_material(p, &b, "T-RM-1", "required", "raw").await;
+    let l1 = seed_lot(p, rm, b.wh, "LOT-T-001", 10.0, 0.0, "2026-01-01").await;
+    let l2 = seed_lot(p, rm, b.wh, "LOT-T-002", 10.0, 0.0, "2026-01-02").await;
+    seed_stock(p, rm, b.wh, 20.0, 0.0, 100).await;
+    // 真实确认定制单：预留按 FIFO 落在较早的 L1
+    let co = seed_custom_order(p, fg, rm, 6.0).await;
+    confirm_custom_order(env.db(), env.user(), co)
+        .await
+        .expect("确认定制单");
+    assert_eq!(lot_of(p, l1).await, (10.0, 6.0));
+    let po = seed_production_order(p, "T-PO-1", fg, Some(co), "draft", 1.0).await;
+    seed_po_material(p, po, rm, 6.0, 0.0, 0.0).await;
+
+    // 工单人工指定 L2 领 4：预留从 L1 重排到 L2 并被消耗，L1 还剩 2 的预留
+    pick_one(&env, po, rm, b.wh, 4.0, Some(l2))
+        .await
+        .expect("指定 L2 领料");
+    assert_eq!(lot_of(p, l1).await, (10.0, 2.0));
+    assert_eq!(lot_of(p, l2).await, (6.0, 0.0));
+    assert_eq!(inventory_of(p, rm, b.wh).await, (16.0, 2.0));
+
+    // 取消定制单只会释放尚未消耗的 2：批次、库存上的预留量都清零，不多不少
+    cancel_custom_order(env.db(), env.user(), co)
+        .await
+        .expect("取消定制单");
+    assert_eq!(lot_of(p, l1).await, (10.0, 0.0), "L1 剩余预留释放");
+    assert_eq!(lot_of(p, l2).await, (6.0, 0.0), "L2 已消耗的预留不能被再扣");
+    assert_eq!(inventory_of(p, rm, b.wh).await, (16.0, 0.0));
+    env.finish().await;
+}
+
+#[tokio::test]
+#[ignore = "需要 CLOUDPIVOT_TEST_DATABASE_URL"]
+async fn db_flow_return_moves_restored_reservation_to_the_returned_lot() {
+    let env = TestEnv::new().await;
+    let p = &env.pool;
+    let b = seed_base(p).await;
+    let fg = seed_material(p, &b, "T-FG-1", "none", "finished").await;
+    let rm = seed_material(p, &b, "T-RM-1", "required", "raw").await;
+    // 定制单 900 把 L1 整批预留 50；L2 是空闲的 10。工单超领到 55：L1 的 50 + L2 的 5
+    let l1 = seed_lot(p, rm, b.wh, "LOT-T-001", 50.0, 50.0, "2026-01-01").await;
+    let l2 = seed_lot(p, rm, b.wh, "LOT-T-002", 10.0, 0.0, "2026-01-02").await;
+    seed_stock(p, rm, b.wh, 60.0, 50.0, 100).await;
+    let reservation = seed_reservation(p, 900, rm, b.wh, &[(l1, 50.0)]).await;
+    let po = seed_production_order(p, "T-PO-1", fg, Some(900), "draft", 10.0).await;
+    seed_po_material(p, po, rm, 50.0, 0.0, 0.0).await;
+    pick_one(&env, po, rm, b.wh, 55.0, None)
+        .await
+        .expect("超领 55");
+    assert_eq!(lot_of(p, l1).await, (0.0, 0.0));
+    assert_eq!(lot_of(p, l2).await, (5.0, 0.0));
+
+    // 退 5：「后领先退」退回的是 L2 的实物，恢复的预留也要落在 L2，
+    // 不能留在已经没有库存的 L1 上（否则 L2 的 5 件会被当成可用库存卖掉）
+    return_one(&env, po, rm, b.wh, 5.0, None)
+        .await
+        .expect("退 5");
+    assert_eq!(lot_of(p, l1).await, (0.0, 0.0), "L1 没有实物，也不该有预留");
+    assert_eq!(lot_of(p, l2).await, (10.0, 5.0), "预留跟着实物回到 L2");
+    assert_eq!(inventory_of(p, rm, b.wh).await, (10.0, 5.0));
+    assert_eq!(
+        reservation_of(p, reservation).await,
+        (50.0, 45.0, "active".to_string())
+    );
+    assert_eq!(
+        reservation_rows_of(p, reservation).await,
+        vec![
+            (Some(l1), 45.0, 45.0, 5.0, "consumed".to_string()),
+            (Some(l2), 5.0, 0.0, 0.0, "allocated".to_string()),
+        ]
+    );
+
+    // 再领 5：消耗的是 L2 上恢复的预留，全部清零
+    pick_one(&env, po, rm, b.wh, 5.0, None)
+        .await
+        .expect("重新领出");
+    assert_eq!(lot_of(p, l1).await, (0.0, 0.0));
+    assert_eq!(lot_of(p, l2).await, (5.0, 0.0));
+    assert_eq!(inventory_of(p, rm, b.wh).await, (5.0, 0.0));
+    assert_eq!(
+        reservation_of(p, reservation).await,
+        (50.0, 50.0, "consumed".to_string())
+    );
+    env.finish().await;
+}
+
+#[tokio::test]
+#[ignore = "需要 CLOUDPIVOT_TEST_DATABASE_URL"]
+async fn db_flow_return_restores_reservation_across_several_lots() {
+    let env = TestEnv::new().await;
+    let p = &env.pool;
+    let b = seed_base(p).await;
+    let fg = seed_material(p, &b, "T-FG-1", "none", "finished").await;
+    let rm = seed_material(p, &b, "T-RM-1", "required", "raw").await;
+    // 预留在 L1(20) 和 L3(30)；L2 是空闲的 10。领 60：L1 20 + L3 30 + L2 10
+    let l1 = seed_lot(p, rm, b.wh, "LOT-T-001", 20.0, 20.0, "2026-01-01").await;
+    let l2 = seed_lot(p, rm, b.wh, "LOT-T-002", 10.0, 0.0, "2026-01-02").await;
+    let l3 = seed_lot(p, rm, b.wh, "LOT-T-003", 30.0, 30.0, "2026-01-03").await;
+    seed_stock(p, rm, b.wh, 60.0, 50.0, 100).await;
+    let reservation = seed_reservation(p, 900, rm, b.wh, &[(l1, 20.0), (l3, 30.0)]).await;
+    let po = seed_production_order(p, "T-PO-1", fg, Some(900), "draft", 100.0).await;
+    seed_po_material(p, po, rm, 50.0, 0.0, 0.0).await;
+    pick_one(&env, po, rm, b.wh, 60.0, None)
+        .await
+        .expect("领 60");
+    assert_eq!(
+        ledger_of(p, rm, "production_out").await,
+        vec![(Some(l1), -20.0), (Some(l3), -30.0), (Some(l2), -10.0)]
+    );
+
+    // 退 15：实物先退 L2 的 10，再退 L3 的 5。预留各自跟着回去
+    return_one(&env, po, rm, b.wh, 15.0, None)
+        .await
+        .expect("退 15");
+    assert_eq!(lot_of(p, l1).await, (0.0, 0.0));
+    assert_eq!(lot_of(p, l2).await, (10.0, 10.0), "L2 的预留从 L3 挪过来");
+    assert_eq!(
+        lot_of(p, l3).await,
+        (5.0, 5.0),
+        "L3 自己的已消耗预留直接恢复"
+    );
+    assert_eq!(inventory_of(p, rm, b.wh).await, (15.0, 15.0));
+    assert_eq!(
+        reservation_of(p, reservation).await,
+        (50.0, 35.0, "active".to_string())
+    );
+    assert_eq!(
+        reservation_rows_of(p, reservation).await,
+        vec![
+            (Some(l1), 20.0, 20.0, 0.0, "consumed".to_string()),
+            (Some(l3), 20.0, 15.0, 10.0, "allocated".to_string()),
+            (Some(l2), 10.0, 0.0, 0.0, "allocated".to_string()),
+        ],
+        "预留行合计仍是 50，已消耗合计 35 与单头一致"
+    );
+    env.finish().await;
+}
+
+#[tokio::test]
+#[ignore = "需要 CLOUDPIVOT_TEST_DATABASE_URL"]
+async fn db_flow_legacy_return_restores_reservation_by_row_without_moving_lots() {
+    let env = TestEnv::new().await;
+    let p = &env.pool;
+    let b = seed_base(p).await;
+    let fg = seed_material(p, &b, "T-FG-1", "none", "finished").await;
+    let rm = seed_material(p, &b, "T-RM-1", "required", "raw").await;
+    // 升级前领的料：流水没有批次，预留已整笔消耗
+    let l1 = seed_lot(p, rm, b.wh, "LOT-T-001", 10.0, 0.0, "2026-01-01").await;
+    seed_stock(p, rm, b.wh, 0.0, 0.0, 100).await;
+    let reservation = seed_reservation(p, 900, rm, b.wh, &[(l1, 10.0)]).await;
+    sqlx::query(
+        "UPDATE inventory_reservations SET consumed_qty = 10, status = 'consumed' WHERE id = $1",
+    )
+    .bind(reservation)
+    .execute(p)
+    .await
+    .unwrap();
+    sqlx::query(
+        "UPDATE inventory_reservation_lots SET consumed_qty = 10, status = 'consumed' WHERE reservation_id = $1",
+    )
+    .bind(reservation)
+    .execute(p)
+    .await
+    .unwrap();
+    let po = seed_production_order(p, "T-PO-1", fg, Some(900), "picking", 6.0).await;
+    seed_po_material(p, po, rm, 10.0, 10.0, 0.0).await;
+    seed_ledger(
+        p,
+        "T-IT-1",
+        rm,
+        b.wh,
+        None,
+        "production_out",
+        -10.0,
+        100,
+        po,
+    )
+    .await;
+
+    return_one(&env, po, rm, b.wh, 4.0, None)
+        .await
+        .expect("旧版领料余额可以退");
+    // 退料只回补主库存；预留按行恢复，批次上的预留量随之恢复，不做搬运
+    assert_eq!(inventory_of(p, rm, b.wh).await, (4.0, 4.0));
+    assert_eq!(lot_of(p, l1).await, (10.0, 4.0));
+    assert_eq!(
+        reservation_of(p, reservation).await,
+        (10.0, 6.0, "active".to_string())
+    );
+    assert_eq!(
+        reservation_rows_of(p, reservation).await,
+        vec![(Some(l1), 10.0, 6.0, 0.0, "allocated".to_string())]
     );
     env.finish().await;
 }
