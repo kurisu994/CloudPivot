@@ -14,7 +14,6 @@ import {
   BusinessListTableShell,
 } from '@/components/common/business-list-table'
 import { PaginationControls } from '@/components/common/pagination'
-import { useAuth } from '@/components/providers/auth-provider'
 import { useDisplayPreferences } from '@/components/providers/display-preferences-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -57,7 +56,6 @@ const URGENCY_OPTIONS = [
 export function ReplenishmentPage() {
   const t = useTranslations('replenishment')
   const tc = useTranslations('common')
-  const { user } = useAuth()
   const { fontSize } = useDisplayPreferences()
 
   // 建议列表
@@ -194,7 +192,7 @@ export function ReplenishmentPage() {
     if (ids.length === 0) return
     setConfirmOrderOpen(false)
     try {
-      const result = await createPurchaseOrdersFromSuggestions(ids, user?.id, user?.display_name)
+      const result = await createPurchaseOrdersFromSuggestions(ids)
       if (result.errors.length === 0) {
         toast.success(t('createPoSuccess', { count: result.createdOrders.length }))
       } else {

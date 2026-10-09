@@ -13,3 +13,9 @@ test('记住我天数按配置换算，缺省回退 7 天', () => {
   assert.equal(rememberMeDurationMs('-3'), DEFAULT_REMEMBER_ME_DAYS * DAY_MS)
   assert.equal(rememberMeDurationMs('9999'), DEFAULT_REMEMBER_ME_DAYS * DAY_MS)
 })
+
+test('不足 1 天的小数配置回退默认值，避免会话立即过期', () => {
+  assert.equal(rememberMeDurationMs('0.5'), DEFAULT_REMEMBER_ME_DAYS * DAY_MS)
+  assert.equal(rememberMeDurationMs('1.5'), 1 * DAY_MS)
+  assert.equal(rememberMeDurationMs('365.9'), 365 * DAY_MS)
+})

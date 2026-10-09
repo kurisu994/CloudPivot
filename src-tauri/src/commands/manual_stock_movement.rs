@@ -1080,21 +1080,17 @@ pub async fn confirm_manual_stock_movement(
                 let available_lots =
                     inventory_ops::get_available_lots(&mut tx, item.material_id, warehouse_id)
                         .await?;
-                let total_available: f64 = available_lots.iter().map(|(_, _, qty)| qty).sum();
-                if total_available < item.quantity {
+                let Some(lot_plan) = inventory_ops::plan_fifo_lots(&available_lots, item.quantity)
+                else {
+                    let total_available: f64 = available_lots.iter().map(|(_, _, qty)| qty).sum();
                     return Err(AppError::Business(format!(
                         "物料ID {} 批次可用库存不足：需扣减 {}，可用 {}",
                         item.material_id, item.quantity, total_available
                     )));
-                }
+                };
 
-                let mut remaining_qty = item.quantity;
-                for (lot_id, lot_no, avail_qty) in available_lots {
-                    if remaining_qty <= 0.0 {
-                        break;
-                    }
-
-                    let deduct_qty = remaining_qty.min(avail_qty);
+                let mut consumed_qty = 0.0_f64;
+                for (lot_id, lot_no, deduct_qty) in lot_plan {
                     inventory_ops::decrease_lot_inventory(&mut tx, lot_id, deduct_qty).await?;
 
                     // 为每个批次扣减单独记录一条流水，记录 FIFO 的走向
@@ -1114,8 +1110,8 @@ pub async fn confirm_manual_stock_movement(
                         mapped_tx_type,
                         // 出库流水数量记为负数，与销售/生产出库符号约定保持一致
                         -deduct_qty,
-                        before_qty - (item.quantity - remaining_qty),
-                        before_qty - (item.quantity - remaining_qty) - deduct_qty,
+                        before_qty - consumed_qty,
+                        before_qty - consumed_qty - deduct_qty,
                         avg_cost, // 出库采用移动加权平均成本快照
                         Some("manual_stock_movement"),
                         Some(id),
@@ -1127,7 +1123,7 @@ pub async fn confirm_manual_stock_movement(
                     )
                     .await?;
 
-                    remaining_qty -= deduct_qty;
+                    consumed_qty += deduct_qty;
                 }
             } else {
                 // 未追踪批次：不查批次，仅扣主库存并记一条流水

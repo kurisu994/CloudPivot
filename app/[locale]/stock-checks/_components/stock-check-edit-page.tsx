@@ -40,6 +40,7 @@ const cellToNumber = (value: unknown) => {
 /**
  * 盘点单编辑/详情页
  * 草稿/盘点中状态可录入实盘数量，已审核状态只读
+ * 批次快照行始终只读：审核只按物料汇总行过账，再按 FIFO 分摊到批次
  */
 export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps) {
   const t = useTranslations('stockChecks')
@@ -94,6 +95,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
   }, [loadDetail])
 
   const isEditable = detail && (detail.status === 'draft' || detail.status === 'checking')
+  const hasLotRows = detail?.items.some(item => item.lotId != null) ?? false
 
   /** 导出盘点明细表，未审核状态实盘列留空便于打印线下盘点 */
   const handleExport = async () => {
@@ -104,10 +106,13 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
 
       const headers = [STOCK_CHECK_ITEM_ID_HEADER, ti('materialCode'), ti('materialName'), ti('spec'), ti('unit'), t('systemQty'), t('actualQty')]
 
-      const dataRows = detail.items.map(item => {
-        const actual = editable ? null : item.actualQty
-        return [item.id, item.materialCode, item.materialName, item.spec ?? '', item.unitName, item.systemQty, actual]
-      })
+      // 只导出物料汇总行：批次快照行不参与过账，导出后容易被误填
+      const dataRows = detail.items
+        .filter(item => item.lotId == null)
+        .map(item => {
+          const actual = editable ? null : item.actualQty
+          return [item.id, item.materialCode, item.materialName, item.spec ?? '', item.unitName, item.systemQty, actual]
+        })
 
       const worksheet = XLSX.utils.aoa_to_sheet([headers, ...dataRows])
       worksheet['!cols'] = [{ wch: 12, hidden: true }, { wch: 14 }, { wch: 24 }, { wch: 14 }, { wch: 8 }, { wch: 12 }, { wch: 12 }]
@@ -184,6 +189,14 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
         const materialCode = cellToString(row[1])
         if (materialCode && materialCode !== item.materialCode) {
           errors.push(t('importRowError', { row: rowNumber, reason: t('importReasonMaterialMismatch') }))
+          continue
+        }
+
+        // 批次快照行不参与过账：旧模板里的批次行只要没改实盘就跳过，改了则明确报错
+        if (item.lotId != null) {
+          if (actualQty != null && actualQty !== item.systemQty) {
+            errors.push(t('importRowError', { row: rowNumber, reason: t('importReasonLotRow') }))
+          }
           continue
         }
 
@@ -347,9 +360,12 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
       ) : detail ? (
         <>
           {/* 物料搜索框 */}
-          <div className="relative w-72">
-            <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-            <Input placeholder={t('searchMaterial')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
+          <div className="flex items-center gap-4">
+            <div className="relative w-72 shrink-0">
+              <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+              <Input placeholder={t('searchMaterial')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
+            </div>
+            {hasLotRows && <p className="text-muted-foreground text-sm">{t('lotRowHint')}</p>}
           </div>
           <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 overflow-x-auto">
             <Table>
@@ -376,8 +392,10 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
                   </TableRow>
                 ) : (
                   filteredItems.map(item => {
+                    // 批次快照行只展示系统库存，不录入实盘、不计盈亏
+                    const isLotRow = item.lotId != null
                     const actualVal = editValues[item.id] ?? ''
-                    const actualQty = actualVal !== '' ? Number(actualVal) : null
+                    const actualQty = !isLotRow && actualVal !== '' ? Number(actualVal) : null
                     const diff = actualQty !== null ? actualQty - item.systemQty : 0
                     return (
                       <TableRow
@@ -391,7 +409,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
                         <TableCell className="font-mono text-sm text-muted-foreground">{item.lotNoSnapshot || '-'}</TableCell>
                         <TableCell className="text-right font-mono">{item.systemQty}</TableCell>
                         <TableCell className="text-right">
-                          {isEditable && item.lotId == null ? (
+                          {isEditable && !isLotRow ? (
                             <Input
                               type="number"
                               min="0"
@@ -401,7 +419,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
                               placeholder={t('inputActualQty')}
                             />
                           ) : (
-                            <span className="font-mono">{item.actualQty ?? item.systemQty}</span>
+                            <span className="font-mono">{isLotRow ? '-' : (item.actualQty ?? '-')}</span>
                           )}
                         </TableCell>
                         <TableCell className={`text-right font-mono ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : ''}`}>
@@ -410,7 +428,7 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
                         <TableCell
                           className={`text-right font-mono text-sm ${item.diffAmount > 0 ? 'text-green-600' : item.diffAmount < 0 ? 'text-red-600' : ''}`}
                         >
-                          {item.actualQty !== null ? formatAmount(item.diffAmount, 'USD', { showSymbol: false }) : '-'}
+                          {!isLotRow && item.actualQty !== null ? formatAmount(item.diffAmount, 'USD', { showSymbol: false }) : '-'}
                         </TableCell>
                       </TableRow>
                     )

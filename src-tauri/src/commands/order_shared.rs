@@ -105,35 +105,22 @@ pub async fn calculate_allocated_charges(
 
     if is_last_batch {
         // 最后一笔：倒挤法（总额 - 之前已分摊的 = 本次分摊）
-        let sql_discount = format!(
-            // SUM(bigint) 在 PostgreSQL 中返回 numeric，必须显式转回 BIGINT，否则 i64 解码失败被兜底成 0
-            "SELECT COALESCE(SUM(allocated_discount), 0)::BIGINT FROM {} WHERE {} = $1 AND status = 'confirmed'",
+        // SUM(bigint) 在 PostgreSQL 中返回 numeric，必须显式转回 BIGINT 才能解码为 i64。
+        // 查询失败必须上抛：兜底成 0 会让最后一批重复分摊整单费用。
+        let sql = format!(
+            r#"
+            SELECT COALESCE(SUM(allocated_discount), 0)::BIGINT,
+                   COALESCE(SUM(allocated_freight), 0)::BIGINT,
+                   COALESCE(SUM(allocated_other), 0)::BIGINT
+            FROM {} WHERE {} = $1 AND status = 'confirmed'
+            "#,
             prev_allocated_table, source_id_column
         );
-        let sql_freight = format!(
-            "SELECT COALESCE(SUM(allocated_freight), 0)::BIGINT FROM {} WHERE {} = $1 AND status = 'confirmed'",
-            prev_allocated_table, source_id_column
-        );
-        let sql_other = format!(
-            "SELECT COALESCE(SUM(allocated_other), 0)::BIGINT FROM {} WHERE {} = $1 AND status = 'confirmed'",
-            prev_allocated_table, source_id_column
-        );
-
-        let prev_discount: i64 = sqlx::query_scalar(&sql_discount)
+        let (prev_discount, prev_freight, prev_other): (i64, i64, i64) = sqlx::query_as(&sql)
             .bind(source_id)
             .fetch_one(&mut *tx)
             .await
-            .unwrap_or(0);
-        let prev_freight: i64 = sqlx::query_scalar(&sql_freight)
-            .bind(source_id)
-            .fetch_one(&mut *tx)
-            .await
-            .unwrap_or(0);
-        let prev_other: i64 = sqlx::query_scalar(&sql_other)
-            .bind(source_id)
-            .fetch_one(&mut *tx)
-            .await
-            .unwrap_or(0);
+            .map_err(|e| AppError::Database(format!("查询已分摊费用失败: {}", e)))?;
 
         Ok(AllocatedCharges {
             discount: order_discount - prev_discount,
@@ -464,21 +451,23 @@ where
 // 通用审核/作废/删除
 // ================================================================
 
-/// 审核单据（原子 UPDATE WHERE status = 'draft'）
+/// 审核单据（原子 UPDATE WHERE status = 'draft'），审核人记为 `operator_id` / `operator_name`
 ///
 /// 返回受影响行数（0 表示失败）
 pub async fn approve_order(
     pool: &sqlx::PgPool,
     table: &str,
     id: i64,
+    operator_id: i64,
+    operator_name: &str,
     error_context: &str,
 ) -> Result<u64, AppError> {
     let sql = format!(
         r#"
         UPDATE {} SET
             status = 'approved',
-            approved_by_user_id = 1,
-            approved_by_name = 'admin',
+            approved_by_user_id = $2,
+            approved_by_name = $3,
             approved_at = NOW(),
             updated_at = NOW()
         WHERE id = $1 AND status = 'draft'
@@ -488,6 +477,8 @@ pub async fn approve_order(
 
     let result = sqlx::query(&sql)
         .bind(id)
+        .bind(operator_id)
+        .bind(operator_name)
         .execute(pool)
         .await
         .map_err(|e| AppError::Database(format!("审核{}失败: {}", error_context, e)))?;
@@ -511,21 +502,23 @@ pub async fn check_order_exists(
     Ok(exists.is_some())
 }
 
-/// 作废单据（原子 UPDATE WHERE status IN ('draft', 'approved')）
+/// 作废单据（原子 UPDATE WHERE status IN ('draft', 'approved')），作废人记为 `operator_id` / `operator_name`
 ///
 /// 返回受影响行数
 pub async fn cancel_order(
     pool: &sqlx::PgPool,
     table: &str,
     id: i64,
+    operator_id: i64,
+    operator_name: &str,
     error_context: &str,
 ) -> Result<u64, AppError> {
     let sql = format!(
         r#"
         UPDATE {} SET
             status = 'cancelled',
-            cancelled_by_user_id = 1,
-            cancelled_by_name = 'admin',
+            cancelled_by_user_id = $2,
+            cancelled_by_name = $3,
             cancelled_at = NOW(),
             updated_at = NOW()
         WHERE id = $1 AND status IN ('draft', 'approved')
@@ -535,6 +528,8 @@ pub async fn cancel_order(
 
     let result = sqlx::query(&sql)
         .bind(id)
+        .bind(operator_id)
+        .bind(operator_name)
         .execute(pool)
         .await
         .map_err(|e| AppError::Database(format!("作废{}失败: {}", error_context, e)))?;

@@ -1345,7 +1345,7 @@ pub async fn confirm_stock_check(
         .await
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
-    // 获取盘点单头
+    // 行锁让并发审核排队；同时读出库存版本快照，避免审核时叠加旧差额。
     let head = sqlx::query_as::<_, (i64, String, String, Option<String>)>(
         "SELECT warehouse_id, check_date, status, scope_snapshot_json FROM stock_checks WHERE id = $1 FOR UPDATE",
     )
@@ -1375,7 +1375,7 @@ pub async fn confirm_stock_check(
         SELECT sci.id, sci.material_id, sci.lot_id,
                sci.system_qty, COALESCE(sci.actual_qty, sci.system_qty) AS actual,
                COALESCE(sci.actual_qty, sci.system_qty) - sci.system_qty AS diff,
-               sci.unit_price, m.lot_tracking_mode
+               sci.unit_price, COALESCE(m.lot_tracking_mode, 'none')
         FROM stock_check_items sci
         JOIN materials m ON m.id = sci.material_id
         WHERE sci.check_id = $1 AND sci.lot_id IS NULL
@@ -1475,17 +1475,36 @@ pub async fn confirm_stock_check(
                 &check_date,
             )
             .await?;
-            // 盘亏按 FIFO 从最早批次开始扣，逐批记一条流水；批次不足说明
-            // 批次快照本身已与仓库库存不一致，直接报错让盘点单停在可修正状态。
+            // 盘亏以实物为准，按在库量 FIFO 拆批扣减，逐批记一条流水：先扣未预留部分，
+            // 不够再动已预留部分，尽量不影响定制单占用（被动到的批次可用量会变负，提示需重新预留）。
+            // 在库合计仍不足说明批次快照本身已与仓库库存不一致，直接报错让盘点单停在可修正状态。
             let mut lot_plan: Vec<(Option<i64>, f64)> = Vec::new();
             if track_lot {
-                let available_lots =
-                    inventory_ops::get_available_lots(&mut *tx, *material_id, warehouse_id).await?;
-                let available: Vec<_> = available_lots.iter().map(|lot| (lot.0, lot.2)).collect();
-                lot_plan = allocate_inventory_lots(abs_diff, &available)?
-                    .into_iter()
-                    .map(|(lot_id, quantity)| (Some(lot_id), quantity))
+                let lots =
+                    inventory_ops::get_on_hand_lots(&mut *tx, *material_id, warehouse_id).await?;
+                let mut candidates: Vec<(i64, String, f64)> = lots
+                    .iter()
+                    .map(|(lid, no, on_hand, reserved)| {
+                        (*lid, no.clone(), on_hand - reserved.min(*on_hand))
+                    })
                     .collect();
+                candidates.extend(lots.iter().map(|(lid, no, on_hand, reserved)| {
+                    (*lid, no.clone(), reserved.min(*on_hand))
+                }));
+                let Some(plan) = inventory_ops::plan_fifo_lots(&candidates, abs_diff) else {
+                    let total_on_hand: f64 = lots.iter().map(|l| l.2).sum();
+                    return Err(AppError::Business(format!(
+                        "批次在库合计 {:.2} 小于盘亏数量 {:.2}，请先核对批次库存",
+                        total_on_hand, abs_diff
+                    )));
+                };
+                // 同一批次可能在两轮里各分到一段，合并成一次扣减和一条流水
+                for (lid, _, qty) in plan {
+                    match lot_plan.iter_mut().find(|(id, _)| *id == Some(lid)) {
+                        Some(entry) => entry.1 += qty,
+                        None => lot_plan.push((Some(lid), qty)),
+                    }
+                }
             } else {
                 lot_plan.push((None, abs_diff));
             }

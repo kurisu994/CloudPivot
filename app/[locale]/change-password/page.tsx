@@ -44,7 +44,8 @@ export default function ChangePasswordPage() {
       setError(t('sameAsDefault'))
       return false
     }
-    if (newPassword.length <= 6) {
+    // 按 Unicode 字符计数，与后端 chars().count() 口径一致（length 会把 emoji 算成 2 位）
+    if ([...newPassword].length <= 6) {
       setError(t('tooShort'))
       return false
     }

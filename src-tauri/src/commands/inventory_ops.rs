@@ -405,6 +405,45 @@ pub async fn recalc_avg_cost_after_return(
     Ok(())
 }
 
+/// 批次数量比较容差（基本单位），与出库、盘点「可用量 + 0.001」的口径一致
+pub const LOT_QTY_TOLERANCE: f64 = 0.001;
+
+/// 浮点残差阈值：剩余量低于该值视为已分配完，避免拆出 1e-17 这类「幽灵」批次行
+const LOT_QTY_EPSILON: f64 = 1e-9;
+
+/// 按 FIFO 把 `quantity` 拆分到候选批次，返回 `(lot_id, lot_no, 本批扣减量)`
+///
+/// - `lots` 需已按 FIFO 排好序，第三项为该批次本次最多可扣的数量
+/// - 可扣合计比 `quantity` 少不到 [`LOT_QTY_TOLERANCE`] 时视为足够，差额并入最后一批，
+///   保证各批扣减量之和等于 `quantity`；最后一批因此略超在库时由 [`decrease_lot_inventory`] 兜底
+/// - 可扣合计不足时返回 `None`，由调用方给出带业务上下文的错误提示
+pub fn plan_fifo_lots(
+    lots: &[(i64, String, f64)],
+    quantity: f64,
+) -> Option<Vec<(i64, String, f64)>> {
+    let total: f64 = lots.iter().map(|(_, _, qty)| qty.max(0.0)).sum();
+    if total + LOT_QTY_TOLERANCE < quantity {
+        return None;
+    }
+
+    let mut plan = Vec::new();
+    let mut remaining = quantity;
+    for (lot_id, lot_no, avail) in lots {
+        if remaining <= LOT_QTY_EPSILON {
+            break;
+        }
+        let deduct = remaining.min(*avail);
+        if deduct > LOT_QTY_EPSILON {
+            plan.push((*lot_id, lot_no.clone(), deduct));
+            remaining -= deduct;
+        }
+    }
+
+    // 容差内的差额或浮点残差并入最后一批；一批都没分到说明根本没有可扣批次
+    plan.last_mut()?.2 += remaining;
+    Some(plan)
+}
+
 /// 按 FIFO 查询可用批次库存
 ///
 /// 返回按 received_date ASC 排序的可用批次列表 `(lot_id, lot_no, available_qty)`。
@@ -432,7 +471,35 @@ pub async fn get_available_lots(
     Ok(lots)
 }
 
+/// 按 FIFO 查询在库批次（含已预留部分），用于盘亏这类按实物扣减的场景
+///
+/// 返回 `(lot_id, lot_no, qty_on_hand, qty_reserved)`，仅返回在库大于 0 的批次。
+pub async fn get_on_hand_lots(
+    tx: &mut PgConnection,
+    material_id: i64,
+    warehouse_id: i64,
+) -> Result<Vec<(i64, String, f64, f64)>, AppError> {
+    let lots: Vec<(i64, String, f64, f64)> = sqlx::query_as(
+        r#"
+        SELECT id, lot_no, qty_on_hand, COALESCE(qty_reserved, 0)
+        FROM inventory_lots
+        WHERE material_id = $1 AND warehouse_id = $2 AND qty_on_hand > 0
+        ORDER BY received_date ASC, id ASC
+        FOR UPDATE
+        "#,
+    )
+    .bind(material_id)
+    .bind(warehouse_id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("查询在库批次失败: {}", e)))?;
+
+    Ok(lots)
+}
+
 /// 扣减批次库存
+///
+/// 扣减量超出在库不到 [`LOT_QTY_TOLERANCE`] 时（拆批倒挤的浮点残差或容差内差额），按在库扣到 0。
 pub async fn decrease_lot_inventory(
     tx: &mut PgConnection,
     lot_id: i64,
@@ -446,6 +513,11 @@ pub async fn decrease_lot_inventory(
             .map_err(|e| AppError::Database(format!("查询批次库存失败: {}", e)))?;
 
     let on_hand = current.map(|c| c.0).unwrap_or(0.0);
+    let quantity = if quantity > on_hand && quantity - on_hand <= LOT_QTY_TOLERANCE {
+        on_hand
+    } else {
+        quantity
+    };
     if on_hand < quantity {
         return Err(AppError::Business(format!(
             "批次库存不足：当前 {}，需扣减 {}",
@@ -605,6 +677,60 @@ mod tests {
         // 全部退货后库存为 0，成本重置为 0
         let cost = calc_cost_after_return(0.0, 500, 100.0, 500);
         assert_eq!(cost, 0);
+    }
+
+    // ----------------------------------------------------------------
+    // plan_fifo_lots 测试
+    // ----------------------------------------------------------------
+
+    fn lots(qtys: &[f64]) -> Vec<(i64, String, f64)> {
+        qtys.iter()
+            .enumerate()
+            .map(|(i, q)| (i as i64 + 1, format!("LOT-{}", i + 1), *q))
+            .collect()
+    }
+
+    fn plan_qtys(plan: &[(i64, String, f64)]) -> Vec<(i64, f64)> {
+        plan.iter().map(|(id, _, q)| (*id, *q)).collect()
+    }
+
+    #[test]
+    fn fifo_plan_splits_across_lots_in_order() {
+        let plan = plan_fifo_lots(&lots(&[3.0, 5.0, 10.0]), 7.0).unwrap();
+        assert_eq!(plan_qtys(&plan), vec![(1, 3.0), (2, 4.0)]);
+    }
+
+    #[test]
+    fn fifo_plan_has_no_ghost_lot_from_float_residue() {
+        // 0.4 - 0.1 = 0.30000000000000004，旧逻辑会给第三批分出一条约 5.55e-17 的明细
+        let plan = plan_fifo_lots(&lots(&[0.1, 0.3, 5.0]), 0.4).unwrap();
+        assert_eq!(plan.len(), 2);
+        assert_eq!(plan[0].0, 1);
+        assert_eq!(plan[1].0, 2);
+        // 最后一批吸收残差后仍在容差内，由 decrease_lot_inventory 兜底扣到 0
+        assert!((plan[1].2 - 0.3).abs() < LOT_QTY_TOLERANCE);
+    }
+
+    #[test]
+    fn fifo_plan_absorbs_tolerance_gap_into_last_lot() {
+        // 批次合计比需求少 0.0005，在容差内视为足够，差额并入最后一批
+        let plan = plan_fifo_lots(&lots(&[1.0, 0.9995]), 2.0).unwrap();
+        let total: f64 = plan.iter().map(|(_, _, q)| q).sum();
+        assert!((total - 2.0).abs() < 1e-12);
+        assert!((plan[1].2 - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn fifo_plan_rejects_insufficient_lots() {
+        assert!(plan_fifo_lots(&lots(&[1.0, 0.5]), 2.0).is_none());
+        // 没有任何批次时，即便需求量在容差内也不能返回空计划
+        assert!(plan_fifo_lots(&[], 0.0005).is_none());
+    }
+
+    #[test]
+    fn fifo_plan_skips_empty_lots() {
+        let plan = plan_fifo_lots(&lots(&[0.0, 2.0]), 1.5).unwrap();
+        assert_eq!(plan_qtys(&plan), vec![(2, 1.5)]);
     }
 
     #[test]

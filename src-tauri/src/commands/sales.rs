@@ -888,14 +888,16 @@ pub async fn approve_sales_order(
         r#"
         UPDATE sales_orders SET
             status = 'approved',
-            approved_by_user_id = 1,
-            approved_by_name = 'admin',
+            approved_by_user_id = $2,
+            approved_by_name = $3,
             approved_at = NOW(),
             updated_at = NOW()
         WHERE id = $1 AND status = 'draft'
         "#,
     )
     .bind(id)
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
     .execute(&db.pool)
     .await
     .map_err(|e| AppError::Database(format!("审核销售单失败: {}", e)))?;
@@ -955,7 +957,15 @@ pub async fn cancel_sales_order(
         ));
     }
 
-    let rows = order_shared::cancel_order(&db.pool, "sales_orders", id, "销售单").await?;
+    let rows = order_shared::cancel_order(
+        &db.pool,
+        "sales_orders",
+        id,
+        current_user.user_id(),
+        &current_user.display_name(),
+        "销售单",
+    )
+    .await?;
 
     if rows == 0 {
         if !order_shared::check_order_exists(&db.pool, "sales_orders", id, "销售单").await? {
@@ -1506,41 +1516,25 @@ pub async fn save_and_confirm_outbound(
 
     // 费用分摊（仅关联销售单时）
     let (allocated_discount, allocated_freight, allocated_other) = if let Some(ref so) = so_info {
+        let sales_id = params.sales_id.unwrap();
         let so_total = so.3; // 销售单货款小计（已含行折扣）
+        let all_items_done = so_total > 0
+            && check_all_outbound_items_will_be_done(&mut *tx, sales_id, &params.items).await?;
 
-        if so_total > 0 {
-            let all_items_done = check_all_outbound_items_will_be_done(
-                &mut *tx,
-                params.sales_id.unwrap(),
-                &params.items,
-            )
-            .await?;
-
-            if all_items_done {
-                // 最后一笔：倒挤法
-                let prev_discount = sqlx::query_scalar::<_, i64>(
-                    // SUM(bigint) 在 PostgreSQL 中返回 numeric，必须显式转回 BIGINT，否则 i64 解码失败被兜底成 0
-                    "SELECT COALESCE(SUM(allocated_discount), 0)::BIGINT FROM outbound_orders WHERE sales_id = $1 AND status = 'confirmed'",
-                ).bind(params.sales_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
-                let prev_freight = sqlx::query_scalar::<_, i64>(
-                    "SELECT COALESCE(SUM(allocated_freight), 0)::BIGINT FROM outbound_orders WHERE sales_id = $1 AND status = 'confirmed'",
-                ).bind(params.sales_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
-                let prev_other = sqlx::query_scalar::<_, i64>(
-                    "SELECT COALESCE(SUM(allocated_other), 0)::BIGINT FROM outbound_orders WHERE sales_id = $1 AND status = 'confirmed'",
-                ).bind(params.sales_id.unwrap()).fetch_one(&mut *tx).await.unwrap_or(0);
-
-                (so.5 - prev_discount, so.6 - prev_freight, so.7 - prev_other)
-            } else {
-                let ratio = outbound_total as f64 / so_total as f64;
-                (
-                    (so.5 as f64 * ratio).round() as i64,
-                    (so.6 as f64 * ratio).round() as i64,
-                    (so.7 as f64 * ratio).round() as i64,
-                )
-            }
-        } else {
-            (0, 0, 0)
-        }
+        let charges = super::order_shared::calculate_allocated_charges(
+            &mut *tx,
+            all_items_done,
+            outbound_total,
+            so_total,
+            so.5,
+            so.6,
+            so.7,
+            "outbound_orders",
+            "sales_id",
+            sales_id,
+        )
+        .await?;
+        (charges.discount, charges.freight, charges.other)
     } else {
         (0, 0, 0)
     };
@@ -1673,8 +1667,8 @@ pub async fn save_and_confirm_outbound(
             let lots =
                 inventory_ops::get_available_lots(&mut *tx, item.material_id, params.warehouse_id)
                     .await?;
-            let total_available: f64 = lots.iter().map(|(_, _, avail)| *avail).sum();
-            if total_available + 0.001 < base_quantity {
+            let Some(plan) = inventory_ops::plan_fifo_lots(&lots, base_quantity) else {
+                let total_available: f64 = lots.iter().map(|(_, _, avail)| *avail).sum();
                 let mat_name: String =
                     sqlx::query_scalar("SELECT name FROM materials WHERE id = $1")
                         .bind(item.material_id)
@@ -1685,18 +1679,8 @@ pub async fn save_and_confirm_outbound(
                     "{} 批次库存不足：可用批次合计 {:.2}，需出库 {:.2}",
                     mat_name, total_available, base_quantity
                 )));
-            }
-            let mut remaining_to_alloc = base_quantity;
-            for (lid, _, avail) in lots {
-                if remaining_to_alloc <= 0.0 {
-                    break;
-                }
-                let deduct = remaining_to_alloc.min(avail);
-                if deduct > 0.0 {
-                    lot_plan.push((Some(lid), deduct));
-                    remaining_to_alloc -= deduct;
-                }
-            }
+            };
+            lot_plan.extend(plan.into_iter().map(|(lid, _, qty)| (Some(lid), qty)));
         } else {
             // 未追踪批次：只扣主库存
             lot_plan.push((None, base_quantity));
@@ -1822,7 +1806,7 @@ pub async fn save_and_confirm_outbound(
             .await
             .map_err(|e| AppError::Database(format!("插入出库明细第 {} 行失败: {}", i + 1, e)))?;
 
-            // 扣减本批次库存
+            // 扣减本批次库存；最后一批倒挤出的浮点残差由 decrease_lot_inventory 按容差兜底
             if let Some(lid) = plan_lot_id {
                 inventory_ops::decrease_lot_inventory(&mut *tx, lid, row_base_qty).await?;
             }
@@ -2076,7 +2060,7 @@ pub async fn get_returnable_outbound_items(
             SELECT
                 ooi.id AS outbound_item_id,
                 ooi.material_id, m.code AS material_code, m.name AS material_name,
-                COALESCE(ooi.remark, '') AS spec,
+                m.spec,
                 ooi.unit_id, ooi.unit_name_snapshot, ooi.conversion_rate_snapshot,
                 ooi.quantity AS outbound_quantity,
                 COALESCE(

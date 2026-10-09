@@ -938,18 +938,17 @@ pub async fn get_consumption_trend(
 ///
 /// 重新查询最新库存数据（避免用前端过期缓存），
 /// 按供应商分组，每组独立事务生成一张草稿采购单。
+/// 制单人取后端登录态，不信任前端传入的身份。
 #[tauri::command]
 pub async fn create_purchase_orders_from_suggestions(
     db: State<'_, DbState>,
     current_user: State<'_, CurrentUser>,
     material_ids: Vec<i64>,
-    user_id: Option<i64>,
-    user_name: Option<String>,
 ) -> Result<BulkCreatePoResult, AppError> {
     current_user.require_permission(perm::REPLENISHMENT, "create_po")?;
 
-    let uid = user_id.unwrap_or(1);
-    let uname = user_name.unwrap_or_else(|| "admin".to_string());
+    let uid = current_user.user_id();
+    let uname = current_user.display_name();
     if material_ids.is_empty() {
         return Err(AppError::Business("请至少选择一个物料".to_string()));
     }
