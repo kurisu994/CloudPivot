@@ -121,6 +121,141 @@ pub struct SaveProductionOrderInput {
     pub remark: Option<String>,
 }
 
+/// 拒绝非有限数、零和负数，避免非法数量反向改写库存及工单状态。
+fn validate_production_quantity(quantity: f64) -> Result<(), AppError> {
+    if !quantity.is_finite() || quantity <= 0.0 {
+        return Err(AppError::Business("数量必须是有限的正数".to_string()));
+    }
+    Ok(())
+}
+
+/// 领退流水快照；退料的 source_item_id 指向原领料流水，而不是完工记录。
+#[derive(Debug, sqlx::FromRow)]
+struct MaterialMovement {
+    id: i64,
+    lot_id: Option<i64>,
+    quantity: f64,
+    unit_cost: i64,
+    source_item_id: Option<i64>,
+    transaction_type: String,
+}
+
+/// 回补计划保留原领料批次、成本和流水引用。
+#[derive(Debug, Clone)]
+struct MaterialReturnAllocation {
+    pick_id: i64,
+    lot_id: Option<i64>,
+    quantity: f64,
+    unit_cost: i64,
+}
+
+/// 按时间重放领退历史，再后领先退；目标仓历史不足时整笔拒绝，不生成无来源补差。
+fn plan_material_return(
+    movements: &[MaterialMovement],
+    quantity: f64,
+    requires_lot: bool,
+) -> Result<Vec<MaterialReturnAllocation>, AppError> {
+    validate_production_quantity(quantity)?;
+    let mut balances: Vec<MaterialReturnAllocation> = Vec::new();
+    for movement in movements {
+        if movement.transaction_type == "production_out" {
+            validate_production_quantity(-movement.quantity)?;
+            balances.push(MaterialReturnAllocation {
+                pick_id: movement.id,
+                lot_id: movement.lot_id,
+                quantity: -movement.quantity,
+                unit_cost: movement.unit_cost,
+            });
+        } else if movement.transaction_type == "production_in" {
+            validate_production_quantity(movement.quantity)?;
+            let mut remaining = movement.quantity;
+            for balance in balances.iter_mut().rev().filter(|balance| {
+                movement.source_item_id.map_or_else(
+                    || balance.lot_id == movement.lot_id,
+                    |pick_id| balance.pick_id == pick_id && balance.lot_id == movement.lot_id,
+                )
+            }) {
+                let restored = remaining.min(balance.quantity);
+                balance.quantity -= restored;
+                remaining -= restored;
+                if remaining <= 0.0 {
+                    break;
+                }
+            }
+            if remaining > 0.0 {
+                return Err(AppError::Business(
+                    "历史退料与领料来源不一致，请核实后再退料".to_string(),
+                ));
+            }
+        }
+    }
+
+    let mut remaining = quantity;
+    let mut plan = Vec::new();
+    for balance in balances.into_iter().rev() {
+        if balance.quantity <= 0.0 || (requires_lot && balance.lot_id.is_none()) {
+            continue;
+        }
+        let returned = remaining.min(balance.quantity);
+        plan.push(MaterialReturnAllocation {
+            quantity: returned,
+            ..balance
+        });
+        remaining -= returned;
+        if remaining <= 0.0 {
+            return Ok(plan);
+        }
+    }
+    Err(AppError::Business(
+        "退料量超过目标仓库的历史领料余额，不能跨仓退料".to_string(),
+    ))
+}
+
+/// 仅对原料领退流水计投入成本；成品完工流水由调用方按来源排除。
+fn net_material_cost(movements: &[MaterialMovement]) -> Result<f64, AppError> {
+    let mut cost = 0.0;
+    for movement in movements {
+        if matches!(
+            movement.transaction_type.as_str(),
+            "production_out" | "production_in"
+        ) {
+            cost -= movement.quantity * movement.unit_cost as f64;
+        }
+    }
+    if !cost.is_finite() || cost < 0.0 {
+        return Err(AppError::Business(
+            "领退料成本异常，请核实历史流水".to_string(),
+        ));
+    }
+    Ok(cost)
+}
+
+/// 按剩余投入和剩余计划数量分摊；完成本次计划余额时倒挤，避免分批重复入账。
+fn completion_unit_cost(
+    actual_cost: f64,
+    already_capitalized: f64,
+    planned_qty: f64,
+    completed_qty: f64,
+    this_qty: f64,
+) -> Result<i64, AppError> {
+    validate_production_quantity(this_qty)?;
+    if !actual_cost.is_finite()
+        || !already_capitalized.is_finite()
+        || !planned_qty.is_finite()
+        || planned_qty <= 0.0
+    {
+        return Err(AppError::Business("完工成本参数无效".to_string()));
+    }
+    let remaining_cost = (actual_cost - already_capitalized).max(0.0);
+    let remaining_plan = planned_qty - completed_qty;
+    let batch_cost = if this_qty + 1e-9 >= remaining_plan {
+        remaining_cost
+    } else {
+        remaining_cost * this_qty / remaining_plan
+    };
+    Ok((batch_cost / this_qty).round() as i64)
+}
+
 const PRODUCTION_BOM_ITEMS_SQL: &str = r#"
         SELECT bi.child_material_id AS material_id,
                 COALESCE(m.name, '') AS material_name,
@@ -606,6 +741,8 @@ pub async fn save_production_order(
         if input.id.is_some() { "edit" } else { "create" },
     )?;
 
+    validate_production_quantity(input.planned_qty)?;
+
     // 校验 BOM 存在且已启用
     #[derive(sqlx::FromRow)]
     struct BomInfo {
@@ -634,7 +771,7 @@ pub async fn save_production_order(
     if let Some(existing_id) = input.id {
         // 编辑模式：仅草稿态可编辑
         let status: Option<String> =
-            sqlx::query_scalar("SELECT status FROM production_orders WHERE id = $1")
+            sqlx::query_scalar("SELECT status FROM production_orders WHERE id = $1 FOR UPDATE")
                 .bind(existing_id)
                 .fetch_optional(&mut *tx)
                 .await
@@ -801,7 +938,54 @@ pub async fn delete_production_order(
 
 #[cfg(test)]
 mod tests {
-    use super::PRODUCTION_BOM_ITEMS_SQL;
+    use super::{
+        MaterialMovement, PRODUCTION_BOM_ITEMS_SQL, completion_unit_cost, net_material_cost,
+        plan_material_return,
+    };
+
+    fn movement(
+        id: i64,
+        lot_id: Option<i64>,
+        quantity: f64,
+        unit_cost: i64,
+        source_item_id: Option<i64>,
+        transaction_type: &str,
+    ) -> MaterialMovement {
+        MaterialMovement {
+            id,
+            lot_id,
+            quantity,
+            unit_cost,
+            source_item_id,
+            transaction_type: transaction_type.to_string(),
+        }
+    }
+
+    #[test]
+    fn production_return_rejects_other_warehouse_and_keeps_pick_cost() {
+        let movements = vec![movement(1, Some(9), -5.0, 100, None, "production_out")];
+        assert!(plan_material_return(&movements, 6.0, true).is_err());
+        let plan = plan_material_return(&movements, 2.0, true).unwrap();
+        assert_eq!(plan.len(), 1);
+        assert_eq!(plan[0].lot_id, Some(9));
+        assert_eq!(plan[0].unit_cost, 100);
+        assert!(plan_material_return(&movements, -1.0, true).is_err());
+    }
+
+    #[test]
+    fn completion_cost_uses_pick_snapshot_and_does_not_double_count() {
+        let picked = vec![movement(1, Some(9), -2.0, 100, None, "production_out")];
+        assert_eq!(net_material_cost(&picked).unwrap(), 200.0);
+        let returned = vec![
+            movement(1, Some(9), -2.0, 100, None, "production_out"),
+            movement(2, Some(9), 2.0, 100, Some(1), "production_in"),
+        ];
+        assert_eq!(net_material_cost(&returned).unwrap(), 0.0);
+        let first = completion_unit_cost(10_000.0, 0.0, 2.0, 0.0, 1.0).unwrap();
+        let second = completion_unit_cost(10_000.0, 5_000.0, 2.0, 1.0, 1.0).unwrap();
+        assert_eq!(first, 5_000);
+        assert_eq!(second, 5_000);
+    }
 
     #[test]
     fn production_bom_items_query_uses_current_bom_schema() {
@@ -836,29 +1020,33 @@ pub async fn pick_materials(
         return Err(AppError::Business("领料明细不能为空".to_string()));
     }
 
-    // 查询工单状态
-    #[derive(sqlx::FromRow)]
-    struct OrderInfo {
-        status: String,
-        custom_order_id: Option<i64>,
+    for line in &input.items {
+        validate_production_quantity(line.quantity)?;
     }
-    let order: OrderInfo =
-        sqlx::query_as("SELECT status, custom_order_id FROM production_orders WHERE id = $1")
-            .bind(input.production_order_id)
-            .fetch_optional(&db.pool)
-            .await
-            .map_err(|e| AppError::Database(format!("查询工单失败: {}", e)))?
-            .ok_or_else(|| AppError::Business("工单不存在".to_string()))?;
-
-    if order.status != "draft" && order.status != "picking" {
-        return Err(AppError::Business("仅草稿或领料中状态可以领料".to_string()));
-    }
-
     let mut tx = db
         .pool
         .begin()
         .await
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
+
+    // 先锁工单头，再锁明细，状态与累计量均在同一事务中检查。
+    #[derive(sqlx::FromRow)]
+    struct OrderInfo {
+        status: String,
+        custom_order_id: Option<i64>,
+    }
+    let order: OrderInfo = sqlx::query_as(
+        "SELECT status, custom_order_id FROM production_orders WHERE id = $1 FOR UPDATE",
+    )
+    .bind(input.production_order_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("查询工单失败: {}", e)))?
+    .ok_or_else(|| AppError::Business("工单不存在".to_string()))?;
+
+    if order.status != "draft" && order.status != "picking" {
+        return Err(AppError::Business("仅草稿或领料中状态可以领料".to_string()));
+    }
 
     let today = chrono::Local::now().format("%Y-%m-%d").to_string();
 
@@ -872,7 +1060,7 @@ pub async fn pick_materials(
         }
         let mat: MatInfo = sqlx::query_as(
             "SELECT required_qty, picked_qty, returned_qty FROM production_order_materials
-             WHERE production_order_id = $1 AND material_id = $2",
+             WHERE production_order_id = $1 AND material_id = $2 FOR UPDATE",
         )
         .bind(input.production_order_id)
         .bind(line.material_id)
@@ -1145,18 +1333,28 @@ pub async fn return_materials(
         return Err(AppError::Business("退料明细不能为空".to_string()));
     }
 
+    for line in &input.items {
+        validate_production_quantity(line.quantity)?;
+    }
+    let mut tx = db
+        .pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
+
     #[derive(sqlx::FromRow)]
     struct ReturnOrderInfo {
         status: String,
         custom_order_id: Option<i64>,
     }
-    let order: ReturnOrderInfo =
-        sqlx::query_as("SELECT status, custom_order_id FROM production_orders WHERE id = $1")
-            .bind(input.production_order_id)
-            .fetch_optional(&db.pool)
-            .await
-            .map_err(|e| AppError::Database(format!("查询工单失败: {}", e)))?
-            .ok_or_else(|| AppError::Business("工单不存在".to_string()))?;
+    let order: ReturnOrderInfo = sqlx::query_as(
+        "SELECT status, custom_order_id FROM production_orders WHERE id = $1 FOR UPDATE",
+    )
+    .bind(input.production_order_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("查询工单失败: {}", e)))?
+    .ok_or_else(|| AppError::Business("工单不存在".to_string()))?;
 
     match order.status.as_str() {
         "picking" | "producing" => {}
@@ -1167,19 +1365,13 @@ pub async fn return_materials(
         }
     }
 
-    let mut tx = db
-        .pool
-        .begin()
-        .await
-        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
-
     let today = chrono::Local::now().format("%Y-%m-%d").to_string();
 
     for line in &input.items {
         // 校验退料量
         let (picked, returned): (f64, f64) = sqlx::query_as(
             "SELECT picked_qty, returned_qty FROM production_order_materials
-             WHERE production_order_id = $1 AND material_id = $2",
+             WHERE production_order_id = $1 AND material_id = $2 FOR UPDATE",
         )
         .bind(input.production_order_id)
         .bind(line.material_id)
@@ -1196,19 +1388,6 @@ pub async fn return_materials(
             )));
         }
 
-        // 退料金额按当前移动加权平均成本计价，保证数量加回后库存金额与平均成本不变
-        let return_unit_cost: i64 = sqlx::query_scalar(
-            "SELECT COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2",
-        )
-        .bind(line.material_id)
-        .bind(line.warehouse_id)
-        .fetch_optional(&mut *tx)
-        .await
-        .map_err(|e| AppError::Database(format!("查询物料平均成本失败: {}", e)))?
-        .unwrap_or(0);
-
-        // 批次追踪物料：把退料量按「后领先退」加回本工单领料时扣过的批次，
-        // 否则批次合计会与仓库库存脱节
         let lot_mode: Option<String> = sqlx::query_scalar(
             "SELECT COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = $1",
         )
@@ -1216,71 +1395,29 @@ pub async fn return_materials(
         .fetch_optional(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("查询物料批次追踪模式失败: {}", e)))?;
+        let requires_lot = matches!(lot_mode.as_deref(), Some("required") | Some("optional"));
+        let movements: Vec<MaterialMovement> = sqlx::query_as(
+            "SELECT id, lot_id, quantity, unit_cost, source_item_id, transaction_type
+             FROM inventory_transactions
+             WHERE source_type = 'production_order' AND source_id = $1
+               AND material_id = $2 AND warehouse_id = $3
+               AND transaction_type IN ('production_out', 'production_in')
+             ORDER BY id ASC",
+        )
+        .bind(input.production_order_id)
+        .bind(line.material_id)
+        .bind(line.warehouse_id)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("查询工单领退流水失败: {}", e)))?;
+        let return_plan = plan_material_return(&movements, line.quantity, requires_lot)?;
+        let return_value: f64 = return_plan
+            .iter()
+            .map(|item| item.quantity * item.unit_cost as f64)
+            .sum();
+        let return_unit_cost = (return_value / line.quantity).round() as i64;
 
-        // 每个批次的可回补容量 = 该工单在该批次上累计领料量（按后领先退汇总）
-        let mut lot_plan: Vec<(i64, f64)> = Vec::new();
-        if lot_mode.as_deref() == Some("required") || lot_mode.as_deref() == Some("optional") {
-            let picks: Vec<(i64, f64)> = sqlx::query_as(
-                "SELECT lot_id, ABS(quantity) FROM inventory_transactions
-                 WHERE source_type = 'production_order' AND source_id = $1
-                   AND material_id = $2 AND warehouse_id = $3
-                   AND transaction_type = 'production_out' AND lot_id IS NOT NULL
-                 ORDER BY id DESC",
-            )
-            .bind(input.production_order_id)
-            .bind(line.material_id)
-            .bind(line.warehouse_id)
-            .fetch_all(&mut *tx)
-            .await
-            .map_err(|e| AppError::Database(format!("查询工单领料流水失败: {}", e)))?;
-
-            let mut caps: Vec<(i64, f64)> = Vec::new();
-            for (lid, qty) in picks {
-                match caps.iter_mut().find(|(id, _)| *id == lid) {
-                    Some((_, cap)) => *cap += qty,
-                    None => caps.push((lid, qty)),
-                }
-            }
-
-            // 各批次的已回补量（来自本工单此前的 production_in 流水）
-            let restored: Vec<(i64, f64)> = sqlx::query_as(
-                "SELECT lot_id, SUM(quantity) FROM inventory_transactions
-                 WHERE source_type = 'production_order' AND source_id = $1
-                   AND material_id = $2 AND warehouse_id = $3
-                   AND transaction_type = 'production_in' AND lot_id IS NOT NULL
-                 GROUP BY lot_id",
-            )
-            .bind(input.production_order_id)
-            .bind(line.material_id)
-            .bind(line.warehouse_id)
-            .fetch_all(&mut *tx)
-            .await
-            .map_err(|e| AppError::Database(format!("查询工单退料流水失败: {}", e)))?;
-
-            // 按「后领先退」把本次退料量加回该批次剩余可回补容量（累计领料量 − 已回补量）。
-            // 剩余容量口径可以自然兼容历史上未回补批次的退料，并且总量恰好等于退料量，
-            // 与主库存的增量保持一致。
-            let mut remaining_to_restore = line.quantity;
-            for (lid, cap) in caps {
-                if remaining_to_restore <= 0.0 {
-                    break;
-                }
-                let already = restored
-                    .iter()
-                    .find(|(id, _)| *id == lid)
-                    .map(|(_, qty)| *qty)
-                    .unwrap_or(0.0);
-                let remaining_cap = (cap - already).max(0.0);
-                let delta = remaining_to_restore.min(remaining_cap);
-                if delta > 0.0 {
-                    lot_plan.push((lid, delta));
-                    remaining_to_restore -= delta;
-                }
-            }
-        }
-
-        // 增加库存
-        let (before_qty, after_qty) = super::inventory_ops::increase_inventory(
+        let (before_qty, _after_qty) = super::inventory_ops::increase_inventory(
             &mut *tx,
             line.material_id,
             line.warehouse_id,
@@ -1290,64 +1427,39 @@ pub async fn return_materials(
         )
         .await?;
 
-        // 生成流水：批次追踪物料按回补批次各记一条，before/after 用主库存口径连续递增
         let mut restored_qty = 0.0_f64;
-        for (lot_id, add_qty) in &lot_plan {
-            sqlx::query(
-                "UPDATE inventory_lots SET qty_on_hand = qty_on_hand + $1, updated_at = NOW() WHERE id = $2",
-            )
-            .bind(add_qty)
-            .bind(lot_id)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| AppError::Database(format!("回补批次库存失败: {}", e)))?;
-
+        for allocation in &return_plan {
+            if let Some(lot_id) = allocation.lot_id {
+                sqlx::query(
+                    "UPDATE inventory_lots SET qty_on_hand = qty_on_hand + $1, updated_at = NOW() WHERE id = $2",
+                )
+                .bind(allocation.quantity)
+                .bind(lot_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| AppError::Database(format!("回补批次库存失败: {}", e)))?;
+            }
             super::inventory_ops::record_transaction(
                 &mut *tx,
                 &today,
                 line.material_id,
                 line.warehouse_id,
-                Some(*lot_id),
+                allocation.lot_id,
                 "production_in",
-                *add_qty,
+                allocation.quantity,
                 before_qty + restored_qty,
-                before_qty + restored_qty + add_qty,
-                return_unit_cost,
+                before_qty + restored_qty + allocation.quantity,
+                allocation.unit_cost,
                 Some("production_order"),
                 Some(input.production_order_id),
-                None,
+                Some(allocation.pick_id),
                 None,
                 None,
                 current_user.user_id(),
                 &current_user.display_name(),
             )
             .await?;
-            restored_qty += add_qty;
-        }
-
-        // 未能分摊到批次的剩余部分（如历史流水缺失）仍记一条无批次流水，保证流水总量等于退料量
-        let unallocated_qty = line.quantity - restored_qty;
-        if unallocated_qty > 0.001 {
-            super::inventory_ops::record_transaction(
-                &mut *tx,
-                &today,
-                line.material_id,
-                line.warehouse_id,
-                None,
-                "production_in",
-                unallocated_qty,
-                before_qty + restored_qty,
-                after_qty,
-                return_unit_cost,
-                Some("production_order"),
-                Some(input.production_order_id),
-                None,
-                None,
-                None,
-                current_user.user_id(),
-                &current_user.display_name(),
-            )
-            .await?;
+            restored_qty += allocation.quantity;
         }
 
         // 更新退料量
@@ -1592,23 +1704,27 @@ pub async fn complete_production(
 ) -> Result<(), AppError> {
     current_user.require_permission(perm::PRODUCTION_ORDERS, "complete")?;
 
-    if input.quantity <= 0.0 {
-        return Err(AppError::Business("完工数量必须大于0".to_string()));
-    }
+    validate_production_quantity(input.quantity)?;
 
-    // 查询工单
+    let mut tx = db
+        .pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
+
     #[derive(sqlx::FromRow)]
     struct OrderInfo {
         status: String,
         output_material_id: i64,
+        planned_qty: f64,
         completed_qty: f64,
     }
     let order: OrderInfo = sqlx::query_as(
-        "SELECT status, output_material_id, completed_qty
-         FROM production_orders WHERE id = $1",
+        "SELECT status, output_material_id, planned_qty, completed_qty
+         FROM production_orders WHERE id = $1 FOR UPDATE",
     )
     .bind(input.production_order_id)
-    .fetch_optional(&db.pool)
+    .fetch_optional(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("查询工单失败: {}", e)))?
     .ok_or_else(|| AppError::Business("工单不存在".to_string()))?;
@@ -1617,37 +1733,36 @@ pub async fn complete_production(
         return Err(AppError::Business("仅生产中状态可以完工入库".to_string()));
     }
 
-    let mut tx = db
-        .pool
-        .begin()
-        .await
-        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
-
     let today = chrono::Local::now().format("%Y-%m-%d").to_string();
-
-    // 计算完工成本：领料总成本 ÷ (已完工 + 本次完工)
-    // 领料总成本 = 各物料净领料量 × 该物料的库存平均成本
-    // 领料总成本是小数金额（picked_qty / avg_cost 均为浮点），必须用 f64 接收，
-    // 否则 sqlx 会因为 SQL 返回 FLOAT8 而拒绝按 i64 解码（BUG-115）。
-    let picking_cost: f64 = sqlx::query_scalar(
-        "SELECT COALESCE(SUM(
-            (pom.picked_qty - pom.returned_qty) *
-            COALESCE((SELECT avg_cost FROM inventory WHERE material_id = pom.material_id LIMIT 1), 0)
-         ), 0)
-         FROM production_order_materials pom
-         WHERE pom.production_order_id = $1",
+    let movements: Vec<MaterialMovement> = sqlx::query_as(
+        "SELECT id, lot_id, quantity, unit_cost, source_item_id, transaction_type
+         FROM inventory_transactions
+         WHERE source_type = 'production_order' AND source_id = $1
+           AND transaction_type IN ('production_out', 'production_in')
+           AND material_id IN (
+               SELECT material_id FROM production_order_materials WHERE production_order_id = $1
+           )
+         ORDER BY id ASC",
+    )
+    .bind(input.production_order_id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("查询领料成本失败: {}", e)))?;
+    let actual_cost = net_material_cost(&movements)?;
+    let already_capitalized: f64 = sqlx::query_scalar(
+        "SELECT COALESCE(SUM(quantity * unit_cost), 0) FROM production_completions WHERE production_order_id = $1",
     )
     .bind(input.production_order_id)
     .fetch_one(&mut *tx)
     .await
-    .map_err(|e| AppError::Database(format!("计算领料成本失败: {}", e)))?;
-
-    let total_completed = order.completed_qty + input.quantity;
-    let unit_cost = if total_completed > 0.0 {
-        (picking_cost / total_completed).round() as i64
-    } else {
-        0
-    };
+    .map_err(|e| AppError::Database(format!("查询已完工成本失败: {}", e)))?;
+    let unit_cost = completion_unit_cost(
+        actual_cost,
+        already_capitalized,
+        order.planned_qty,
+        order.completed_qty,
+        input.quantity,
+    )?;
 
     // 生成完工记录编号
     let comp_count: i64 = sqlx::query_scalar(
@@ -1689,13 +1804,45 @@ pub async fn complete_production(
     )
     .await?;
 
+    let output_lot_mode: Option<String> = sqlx::query_scalar(
+        "SELECT COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = $1",
+    )
+    .bind(order.output_material_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("查询产出物料批次模式失败: {}", e)))?;
+    let output_lot_id = if matches!(
+        output_lot_mode.as_deref(),
+        Some("required") | Some("optional")
+    ) {
+        let lot_no = super::inventory_ops::generate_lot_no(&mut tx, &today).await?;
+        Some(
+            super::inventory_ops::create_inventory_lot(
+                &mut tx,
+                &lot_no,
+                order.output_material_id,
+                input.warehouse_id,
+                0,
+                None,
+                &today,
+                None,
+                None,
+                input.quantity,
+                unit_cost,
+            )
+            .await?,
+        )
+    } else {
+        None
+    };
+
     // 生成库存流水
     super::inventory_ops::record_transaction(
         &mut *tx,
         &today,
         order.output_material_id,
         input.warehouse_id,
-        None,
+        output_lot_id,
         "production_in",
         input.quantity,
         before_qty,
@@ -1713,9 +1860,9 @@ pub async fn complete_production(
 
     // 更新工单完工数量
     sqlx::query(
-        "UPDATE production_orders SET completed_qty = $1, updated_at = NOW() WHERE id = $2",
+        "UPDATE production_orders SET completed_qty = completed_qty + $1, updated_at = NOW() WHERE id = $2",
     )
-    .bind(total_completed)
+    .bind(input.quantity)
     .bind(input.production_order_id)
     .execute(&mut *tx)
     .await

@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { type Currency, formatAmount } from '@/lib/currency'
+import { type Currency, formatAmount, toStorageAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
 import type { ReceiptRecordItem, ReceivableListItem } from '@/lib/tauri'
 import { getReceiptRecords, getReceivables, recordReceipt } from '@/lib/tauri'
@@ -131,7 +131,8 @@ export function ReceivablesPage() {
   // 确认收款
   const handleConfirmReceipt = async () => {
     if (!receiptTarget) return
-    const amount = Math.round(Number(receiptAmount))
+    const currency = (receiptTarget.currency || 'USD') as Currency
+    const amount = toStorageAmount(Number(receiptAmount), currency)
     if (!amount || amount <= 0) {
       toast.error(t('receivables.dialog.receiptAmount') + ' > 0')
       return
@@ -389,7 +390,7 @@ export function ReceivablesPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>{t('receivables.dialog.receiptAmount')} *</Label>
-              <Input type="number" value={receiptAmount} onChange={e => setReceiptAmount(e.target.value)} placeholder="0" />
+              <Input type="number" min="0" step="0.01" value={receiptAmount} onChange={e => setReceiptAmount(e.target.value)} placeholder="0.00" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>{t('receivables.dialog.receiptDate')} *</Label>

@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { type Currency, formatAmount } from '@/lib/currency'
+import { type Currency, formatAmount, toStorageAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
 import type { PayableListItem, PaymentRecordItem } from '@/lib/tauri'
 import { getPayables, getPaymentRecords, recordPayment } from '@/lib/tauri'
@@ -131,7 +131,8 @@ export function PayablesPage() {
   // 确认付款
   const handleConfirmPayment = async () => {
     if (!payTarget) return
-    const amount = Math.round(Number(payAmount))
+    const currency = (payTarget.currency || 'USD') as Currency
+    const amount = toStorageAmount(Number(payAmount), currency)
     if (!amount || amount <= 0) {
       toast.error(t('payables.dialog.paymentAmount') + ' > 0')
       return
@@ -385,7 +386,7 @@ export function PayablesPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>{t('payables.dialog.paymentAmount')} *</Label>
-              <Input type="number" value={payAmount} onChange={e => setPayAmount(e.target.value)} placeholder="0" />
+              <Input type="number" min="0" step="0.01" value={payAmount} onChange={e => setPayAmount(e.target.value)} placeholder="0.00" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>{t('payables.dialog.paymentDate')} *</Label>

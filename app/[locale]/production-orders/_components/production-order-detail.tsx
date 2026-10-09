@@ -230,7 +230,11 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
   // 领料出库
   // ================================================================
   const handlePickConfirm = async () => {
-    if (!selectedMat || !dialogQty || !dialogWarehouseId) return
+    const quantity = Number(dialogQty)
+    if (!selectedMat || !Number.isFinite(quantity) || quantity <= 0 || !dialogWarehouseId) {
+      toast.error(t('picking.pickQuantity'))
+      return
+    }
     setDialogSubmitting(true)
     try {
       await invoke('pick_materials', {
@@ -239,7 +243,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
           items: [
             {
               materialId: selectedMat.materialId,
-              quantity: Number(dialogQty),
+              quantity,
               warehouseId: Number(dialogWarehouseId),
             },
           ],
@@ -259,7 +263,11 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
   // 退料入库
   // ================================================================
   const handleReturnConfirm = async () => {
-    if (!selectedMat || !dialogQty || !dialogWarehouseId) return
+    const quantity = Number(dialogQty)
+    if (!selectedMat || !Number.isFinite(quantity) || quantity <= 0 || !dialogWarehouseId) {
+      toast.error(t('picking.returnQuantity'))
+      return
+    }
     setDialogSubmitting(true)
     try {
       await invoke('return_materials', {
@@ -268,7 +276,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
           items: [
             {
               materialId: selectedMat.materialId,
-              quantity: Number(dialogQty),
+              quantity,
               warehouseId: Number(dialogWarehouseId),
             },
           ],
@@ -288,13 +296,17 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
   // 完工入库
   // ================================================================
   const handleCompleteConfirm = async () => {
-    if (!dialogQty || !dialogWarehouseId) return
+    const quantity = Number(dialogQty)
+    if (!Number.isFinite(quantity) || quantity <= 0 || !dialogWarehouseId) {
+      toast.error(t('completion.inputQuantity'))
+      return
+    }
     setDialogSubmitting(true)
     try {
       await invoke('complete_production', {
         input: {
           productionOrderId: orderId,
-          quantity: Number(dialogQty),
+          quantity,
           warehouseId: Number(dialogWarehouseId),
           remark: null,
         },
@@ -538,18 +550,6 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle>{t('picking.title')}</CardTitle>
-          <div className="flex gap-2">
-            {canPick && (
-              <Button size="sm" disabled={detail.materials.length === 0}>
-                {t('picking.pickMaterial')}
-              </Button>
-            )}
-            {canReturn && (
-              <Button size="sm" variant="outline">
-                {t('picking.returnMaterial')}
-              </Button>
-            )}
-          </div>
         </CardHeader>
         <CardContent className="p-0">
           <BusinessListTableShell tableClassName="min-w-[43.75rem]">
@@ -690,7 +690,13 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
             </div>
             <div className="space-y-2">
               <Label>{t('picking.pickQuantity')}</Label>
-              <Input type="number" value={dialogQty} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDialogQty(e.target.value)} />
+              <Input
+                type="number"
+                min="0"
+                step="any"
+                value={dialogQty}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDialogQty(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>{t('picking.warehouse')}</Label>
@@ -733,7 +739,13 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
             </div>
             <div className="space-y-2">
               <Label>{t('picking.returnQuantity')}</Label>
-              <Input type="number" value={dialogQty} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDialogQty(e.target.value)} />
+              <Input
+                type="number"
+                min="0"
+                step="any"
+                value={dialogQty}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDialogQty(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>{t('picking.warehouse')}</Label>

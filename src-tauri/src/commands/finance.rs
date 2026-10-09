@@ -210,12 +210,27 @@ pub async fn get_payables(
     let summary = sqlx::query_as::<_, (i64, i64, i64, i64, i64)>(
         r#"
         SELECT
-            COALESCE(SUM(CASE WHEN adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0)::BIGINT,
-            COALESCE(SUM(CASE WHEN status = 'paid' AND adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0)::BIGINT,
-            COALESCE(SUM(CASE WHEN status = 'partial' AND adjustment_type = 'normal' THEN payable_amount ELSE 0 END), 0)::BIGINT,
+            COALESCE(SUM(CASE WHEN adjustment_type = 'normal' THEN
+                CASE WHEN exchange_rate IS NULL OR exchange_rate <= 0 THEN 0
+                     WHEN currency = 'VND' THEN CAST(ROUND((payable_amount * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                     ELSE CAST(ROUND((payable_amount / exchange_rate)::numeric, 0) AS BIGINT) END
+            ELSE 0 END), 0)::BIGINT,
+            COALESCE(SUM(CASE WHEN status = 'paid' AND adjustment_type = 'normal' THEN
+                CASE WHEN exchange_rate IS NULL OR exchange_rate <= 0 THEN 0
+                     WHEN currency = 'VND' THEN CAST(ROUND((payable_amount * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                     ELSE CAST(ROUND((payable_amount / exchange_rate)::numeric, 0) AS BIGINT) END
+            ELSE 0 END), 0)::BIGINT,
+            COALESCE(SUM(CASE WHEN status = 'partial' AND adjustment_type = 'normal' THEN
+                CASE WHEN exchange_rate IS NULL OR exchange_rate <= 0 THEN 0
+                     WHEN currency = 'VND' THEN CAST(ROUND((payable_amount * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                     ELSE CAST(ROUND((payable_amount / exchange_rate)::numeric, 0) AS BIGINT) END
+            ELSE 0 END), 0)::BIGINT,
             COALESCE(SUM(CASE WHEN status != 'paid' AND adjustment_type = 'normal'
-                AND due_date IS NOT NULL AND due_date::DATE < CURRENT_DATE
-                THEN (payable_amount - paid_amount) ELSE 0 END), 0)::BIGINT,
+                AND due_date IS NOT NULL AND due_date::DATE < CURRENT_DATE THEN
+                CASE WHEN exchange_rate IS NULL OR exchange_rate <= 0 THEN 0
+                     WHEN currency = 'VND' THEN CAST(ROUND(((payable_amount - paid_amount) * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                     ELSE CAST(ROUND(((payable_amount - paid_amount) / exchange_rate)::numeric, 0) AS BIGINT) END
+            ELSE 0 END), 0)::BIGINT,
             COALESCE(SUM(
                 CASE
                     WHEN exchange_rate IS NULL OR exchange_rate <= 0 THEN 0
@@ -425,7 +440,7 @@ pub async fn record_payment(
 
     // 查询当前应付记录
     let payable_info = sqlx::query_as::<_, (i64, i64, String)>(
-        "SELECT payable_amount, paid_amount, currency FROM payables WHERE id = $1",
+        "SELECT payable_amount, paid_amount, currency FROM payables WHERE id = $1 FOR UPDATE",
     )
     .bind(params.payable_id)
     .fetch_optional(&mut *tx)
@@ -471,15 +486,19 @@ pub async fn record_payment(
         "partial"
     };
 
-    sqlx::query(
-        "UPDATE payables SET paid_amount = $1, status = $2, updated_at = NOW() WHERE id = $3",
+    let updated = sqlx::query(
+        "UPDATE payables SET paid_amount = paid_amount + $1, status = $2, updated_at = NOW()
+         WHERE id = $3 AND paid_amount + $1 <= payable_amount",
     )
-    .bind(new_paid)
+    .bind(params.payment_amount)
     .bind(new_status)
     .bind(params.payable_id)
     .execute(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("更新应付状态失败: {}", e)))?;
+    if updated.rows_affected() != 1 {
+        return Err(AppError::Business("付款金额超过未付余额".to_string()));
+    }
 
     tx.commit()
         .await
@@ -534,12 +553,27 @@ pub async fn get_receivables(
     let summary = sqlx::query_as::<_, (i64, i64, i64, i64, i64)>(
         r#"
         SELECT
-            COALESCE(SUM(CASE WHEN adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0)::BIGINT,
-            COALESCE(SUM(CASE WHEN status = 'paid' AND adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0)::BIGINT,
-            COALESCE(SUM(CASE WHEN status = 'partial' AND adjustment_type = 'normal' THEN receivable_amount ELSE 0 END), 0)::BIGINT,
+            COALESCE(SUM(CASE WHEN adjustment_type = 'normal' THEN
+                CASE WHEN exchange_rate IS NULL OR exchange_rate <= 0 THEN 0
+                     WHEN currency = 'VND' THEN CAST(ROUND((receivable_amount * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                     ELSE CAST(ROUND((receivable_amount / exchange_rate)::numeric, 0) AS BIGINT) END
+            ELSE 0 END), 0)::BIGINT,
+            COALESCE(SUM(CASE WHEN status = 'paid' AND adjustment_type = 'normal' THEN
+                CASE WHEN exchange_rate IS NULL OR exchange_rate <= 0 THEN 0
+                     WHEN currency = 'VND' THEN CAST(ROUND((receivable_amount * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                     ELSE CAST(ROUND((receivable_amount / exchange_rate)::numeric, 0) AS BIGINT) END
+            ELSE 0 END), 0)::BIGINT,
+            COALESCE(SUM(CASE WHEN status = 'partial' AND adjustment_type = 'normal' THEN
+                CASE WHEN exchange_rate IS NULL OR exchange_rate <= 0 THEN 0
+                     WHEN currency = 'VND' THEN CAST(ROUND((receivable_amount * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                     ELSE CAST(ROUND((receivable_amount / exchange_rate)::numeric, 0) AS BIGINT) END
+            ELSE 0 END), 0)::BIGINT,
             COALESCE(SUM(CASE WHEN status != 'paid' AND adjustment_type = 'normal'
-                AND due_date IS NOT NULL AND due_date::DATE < CURRENT_DATE
-                THEN (receivable_amount - received_amount) ELSE 0 END), 0)::BIGINT,
+                AND due_date IS NOT NULL AND due_date::DATE < CURRENT_DATE THEN
+                CASE WHEN exchange_rate IS NULL OR exchange_rate <= 0 THEN 0
+                     WHEN currency = 'VND' THEN CAST(ROUND(((receivable_amount - received_amount) * 100.0 / exchange_rate)::numeric, 0) AS BIGINT)
+                     ELSE CAST(ROUND(((receivable_amount - received_amount) / exchange_rate)::numeric, 0) AS BIGINT) END
+            ELSE 0 END), 0)::BIGINT,
             COALESCE(SUM(
                 CASE
                     WHEN exchange_rate IS NULL OR exchange_rate <= 0 THEN 0
@@ -749,7 +783,7 @@ pub async fn record_receipt(
 
     // 查询当前应收记录
     let receivable_info = sqlx::query_as::<_, (i64, i64, String)>(
-        "SELECT receivable_amount, received_amount, currency FROM receivables WHERE id = $1",
+        "SELECT receivable_amount, received_amount, currency FROM receivables WHERE id = $1 FOR UPDATE",
     )
     .bind(params.receivable_id)
     .fetch_optional(&mut *tx)
@@ -795,15 +829,19 @@ pub async fn record_receipt(
         "partial"
     };
 
-    sqlx::query(
-        "UPDATE receivables SET received_amount = $1, status = $2, updated_at = NOW() WHERE id = $3",
+    let updated = sqlx::query(
+        "UPDATE receivables SET received_amount = received_amount + $1, status = $2, updated_at = NOW()
+         WHERE id = $3 AND received_amount + $1 <= receivable_amount",
     )
-    .bind(new_received)
+    .bind(params.receipt_amount)
     .bind(new_status)
     .bind(params.receivable_id)
     .execute(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("更新应收状态失败: {}", e)))?;
+    if updated.rows_affected() != 1 {
+        return Err(AppError::Business("收款金额超过未收余额".to_string()));
+    }
 
     tx.commit()
         .await

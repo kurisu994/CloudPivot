@@ -654,6 +654,67 @@ pub fn compute_total_amount_base(total_amount: i64, currency: &str, exchange_rat
     }
 }
 
+/// 按权重累计比例分配整数金额，保证每份非负且合计等于总额。
+pub(crate) fn allocate_nonnegative(total: i64, weights: &[f64]) -> Vec<i64> {
+    if weights.is_empty() {
+        return Vec::new();
+    }
+    let safe_total = total.max(0);
+    let weight_sum: f64 = weights
+        .iter()
+        .filter(|weight| weight.is_finite() && **weight > 0.0)
+        .sum();
+    if safe_total == 0 || weight_sum <= 0.0 {
+        return vec![0; weights.len()];
+    }
+    let mut allocated = 0_i64;
+    let mut cumulative = 0.0;
+    weights
+        .iter()
+        .enumerate()
+        .map(|(index, weight)| {
+            if index + 1 == weights.len() {
+                return safe_total - allocated;
+            }
+            if weight.is_finite() && *weight > 0.0 {
+                cumulative += *weight;
+            }
+            let target = ((safe_total as f64) * cumulative / weight_sum).round() as i64;
+            let share = (target - allocated).clamp(0, safe_total - allocated);
+            allocated += share;
+            share
+        })
+        .collect()
+}
+
+/// 按来源行已舍入金额计算本次执行金额；最后一次执行取剩余金额。
+pub(crate) fn executed_line_amount(
+    source_qty: f64,
+    source_amount: i64,
+    already_qty: f64,
+    already_amount: i64,
+    this_qty: f64,
+) -> Result<i64, AppError> {
+    if !source_qty.is_finite() || source_qty <= 0.0 || !this_qty.is_finite() || this_qty <= 0.0 {
+        return Err(AppError::Business("来源数量或本次执行数量无效".to_string()));
+    }
+    let safe_source = source_amount.max(0);
+    let safe_already = already_amount.max(0);
+    if already_qty + this_qty >= source_qty - 1e-9 {
+        return Ok((safe_source - safe_already).max(0));
+    }
+    let target = ((safe_source as f64) * ((already_qty + this_qty) / source_qty)).round() as i64;
+    Ok((target - safe_already).clamp(0, safe_source))
+}
+
+/// 把订单单位单价换算为基本单位单价。换算率表示 1 个订单单位等于多少基本单位。
+pub(crate) fn base_unit_price(unit_price: i64, conversion_rate: f64) -> i64 {
+    if !conversion_rate.is_finite() || conversion_rate <= 0.0 {
+        return unit_price.max(0);
+    }
+    ((unit_price.max(0) as f64) / conversion_rate).round() as i64
+}
+
 // ================================================================
 // 内部辅助
 // ================================================================
@@ -664,5 +725,31 @@ fn push_where_or_and(query: &mut QueryBuilder<'_, Postgres>, has_where: bool) {
         query.push(" WHERE ");
     } else {
         query.push(" AND ");
+    }
+}
+
+#[cfg(test)]
+mod amount_allocation_tests {
+    use super::{allocate_nonnegative, base_unit_price, executed_line_amount};
+
+    #[test]
+    fn fifo_split_amounts_stay_nonnegative_and_conserve_total() {
+        let parts = allocate_nonnegative(2, &[1.0, 1.0, 1.0, 1.0]);
+        assert!(parts.iter().all(|part| *part >= 0));
+        assert_eq!(parts.iter().sum::<i64>(), 2);
+    }
+
+    #[test]
+    fn partial_execution_conserves_source_line_amount() {
+        let first = executed_line_amount(2.0, 1, 0.0, 0, 1.0).expect("首次执行");
+        let second = executed_line_amount(2.0, 1, 1.0, first, 1.0).expect("最后执行");
+        assert_eq!(first + second, 1);
+        assert!(first >= 0 && second >= 0);
+    }
+
+    #[test]
+    fn auxiliary_unit_price_converts_to_base_unit() {
+        assert_eq!(base_unit_price(1000, 10.0), 100);
+        assert_eq!(base_unit_price(1000, 1.0), 1000);
     }
 }

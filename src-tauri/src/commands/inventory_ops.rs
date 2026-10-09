@@ -26,7 +26,24 @@ pub async fn increase_inventory(
     unit_cost_usd: i64,
     inbound_date: &str,
 ) -> Result<(f64, f64), AppError> {
-    // 查询当前库存
+    if !quantity.is_finite() || quantity <= 0.0 {
+        return Err(AppError::Business("入库数量必须是有限的正数".to_string()));
+    }
+    if unit_cost_usd < 0 {
+        return Err(AppError::Business("入库单位成本不能为负数".to_string()));
+    }
+    // 先占位再加锁，避免两个首次入库同时看不到行而丢失更新。
+    sqlx::query(
+        "INSERT INTO inventory (material_id, warehouse_id, quantity, avg_cost, updated_at)
+         VALUES ($1, $2, 0, 0, NOW())
+         ON CONFLICT (material_id, warehouse_id) DO NOTHING",
+    )
+    .bind(material_id)
+    .bind(warehouse_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("初始化库存行失败: {}", e)))?;
+
     let current = sqlx::query_as::<_, (f64, i64)>(
         "SELECT COALESCE(quantity, 0), COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2 FOR UPDATE",
     )
@@ -294,6 +311,9 @@ pub async fn decrease_inventory(
     quantity: f64,
     out_date: &str,
 ) -> Result<(f64, f64, i64), AppError> {
+    if !quantity.is_finite() || quantity <= 0.0 {
+        return Err(AppError::Business("出库数量必须是有限的正数".to_string()));
+    }
     let current = sqlx::query_as::<_, (f64, i64)>(
         "SELECT COALESCE(quantity, 0), COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2 FOR UPDATE",
     )

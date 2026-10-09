@@ -859,8 +859,8 @@ pub async fn get_stock_checks(
         r#"
         SELECT sc.id, sc.check_no, sc.warehouse_id, w.name AS warehouse_name,
                sc.check_date, sc.status, sc.scope_type,
-               (SELECT COUNT(*) FROM stock_check_items WHERE check_id = sc.id) AS item_count,
-               (SELECT COUNT(*) FROM stock_check_items WHERE check_id = sc.id AND actual_qty IS NOT NULL AND actual_qty != system_qty) AS diff_count,
+               (SELECT COUNT(*) FROM stock_check_items WHERE check_id = sc.id AND lot_id IS NULL) AS item_count,
+               (SELECT COUNT(*) FROM stock_check_items WHERE check_id = sc.id AND lot_id IS NULL AND actual_qty IS NOT NULL AND actual_qty != system_qty) AS diff_count,
                sc.created_by_name, sc.created_at::TEXT
         {}
         "#,
@@ -1039,7 +1039,7 @@ const STOCK_CHECK_INVENTORY_SNAPSHOT_SQL: &str = r#"
     INSERT INTO stock_check_items (check_id, material_id, system_qty, actual_qty, unit_price)
     SELECT $1, inv.material_id, inv.quantity, inv.quantity, inv.avg_cost
     FROM inventory inv
-    WHERE inv.warehouse_id = $2
+    WHERE inv.warehouse_id = $2 AND inv.material_id = ANY($4)
       AND EXISTS (
           SELECT 1
           FROM materials m
@@ -1061,7 +1061,7 @@ const STOCK_CHECK_LOT_SNAPSHOT_SQL: &str = r#"
     )
     SELECT $1, il.material_id, il.id, il.lot_no, il.qty_on_hand, il.qty_on_hand, il.receipt_unit_cost
     FROM inventory_lots il
-    WHERE il.warehouse_id = $2
+    WHERE il.warehouse_id = $2 AND il.material_id = ANY($4)
       AND il.qty_on_hand > 0
       AND EXISTS (
           SELECT 1
@@ -1130,11 +1130,26 @@ pub async fn create_stock_check(
         None
     };
 
+    // 按物料顺序锁定快照范围，物料汇总与批次快照必须来自同一库存状态。
+    let material_ids: Vec<i64> = sqlx::query_scalar(
+        r#"SELECT inv.material_id FROM inventory inv
+           JOIN materials m ON m.id = inv.material_id
+           WHERE inv.warehouse_id = $1 AND m.is_enabled = TRUE
+             AND ($2::BIGINT IS NULL OR m.category_id = $2)
+           ORDER BY inv.material_id FOR UPDATE OF inv"#,
+    )
+    .bind(params.warehouse_id)
+    .bind(scope_category_id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("锁定盘点库存失败: {}", e)))?;
+
     // 在数据库内批量生成快照，避免每条明细产生一次事务内往返。
     sqlx::query(STOCK_CHECK_INVENTORY_SNAPSHOT_SQL)
         .bind(check_id)
         .bind(params.warehouse_id)
         .bind(scope_category_id)
+        .bind(&material_ids)
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("插入盘点明细失败: {}", e)))?;
@@ -1144,9 +1159,24 @@ pub async fn create_stock_check(
         .bind(check_id)
         .bind(params.warehouse_id)
         .bind(scope_category_id)
+        .bind(&material_ids)
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("插入批次盘点明细失败: {}", e)))?;
+
+    // 复用既有快照字段保存行版本；即使出入库净变化为零，也不能沿用旧实盘。
+    sqlx::query(
+        r#"UPDATE stock_checks SET scope_snapshot_json = (
+               SELECT COALESCE(jsonb_object_agg(inv.material_id::TEXT, inv.xmin::TEXT), '{}'::JSONB)::TEXT
+               FROM inventory inv WHERE inv.warehouse_id = $2 AND inv.material_id = ANY($3)
+           ) WHERE id = $1"#,
+    )
+    .bind(check_id)
+    .bind(params.warehouse_id)
+    .bind(&material_ids)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("保存盘点库存版本失败: {}", e)))?;
 
     tx.commit()
         .await
@@ -1165,12 +1195,19 @@ pub async fn update_stock_check_items(
 ) -> Result<(), AppError> {
     current_user.require_permission(perm::STOCK_CHECKS, "edit")?;
 
-    // 校验状态
-    let status: Option<(String,)> = sqlx::query_as("SELECT status FROM stock_checks WHERE id = $1")
-        .bind(check_id)
-        .fetch_optional(&db.pool)
+    let mut tx = db
+        .pool
+        .begin()
         .await
-        .map_err(|e| AppError::Database(format!("查询盘点单状态失败: {}", e)))?;
+        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
+
+    // 保存与审核共用单头行锁，避免审核后改写实盘明细。
+    let status: Option<(String,)> =
+        sqlx::query_as("SELECT status FROM stock_checks WHERE id = $1 FOR UPDATE")
+            .bind(check_id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("查询盘点单状态失败: {}", e)))?;
 
     match status {
         None => return Err(AppError::Business("盘点单不存在".to_string())),
@@ -1180,12 +1217,6 @@ pub async fn update_stock_check_items(
         _ => {}
     }
 
-    let mut tx = db
-        .pool
-        .begin()
-        .await
-        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
-
     // 更新状态为 checking
     sqlx::query("UPDATE stock_checks SET status = 'checking', updated_at = NOW() WHERE id = $1 AND status = 'draft'")
         .bind(check_id)
@@ -1194,8 +1225,9 @@ pub async fn update_stock_check_items(
         .map_err(|e| AppError::Database(format!("更新盘点单状态失败: {}", e)))?;
 
     for item in &items {
-        sqlx::query(
-            "UPDATE stock_check_items SET actual_qty = $1, remark = $2 WHERE id = $3 AND check_id = $4",
+        validate_stock_check_actual(item.actual_qty)?;
+        let result = sqlx::query(
+            "UPDATE stock_check_items SET actual_qty = $1, remark = $2 WHERE id = $3 AND check_id = $4 AND lot_id IS NULL",
         )
         .bind(item.actual_qty)
         .bind(&item.remark)
@@ -1204,12 +1236,97 @@ pub async fn update_stock_check_items(
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("更新盘点明细失败: {}", e)))?;
+        if result.rows_affected() != 1 {
+            return Err(AppError::Business(
+                "明细不存在或属于只读批次快照，不能保存批次实盘".to_string(),
+            ));
+        }
     }
 
     tx.commit()
         .await
         .map_err(|e| AppError::Database(format!("提交事务失败: {}", e)))?;
 
+    Ok(())
+}
+
+/// 实盘数量允许为零，但不能是负数或非法浮点。
+fn validate_stock_check_actual(actual_qty: Option<f64>) -> Result<(), AppError> {
+    if let Some(quantity) = actual_qty {
+        if !quantity.is_finite() || quantity < 0.0 {
+            return Err(AppError::Business("实盘数量必须是有限的非负数".to_string()));
+        }
+    }
+    Ok(())
+}
+
+/// 库存版本变化时拒绝沿用旧快照差额；版本一致时按当前库存对实盘。
+fn stock_check_adjustment(
+    snapshot_qty: f64,
+    actual_qty: f64,
+    current_qty: f64,
+    version_matches: bool,
+) -> Result<f64, AppError> {
+    if !version_matches || (current_qty - snapshot_qty).abs() > 1e-9 {
+        return Err(AppError::Business(
+            "盘点期间库存已变动，请重新创建盘点单并录入实盘".to_string(),
+        ));
+    }
+    let diff = actual_qty - current_qty;
+    if !diff.is_finite() {
+        return Err(AppError::Business("盘点差异不是有限数值".to_string()));
+    }
+    Ok(diff)
+}
+
+/// 按批次可用量分配，剩余业务数量不能被容差丢弃。
+fn allocate_inventory_lots(
+    quantity: f64,
+    lots: &[(i64, f64)],
+) -> Result<Vec<(i64, f64)>, AppError> {
+    if !quantity.is_finite() || quantity <= 0.0 {
+        return Err(AppError::Business(
+            "批次分配数量必须是有限的正数".to_string(),
+        ));
+    }
+    let mut remaining = quantity;
+    let mut plan = Vec::new();
+    for (lot_id, available) in lots {
+        if remaining <= 1e-9 {
+            break;
+        }
+        if !available.is_finite() || *available <= 0.0 {
+            continue;
+        }
+        let used = remaining.min(*available);
+        plan.push((*lot_id, used));
+        remaining -= used;
+    }
+    if remaining > 1e-6 {
+        return Err(AppError::Business(format!(
+            "批次在库合计不足，还差 {remaining:.6}"
+        )));
+    }
+    Ok(plan)
+}
+
+/// 按物料和仓库顺序锁定库存行，避免并发单据交叉锁。
+async fn lock_inventory_rows(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    mut keys: Vec<(i64, i64)>,
+) -> Result<(), AppError> {
+    keys.sort_unstable();
+    keys.dedup();
+    for (material_id, warehouse_id) in keys {
+        sqlx::query(
+            "SELECT 1 FROM inventory WHERE material_id = $1 AND warehouse_id = $2 FOR UPDATE",
+        )
+        .bind(material_id)
+        .bind(warehouse_id)
+        .execute(&mut **tx)
+        .await
+        .map_err(|e| AppError::Database(format!("锁定库存失败: {e}")))?;
+    }
     Ok(())
 }
 
@@ -1229,8 +1346,8 @@ pub async fn confirm_stock_check(
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
     // 获取盘点单头
-    let head = sqlx::query_as::<_, (i64, String, String)>(
-        "SELECT warehouse_id, check_date, status FROM stock_checks WHERE id = $1",
+    let head = sqlx::query_as::<_, (i64, String, String, Option<String>)>(
+        "SELECT warehouse_id, check_date, status, scope_snapshot_json FROM stock_checks WHERE id = $1 FOR UPDATE",
     )
     .bind(id)
     .fetch_optional(&mut *tx)
@@ -1239,14 +1356,20 @@ pub async fn confirm_stock_check(
     .ok_or_else(|| AppError::Business("盘点单不存在".to_string()))?;
 
     if head.2 == "confirmed" {
-        return Err(AppError::Business("盘点单已审核".to_string()));
+        return Ok(());
     }
+    let versions: serde_json::Value = head
+        .3
+        .as_deref()
+        .and_then(|json| serde_json::from_str(json).ok())
+        .ok_or_else(|| {
+            AppError::Business("盘点单缺少库存版本快照，请重新创建并录入实盘后审核".to_string())
+        })?;
 
     let warehouse_id = head.0;
     let check_date = head.1;
 
-    // 查询有差异的明细行（仅物料级：物料级行是汇总数量，批次级行只是快照，
-    // 由下面的批次同步逻辑按 FIFO/新批次自动落到批次，避免两边重复调整）
+    // 全部物料行均需检查版本，包括实盘与快照相等的行；批次仅作只读参考。
     let diff_items = sqlx::query_as::<_, (i64, i64, Option<i64>, f64, f64, f64, i64, String)>(
         r#"
         SELECT sci.id, sci.material_id, sci.lot_id,
@@ -1255,8 +1378,8 @@ pub async fn confirm_stock_check(
                sci.unit_price, m.lot_tracking_mode
         FROM stock_check_items sci
         JOIN materials m ON m.id = sci.material_id
-        WHERE sci.check_id = $1 AND sci.lot_id IS NULL AND sci.actual_qty IS NOT NULL
-              AND COALESCE(sci.actual_qty, sci.system_qty) != sci.system_qty
+        WHERE sci.check_id = $1 AND sci.lot_id IS NULL
+        ORDER BY sci.material_id, sci.id FOR UPDATE OF sci
         "#,
     )
     .bind(id)
@@ -1264,10 +1387,25 @@ pub async fn confirm_stock_check(
     .await
     .map_err(|e| AppError::Database(format!("查询盘点差异失败: {}", e)))?;
 
-    for (_item_id, material_id, _lot_id, _system_qty, _actual, diff, cost, lot_tracking_mode) in
+    let keys = diff_items
+        .iter()
+        .map(|item| (item.1, warehouse_id))
+        .collect();
+    lock_inventory_rows(&mut tx, keys).await?;
+    for (_item_id, material_id, _lot_id, system_qty, actual, _diff, cost, lot_tracking_mode) in
         &diff_items
     {
-        let diff = *diff;
+        let (current_qty, version): (f64, String) = sqlx::query_as(
+            "SELECT quantity, xmin::TEXT FROM inventory WHERE material_id = $1 AND warehouse_id = $2 FOR UPDATE",
+        )
+        .bind(material_id).bind(warehouse_id)
+        .fetch_one(&mut *tx).await
+        .map_err(|e| AppError::Database(format!("查询盘点当前库存失败: {}", e)))?;
+        let version_matches = versions
+            .get(material_id.to_string())
+            .and_then(|v| v.as_str())
+            == Some(version.as_str());
+        let diff = stock_check_adjustment(*system_qty, *actual, current_qty, version_matches)?;
         let cost = *cost;
         // 启用批次追踪的物料，盘亏按 FIFO 拆分批次、盘盈新建批次，
         // 保证「批次在库合计 = 仓库库存」，否则批次追溯与库龄分析会与库存对不上。
@@ -1343,24 +1481,11 @@ pub async fn confirm_stock_check(
             if track_lot {
                 let available_lots =
                     inventory_ops::get_available_lots(&mut *tx, *material_id, warehouse_id).await?;
-                let total_available: f64 = available_lots.iter().map(|l| l.2).sum();
-                if total_available + 0.001 < abs_diff {
-                    return Err(AppError::Business(format!(
-                        "批次在库合计 {:.2} 小于盘亏数量 {:.2}，请先核对批次库存",
-                        total_available, abs_diff
-                    )));
-                }
-                let mut remaining = abs_diff;
-                for (lid, _lot_no, avail) in &available_lots {
-                    if remaining <= 0.001 {
-                        break;
-                    }
-                    let deduct = remaining.min(*avail);
-                    if deduct > 0.0 {
-                        lot_plan.push((Some(*lid), deduct));
-                        remaining -= deduct;
-                    }
-                }
+                let available: Vec<_> = available_lots.iter().map(|lot| (lot.0, lot.2)).collect();
+                lot_plan = allocate_inventory_lots(abs_diff, &available)?
+                    .into_iter()
+                    .map(|(lot_id, quantity)| (Some(lot_id), quantity))
+                    .collect();
             } else {
                 lot_plan.push((None, abs_diff));
             }
@@ -1400,12 +1525,14 @@ pub async fn confirm_stock_check(
         r#"
         UPDATE stock_checks SET
             status = 'confirmed',
-            confirmed_by_user_id = 1, confirmed_by_name = 'admin',
+            confirmed_by_user_id = $2, confirmed_by_name = $3,
             confirmed_at = NOW(), updated_at = NOW()
         WHERE id = $1
         "#,
     )
     .bind(id)
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
     .execute(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("更新盘点单状态失败: {}", e)))?;
@@ -1822,7 +1949,7 @@ pub async fn confirm_transfer(
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
     let head = sqlx::query_as::<_, (i64, i64, String, String, String)>(
-        "SELECT from_warehouse_id, to_warehouse_id, transfer_no, transfer_date, status FROM transfers WHERE id = $1",
+        "SELECT from_warehouse_id, to_warehouse_id, transfer_no, transfer_date, status FROM transfers WHERE id = $1 FOR UPDATE",
     )
     .bind(id)
     .fetch_optional(&mut *tx)
@@ -1914,46 +2041,68 @@ pub async fn confirm_transfer(
         )
         .await?;
 
-        // 如有批次，扣减源仓批次库存并在目标仓创建/增加批次
-        if let Some(lid) = lot_id {
-            inventory_ops::decrease_lot_inventory(&mut *tx, *lid, *base_qty).await?;
-
-            // 更新批次的 warehouse_id（简化：直接搬仓）
-            // 若批次库存为零则更新仓库指向目标仓
-            let remaining: (f64,) =
-                sqlx::query_as("SELECT qty_on_hand FROM inventory_lots WHERE id = $1")
-                    .bind(lid)
-                    .fetch_one(&mut *tx)
-                    .await
-                    .map_err(|e| AppError::Database(format!("查询批次库存失败: {}", e)))?;
-            if remaining.0 <= 0.0 {
-                sqlx::query(
-                    "UPDATE inventory_lots SET warehouse_id = $1, updated_at = NOW() WHERE id = $2",
+        // 批次物料无论是否指定批次，都要让目标仓出现对应批次，不能只改主库存。
+        let lot_mode: String = sqlx::query_scalar(
+            "SELECT COALESCE(lot_tracking_mode, 'none') FROM materials WHERE id = $1",
+        )
+        .bind(material_id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("查询物料批次模式失败: {e}")))?;
+        if lot_mode != "none" {
+            let slices = if let Some(lid) = lot_id {
+                let owner: Option<(i64, i64)> = sqlx::query_as(
+                    "SELECT material_id, warehouse_id FROM inventory_lots WHERE id = $1",
                 )
+                .bind(lid)
+                .fetch_optional(&mut *tx)
+                .await
+                .map_err(|e| AppError::Database(format!("查询调拨批次失败: {e}")))?;
+                match owner {
+                    Some((owner_material, owner_warehouse))
+                        if owner_material == *material_id && owner_warehouse == from_wh => {}
+                    _ => return Err(AppError::Business("调拨批次不属于源仓库或物料".to_string())),
+                }
+                vec![(*lid, *base_qty)]
+            } else {
+                let available =
+                    inventory_ops::get_available_lots(&mut *tx, *material_id, from_wh).await?;
+                let pairs: Vec<_> = available.iter().map(|lot| (lot.0, lot.2)).collect();
+                allocate_inventory_lots(*base_qty, &pairs)?
+            };
+            for (source_lot, quantity) in slices {
+                inventory_ops::decrease_lot_inventory(&mut *tx, source_lot, quantity).await?;
+                let lot_no = inventory_ops::generate_lot_no(&mut tx, transfer_date).await?;
+                sqlx::query(
+                    r#"INSERT INTO inventory_lots (
+                        lot_no, material_id, warehouse_id, source_inbound_item_id,
+                        supplier_id, received_date, supplier_batch_no, trace_attrs_json,
+                        qty_on_hand, receipt_unit_cost, created_at, updated_at
+                    )
+                    SELECT $1, material_id, $2, source_inbound_item_id,
+                           supplier_id, received_date, supplier_batch_no, trace_attrs_json,
+                           $3, receipt_unit_cost, NOW(), NOW()
+                    FROM inventory_lots WHERE id = $4"#,
+                )
+                .bind(&lot_no)
                 .bind(to_wh)
-                .bind(lid)
+                .bind(quantity)
+                .bind(source_lot)
                 .execute(&mut *tx)
                 .await
-                .map_err(|e| AppError::Database(format!("更新批次仓库失败: {}", e)))?;
-                // 恢复批次库存到目标仓
-                sqlx::query(
-                    "UPDATE inventory_lots SET qty_on_hand = $1, updated_at = NOW() WHERE id = $2",
-                )
-                .bind(base_qty)
-                .bind(lid)
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| AppError::Database(format!("恢复批次库存失败: {}", e)))?;
+                .map_err(|e| AppError::Database(format!("创建目标批次失败: {e}")))?;
             }
         }
     }
 
     // 更新调拨单状态
     sqlx::query(
-        r#"UPDATE transfers SET status='confirmed', confirmed_by_user_id=1, confirmed_by_name='admin',
-           confirmed_at=NOW(), updated_at=NOW() WHERE id=$1"#,
+        r#"UPDATE transfers SET status='confirmed', confirmed_by_user_id=$2, confirmed_by_name=$3,
+           confirmed_at=NOW(), updated_at=NOW() WHERE id=$1 AND status='draft'"#,
     )
     .bind(id)
+    .bind(current_user.user_id())
+    .bind(current_user.display_name())
     .execute(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("更新调拨单状态失败: {}", e)))?;
@@ -2141,5 +2290,14 @@ mod tests {
         assert!(STOCK_CHECK_LOT_SNAPSHOT_SQL.contains("SELECT"));
         assert!(STOCK_CHECK_LOT_SNAPSHOT_SQL.contains("actual_qty"));
         assert!(STOCK_CHECK_LOT_SNAPSHOT_SQL.contains("il.qty_on_hand, il.qty_on_hand"));
+    }
+
+    #[test]
+    fn stock_check_rejects_stale_snapshot_and_keeps_fractional_lot_loss() {
+        assert!(stock_check_adjustment(100.0, 99.0, 90.0, false).is_err());
+        assert_eq!(stock_check_adjustment(10.0, 9.0, 10.0, true).unwrap(), -1.0);
+        let plan = allocate_inventory_lots(0.0005, &[(8, 10.0)]).unwrap();
+        assert_eq!(plan, vec![(8, 0.0005)]);
+        assert!(allocate_inventory_lots(1.5, &[(8, 1.0)]).is_err());
     }
 }

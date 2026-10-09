@@ -1423,7 +1423,7 @@ pub async fn save_and_confirm_outbound(
                    total_amount, discount_rate, discount_amount,
                    freight_amount, other_charges,
                    warehouse_id, customer_id
-            FROM sales_orders WHERE id = $1
+            FROM sales_orders WHERE id = $1 FOR UPDATE
             "#,
         )
         .bind(sales_id)
@@ -1468,12 +1468,41 @@ pub async fn save_and_confirm_outbound(
         .unwrap_or(1);
     let outbound_no = format!("{}{:03}", outbound_prefix, outbound_seq);
 
-    // 计算本次出库货款小计（行金额按行折扣率抹减，与销售单口径一致）
-    let outbound_total: i64 = params
-        .items
-        .iter()
-        .map(|item| calc_outbound_line_amount(item.quantity, item.unit_price, item.discount_rate))
-        .sum();
+    // 先锁来源行并按已舍入金额计算本次货款，最后一次执行倒挤剩余金额。
+    let mut line_amounts = Vec::with_capacity(params.items.len());
+    for (index, item) in params.items.iter().enumerate() {
+        let amount = if let Some(sales_item_id) = item.sales_order_item_id {
+            let source = sqlx::query_as::<_, (f64, f64, i64)>(
+                "SELECT quantity, shipped_qty, amount FROM sales_order_items WHERE id = $1 FOR UPDATE",
+            )
+            .bind(sales_item_id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("锁定销售明细失败: {e}")))?
+            .ok_or_else(|| AppError::Business(format!("第 {} 行来源销售明细不存在", index + 1)))?;
+            let already_amount: i64 = sqlx::query_scalar(
+                "SELECT COALESCE(SUM(ooi.amount), 0)::BIGINT
+                 FROM outbound_order_items ooi
+                 JOIN outbound_orders oo ON oo.id = ooi.outbound_id
+                 WHERE ooi.sales_item_id = $1 AND oo.status = 'confirmed'",
+            )
+            .bind(sales_item_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("查询已出库金额失败: {e}")))?;
+            super::order_shared::executed_line_amount(
+                source.0,
+                source.2,
+                source.1,
+                already_amount,
+                item.quantity,
+            )?
+        } else {
+            calc_outbound_line_amount(item.quantity, item.unit_price, item.discount_rate)
+        };
+        line_amounts.push(amount);
+    }
+    let outbound_total: i64 = line_amounts.iter().sum();
 
     // 费用分摊（仅关联销售单时）
     let (allocated_discount, allocated_freight, allocated_other) = if let Some(ref so) = so_info {
@@ -1575,17 +1604,18 @@ pub async fn save_and_confirm_outbound(
 
     // 逐行处理明细
     for (i, item) in params.items.iter().enumerate() {
-        let amount = calc_outbound_line_amount(item.quantity, item.unit_price, item.discount_rate);
+        let amount = line_amounts[i];
         let base_quantity = item.quantity * item.conversion_rate_snapshot;
 
         // 出库数量校验（不超过销售单剩余可出库数量）
         if let Some(soi_id) = item.sales_order_item_id {
-            let remaining: Option<(f64, f64)> =
-                sqlx::query_as("SELECT quantity, shipped_qty FROM sales_order_items WHERE id = $1")
-                    .bind(soi_id)
-                    .fetch_optional(&mut *tx)
-                    .await
-                    .map_err(|e| AppError::Database(format!("查询销售单明细失败: {}", e)))?;
+            let remaining: Option<(f64, f64)> = sqlx::query_as(
+                "SELECT quantity, shipped_qty FROM sales_order_items WHERE id = $1 FOR UPDATE",
+            )
+            .bind(soi_id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("查询销售单明细失败: {}", e)))?;
 
             if let Some((order_qty, shipped_qty)) = remaining {
                 let remaining_qty = order_qty - shipped_qty;
@@ -1723,39 +1753,36 @@ pub async fn save_and_confirm_outbound(
         // 按批次分配计划逐批落明细、扣批次库存、记流水
         // 行金额与成本金额按批次基本数量比例分摊，最后一批用倒挤法，保证各批次合计与本行一致
         let plan_len = lot_plan.len();
+        let weights: Vec<f64> = lot_plan.iter().map(|(_, quantity)| *quantity).collect();
+        let amount_parts = super::order_shared::allocate_nonnegative(amount, &weights);
+        let cost_parts = super::order_shared::allocate_nonnegative(cost_amount, &weights);
+        let standard_parts =
+            super::order_shared::allocate_nonnegative(standard_cost_amount, &weights);
         let mut remaining_base = base_quantity;
         let mut remaining_unit = item.quantity;
-        let mut remaining_amount = amount;
-        let mut remaining_cost = cost_amount;
-        let mut remaining_standard_cost = standard_cost_amount;
         let mut consumed_base = 0.0_f64;
         for (plan_idx, (plan_lot_id, deduct_base)) in lot_plan.into_iter().enumerate() {
             let is_last = plan_idx + 1 == plan_len;
+            let row_unit_qty = if item.conversion_rate_snapshot > 0.0 {
+                deduct_base / item.conversion_rate_snapshot
+            } else {
+                deduct_base
+            };
             let (row_base_qty, row_qty, row_amount, row_cost, row_standard_cost) = if is_last {
                 (
                     remaining_base,
                     remaining_unit,
-                    remaining_amount,
-                    remaining_cost,
-                    remaining_standard_cost,
+                    amount_parts[plan_idx],
+                    cost_parts[plan_idx],
+                    standard_parts[plan_idx],
                 )
             } else {
-                let ratio = if base_quantity > 0.0 {
-                    deduct_base / base_quantity
-                } else {
-                    0.0
-                };
-                let row_unit_qty = if item.conversion_rate_snapshot > 0.0 {
-                    deduct_base / item.conversion_rate_snapshot
-                } else {
-                    deduct_base
-                };
                 (
                     deduct_base,
                     row_unit_qty,
-                    (amount as f64 * ratio).round() as i64,
-                    (cost_amount as f64 * ratio).round() as i64,
-                    (standard_cost_amount as f64 * ratio).round() as i64,
+                    amount_parts[plan_idx],
+                    cost_parts[plan_idx],
+                    standard_parts[plan_idx],
                 )
             };
 
@@ -1825,9 +1852,6 @@ pub async fn save_and_confirm_outbound(
             consumed_base += row_base_qty;
             remaining_base -= row_base_qty;
             remaining_unit -= row_qty;
-            remaining_amount -= row_amount;
-            remaining_cost -= row_cost;
-            remaining_standard_cost -= row_standard_cost;
         }
 
         // 更新销售单明细行已出库数量
@@ -2179,32 +2203,39 @@ pub async fn save_and_confirm_sales_return(
     if params.items.is_empty() {
         return Err(AppError::Business("退货明细不能为空".to_string()));
     }
+    let mut seen_sources = std::collections::HashSet::new();
     for (i, item) in params.items.iter().enumerate() {
-        if item.quantity <= 0.0 {
+        if item.quantity <= 0.0 || !item.quantity.is_finite() {
             return Err(AppError::Business(format!(
                 "第 {} 行退货数量必须大于 0",
                 i + 1
             )));
         }
+        if !seen_sources.insert(item.source_outbound_item_id) {
+            return Err(AppError::Business(format!(
+                "第 {} 行重复引用同一出库明细",
+                i + 1
+            )));
+        }
     }
-
-    // 加载原出库单信息
-    let outbound_info = sqlx::query_as::<_, (i64, String, f64, i64)>(
-        "SELECT customer_id, currency, exchange_rate, warehouse_id FROM outbound_orders WHERE id = $1 AND status = 'confirmed'",
-    )
-    .bind(params.outbound_id)
-    .fetch_optional(&db.pool)
-    .await
-    .map_err(|e| AppError::Database(format!("查询出库单失败: {}", e)))?
-    .ok_or_else(|| AppError::Business("原出库单不存在或未确认".to_string()))?;
-
-    let (customer_id, currency, exchange_rate, warehouse_id) = outbound_info;
 
     let mut tx = db
         .pool
         .begin()
         .await
         .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
+
+    // 锁定原出库单，避免并发退货同时读到同一可退余额。
+    let outbound_info = sqlx::query_as::<_, (i64, String, f64, i64)>(
+        "SELECT customer_id, currency, exchange_rate, warehouse_id FROM outbound_orders WHERE id = $1 AND status = 'confirmed' FOR UPDATE",
+    )
+    .bind(params.outbound_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("查询出库单失败: {}", e)))?
+    .ok_or_else(|| AppError::Business("原出库单不存在或未确认".to_string()))?;
+
+    let (customer_id, currency, exchange_rate, warehouse_id) = outbound_info;
 
     // 生成退货单号 SR-YYYYMMDD-XXX
     let date_part = params.return_date.replace('-', "");
@@ -2226,12 +2257,13 @@ pub async fn save_and_confirm_sales_return(
     // 退完剩余数量的最后一笔用倒挤法（出库行金额 - 已退金额）消除多次部分退货的尾差
     let mut line_amounts: Vec<i64> = Vec::with_capacity(params.items.len());
     for (i, item) in params.items.iter().enumerate() {
-        let source: Option<(f64, i64)> =
-            sqlx::query_as("SELECT quantity, amount FROM outbound_order_items WHERE id = $1")
-                .bind(item.source_outbound_item_id)
-                .fetch_optional(&mut *tx)
-                .await
-                .map_err(|e| AppError::Database(format!("查询原出库明细失败: {}", e)))?;
+        let source: Option<(f64, i64)> = sqlx::query_as(
+            "SELECT quantity, amount FROM outbound_order_items WHERE id = $1 FOR UPDATE",
+        )
+        .bind(item.source_outbound_item_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("查询原出库明细失败: {}", e)))?;
         let (outbound_qty, outbound_amount) =
             source.ok_or_else(|| AppError::Business(format!("第 {} 行原出库明细不存在", i + 1)))?;
 

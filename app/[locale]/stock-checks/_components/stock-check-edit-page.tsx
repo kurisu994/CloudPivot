@@ -225,11 +225,13 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
     if (!detail) return
     setSaving(true)
     try {
-      const items: UpdateStockCheckItemParams[] = detail.items.map(item => ({
-        itemId: item.id,
-        actualQty: editValues[item.id] !== '' ? Number(editValues[item.id]) : null,
-        remark: item.remark,
-      }))
+      const items: UpdateStockCheckItemParams[] = detail.items
+        .filter(item => item.lotId == null)
+        .map(item => ({
+          itemId: item.id,
+          actualQty: editValues[item.id] !== '' ? Number(editValues[item.id]) : null,
+          remark: item.remark,
+        }))
       await updateStockCheckItems(detail.id, items)
       toast.success(tc('saveSuccess'))
       await loadDetail()
@@ -389,16 +391,17 @@ export function StockCheckEditPage({ checkId, onBack }: StockCheckEditPageProps)
                         <TableCell className="font-mono text-sm text-muted-foreground">{item.lotNoSnapshot || '-'}</TableCell>
                         <TableCell className="text-right font-mono">{item.systemQty}</TableCell>
                         <TableCell className="text-right">
-                          {isEditable ? (
+                          {isEditable && item.lotId == null ? (
                             <Input
                               type="number"
+                              min="0"
                               value={actualVal}
                               onChange={e => setEditValues(prev => ({ ...prev, [item.id]: e.target.value }))}
                               className="w-[6.25rem] ml-auto text-right"
                               placeholder={t('inputActualQty')}
                             />
                           ) : (
-                            <span className="font-mono">{item.actualQty ?? '-'}</span>
+                            <span className="font-mono">{item.actualQty ?? item.systemQty}</span>
                           )}
                         </TableCell>
                         <TableCell className={`text-right font-mono ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : ''}`}>

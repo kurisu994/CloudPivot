@@ -1235,7 +1235,7 @@ pub async fn save_and_confirm_inbound(
                    warehouse_id,
                    (SELECT COALESCE(SUM(io2.total_amount), 0)::BIGINT FROM inbound_orders io2
                     WHERE io2.purchase_id = $1 AND io2.status = 'confirmed') AS prev_inbound_total
-            FROM purchase_orders WHERE id = $2
+            FROM purchase_orders WHERE id = $2 FOR UPDATE
             "#,
         )
         .bind(purchase_id)
@@ -1282,12 +1282,40 @@ pub async fn save_and_confirm_inbound(
         .unwrap_or(1);
     let inbound_no = format!("{}{:03}", inbound_prefix, inbound_seq);
 
-    // 计算本次入库货款小计
-    let inbound_total: i64 = params
-        .items
-        .iter()
-        .map(|item| (item.quantity * item.unit_price as f64).round() as i64)
-        .sum();
+    let mut line_amounts = Vec::with_capacity(params.items.len());
+    for (index, item) in params.items.iter().enumerate() {
+        let amount = if let Some(purchase_item_id) = item.purchase_order_item_id {
+            let source = sqlx::query_as::<_, (f64, f64, i64)>(
+                "SELECT quantity, received_qty, amount FROM purchase_order_items WHERE id = $1 FOR UPDATE",
+            )
+            .bind(purchase_item_id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("锁定采购明细失败: {e}")))?
+            .ok_or_else(|| AppError::Business(format!("第 {} 行来源采购明细不存在", index + 1)))?;
+            let already_amount: i64 = sqlx::query_scalar(
+                "SELECT COALESCE(SUM(ioi.amount), 0)::BIGINT
+                 FROM inbound_order_items ioi
+                 JOIN inbound_orders io ON io.id = ioi.inbound_id
+                 WHERE ioi.purchase_order_item_id = $1 AND io.status = 'confirmed'",
+            )
+            .bind(purchase_item_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("查询已入库金额失败: {e}")))?;
+            super::order_shared::executed_line_amount(
+                source.0,
+                source.2,
+                source.1,
+                already_amount,
+                item.quantity,
+            )?
+        } else {
+            (item.quantity * item.unit_price as f64).round() as i64
+        };
+        line_amounts.push(amount);
+    }
+    let inbound_total: i64 = line_amounts.iter().sum();
 
     // 费用分摊（仅关联采购单时）
     let (allocated_discount, allocated_freight, allocated_other) = if let Some(ref po) = po_info {
@@ -1388,7 +1416,7 @@ pub async fn save_and_confirm_inbound(
 
     // 逐行处理明细
     for (i, item) in params.items.iter().enumerate() {
-        let amount = (item.quantity * item.unit_price as f64).round() as i64;
+        let amount = line_amounts[i];
         let base_quantity = item.quantity * item.conversion_rate_snapshot;
 
         // 入库超量校验：单次入库数量不得超过剩余未入库数量的 110%
@@ -1448,9 +1476,10 @@ pub async fn save_and_confirm_inbound(
         .await
         .map_err(|e| AppError::Database(format!("插入入库明细第 {} 行失败: {}", i + 1, e)))?;
 
-        // 计算 USD 单位成本
-        let unit_cost_usd =
-            inventory_ops::unit_cost_to_usd(item.unit_price, &currency, exchange_rate);
+        // 订单单位单价先换成基本单位，再折算 USD 成本。
+        let base_price =
+            super::order_shared::base_unit_price(item.unit_price, item.conversion_rate_snapshot);
+        let unit_cost_usd = inventory_ops::unit_cost_to_usd(base_price, &currency, exchange_rate);
 
         // 更新库存（移动加权平均成本）
         let (before_qty, after_qty) = inventory_ops::increase_inventory(
@@ -2210,8 +2239,9 @@ pub async fn save_and_confirm_purchase_return(
         .await
         .map_err(|e| AppError::Database(format!("插入退货明细第 {} 行失败: {}", i + 1, e)))?;
 
-        let unit_cost_usd =
-            inventory_ops::unit_cost_to_usd(item.unit_price, &currency, exchange_rate);
+        let base_price =
+            super::order_shared::base_unit_price(item.unit_price, item.conversion_rate_snapshot);
+        let unit_cost_usd = inventory_ops::unit_cost_to_usd(base_price, &currency, exchange_rate);
 
         // 扣减库存
         let (before_qty, after_qty, _avg_cost) = inventory_ops::decrease_inventory(
