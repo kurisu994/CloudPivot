@@ -17,7 +17,7 @@ import { Separator } from '@/components/ui/separator'
 import { formatAmount } from '@/lib/currency'
 import { getErrorMessage } from '@/lib/error'
 import { getWarehouses, invoke } from '@/lib/tauri'
-import { buildSaveProductionOrderArgs } from './production-order-command-args'
+import { AUTO_LOT_VALUE, buildMaterialMovementArgs, buildSaveProductionOrderArgs } from './production-order-command-args'
 
 // ================================================================
 // 类型定义
@@ -81,6 +81,69 @@ interface WarehouseOption {
   name: string
 }
 
+/** 领料弹窗可选的批次（后端已按先进先出排序，只含本工单还能领出的批次） */
+interface PickLotOption {
+  lotId: number
+  lotNo: string
+  /** 本工单能从该批次领走的最大数量 */
+  usableQty: number
+  /** 其中本工单（经关联定制单）预留的数量 */
+  ownReservedQty: number
+}
+
+/** 退料弹窗可选的批次：本工单从该批次领过料且还有没退回的余额 */
+interface ReturnLotOption {
+  lotId: number
+  lotNo: string
+  returnableQty: number
+}
+
+interface ProductionLotOptions {
+  /** 物料未启用批次追踪时为 false，弹窗不显示批次选择 */
+  lotTracked: boolean
+  pickLots: PickLotOption[]
+  returnLots: ReturnLotOption[]
+}
+
+/** 数量展示：消除浮点噪声 */
+function fmtQty(value: number): string {
+  return Number(value.toFixed(6)).toString()
+}
+
+/** 领料 / 退料弹窗里的批次下拉：默认自动分配，也可以人工指定批次 */
+function LotSelect({
+  label,
+  hint,
+  value,
+  items,
+  onChange,
+}: {
+  label: string
+  hint: string
+  value: string
+  items: Array<{ value: string; label: string }>
+  onChange: (value: string) => void
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Select value={value} onValueChange={(v: string | null) => onChange(v ?? AUTO_LOT_VALUE)} items={items}>
+        <SelectTrigger className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map(item => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="text-muted-foreground text-xs">{hint}</p>
+    </div>
+  )
+}
+
 interface Props {
   orderId: number | null
   onBack: () => void
@@ -141,6 +204,9 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
   const [dialogQty, setDialogQty] = useState('')
   const [dialogWarehouseId, setDialogWarehouseId] = useState<string>('')
   const [dialogSubmitting, setDialogSubmitting] = useState(false)
+  // 领退料弹窗的批次：AUTO_LOT_VALUE 表示自动分配；选项随物料、仓库变化重新加载
+  const [dialogLotId, setDialogLotId] = useState<string>(AUTO_LOT_VALUE)
+  const [lotOptions, setLotOptions] = useState<ProductionLotOptions | null>(null)
 
   /** 加载工单详情 */
   const loadDetail = useCallback(async () => {
@@ -190,6 +256,31 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
     }
   }, [detail])
 
+  // 领料 / 退料弹窗打开后，按当前物料和仓库加载批次选项
+  const lotDialogOpen = pickDialogOpen || returnDialogOpen
+  useEffect(() => {
+    if (!lotDialogOpen || !orderId || !selectedMat || !dialogWarehouseId) {
+      setLotOptions(null)
+      return
+    }
+    let cancelled = false
+    invoke<ProductionLotOptions>('get_production_lot_options', {
+      productionOrderId: orderId,
+      materialId: selectedMat.materialId,
+      warehouseId: Number(dialogWarehouseId),
+    })
+      .then(data => {
+        if (!cancelled) setLotOptions(data)
+      })
+      .catch(() => {
+        // 批次选项只是辅助：加载失败时不显示批次下拉，仍可自动分配
+        if (!cancelled) setLotOptions(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [lotDialogOpen, orderId, selectedMat, dialogWarehouseId])
+
   // ================================================================
   // 保存工单
   // ================================================================
@@ -237,18 +328,16 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
     }
     setDialogSubmitting(true)
     try {
-      await invoke('pick_materials', {
-        input: {
-          productionOrderId: orderId,
-          items: [
-            {
-              materialId: selectedMat.materialId,
-              quantity,
-              warehouseId: Number(dialogWarehouseId),
-            },
-          ],
-        },
-      })
+      await invoke(
+        'pick_materials',
+        buildMaterialMovementArgs({
+          orderId,
+          materialId: selectedMat.materialId,
+          quantity,
+          warehouseId: dialogWarehouseId,
+          lotValue: dialogLotId,
+        }),
+      )
       toast.success(t('toast.pickSuccess'))
       setPickDialogOpen(false)
       loadDetail()
@@ -270,18 +359,16 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
     }
     setDialogSubmitting(true)
     try {
-      await invoke('return_materials', {
-        input: {
-          productionOrderId: orderId,
-          items: [
-            {
-              materialId: selectedMat.materialId,
-              quantity,
-              warehouseId: Number(dialogWarehouseId),
-            },
-          ],
-        },
-      })
+      await invoke(
+        'return_materials',
+        buildMaterialMovementArgs({
+          orderId,
+          materialId: selectedMat.materialId,
+          quantity,
+          warehouseId: dialogWarehouseId,
+          lotValue: dialogLotId,
+        }),
+      )
       toast.success(t('toast.returnSuccess'))
       setReturnDialogOpen(false)
       loadDetail()
@@ -359,6 +446,8 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
     setSelectedMat(mat)
     setDialogQty('')
     setDialogWarehouseId(mat.warehouseId ? String(mat.warehouseId) : '')
+    setDialogLotId(AUTO_LOT_VALUE)
+    setLotOptions(null)
     setPickDialogOpen(true)
   }
 
@@ -367,6 +456,8 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
     setSelectedMat(mat)
     setDialogQty('')
     setDialogWarehouseId(mat.warehouseId ? String(mat.warehouseId) : '')
+    setDialogLotId(AUTO_LOT_VALUE)
+    setLotOptions(null)
     setReturnDialogOpen(true)
   }
 
@@ -375,6 +466,37 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
     value: String(w.id),
     label: w.name,
   }))
+
+  /** 换仓库后之前选的批次不再适用，回到自动分配 */
+  const handleDialogWarehouseChange = (value: string | null) => {
+    setDialogWarehouseId(value ?? '')
+    setDialogLotId(AUTO_LOT_VALUE)
+  }
+
+  /** 领料批次下拉：自动分配 + 本工单还能领出的批次 */
+  const pickLotItems = [
+    { value: AUTO_LOT_VALUE, label: t('picking.lotAuto') },
+    ...(lotOptions?.pickLots ?? []).map(lot => ({
+      value: String(lot.lotId),
+      label:
+        lot.ownReservedQty > 0
+          ? t('picking.lotPickOptionReserved', {
+              lotNo: lot.lotNo,
+              usable: fmtQty(lot.usableQty),
+              reserved: fmtQty(lot.ownReservedQty),
+            })
+          : t('picking.lotPickOption', { lotNo: lot.lotNo, usable: fmtQty(lot.usableQty) }),
+    })),
+  ]
+
+  /** 退料批次下拉：自动分配 + 本工单领过料且有余额的批次 */
+  const returnLotItems = [
+    { value: AUTO_LOT_VALUE, label: t('picking.lotAuto') },
+    ...(lotOptions?.returnLots ?? []).map(lot => ({
+      value: String(lot.lotId),
+      label: t('picking.lotReturnOption', { lotNo: lot.lotNo, qty: fmtQty(lot.returnableQty) }),
+    })),
+  ]
 
   // ================================================================
   // 新建/编辑模式渲染
@@ -700,7 +822,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
             </div>
             <div className="space-y-2">
               <Label>{t('picking.warehouse')}</Label>
-              <Select value={dialogWarehouseId} onValueChange={(v: string | null) => setDialogWarehouseId(v ?? '')} items={warehouseItems}>
+              <Select value={dialogWarehouseId} onValueChange={handleDialogWarehouseChange} items={warehouseItems}>
                 <SelectTrigger>
                   <SelectValue placeholder={t('picking.selectWarehouse')} />
                 </SelectTrigger>
@@ -713,6 +835,15 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
                 </SelectContent>
               </Select>
             </div>
+            {lotOptions?.lotTracked && (
+              <LotSelect
+                label={t('picking.lot')}
+                hint={t('picking.lotPickHint')}
+                value={dialogLotId}
+                items={pickLotItems}
+                onChange={setDialogLotId}
+              />
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPickDialogOpen(false)}>
@@ -749,7 +880,7 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
             </div>
             <div className="space-y-2">
               <Label>{t('picking.warehouse')}</Label>
-              <Select value={dialogWarehouseId} onValueChange={(v: string | null) => setDialogWarehouseId(v ?? '')} items={warehouseItems}>
+              <Select value={dialogWarehouseId} onValueChange={handleDialogWarehouseChange} items={warehouseItems}>
                 <SelectTrigger>
                   <SelectValue placeholder={t('picking.selectWarehouse')} />
                 </SelectTrigger>
@@ -762,6 +893,15 @@ export function ProductionOrderDetailPage({ orderId, onBack }: Props) {
                 </SelectContent>
               </Select>
             </div>
+            {lotOptions?.lotTracked && (
+              <LotSelect
+                label={t('picking.lot')}
+                hint={t('picking.lotReturnHint')}
+                value={dialogLotId}
+                items={returnLotItems}
+                onChange={setDialogLotId}
+              />
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>

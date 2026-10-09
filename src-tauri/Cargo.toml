@@ -43,3 +43,7 @@ thiserror = "2"
 dirs = "6.0.0"
 tauri-plugin-updater = "2.10.1"
 tauri-plugin-process = "2.3.1"
+
+[dev-dependencies]
+# 仅开启 mock 运行时（空特性，不引入新 crate），供 crate 内数据库流程测试构造 State
+tauri = { version = "2.11.5", features = ["test"] }

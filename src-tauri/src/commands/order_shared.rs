@@ -659,8 +659,16 @@ pub(crate) fn allocate_nonnegative(total: i64, weights: &[f64]) -> Vec<i64> {
         .iter()
         .filter(|weight| weight.is_finite() && **weight > 0.0)
         .sum();
-    if safe_total == 0 || weight_sum <= 0.0 {
+    if safe_total == 0 {
         return vec![0; weights.len()];
+    }
+    if weight_sum <= 0.0 {
+        // 没有任何有效权重时整笔归最后一份，合计仍等于总额，不能把金额丢掉
+        let mut parts = vec![0; weights.len()];
+        if let Some(last) = parts.last_mut() {
+            *last = safe_total;
+        }
+        return parts;
     }
     let mut allocated = 0_i64;
     let mut cumulative = 0.0;
@@ -682,7 +690,13 @@ pub(crate) fn allocate_nonnegative(total: i64, weights: &[f64]) -> Vec<i64> {
         .collect()
 }
 
+/// 超出来源数量不足该值时按浮点噪声处理，不追加超收金额（与出库数量校验的 0.001 容差一致）
+const OVER_EXECUTION_TOLERANCE: f64 = 0.001;
+
 /// 按来源行已舍入金额计算本次执行金额；最后一次执行取剩余金额。
+///
+/// 采购允许超收：超出来源数量的部分按来源行平均单价追加，而不是并进「剩余金额」被封顶，
+/// 否则应付会低于按单价计价的库存成本。
 pub(crate) fn executed_line_amount(
     source_qty: f64,
     source_amount: i64,
@@ -695,11 +709,24 @@ pub(crate) fn executed_line_amount(
     }
     let safe_source = source_amount.max(0);
     let safe_already = already_amount.max(0);
-    if already_qty + this_qty >= source_qty - 1e-9 {
-        return Ok((safe_source - safe_already).max(0));
-    }
-    let target = ((safe_source as f64) * ((already_qty + this_qty) / source_qty)).round() as i64;
-    Ok((target - safe_already).clamp(0, safe_source))
+
+    // 本次数量里落在来源数量之内的部分；其余为超收
+    let within = (source_qty - already_qty).clamp(0.0, this_qty);
+    let over = this_qty - within;
+    let extra = if over > OVER_EXECUTION_TOLERANCE {
+        ((safe_source as f64) * over / source_qty).round() as i64
+    } else {
+        0
+    };
+
+    let base = if already_qty + this_qty >= source_qty - 1e-9 {
+        (safe_source - safe_already).max(0)
+    } else {
+        let target =
+            ((safe_source as f64) * ((already_qty + this_qty) / source_qty)).round() as i64;
+        (target - safe_already).clamp(0, safe_source)
+    };
+    Ok(base + extra)
 }
 
 /// 把订单单位单价换算为基本单位单价。换算率表示 1 个订单单位等于多少基本单位。
@@ -746,5 +773,43 @@ mod amount_allocation_tests {
     fn auxiliary_unit_price_converts_to_base_unit() {
         assert_eq!(base_unit_price(1000, 10.0), 100);
         assert_eq!(base_unit_price(1000, 1.0), 1000);
+    }
+
+    #[test]
+    fn over_receipt_is_billed_at_line_average_price() {
+        // 订单 10 件共 1000，一次收 11 件：多出的 1 件按 100 计入
+        assert_eq!(
+            executed_line_amount(10.0, 1000, 0.0, 0, 11.0).unwrap(),
+            1100
+        );
+        // 先收 9 件（900），再收 1.1 件：补齐 100，超收 0.1 件计 10
+        assert_eq!(
+            executed_line_amount(10.0, 1000, 9.0, 900, 1.1).unwrap(),
+            110
+        );
+        // 已经收满后再超收，只计超收部分
+        assert_eq!(
+            executed_line_amount(10.0, 1000, 10.0, 1000, 0.5).unwrap(),
+            50
+        );
+    }
+
+    #[test]
+    fn execution_within_float_noise_of_source_is_not_over_billed() {
+        // 超出来源数量 0.0005，属于浮点噪声（出库校验允许 0.001 容差），只补齐剩余金额
+        assert_eq!(
+            executed_line_amount(10.0, 1000, 9.0, 900, 1.0005).unwrap(),
+            100
+        );
+    }
+
+    #[test]
+    fn zero_weights_keep_total_on_last_part() {
+        assert_eq!(allocate_nonnegative(7, &[0.0, 0.0]), vec![0, 7]);
+        assert_eq!(
+            allocate_nonnegative(7, &[f64::NAN, -1.0, 0.0]),
+            vec![0, 0, 7]
+        );
+        assert_eq!(allocate_nonnegative(0, &[0.0, 0.0]), vec![0, 0]);
     }
 }

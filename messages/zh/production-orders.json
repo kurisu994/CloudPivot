@@ -64,7 +64,14 @@
       "returnQuantity": "退料数量",
       "selectWarehouse": "选择仓库",
       "confirm": "确认",
-      "overPickWarning": "累计领料量不能超过需求量的120%"
+      "overPickWarning": "累计领料量不能超过需求量的120%",
+      "lot": "批次",
+      "lotAuto": "自动分配",
+      "lotPickHint": "默认自动：先领本工单已预留的批次，再按先进先出。人工指定批次时，本工单的预留会同步调整到该批次。",
+      "lotPickOption": "{lotNo}（可领 {usable}）",
+      "lotPickOptionReserved": "{lotNo}（可领 {usable}，其中本工单预留 {reserved}）",
+      "lotReturnHint": "默认自动：按领料批次退回，后领的先退。人工指定批次后，只退回从该批次领出且尚未退回的数量。",
+      "lotReturnOption": "{lotNo}（可退 {qty}）"
     },
 
     "production": {

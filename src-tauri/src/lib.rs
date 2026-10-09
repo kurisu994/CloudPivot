@@ -337,6 +337,7 @@ pub fn run() {
             commands::production_order::delete_production_order,
             commands::production_order::pick_materials,
             commands::production_order::return_materials,
+            commands::production_order::get_production_lot_options,
             commands::production_order::start_production,
             commands::production_order::complete_production,
             commands::production_order::finish_production_order,

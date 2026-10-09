@@ -897,10 +897,17 @@ pub async fn confirm_custom_order(
 ) -> Result<(), AppError> {
     current_user.require_permission(perm::CUSTOM_ORDERS, "confirm")?;
 
+    let mut tx = db
+        .pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
+
+    // 状态检查放进事务并对定制单行加锁：并发确认同一张定制单会重复生成预留
     let order_info: Option<(String, i64)> =
-        sqlx::query_as("SELECT status, quote_amount FROM custom_orders WHERE id = $1")
+        sqlx::query_as("SELECT status, quote_amount FROM custom_orders WHERE id = $1 FOR UPDATE")
             .bind(id)
-            .fetch_optional(&db.pool)
+            .fetch_optional(&mut *tx)
             .await
             .map_err(|e| AppError::Database(format!("查询定制单失败: {}", e)))?;
 
@@ -915,12 +922,6 @@ pub async fn confirm_custom_order(
     if quote_amount <= 0 {
         return Err(AppError::Business("报价金额必须大于 0".to_string()));
     }
-
-    let mut tx = db
-        .pool
-        .begin()
-        .await
-        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
 
     // 查询定制 BOM 明细，生成原材料预留
     let bom_items: Vec<(i64, f64, f64)> = sqlx::query_as(
@@ -1008,9 +1009,11 @@ pub async fn confirm_custom_order(
         if lot_mode.as_deref() == Some("required") || lot_mode.as_deref() == Some("optional") {
             let lots =
                 super::inventory_ops::get_available_lots(&mut *tx, *material_id, wh_id).await?;
+            // 浮点残差（如 0.4 - 0.1 - 0.3 = 5.55e-17）不能再拆出幽灵分配行，
+            // 也不能被当成缺口；容差口径与出库、盘点的 FIFO 拆批一致
             let mut remaining = actual_qty;
             for (lot_id, _, avail) in lots {
-                if remaining <= 0.0 {
+                if remaining <= super::inventory_ops::LOT_QTY_EPSILON {
                     break;
                 }
                 let alloc = remaining.min(avail);
@@ -1047,7 +1050,7 @@ pub async fn confirm_custom_order(
                 remaining -= alloc;
             }
 
-            if remaining > 0.0 {
+            if remaining > super::inventory_ops::LOT_QTY_TOLERANCE {
                 return Err(AppError::Business(format!(
                     "物料#{} 批次库存不足以完成预留：缺口 {:.2}",
                     material_id, remaining
@@ -1110,10 +1113,17 @@ pub async fn cancel_custom_order(
 ) -> Result<(), AppError> {
     current_user.require_permission(perm::CUSTOM_ORDERS, "cancel")?;
 
+    let mut tx = db
+        .pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
+
+    // 状态检查放进事务并对定制单行加锁：并发取消同一张定制单会重复扣减库存预留量
     let status: Option<String> =
-        sqlx::query_scalar("SELECT status FROM custom_orders WHERE id = $1")
+        sqlx::query_scalar("SELECT status FROM custom_orders WHERE id = $1 FOR UPDATE")
             .bind(id)
-            .fetch_optional(&db.pool)
+            .fetch_optional(&mut *tx)
             .await
             .map_err(|e| AppError::Database(format!("查询定制单状态失败: {}", e)))?;
 
@@ -1127,18 +1137,24 @@ pub async fn cancel_custom_order(
         }
     }
 
-    let mut tx = db
-        .pool
-        .begin()
-        .await
-        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
+    // 先按固定顺序锁库存行，再锁预留行：与领料「库存行 → 预留」的加锁顺序一致，避免交叉死锁
+    let reserved_keys: Vec<(i64, i64)> = sqlx::query_as(
+        "SELECT material_id, warehouse_id FROM inventory_reservations
+         WHERE source_type = 'custom_order' AND source_id = $1 AND status = 'active'",
+    )
+    .bind(id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("查询预留库存范围失败: {}", e)))?;
+    super::inventory_ops::lock_inventory_rows(&mut tx, reserved_keys).await?;
 
-    // 释放预留：查询并更新，只退回未消耗的部分
+    // 释放预留：加锁后重新读取，只退回未消耗的部分
     let active_reservations: Vec<(i64, i64, i64, f64)> = sqlx::query_as(
         r#"
         SELECT id, material_id, warehouse_id, reserved_qty - COALESCE(consumed_qty, 0)
         FROM inventory_reservations
         WHERE source_type = 'custom_order' AND source_id = $1 AND status = 'active'
+        FOR UPDATE
         "#,
     )
     .bind(id)

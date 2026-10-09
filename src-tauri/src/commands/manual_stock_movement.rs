@@ -829,6 +829,17 @@ pub async fn confirm_manual_stock_movement(
         return Err(AppError::Business("明细行不能为空".to_string()));
     }
 
+    // 先按固定顺序锁库存行（在出库预检读取、锁定批次之前），
+    // 加锁顺序固定为「库存行 → 批次行」，并发单据即使物料顺序相反也不会交叉等待
+    inventory_ops::lock_inventory_rows(
+        &mut tx,
+        items
+            .iter()
+            .map(|item| (item.material_id, warehouse_id))
+            .collect(),
+    )
+    .await?;
+
     // 3. 校验业务规则
     if COUNTERPARTY_REQUIRED_TYPES.contains(&business_type.as_str())
         && counterparty_name
