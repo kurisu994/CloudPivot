@@ -669,10 +669,10 @@ async fn run_lifecycle(pool: &PgPool) -> Result<(), String> {
 #[tokio::test]
 #[ignore = "会改写 DATABASE_URL 指向的共享库，需显式 cargo test --test e2e_business_flow -- --ignored"]
 async fn test_full_e2e_business_lifecycle() {
-    let Some(pool) = get_test_pool().await else {
-        println!("DATABASE_URL 未设置或无法连接，跳过数据库层业务闭环检查");
-        return;
-    };
+    // 显式带 --ignored 运行就是要检查数据库：连不上必须失败，静默跳过会让人误以为已通过
+    let pool = get_test_pool()
+        .await
+        .expect("DATABASE_URL 未设置或无法连接，无法执行数据库层业务闭环检查");
 
     let outcome = run_lifecycle(&pool).await;
     let cleanup = cleanup_qa_data(&pool).await;

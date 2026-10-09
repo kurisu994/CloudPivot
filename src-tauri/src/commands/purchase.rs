@@ -1298,17 +1298,38 @@ pub async fn save_and_confirm_inbound(
         .unwrap_or(1);
     let inbound_no = format!("{}{:03}", inbound_prefix, inbound_seq);
 
+    // 先按固定顺序锁库存行，再逐行入库：并发单据即使物料顺序相反也不会交叉等待
+    inventory_ops::lock_inventory_rows(
+        &mut tx,
+        params
+            .items
+            .iter()
+            .map(|item| (item.material_id, params.warehouse_id))
+            .collect(),
+    )
+    .await?;
+
     let mut line_amounts = Vec::with_capacity(params.items.len());
+    // 同一采购明细在本单内出现多行时，后面的行要把前面行已占用的数量和金额算进基线
+    let mut pending: std::collections::HashMap<i64, (f64, i64)> = std::collections::HashMap::new();
     for (index, item) in params.items.iter().enumerate() {
         let amount = if let Some(purchase_item_id) = item.purchase_order_item_id {
+            // 来源明细必须属于所选采购单，避免错引用其他订单的明细
             let source = sqlx::query_as::<_, (f64, f64, i64)>(
-                "SELECT quantity, received_qty, amount FROM purchase_order_items WHERE id = $1 FOR UPDATE",
+                "SELECT quantity, received_qty, amount FROM purchase_order_items
+                 WHERE id = $1 AND ($2::BIGINT IS NULL OR order_id = $2) FOR UPDATE",
             )
             .bind(purchase_item_id)
+            .bind(params.purchase_id)
             .fetch_optional(&mut *tx)
             .await
             .map_err(|e| AppError::Database(format!("锁定采购明细失败: {e}")))?
-            .ok_or_else(|| AppError::Business(format!("第 {} 行来源采购明细不存在", index + 1)))?;
+            .ok_or_else(|| {
+                AppError::Business(format!(
+                    "第 {} 行来源采购明细不存在或不属于该采购单",
+                    index + 1
+                ))
+            })?;
             let already_amount: i64 = sqlx::query_scalar(
                 "SELECT COALESCE(SUM(ioi.amount), 0)::BIGINT
                  FROM inbound_order_items ioi
@@ -1319,13 +1340,20 @@ pub async fn save_and_confirm_inbound(
             .fetch_one(&mut *tx)
             .await
             .map_err(|e| AppError::Database(format!("查询已入库金额失败: {e}")))?;
-            super::order_shared::executed_line_amount(
+            let (pending_qty, pending_amount) =
+                pending.get(&purchase_item_id).copied().unwrap_or((0.0, 0));
+            let amount = super::order_shared::executed_line_amount(
                 source.0,
                 source.2,
-                source.1,
-                already_amount,
+                source.1 + pending_qty,
+                already_amount + pending_amount,
                 item.quantity,
-            )?
+            )?;
+            pending.insert(
+                purchase_item_id,
+                (pending_qty + item.quantity, pending_amount + amount),
+            );
+            amount
         } else {
             (item.quantity * item.unit_price as f64).round() as i64
         };
@@ -2088,23 +2116,34 @@ pub async fn save_and_confirm_purchase_return(
         }
     }
 
-    // 加载原入库单信息
+    let mut tx = db
+        .pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
+
+    // 加载并锁定原入库单：并发退货在这里排队，可退数量不会被重复占用
     let inbound_info = sqlx::query_as::<_, (i64, String, f64, i64)>(
-        "SELECT supplier_id, currency, exchange_rate, warehouse_id FROM inbound_orders WHERE id = $1 AND status = 'confirmed'",
+        "SELECT supplier_id, currency, exchange_rate, warehouse_id FROM inbound_orders WHERE id = $1 AND status = 'confirmed' FOR UPDATE",
     )
     .bind(params.inbound_id)
-    .fetch_optional(&db.pool)
+    .fetch_optional(&mut *tx)
     .await
     .map_err(|e| AppError::Database(format!("查询入库单失败: {}", e)))?
     .ok_or_else(|| AppError::Business("原入库单不存在或未确认".to_string()))?;
 
     let (supplier_id, currency, exchange_rate, warehouse_id) = inbound_info;
 
-    let mut tx = db
-        .pool
-        .begin()
-        .await
-        .map_err(|e| AppError::Database(format!("开启事务失败: {}", e)))?;
+    // 先按固定顺序锁库存行，再逐行扣减
+    inventory_ops::lock_inventory_rows(
+        &mut tx,
+        params
+            .items
+            .iter()
+            .map(|item| (item.material_id, warehouse_id))
+            .collect(),
+    )
+    .await?;
 
     // 生成退货单号
     let date_part = params.return_date.replace('-', "");
@@ -2178,6 +2217,23 @@ pub async fn save_and_confirm_purchase_return(
         let amount = (item.quantity * item.unit_price as f64).round() as i64;
         let base_quantity = item.quantity * item.conversion_rate_snapshot;
 
+        // 锁定并校验原入库明细：必须属于本入库单且物料一致，防止错引用其他入库单的明细
+        let (inbound_qty, source_material): (f64, i64) = sqlx::query_as(
+            "SELECT quantity, material_id FROM inbound_order_items WHERE id = $1 AND inbound_id = $2 FOR UPDATE",
+        )
+        .bind(item.source_inbound_item_id)
+        .bind(params.inbound_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("查询原入库明细失败: {}", e)))?
+        .ok_or_else(|| AppError::Business(format!("第 {} 行原入库明细不属于该入库单", i + 1)))?;
+        if source_material != item.material_id {
+            return Err(AppError::Business(format!(
+                "第 {} 行物料与原入库明细不一致",
+                i + 1
+            )));
+        }
+
         // 退货数量校验：不得超过原入库批次剩余可退数量
         let already_returned: f64 = sqlx::query_scalar(
             r#"
@@ -2190,14 +2246,7 @@ pub async fn save_and_confirm_purchase_return(
         .bind(item.source_inbound_item_id)
         .fetch_one(&mut *tx)
         .await
-        .unwrap_or(0.0);
-
-        let inbound_qty: f64 =
-            sqlx::query_scalar("SELECT quantity FROM inbound_order_items WHERE id = $1")
-                .bind(item.source_inbound_item_id)
-                .fetch_one(&mut *tx)
-                .await
-                .unwrap_or(0.0);
+        .map_err(|e| AppError::Database(format!("查询已退数量失败: {}", e)))?;
 
         let returnable_qty = inbound_qty - already_returned;
         if item.quantity > returnable_qty {
@@ -2261,8 +2310,9 @@ pub async fn save_and_confirm_purchase_return(
         )
         .await?;
 
-        // 扣减批次库存
+        // 扣减批次库存：批次来自前端，先确认它属于该物料和入库仓库
         if let Some(lid) = item.lot_id {
+            inventory_ops::lock_lot_row(&mut tx, lid, item.material_id, warehouse_id).await?;
             inventory_ops::decrease_lot_inventory(&mut *tx, lid, base_quantity).await?;
         }
 

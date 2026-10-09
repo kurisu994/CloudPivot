@@ -1478,18 +1478,39 @@ pub async fn save_and_confirm_outbound(
         .unwrap_or(1);
     let outbound_no = format!("{}{:03}", outbound_prefix, outbound_seq);
 
+    // 先按固定顺序锁库存行，再逐行出库：并发单据即使物料顺序相反也不会交叉等待
+    inventory_ops::lock_inventory_rows(
+        &mut tx,
+        params
+            .items
+            .iter()
+            .map(|item| (item.material_id, params.warehouse_id))
+            .collect(),
+    )
+    .await?;
+
     // 先锁来源行并按已舍入金额计算本次货款，最后一次执行倒挤剩余金额。
     let mut line_amounts = Vec::with_capacity(params.items.len());
+    // 同一销售明细在本单内出现多行时，后面的行要把前面行已占用的数量和金额算进基线
+    let mut pending: std::collections::HashMap<i64, (f64, i64)> = std::collections::HashMap::new();
     for (index, item) in params.items.iter().enumerate() {
         let amount = if let Some(sales_item_id) = item.sales_order_item_id {
+            // 来源明细必须属于所选销售单，避免错引用其他订单的明细
             let source = sqlx::query_as::<_, (f64, f64, i64)>(
-                "SELECT quantity, shipped_qty, amount FROM sales_order_items WHERE id = $1 FOR UPDATE",
+                "SELECT quantity, shipped_qty, amount FROM sales_order_items
+                 WHERE id = $1 AND ($2::BIGINT IS NULL OR order_id = $2) FOR UPDATE",
             )
             .bind(sales_item_id)
+            .bind(params.sales_id)
             .fetch_optional(&mut *tx)
             .await
             .map_err(|e| AppError::Database(format!("锁定销售明细失败: {e}")))?
-            .ok_or_else(|| AppError::Business(format!("第 {} 行来源销售明细不存在", index + 1)))?;
+            .ok_or_else(|| {
+                AppError::Business(format!(
+                    "第 {} 行来源销售明细不存在或不属于该销售单",
+                    index + 1
+                ))
+            })?;
             let already_amount: i64 = sqlx::query_scalar(
                 "SELECT COALESCE(SUM(ooi.amount), 0)::BIGINT
                  FROM outbound_order_items ooi
@@ -1500,13 +1521,20 @@ pub async fn save_and_confirm_outbound(
             .fetch_one(&mut *tx)
             .await
             .map_err(|e| AppError::Database(format!("查询已出库金额失败: {e}")))?;
-            super::order_shared::executed_line_amount(
+            let (pending_qty, pending_amount) =
+                pending.get(&sales_item_id).copied().unwrap_or((0.0, 0));
+            let amount = super::order_shared::executed_line_amount(
                 source.0,
                 source.2,
-                source.1,
-                already_amount,
+                source.1 + pending_qty,
+                already_amount + pending_amount,
                 item.quantity,
-            )?
+            )?;
+            pending.insert(
+                sales_item_id,
+                (pending_qty + item.quantity, pending_amount + amount),
+            );
+            amount
         } else {
             calc_outbound_line_amount(item.quantity, item.unit_price, item.discount_rate)
         };
@@ -1648,6 +1676,18 @@ pub async fn save_and_confirm_outbound(
             )));
         }
 
+        // 先扣减主库存（库存行已在循环前预锁）：拿到本行的主库存前后量，供逐批流水记录，
+        // 同时取加锁后的平均成本作为成本快照，避免读到并发入库/退货改动前的旧均价。
+        // 加锁顺序固定为「库存行 → 批次行」，与调拨、盘点、领料一致，避免交叉死锁。
+        let (before_qty, _after_qty, avg_cost) = inventory_ops::decrease_inventory(
+            &mut *tx,
+            item.material_id,
+            params.warehouse_id,
+            base_quantity,
+            &params.outbound_date,
+        )
+        .await?;
+
         // 批次分配计划：(批次 id, 本批次扣减的基本数量)
         // 未指定批次时按 FIFO 从最早入库的批次开始逐批扣减，可跨批次拆分（需求 3.5.2）
         let lot_mode: Option<String> = sqlx::query_scalar(
@@ -1660,7 +1700,23 @@ pub async fn save_and_confirm_outbound(
 
         let mut lot_plan: Vec<(Option<i64>, f64)> = Vec::new();
         if let Some(lid) = item.lot_id {
-            // 人工指定批次：整行扣该批次
+            // 人工指定批次：批次来自前端，先确认归属并核对可用量（在库 − 预留），再整行扣该批次
+            let (on_hand, reserved) =
+                inventory_ops::lock_lot_row(&mut *tx, lid, item.material_id, params.warehouse_id)
+                    .await?;
+            let lot_available = on_hand - reserved;
+            if lot_available + inventory_ops::LOT_QTY_TOLERANCE < base_quantity {
+                let mat_name: String =
+                    sqlx::query_scalar("SELECT name FROM materials WHERE id = $1")
+                        .bind(item.material_id)
+                        .fetch_one(&mut *tx)
+                        .await
+                        .unwrap_or_else(|_| format!("物料#{}", item.material_id));
+                return Err(AppError::Business(format!(
+                    "{} 指定批次可用量不足：可用 {:.2}，需出库 {:.2}",
+                    mat_name, lot_available, base_quantity
+                )));
+            }
             lot_plan.push((Some(lid), base_quantity));
         } else if lot_mode.as_deref() == Some("required") || lot_mode.as_deref() == Some("optional")
         {
@@ -1685,16 +1741,6 @@ pub async fn save_and_confirm_outbound(
             // 未追踪批次：只扣主库存
             lot_plan.push((None, base_quantity));
         }
-
-        // 获取实际成本快照（移动加权平均成本）
-        let avg_cost: i64 = sqlx::query_scalar(
-            "SELECT COALESCE(avg_cost, 0) FROM inventory WHERE material_id = $1 AND warehouse_id = $2",
-        )
-        .bind(item.material_id)
-        .bind(params.warehouse_id)
-        .fetch_one(&mut *tx)
-        .await
-        .unwrap_or(0);
 
         // 获取标准成本快照（从当前生效 BOM）
         let bom_info: Option<(i64, String, i64)> = sqlx::query_as(
@@ -1721,18 +1767,8 @@ pub async fn save_and_confirm_outbound(
         let standard_cost_unit = standard_cost_total;
         let standard_cost_amount = (standard_cost_unit as f64 * base_quantity).round() as i64;
 
-        // 实际成本金额 = 平均成本 × 基本数量
+        // 实际成本金额 = 平均成本（扣减时加锁读取的快照）× 基本数量
         let cost_amount = (avg_cost as f64 * base_quantity).round() as i64;
-
-        // 先扣减主库存，拿到本行的主库存前后量，供逐批流水记录
-        let (before_qty, _after_qty, _) = inventory_ops::decrease_inventory(
-            &mut *tx,
-            item.material_id,
-            params.warehouse_id,
-            base_quantity,
-            &params.outbound_date,
-        )
-        .await?;
 
         // 按批次分配计划逐批落明细、扣批次库存、记流水
         // 行金额与成本金额按批次基本数量比例分摊，最后一批用倒挤法，保证各批次合计与本行一致
@@ -2018,6 +2054,8 @@ pub struct ReturnableOutboundItem {
 #[serde(rename_all = "camelCase")]
 pub struct SaveSalesReturnItemParams {
     pub source_outbound_item_id: i64,
+    /// 前端回传的批次仅为兼容旧入参；退回的批次一律以原出库行记录的批次为准
+    #[allow(dead_code)]
     pub lot_id: Option<i64>,
     pub material_id: i64,
     pub unit_id: i64,
@@ -2221,6 +2259,17 @@ pub async fn save_and_confirm_sales_return(
 
     let (customer_id, currency, exchange_rate, warehouse_id) = outbound_info;
 
+    // 先按固定顺序锁库存行，再逐行入库
+    inventory_ops::lock_inventory_rows(
+        &mut tx,
+        params
+            .items
+            .iter()
+            .map(|item| (item.material_id, warehouse_id))
+            .collect(),
+    )
+    .await?;
+
     // 生成退货单号 SR-YYYYMMDD-XXX
     let date_part = params.return_date.replace('-', "");
     let prefix = format!("SR-{}-", date_part);
@@ -2240,16 +2289,30 @@ pub async fn save_and_confirm_sales_return(
     // 退货行金额按原出库行折后金额比例倒算（含行折扣与出库口径一致），
     // 退完剩余数量的最后一笔用倒挤法（出库行金额 - 已退金额）消除多次部分退货的尾差
     let mut line_amounts: Vec<i64> = Vec::with_capacity(params.items.len());
+    // 退回的批次以原出库行记录的批次为准，不信任前端回传的 lot_id
+    let mut source_lots: Vec<Option<i64>> = Vec::with_capacity(params.items.len());
     for (i, item) in params.items.iter().enumerate() {
-        let source: Option<(f64, i64)> = sqlx::query_as(
-            "SELECT quantity, amount FROM outbound_order_items WHERE id = $1 FOR UPDATE",
+        // 来源明细必须属于本出库单且物料一致，防止错引用其他出库单的明细
+        let source: Option<(f64, i64, i64, Option<i64>)> = sqlx::query_as(
+            "SELECT quantity, amount, material_id, lot_id FROM outbound_order_items
+             WHERE id = $1 AND outbound_id = $2 FOR UPDATE",
         )
         .bind(item.source_outbound_item_id)
+        .bind(params.outbound_id)
         .fetch_optional(&mut *tx)
         .await
         .map_err(|e| AppError::Database(format!("查询原出库明细失败: {}", e)))?;
-        let (outbound_qty, outbound_amount) =
-            source.ok_or_else(|| AppError::Business(format!("第 {} 行原出库明细不存在", i + 1)))?;
+        let (outbound_qty, outbound_amount, source_material, source_lot) =
+            source.ok_or_else(|| {
+                AppError::Business(format!("第 {} 行原出库明细不存在或不属于该出库单", i + 1))
+            })?;
+        if source_material != item.material_id {
+            return Err(AppError::Business(format!(
+                "第 {} 行物料与原出库明细不一致",
+                i + 1
+            )));
+        }
+        source_lots.push(source_lot);
 
         let (returned_qty, returned_amount): (f64, i64) = sqlx::query_as(
             r#"
@@ -2370,7 +2433,7 @@ pub async fn save_and_confirm_sales_return(
         )
         .bind(return_id)
         .bind(item.source_outbound_item_id)
-        .bind(item.lot_id)
+        .bind(source_lots[i])
         .bind(item.material_id)
         .bind(item.unit_id)
         .bind(&item.unit_name_snapshot)
@@ -2406,7 +2469,7 @@ pub async fn save_and_confirm_sales_return(
         .await?;
 
         // 增加批次库存
-        if let Some(lid) = item.lot_id {
+        if let Some(lid) = source_lots[i] {
             sqlx::query(
                 "UPDATE inventory_lots SET qty_on_hand = qty_on_hand + $1, updated_at = NOW() WHERE id = $2",
             )
@@ -2423,7 +2486,7 @@ pub async fn save_and_confirm_sales_return(
             &params.return_date,
             item.material_id,
             warehouse_id,
-            item.lot_id,
+            source_lots[i],
             "sales_return",
             base_quantity,
             before_qty,

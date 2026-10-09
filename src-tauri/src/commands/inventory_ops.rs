@@ -94,9 +94,55 @@ pub async fn increase_inventory(
     Ok((before_qty, new_qty))
 }
 
+/// 按 (物料, 仓库) 升序锁定库存行
+///
+/// 多行单据（出入库、调拨、领料、盘点审核）在动手前先统一锁行，加锁顺序固定为
+/// 「库存行（升序）→ 批次行」，两张单据即使物料顺序相反也不会交叉等待而死锁。
+/// 库存行尚不存在时不会加锁（首次入库由 `increase_inventory` 先占位再加锁）。
+pub async fn lock_inventory_rows(
+    tx: &mut PgConnection,
+    mut keys: Vec<(i64, i64)>,
+) -> Result<(), AppError> {
+    keys.sort_unstable();
+    keys.dedup();
+    for (material_id, warehouse_id) in keys {
+        sqlx::query(
+            "SELECT 1 FROM inventory WHERE material_id = $1 AND warehouse_id = $2 FOR UPDATE",
+        )
+        .bind(material_id)
+        .bind(warehouse_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("锁定库存失败: {}", e)))?;
+    }
+    Ok(())
+}
+
 // ================================================================
 // 批次库存
 // ================================================================
+
+/// 锁定并校验批次：必须属于指定物料和仓库，返回 `(在库, 已预留)`
+///
+/// 调用方传入的批次 ID 来自前端，扣减前先确认归属，避免误扣其他物料或其他仓库的批次。
+pub async fn lock_lot_row(
+    tx: &mut PgConnection,
+    lot_id: i64,
+    material_id: i64,
+    warehouse_id: i64,
+) -> Result<(f64, f64), AppError> {
+    sqlx::query_as::<_, (f64, f64)>(
+        "SELECT COALESCE(qty_on_hand, 0), COALESCE(qty_reserved, 0) FROM inventory_lots
+         WHERE id = $1 AND material_id = $2 AND warehouse_id = $3 FOR UPDATE",
+    )
+    .bind(lot_id)
+    .bind(material_id)
+    .bind(warehouse_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(format!("锁定批次失败: {}", e)))?
+    .ok_or_else(|| AppError::Business("批次不存在，或不属于该物料和仓库".to_string()))
+}
 
 /// 创建批次库存记录
 ///
@@ -246,6 +292,14 @@ pub async fn record_transaction(
 pub async fn generate_lot_no(tx: &mut PgConnection, date: &str) -> Result<String, AppError> {
     let date_part = date.replace('-', "");
     let prefix = format!("LOT-{}-", date_part);
+
+    // 取号是「读最大序号 + 1」，并发事务会算出同一个号码并在唯一约束上整单回滚。
+    // 事务级咨询锁让同一天的取号串行化：持锁到事务结束，下一个事务能读到已提交的最大序号。
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtext($1)::BIGINT)")
+        .bind(format!("cloudpivot:lot_no:{}", date_part))
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("获取批次号锁失败: {}", e)))?;
 
     let max_no: Option<String> = sqlx::query_scalar(
         "SELECT lot_no FROM inventory_lots WHERE lot_no LIKE $1 ORDER BY lot_no DESC LIMIT 1",
@@ -409,7 +463,7 @@ pub async fn recalc_avg_cost_after_return(
 pub const LOT_QTY_TOLERANCE: f64 = 0.001;
 
 /// 浮点残差阈值：剩余量低于该值视为已分配完，避免拆出 1e-17 这类「幽灵」批次行
-const LOT_QTY_EPSILON: f64 = 1e-9;
+pub const LOT_QTY_EPSILON: f64 = 1e-9;
 
 /// 按 FIFO 把 `quantity` 拆分到候选批次，返回 `(lot_id, lot_no, 本批扣减量)`
 ///

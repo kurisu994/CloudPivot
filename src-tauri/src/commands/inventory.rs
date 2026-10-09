@@ -1164,19 +1164,20 @@ pub async fn create_stock_check(
         .await
         .map_err(|e| AppError::Database(format!("插入批次盘点明细失败: {}", e)))?;
 
-    // 复用既有快照字段保存行版本；即使出入库净变化为零，也不能沿用旧实盘。
-    sqlx::query(
-        r#"UPDATE stock_checks SET scope_snapshot_json = (
-               SELECT COALESCE(jsonb_object_agg(inv.material_id::TEXT, inv.xmin::TEXT), '{}'::JSONB)::TEXT
-               FROM inventory inv WHERE inv.warehouse_id = $2 AND inv.material_id = ANY($3)
-           ) WHERE id = $1"#,
-    )
-    .bind(check_id)
-    .bind(params.warehouse_id)
-    .bind(&material_ids)
-    .execute(&mut *tx)
-    .await
-    .map_err(|e| AppError::Database(format!("保存盘点库存版本失败: {}", e)))?;
+    // 记录库存流水水位线：此刻（范围内库存行已加锁）流水表的最大 id。
+    // 审核时凡是需要调整的物料，在水位线之后出现过出入库流水，就说明实盘已不能沿用。
+    // 之所以不用行版本（xmin），是因为预留量、均价这类非数量更新也会改变它，会误伤审核。
+    let txn_watermark: i64 =
+        sqlx::query_scalar("SELECT COALESCE(MAX(id), 0)::BIGINT FROM inventory_transactions")
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(format!("读取库存流水水位线失败: {}", e)))?;
+    sqlx::query("UPDATE stock_checks SET scope_snapshot_json = $2 WHERE id = $1")
+        .bind(check_id)
+        .bind(stock_check_snapshot_json(txn_watermark))
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("保存盘点库存快照标记失败: {}", e)))?;
 
     tx.commit()
         .await
@@ -1260,74 +1261,27 @@ fn validate_stock_check_actual(actual_qty: Option<f64>) -> Result<(), AppError> 
     Ok(())
 }
 
-/// 库存版本变化时拒绝沿用旧快照差额；版本一致时按当前库存对实盘。
-fn stock_check_adjustment(
+/// 盘点单快照标记：创建时的库存流水水位线（`inventory_transactions` 的最大 id）。
+fn stock_check_snapshot_json(txn_watermark: i64) -> String {
+    serde_json::json!({ "txnWatermark": txn_watermark }).to_string()
+}
+
+/// 解析盘点单快照标记；缺失或不是水位线格式（旧版本写入的行版本映射）时返回 None。
+fn parse_stock_check_watermark(snapshot_json: Option<&str>) -> Option<i64> {
+    serde_json::from_str::<serde_json::Value>(snapshot_json?)
+        .ok()?
+        .get("txnWatermark")?
+        .as_i64()
+}
+
+/// 该物料自盘点快照后库存是否变动过：水位线之后有出入库流水（含净变化为零的往返），
+/// 或数量已偏离快照。变动后实盘数量不能再沿用，否则会把旧差额叠加到新库存上。
+fn stock_check_row_is_stale(
     snapshot_qty: f64,
-    actual_qty: f64,
     current_qty: f64,
-    version_matches: bool,
-) -> Result<f64, AppError> {
-    if !version_matches || (current_qty - snapshot_qty).abs() > 1e-9 {
-        return Err(AppError::Business(
-            "盘点期间库存已变动，请重新创建盘点单并录入实盘".to_string(),
-        ));
-    }
-    let diff = actual_qty - current_qty;
-    if !diff.is_finite() {
-        return Err(AppError::Business("盘点差异不是有限数值".to_string()));
-    }
-    Ok(diff)
-}
-
-/// 按批次可用量分配，剩余业务数量不能被容差丢弃。
-fn allocate_inventory_lots(
-    quantity: f64,
-    lots: &[(i64, f64)],
-) -> Result<Vec<(i64, f64)>, AppError> {
-    if !quantity.is_finite() || quantity <= 0.0 {
-        return Err(AppError::Business(
-            "批次分配数量必须是有限的正数".to_string(),
-        ));
-    }
-    let mut remaining = quantity;
-    let mut plan = Vec::new();
-    for (lot_id, available) in lots {
-        if remaining <= 1e-9 {
-            break;
-        }
-        if !available.is_finite() || *available <= 0.0 {
-            continue;
-        }
-        let used = remaining.min(*available);
-        plan.push((*lot_id, used));
-        remaining -= used;
-    }
-    if remaining > 1e-6 {
-        return Err(AppError::Business(format!(
-            "批次在库合计不足，还差 {remaining:.6}"
-        )));
-    }
-    Ok(plan)
-}
-
-/// 按物料和仓库顺序锁定库存行，避免并发单据交叉锁。
-async fn lock_inventory_rows(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    mut keys: Vec<(i64, i64)>,
-) -> Result<(), AppError> {
-    keys.sort_unstable();
-    keys.dedup();
-    for (material_id, warehouse_id) in keys {
-        sqlx::query(
-            "SELECT 1 FROM inventory WHERE material_id = $1 AND warehouse_id = $2 FOR UPDATE",
-        )
-        .bind(material_id)
-        .bind(warehouse_id)
-        .execute(&mut **tx)
-        .await
-        .map_err(|e| AppError::Database(format!("锁定库存失败: {e}")))?;
-    }
-    Ok(())
+    moved_since_snapshot: bool,
+) -> bool {
+    moved_since_snapshot || (current_qty - snapshot_qty).abs() > 1e-9
 }
 
 /// 审核确认盘点单（生成盘盈/盘亏流水 + 调整库存）
@@ -1358,18 +1312,16 @@ pub async fn confirm_stock_check(
     if head.2 == "confirmed" {
         return Ok(());
     }
-    let versions: serde_json::Value = head
-        .3
-        .as_deref()
-        .and_then(|json| serde_json::from_str(json).ok())
-        .ok_or_else(|| {
-            AppError::Business("盘点单缺少库存版本快照，请重新创建并录入实盘后审核".to_string())
-        })?;
+    // 没有流水水位线（旧版本创建的盘点单）就无法判断盘点期间有没有出入库，只能重新盘点
+    let txn_watermark = parse_stock_check_watermark(head.3.as_deref()).ok_or_else(|| {
+        AppError::Business("盘点单缺少库存快照标记，请重新创建并录入实盘后审核".to_string())
+    })?;
 
     let warehouse_id = head.0;
     let check_date = head.1;
 
-    // 全部物料行均需检查版本，包括实盘与快照相等的行；批次仅作只读参考。
+    // 只处理实盘与快照有差异的物料行，只有它们会改库存、才需要校验盘点期间没有出入库；
+    // 实盘等于快照或未盘点的行不产生调整，期间的正常出入库不应阻塞审核。批次行仅作只读参考。
     let diff_items = sqlx::query_as::<_, (i64, i64, Option<i64>, f64, f64, f64, i64, String)>(
         r#"
         SELECT sci.id, sci.material_id, sci.lot_id,
@@ -1379,6 +1331,7 @@ pub async fn confirm_stock_check(
         FROM stock_check_items sci
         JOIN materials m ON m.id = sci.material_id
         WHERE sci.check_id = $1 AND sci.lot_id IS NULL
+          AND ABS(COALESCE(sci.actual_qty, sci.system_qty) - sci.system_qty) > 1e-9
         ORDER BY sci.material_id, sci.id FOR UPDATE OF sci
         "#,
     )
@@ -1391,21 +1344,44 @@ pub async fn confirm_stock_check(
         .iter()
         .map(|item| (item.1, warehouse_id))
         .collect();
-    lock_inventory_rows(&mut tx, keys).await?;
+    inventory_ops::lock_inventory_rows(&mut tx, keys).await?;
     for (_item_id, material_id, _lot_id, system_qty, actual, _diff, cost, lot_tracking_mode) in
         &diff_items
     {
-        let (current_qty, version): (f64, String) = sqlx::query_as(
-            "SELECT quantity, xmin::TEXT FROM inventory WHERE material_id = $1 AND warehouse_id = $2 FOR UPDATE",
+        let (current_qty,): (f64,) = sqlx::query_as(
+            "SELECT quantity FROM inventory WHERE material_id = $1 AND warehouse_id = $2 FOR UPDATE",
         )
-        .bind(material_id).bind(warehouse_id)
-        .fetch_one(&mut *tx).await
+        .bind(material_id)
+        .bind(warehouse_id)
+        .fetch_one(&mut *tx)
+        .await
         .map_err(|e| AppError::Database(format!("查询盘点当前库存失败: {}", e)))?;
-        let version_matches = versions
-            .get(material_id.to_string())
-            .and_then(|v| v.as_str())
-            == Some(version.as_str());
-        let diff = stock_check_adjustment(*system_qty, *actual, current_qty, version_matches)?;
+        let moved_since_snapshot: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM inventory_transactions
+                           WHERE material_id = $1 AND warehouse_id = $2 AND id > $3)",
+        )
+        .bind(material_id)
+        .bind(warehouse_id)
+        .bind(txn_watermark)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(format!("查询盘点期间出入库流水失败: {}", e)))?;
+        if stock_check_row_is_stale(*system_qty, current_qty, moved_since_snapshot) {
+            let (code, name): (String, String) =
+                sqlx::query_as("SELECT code, name FROM materials WHERE id = $1")
+                    .bind(material_id)
+                    .fetch_one(&mut *tx)
+                    .await
+                    .unwrap_or_else(|_| (format!("#{}", material_id), String::new()));
+            return Err(AppError::Business(format!(
+                "盘点期间库存已变动（物料 {} {}），请重新创建盘点单并录入实盘",
+                code, name
+            )));
+        }
+        let diff = *actual - current_qty;
+        if !diff.is_finite() {
+            return Err(AppError::Business("盘点差异不是有限数值".to_string()));
+        }
         let cost = *cost;
         // 启用批次追踪的物料，盘亏按 FIFO 拆分批次、盘盈新建批次，
         // 保证「批次在库合计 = 仓库库存」，否则批次追溯与库龄分析会与库存对不上。
@@ -1994,6 +1970,15 @@ pub async fn confirm_transfer(
     .await
     .map_err(|e| AppError::Database(format!("查询调拨明细失败: {}", e)))?;
 
+    // 先按固定顺序锁住源仓、目标仓的库存行，再逐行调拨：
+    // 并发的反向调拨（A→B 与 B→A）不会交叉等待而死锁
+    let mut lock_keys = Vec::with_capacity(items.len() * 2);
+    for (_, material_id, _, _) in &items {
+        lock_keys.push((*material_id, from_wh));
+        lock_keys.push((*material_id, to_wh));
+    }
+    inventory_ops::lock_inventory_rows(&mut tx, lock_keys).await?;
+
     for (item_id, material_id, base_qty, lot_id) in &items {
         // 扣减源仓库存
         let (before_out, after_out, avg_cost) = inventory_ops::decrease_inventory(
@@ -2069,25 +2054,33 @@ pub async fn confirm_transfer(
         .await
         .map_err(|e| AppError::Database(format!("查询物料批次模式失败: {e}")))?;
         if lot_mode != "none" {
-            let slices = if let Some(lid) = lot_id {
-                let owner: Option<(i64, i64)> = sqlx::query_as(
-                    "SELECT material_id, warehouse_id FROM inventory_lots WHERE id = $1",
-                )
-                .bind(lid)
-                .fetch_optional(&mut *tx)
-                .await
-                .map_err(|e| AppError::Database(format!("查询调拨批次失败: {e}")))?;
-                match owner {
-                    Some((owner_material, owner_warehouse))
-                        if owner_material == *material_id && owner_warehouse == from_wh => {}
-                    _ => return Err(AppError::Business("调拨批次不属于源仓库或物料".to_string())),
+            let slices: Vec<(i64, f64)> = if let Some(lid) = lot_id {
+                // 指定批次：先确认它属于源仓库和该物料，并核对可用量（在库 − 预留），
+                // 不能把已预留给定制单的库存挪走
+                let (on_hand, reserved) =
+                    inventory_ops::lock_lot_row(&mut *tx, *lid, *material_id, from_wh).await?;
+                let lot_available = on_hand - reserved;
+                if lot_available + inventory_ops::LOT_QTY_TOLERANCE < *base_qty {
+                    return Err(AppError::Business(format!(
+                        "指定批次可用量不足：可用 {:.2}，需调拨 {:.2}",
+                        lot_available, base_qty
+                    )));
                 }
                 vec![(*lid, *base_qty)]
             } else {
+                // 未指定批次：与销售出库、自由出入库共用 FIFO 拆批入口（含统一的容差口径）
                 let available =
                     inventory_ops::get_available_lots(&mut *tx, *material_id, from_wh).await?;
-                let pairs: Vec<_> = available.iter().map(|lot| (lot.0, lot.2)).collect();
-                allocate_inventory_lots(*base_qty, &pairs)?
+                match inventory_ops::plan_fifo_lots(&available, *base_qty) {
+                    Some(plan) => plan.into_iter().map(|(lid, _, qty)| (lid, qty)).collect(),
+                    None => {
+                        let total_available: f64 = available.iter().map(|(_, _, qty)| *qty).sum();
+                        return Err(AppError::Business(format!(
+                            "批次可用库存不足：可用 {:.2}，需调拨 {:.2}",
+                            total_available, base_qty
+                        )));
+                    }
+                }
             };
             for (source_lot, quantity) in slices {
                 inventory_ops::decrease_lot_inventory(&mut *tx, source_lot, quantity).await?;
@@ -2312,11 +2305,28 @@ mod tests {
     }
 
     #[test]
-    fn stock_check_rejects_stale_snapshot_and_keeps_fractional_lot_loss() {
-        assert!(stock_check_adjustment(100.0, 99.0, 90.0, false).is_err());
-        assert_eq!(stock_check_adjustment(10.0, 9.0, 10.0, true).unwrap(), -1.0);
-        let plan = allocate_inventory_lots(0.0005, &[(8, 10.0)]).unwrap();
-        assert_eq!(plan, vec![(8, 0.0005)]);
-        assert!(allocate_inventory_lots(1.5, &[(8, 1.0)]).is_err());
+    fn stock_check_row_is_stale_on_movement_or_quantity_drift() {
+        // 水位线之后有过出入库流水：即使净变化为零，数量也一致，仍视为已变动
+        assert!(stock_check_row_is_stale(10.0, 10.0, true));
+        // 没有流水但数量偏离快照（绕过流水的改动）
+        assert!(stock_check_row_is_stale(10.0, 8.0, false));
+        // 浮点噪声内不算变动
+        assert!(!stock_check_row_is_stale(10.0, 10.0 + 1e-12, false));
+        assert!(!stock_check_row_is_stale(10.0, 10.0, false));
+    }
+
+    #[test]
+    fn stock_check_snapshot_marker_round_trips_and_rejects_legacy_formats() {
+        let json = stock_check_snapshot_json(12345);
+        assert_eq!(parse_stock_check_watermark(Some(&json)), Some(12345));
+        // 水位线为 0（尚无任何流水）也是合法值
+        assert_eq!(
+            parse_stock_check_watermark(Some(&stock_check_snapshot_json(0))),
+            Some(0)
+        );
+        // 旧版本写入的「物料 → 行版本」映射、空值、坏 JSON 都不是水位线
+        assert_eq!(parse_stock_check_watermark(Some(r#"{"7":"123"}"#)), None);
+        assert_eq!(parse_stock_check_watermark(None), None);
+        assert_eq!(parse_stock_check_watermark(Some("not json")), None);
     }
 }

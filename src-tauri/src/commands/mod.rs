@@ -26,6 +26,9 @@ pub mod unit;
 pub mod user_management;
 pub mod warehouse;
 
+#[cfg(test)]
+mod db_flow_tests;
+
 use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};

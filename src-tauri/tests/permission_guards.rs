@@ -281,10 +281,8 @@ fn every_permission_literal_exists_in_seed() {
 #[tokio::test]
 #[ignore]
 async fn viewer_denied_on_money_path_writes() {
-    let url = match std::env::var("DATABASE_URL") {
-        Ok(u) => u,
-        Err(_) => return, // 无数据库环境时跳过
-    };
+    // 显式带 --ignored 运行就是要检查数据库：缺少环境变量必须失败，静默跳过会让人误以为已通过
+    let url = std::env::var("DATABASE_URL").expect("请设置 DATABASE_URL 后再运行该用例");
     let pool = sqlx::postgres::PgPoolOptions::new()
         .max_connections(2)
         .connect(&url)
